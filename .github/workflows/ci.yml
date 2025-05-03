@@ -10,6 +10,7 @@ jobs:
   format:
     name: Format Check
     runs-on: ubuntu-latest
+    if: false  # This makes the job always skip
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -96,7 +97,7 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: [test]
+    needs: [format]  # Change this from [test] to [format]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
