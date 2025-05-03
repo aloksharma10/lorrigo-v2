@@ -3,7 +3,7 @@
   "description": "Database package for Lorrigo",
   "version": "1.0.0",
   "scripts": {
-    "build": "tsc -p .",
+    "build": "npx prisma generate --schema=./prisma/schema && tsc -p .",
     "db:generate": "npx prisma generate --schema=./prisma/schema",
     "db:migrate": "prisma migrate dev --schema=./prisma/schema --skip-generate",
     "db:deploy": "prisma migrate deploy --schema=./prisma/schema",

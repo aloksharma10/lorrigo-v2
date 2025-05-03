@@ -41,6 +41,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma client
+        run: cd packages/db && pnpm db:generate
+        
       - name: Check formatting
         run: pnpm format:check
 
@@ -129,6 +132,10 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+        
+      - name: Setup environment
+        run: |
+          echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/lorrigo_test" >> $GITHUB_ENV
 
       - name: Build projects
         run: pnpm build
