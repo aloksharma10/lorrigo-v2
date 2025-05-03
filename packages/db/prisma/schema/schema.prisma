@@ -1,0 +1,25 @@
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String      @id @default(cuid())
+  email     String?     @unique
+  name      String?
+  password  String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  dashboard Dashboard[]
+
+  // additional link configurations
+  doIndex         Boolean @default(false) // whether to index the share link on Google or not
+  showConversions Boolean @default(false)
+
+  @@index(email)
+}

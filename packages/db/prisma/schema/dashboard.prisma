@@ -1,0 +1,15 @@
+model Dashboard {
+  id String @id @default(cuid())
+  
+  user   User?   @relation(fields: [userId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  userId String?
+
+  doIndex         Boolean @default(false) // whether to index the share link on Google or not
+  password        String? // password to access the share link
+  showConversions Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index(userId)
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@lorrigo/db",
+  "description": "Database package for Lorrigo",
+  "version": "1.0.0",
+  "scripts": {
+    "db:generate": "npx prisma generate --schema=./prisma",
+    "db:migrate": "prisma migrate dev --skip-generate",
+    "db:deploy": "prisma migrate deploy",
+    "studio": "npx prisma studio --schema=./prisma --browser none"
+  },
+  "author": "<aloksharma.cs1@gmail.com> Alok Sharma",
+  "license": "ISC",
+  "devDependencies": {
+    "prisma": "^6.7.0"
+  },
+  "dependencies": {
+    "@prisma/client": "6.7.0"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}
