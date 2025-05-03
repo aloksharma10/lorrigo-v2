@@ -44,11 +44,12 @@ jobs:
       - name: Check formatting
         run: pnpm format:check
 
+  # Test job is temporarily disabled
   test:
     name: Test
     runs-on: ubuntu-latest
     needs: [format]
-    if: false  # This makes the job always skip
+    if: false # Skip test job for now
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -97,7 +98,7 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: [format]  # Change this from [test] to [format]
+    needs: [format] # Changed from [test] to [format] since test is skipped
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
