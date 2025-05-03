@@ -3,10 +3,10 @@
   "description": "Database package for Lorrigo",
   "version": "1.0.0",
   "scripts": {
-    "db:generate": "npx prisma generate --schema=./prisma",
-    "db:migrate": "prisma migrate dev --skip-generate",
-    "db:deploy": "prisma migrate deploy",
-    "studio": "npx prisma studio --schema=./prisma --browser none"
+    "db:generate": "npx prisma generate --schema=./prisma/schema",
+    "db:migrate": "prisma migrate dev --schema=./prisma/schema --skip-generate",
+    "db:deploy": "prisma migrate deploy --schema=./prisma/schema",
+    "studio": "npx prisma studio --schema=./prisma/schema --browser none"
   },
   "author": "<aloksharma.cs1@gmail.com> Alok Sharma",
   "license": "ISC",
