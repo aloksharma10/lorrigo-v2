@@ -1,5 +1,5 @@
 {
-  "name": "shadcn-ui-monorepo",
+  "name": "lorrigo-monorepo",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -9,9 +9,10 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,md,js,jsx,json,css,scss}\""
   },
   "devDependencies": {
-    "@workspace/typescript-config": "workspace:*",
+    "@lorrigo/typescript-config": "workspace:*",
     "prettier": "^3.5.1",
     "prettier-plugin-tailwindcss": "^0.6.11",
+    "ts-node": "^10.9.2",
     "turbo": "^2.5.2",
     "typescript": "5.7.3"
   },
