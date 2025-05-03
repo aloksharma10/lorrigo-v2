@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "format": "prettier --write .",
@@ -24,7 +24,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@lorrigo/typescript-config": "workspace:*",
+    "@workspace/typescript-config": "workspace:*",
     "typescript": "^5.7.3"
   }
 }
