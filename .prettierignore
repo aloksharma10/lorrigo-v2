@@ -1,0 +1,38 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build artifacts
+.next
+dist
+out
+build
+.vercel
+storybook-static
+
+# Cache
+.turbo
+.cache
+.eslintcache
+
+# Misc
+.DS_Store
+.env*
+!.env.example
+.idea
+.vscode
+*.log
+coverage
+*.tsbuildinfo
+
+# Generated
+.swc
+**/.prisma/client/
+**/prisma/generated/
+
+# Package manager
+.pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-lock.yaml 

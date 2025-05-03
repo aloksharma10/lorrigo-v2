@@ -80,6 +80,7 @@ docker-compose up -d
 ```
 
 This will start the following services:
+
 - Web application (Next.js) on port 3000
 - API server (Fastify) on port 3001
 - Workers (background jobs)
