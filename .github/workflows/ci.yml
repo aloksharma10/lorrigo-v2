@@ -43,7 +43,9 @@ jobs:
 
       - name: Generate Prisma client
         run: cd packages/db && pnpm db:generate
-        
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
       - name: Check formatting
         run: pnpm format:check
 
@@ -135,10 +137,12 @@ jobs:
         
       - name: Setup environment
         run: |
-          echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/lorrigo_test" >> $GITHUB_ENV
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> $GITHUB_ENV
 
       - name: Build projects
         run: pnpm build
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
   deploy:
     name: Deploy
@@ -165,6 +169,8 @@ jobs:
           file: ./apps/web/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/lorrigo-web:latest
+          build-args: |
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
           
       - name: Build and push API container
         uses: docker/build-push-action@v5
