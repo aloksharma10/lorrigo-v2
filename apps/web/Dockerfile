@@ -9,6 +9,7 @@ WORKDIR /usr/src/app
 ARG DATABASE_URL
 ENV DATABASE_URL=${DATABASE_URL}
 
+RUN echo "DATABASE_URL=${DATABASE_URL}" > .env
 # Copy package configs
 COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* turbo.json ./
 
