@@ -3,15 +3,10 @@ FROM node:20-alpine
 # Install pnpm
 RUN npm install -g pnpm
 
-# Set build arguments
-ARG DATABASE_URL
-ARG NEXT_PUBLIC_API_URL
-
-# Set environment variables
-ENV DATABASE_URL=${DATABASE_URL}
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-
 WORKDIR /usr/src/app
+
+# Set DATABASE_URL as an ARG
+ARG DATABASE_URL
 
 # Copy package configs
 COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* turbo.json ./
@@ -28,11 +23,8 @@ RUN pnpm install --frozen-lockfile
 # Generate database client/types
 RUN pnpm run db:generate
 
-# Build the UI components first
-RUN cd packages/ui && pnpm run build
-
-# Build the web app with environment variables
-RUN pnpm run build
+# Pass DATABASE_URL at build time (inline for the RUN command)
+RUN DATABASE_URL=$DATABASE_URL pnpm run build
 
 EXPOSE 3000
 
