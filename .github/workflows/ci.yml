@@ -178,6 +178,10 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         
+      - name: Setup environment variables
+        run: |
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env
+
       - name: Build and push Web container
         uses: docker/build-push-action@v5
         with:
