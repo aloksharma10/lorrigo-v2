@@ -135,21 +135,30 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         
-      - name: Setup environment
+      - name: Setup environment variables
         run: |
+          # Create .env files for each app
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > apps/web/.env
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > apps/api/.env
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > apps/workers/.env
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > packages/db/.env
+          
+          # Also set it in the environment for the current job
           echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> $GITHUB_ENV
+
+      - name: Generate Prisma client
+        run: cd packages/db && pnpm db:generate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Build projects
         run: pnpm build
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-
-      - name: Create environment file for Next.js
-        run: |
-          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > apps/web/.env.local
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:3000' }}
+          # Add any other Next.js environment variables needed
+          
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
@@ -177,6 +186,7 @@ jobs:
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/lorrigo-web:latest
           build-args: |
             DATABASE_URL=${{ secrets.DATABASE_URL }}
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:3000' }}
           
       - name: Build and push API container
         uses: docker/build-push-action@v5
@@ -185,6 +195,8 @@ jobs:
           file: ./apps/api/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/lorrigo-api:latest
+          build-args: |
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
           
       - name: Build and push Workers container
         uses: docker/build-push-action@v5
@@ -193,6 +205,8 @@ jobs:
           file: ./apps/workers/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/lorrigo-workers:latest
+          build-args: |
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
 
       # Add deployment steps for your hosting platform
-      # e.g., Deploy to Kubernetes, AWS ECS, etc. 
+      # e.g., Deploy to Kubernetes, AWS ECS, etc.
