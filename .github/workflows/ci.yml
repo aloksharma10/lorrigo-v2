@@ -139,16 +139,14 @@ jobs:
         run: |
           # Create .env files for each app
           echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env
-          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > apps/web/.env
-          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > apps/api/.env
-          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > apps/workers/.env
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > apps/web/.env.local
           echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > packages/db/.env
           
           # Also set it in the environment for the current job
           echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> $GITHUB_ENV
 
       - name: Generate Prisma client
-        run: cd packages/db && pnpm db:generate
+        run: pnpm run db:generate
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
