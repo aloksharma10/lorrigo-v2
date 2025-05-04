@@ -181,6 +181,8 @@ jobs:
       - name: Setup environment variables
         run: |
           echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > apps/web/.env.local
+          echo "NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:3000' }}" >> apps/web/.env.local        
 
       - name: Build and push Web container
         uses: docker/build-push-action@v5
