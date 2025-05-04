@@ -185,6 +185,8 @@ jobs:
           file: ./apps/web/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/lorrigo-web:latest
+          build-args: |
+            - DATABASE_URL=${{ secrets.DATABASE_URL }}
 
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/lorrigo-web:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/lorrigo-web:buildcache,mode=max
