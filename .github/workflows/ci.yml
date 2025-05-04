@@ -46,6 +46,9 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
+      - name: Fix prettier issues
+        run: pnpm format
+
       - name: Check formatting
         run: pnpm format:check
 
@@ -175,12 +178,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         
-      - name: Setup environment variables
-        run: |
-          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env
-          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > apps/web/.env.local
-          echo "NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:3000' }}" >> apps/web/.env.local        
-
       - name: Build and push Web container
         uses: docker/build-push-action@v5
         with:
@@ -188,10 +185,7 @@ jobs:
           file: ./apps/web/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/lorrigo-web:latest
-          build-args: |
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
-            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:3000' }}
-            
+
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/lorrigo-web:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/lorrigo-web:buildcache,mode=max
           
@@ -202,8 +196,6 @@ jobs:
           file: ./apps/api/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/lorrigo-api:latest
-          build-args: |
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
           
       - name: Build and push Workers container
         uses: docker/build-push-action@v5
@@ -212,8 +204,6 @@ jobs:
           file: ./apps/workers/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/lorrigo-workers:latest
-          build-args: |
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
 
       # Add deployment steps for your hosting platform
       # e.g., Deploy to Kubernetes, AWS ECS, etc.
