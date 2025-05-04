@@ -6,7 +6,8 @@
     "build": "turbo build",
     "dev": "turbo dev",
     "format": "prettier --write \"**/*.{ts,tsx,md,js,jsx,json,css,scss}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,md,js,jsx,json,css,scss}\""
+    "format:check": "prettier --check \"**/*.{ts,tsx,md,js,jsx,json,css,scss}\"",
+    "db:generate": "cd packages/db && npm run db:generate && cd ../.."
   },
   "devDependencies": {
     "@lorrigo/typescript-config": "workspace:*",
