@@ -214,8 +214,7 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/lorrigo-workers:latest
 
-      # Add deployment steps for your hosting platform
-      # e.g., Deploy to Kubernetes, AWS ECS, etc.
+      # Deploy to VM with zero-downtime using blue-green deployment
       - name: Deploy to the VM
         uses: appleboy/ssh-action@master
         with:
@@ -223,4 +222,141 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            docker stop api && docker run --name api -d -p 3000:3000 ${{ secrets.DOCKER_HUB_USERNAME }}/lorrigo-api:latest
+            # Pull the latest images
+            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/lorrigo-api:latest
+            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/lorrigo-web:latest
+            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/lorrigo-workers:latest
+            
+            # Create deployment timestamp for unique container names
+            TIMESTAMP=$(date +%Y%m%d%H%M%S)
+            
+            # === API Blue-Green Deployment ===
+            # Create new API container with a unique name
+            echo "Starting new API container"
+            NEW_API_CONTAINER="api-${TIMESTAMP}"
+            
+            # Start the new container on a different port (e.g., 3001)
+            docker run -d --name $NEW_API_CONTAINER -p 3001:3000 \
+              -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+              --restart unless-stopped \
+              ${{ secrets.DOCKER_HUB_USERNAME }}/lorrigo-api:latest
+            
+            # Health check - wait for the new container to be ready
+            echo "Performing health check on new API container"
+            for i in {1..30}; do
+              if curl -s http://localhost:3001/health 2>&1 | grep -q "ok"; then
+                echo "New API container is healthy"
+                break
+              fi
+              if [ $i -eq 30 ]; then
+                echo "Health check failed for new API container"
+                docker stop $NEW_API_CONTAINER
+                docker rm $NEW_API_CONTAINER
+                exit 1
+              fi
+              echo "Waiting for API to be ready... ($i/30)"
+              sleep 2
+            done
+            
+            # Update Nginx or proxy configuration to route traffic to the new container
+            # This assumes you have Nginx or similar as a reverse proxy
+            # Replace this with your actual proxy configuration update command
+            if [ -f "/etc/nginx/conf.d/api.conf" ]; then
+              echo "Updating API proxy configuration"
+              sed -i "s/localhost:3000/localhost:3001/g" /etc/nginx/conf.d/api.conf
+              sudo systemctl reload nginx
+            else
+              # If no proxy is used, we'll need to use iptables to redirect traffic
+              echo "Setting up port forwarding from 3000 to 3001"
+              # First clear any existing rules for port 3000
+              sudo iptables -t nat -D PREROUTING -p tcp --dport 3000 -j REDIRECT --to-port 3001 2>/dev/null || true
+              sudo iptables -t nat -A PREROUTING -p tcp --dport 3000 -j REDIRECT --to-port 3001
+            fi
+            
+            # Clean up the old API container if it exists
+            if docker ps -a --format '{{.Names}}' | grep -q "^api$"; then
+              echo "Stopping and removing old API container"
+              docker stop api || true
+              docker rm api || true
+            fi
+            
+            # Rename the new container to the standard name
+            docker rename $NEW_API_CONTAINER api
+            
+            # === Web Blue-Green Deployment ===
+            echo "Starting new web container"
+            NEW_WEB_CONTAINER="web-${TIMESTAMP}"
+            
+            # Start the new container on a different port
+            docker run -d --name $NEW_WEB_CONTAINER -p 8080:3000 \
+              -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+              -e NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:3000' }}" \
+              --restart unless-stopped \
+              ${{ secrets.DOCKER_HUB_USERNAME }}/lorrigo-web:latest
+            
+            # Health check - wait for the new container to be ready
+            echo "Performing health check on new web container"
+            for i in {1..30}; do
+              if curl -s http://localhost:8080/ > /dev/null; then
+                echo "New web container is healthy"
+                break
+              fi
+              if [ $i -eq 30 ]; then
+                echo "Health check failed for new web container"
+                docker stop $NEW_WEB_CONTAINER
+                docker rm $NEW_WEB_CONTAINER
+                exit 1
+              fi
+              echo "Waiting for web to be ready... ($i/30)"
+              sleep 2
+            done
+            
+            # Update Nginx configuration to route traffic to the new container
+            if [ -f "/etc/nginx/conf.d/web.conf" ]; then
+              echo "Updating web proxy configuration"
+              sed -i "s/localhost:80/localhost:8080/g" /etc/nginx/conf.d/web.conf
+              sudo systemctl reload nginx
+            else
+              # If no proxy is used, we'll need to use iptables to redirect traffic
+              echo "Setting up port forwarding from 80 to 8080"
+              sudo iptables -t nat -D PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080 2>/dev/null || true
+              sudo iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080
+            fi
+            
+            # Clean up the old web container if it exists
+            if docker ps -a --format '{{.Names}}' | grep -q "^web$"; then
+              echo "Stopping and removing old web container"
+              docker stop web || true
+              docker rm web || true
+            fi
+            
+            # Rename the new container to the standard name
+            docker rename $NEW_WEB_CONTAINER web
+            
+            # === Workers Deployment ===
+            # Workers can be updated with a small overlap (they don't serve direct user requests)
+            echo "Starting new workers container"
+            NEW_WORKERS_CONTAINER="workers-${TIMESTAMP}"
+            
+            # Start the new workers container
+            docker run -d --name $NEW_WORKERS_CONTAINER \
+              -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+              --restart unless-stopped \
+              ${{ secrets.DOCKER_HUB_USERNAME }}/lorrigo-workers:latest
+              
+            # Give the new workers container time to initialize
+            sleep 10
+            
+            # Clean up the old workers container if it exists
+            if docker ps -a --format '{{.Names}}' | grep -q "^workers$"; then
+              echo "Stopping and removing old workers container"
+              docker stop workers || true
+              docker rm workers || true
+            fi
+            
+            # Rename the new container to the standard name
+            docker rename $NEW_WORKERS_CONTAINER workers
+            
+            # Clean up old and unused images to prevent disk space issues
+            echo "Cleaning up unused Docker resources"
+            docker system prune -f  # Don't remove volumes automatically
