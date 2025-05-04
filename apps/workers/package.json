@@ -18,6 +18,9 @@
   "devDependencies": {
     "@types/node": "^20",
     "@types/node-cron": "^3.0.11",
+    "@lorrigo/db": "workspace:*",
+    "@lorrigo/typescript-config": "workspace:*",
+    "@lorrigo/utils": "workspace:*",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3",
     "vitest": "^1.4.0"

@@ -1,24 +1,25 @@
 FROM node:20-alpine
 
-WORKDIR /app
+# Install pnpm
+RUN npm install -g pnpm
 
-# Copy package files and install dependencies
-COPY apps/api/package.json .
-RUN npm install
+WORKDIR /usr/src/app
 
-# Copy source code
-COPY apps/api/src ./src
-COPY apps/api/tsconfig.json .
+# Copy package configs
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* turbo.json ./
 
-# Build TypeScript
-RUN npm run build
+# Copy packages for the workspace
+COPY ./packages ./packages
 
-# Set environment variables
-ENV NODE_ENV=production
-ENV PORT=3000
+# Copy the backend app
+COPY ./apps/api ./apps/api
 
-# Expose the API port
-EXPOSE 3000
+# Install dependencies
+RUN pnpm install --frozen-lockfile
 
-# Start the server
+# Generate database client/types
+RUN pnpm run db:generate
+
+EXPOSE 8080
+
 CMD ["node", "dist/index.js"] 

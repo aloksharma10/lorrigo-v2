@@ -1,24 +1,31 @@
 FROM node:20-alpine
 
-WORKDIR /app
+# Install pnpm
+RUN npm install -g pnpm
 
-# Create a simple Express server instead of Next.js
-RUN npm init -y && \
-    npm install express
+WORKDIR /usr/src/app
 
-# Create a simple server
-RUN echo 'const express = require("express"); \
-const app = express(); \
-const port = 3000; \
-app.get("/", (req, res) => { \
-  res.send("<h1>Next.js Web App</h1><p>This is a placeholder server for the Next.js web app.</p>"); \
-}); \
-app.listen(port, "0.0.0.0", () => { \
-  console.log(`Server running at http://0.0.0.0:${port}`); \
-});' > index.js
+# Set DATABASE_URL as an ARG
+ARG DATABASE_URL
+
+# Copy package configs
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* turbo.json ./
+
+# Copy packages for the workspace
+COPY ./packages ./packages
+
+# Copy the web app
+COPY ./apps/web ./apps/web
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Generate database client/types
+RUN pnpm run db:generate
+
+# Build the web app with the DATABASE_URL environment variable
+RUN DATABASE_URL=${DATABASE_URL} pnpm run build
 
 EXPOSE 3000
-ENV PORT 3000
-ENV NODE_ENV production
 
-CMD ["node", "index.js"] 
+CMD ["pnpm", "run", "start:web"]

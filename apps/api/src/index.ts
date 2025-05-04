@@ -1,5 +1,5 @@
 import Fastify from 'fastify';
-import { prisma } from "@lorrigo/db"
+import { prisma } from '@lorrigo/db';
 
 const port = parseInt(process.env.PORT || '4000', 10);
 const server = Fastify();
@@ -13,7 +13,7 @@ server.get('/create', async (request, reply) => {
     data: {
       name: 'John Doe',
       email: `john${Date.now()}@example.com`,
-    }
+    },
   });
   return { hello: 'world', user };
 });

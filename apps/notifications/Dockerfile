@@ -12,7 +12,7 @@ COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* turbo.json ./
 COPY ./packages ./packages
 
 # Copy the backend app
-COPY ./apps/workers ./apps/workers
+COPY ./apps/notifications ./apps/notifications
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
@@ -22,4 +22,4 @@ RUN pnpm run db:generate
 
 EXPOSE 8080
 
-CMD ["pnpm", "start:workers"] 
+CMD ["pnpm", "start:notifications"] 

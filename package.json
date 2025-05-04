@@ -7,7 +7,11 @@
     "dev": "turbo dev",
     "format": "prettier --write \"**/*.{ts,tsx,md,js,jsx,json,css,scss}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,md,js,jsx,json,css,scss}\"",
-    "db:generate": "cd packages/db && npm run db:generate && cd ../.."
+    "db:generate": "cd packages/db && npm run db:generate && cd ../..",
+    "start:notifications": "cd apps/notifications && pnpm start",
+    "start:workers": "cd apps/workers && pnpm start",
+    "start:web": "cd apps/web && pnpm start",
+    "start:api": "cd apps/api && pnpm start"
   },
   "devDependencies": {
     "@lorrigo/typescript-config": "workspace:*",
