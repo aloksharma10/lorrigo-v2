@@ -5,26 +5,26 @@ RUN npm install -g pnpm
 
 WORKDIR /usr/src/app
 
-# Set and expose ARG and ENV
+# Set DATABASE_URL as an ARG
 ARG DATABASE_URL
-ENV DATABASE_URL=${DATABASE_URL}
 
-RUN echo "DATABASE_URL=${DATABASE_URL}" > .env
 # Copy package configs
 COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* turbo.json ./
 
-# Copy packages and apps
+# Copy packages for the workspace
 COPY ./packages ./packages
+
+# Copy the web app
 COPY ./apps/web ./apps/web
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
 
-# Generate Prisma client using env
+# Generate database client/types
 RUN pnpm run db:generate
 
-# Build the app (DATABASE_URL will be available)
-RUN pnpm run build
+# Build the web app with the DATABASE_URL environment variable
+RUN DATABASE_URL=$DATABASE_URL pnpm run build
 
 EXPOSE 3000
 
