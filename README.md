@@ -1,127 +1,182 @@
-# Lorrigo Monorepo
+# Lorrigo Logistics Platform
 
-A modern monorepo using Turborepo for applications and packages.
+A comprehensive logistics platform for managing orders, shipments, customers, and couriers.
 
-## What's included
+## Features
 
-- `apps/web`: [Next.js](https://nextjs.org/) app
-- `apps/api`: [Fastify](https://fastify.io/) API server
-- `apps/workers`: Worker service for background jobs
-- `packages/ui`: UI components shared between applications
-- `packages/db`: Database client (Prisma) and schema
-- `packages/eslint-config`: ESLint configurations
-- `packages/typescript-config`: TypeScript configurations
+### User Features
+- Wallet and Non-wallet payment gateway
+- Customer management (CRUD)
+- Hub management (CRUD)
+- Order creation and management (CRUD)
+- Shipment creation
+- Courier selection
+- Remittance management
+- Invoicing
+- Dispute handling
+- Billing
+- Notifications (System, WhatsApp, Email)
+- Bulk operations (Orders, Shipments)
+- Analytics
+
+### Admin Features
+- View each seller's orders and shipments
+- Billing management for AWBs
+- Accept/reject disputes
+- Manage courier visibility to sellers
+- Custom pricing for couriers based on seller
+- User sidebar permission management
+- Bulk courier pricing updates (Globally, new logins, existing users)
+- Control notification access
+- CSV upload with header mapping
+- Remittance cycle management
+
+### Technical Features
+- Authentication using Auth.js
+- Rate-limiting with Fastify/rate-limit + Redis
+- Notification service
+- API Documentation with Swagger
+- Error tracking with Sentry
+- Logging (API hits, rate-limit, IP address, seller ID)
+- Realtime tracking
+- Code security
+- Background job processing with BullMQ + Redis
+- Cron jobs for in-transit shipment processing
+- Email and WhatsApp notifications
+- Large data processing (bulk shipping)
+- CSV report generation
+- Remittance and billing reports
+
+## Tech Stack
+
+- **Backend**: Node.js, Fastify, TypeScript
+- **Frontend**: Next.js, React, TypeScript
+- **Database**: PostgreSQL
+- **Caching & Queues**: Redis, BullMQ
+- **ORM**: Prisma
+- **Authentication**: Auth.js, JWT
+- **API Documentation**: Swagger
+- **Error Tracking**: Sentry
+- **Containerization**: Docker
+
+## Project Structure
+
+The project is organized as a monorepo using Turborepo with the following structure:
+
+```
+lorrigo-v2/
+├── apps/                  # Application code
+│   ├── api/               # Backend API
+│   ├── web/               # Frontend application
+│   ├── notifications/     # Notification service
+│   └── workers/           # Background job workers
+├── packages/              # Shared code packages
+│   ├── db/                # Database access and Prisma schema
+│   ├── common/            # Shared utilities, validations, and types
+│   └── ui/                # Shared UI components
+├── docker/                # Docker configuration
+└── turbo.json             # Turborepo configuration
+```
+
+## Module-based Architecture
+
+The API follows a module-based architecture where each domain concept (e.g., orders, shipments, customers) is encapsulated in its own module with the following structure:
+
+```
+modules/
+├── orders/                # Orders module
+│   ├── controllers/       # HTTP request handlers
+│   ├── services/          # Business logic
+│   ├── validations/       # Input validation schemas
+│   └── index.ts           # Module routes definition
+├── shipments/             # Shipments module
+├── customers/             # Customers module
+└── ...                    # Other domain modules
+```
+
+### Key architectural patterns:
+
+1. **Validation Separation**: Validation schemas are defined in `packages/common/validations` and reused across the application.
+2. **Service Layer**: Business logic is implemented in service classes, separated from controllers.
+3. **Controller Layer**: Handles HTTP specifics, validation, and error handling.
+4. **Route Definition**: Routes are defined in module index files for better organization.
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 20+
-- PNPM 10+
-- Docker & Docker Compose (for containerized setup)
+- Node.js 16+
+- pnpm
+- Docker
+- PostgreSQL
 
-### Development
+### Installation
 
-1. Install dependencies:
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/your-username/lorrigo-v2.git
+   cd lorrigo-v2
+   ```
 
-```bash
-pnpm install
-```
+2. Install dependencies:
+   ```bash
+   pnpm install
+   ```
 
-2. Copy the example environment file:
+3. Set up environment variables by copying the example files:
+   ```bash
+   cp apps/api/.env.example apps/api/.env
+   cp packages/db/.env.example packages/db/.env
+   ```
 
-```bash
-cp .example.env .env
-```
+4. Start the development environment with Docker:
+   ```bash
+   docker-compose up -d
+   ```
 
-3. Update the `.env` file with your configuration.
+5. Run database migrations:
+   ```bash
+   pnpm --filter @lorrigo/db migrate:dev
+   ```
 
-4. Start the development servers:
+6. Run the development server:
+   ```bash
+   pnpm dev
+   ```
 
-```bash
-pnpm dev
-```
+## Module Development
 
-This will start all applications in development mode.
+When developing a new feature or module:
 
-### Running Tests
+1. Identify the domain concept it belongs to
+2. Create appropriate directory structure in the relevant module
+3. Define validation schemas in common package if needed
+4. Implement business logic in service classes
+5. Implement HTTP handlers in controller classes
+6. Define routes in the module index file
+7. Register the module in `apps/api/src/index.ts`
 
-```bash
-pnpm test
-```
+## API Endpoints
 
-### Building for Production
+Documentation for API endpoints is available through Swagger at `/api/docs` when running the API server.
 
-```bash
-pnpm build
-```
+## Background Jobs
 
-## Docker Setup
+Background processing is handled by BullMQ with job queues for:
 
-### Building Individual Containers
+- Notifications
+- Shipment tracking updates
+- Invoice generation
+- Data exports
+- Report generation
 
-```bash
-# Build API container
-docker build -t lorrigo-api -f apps/api/Dockerfile .
+## Contributing
 
-# Build Web container
-docker build -t lorrigo-web -f apps/web/Dockerfile .
-
-# Build Workers container
-docker build -t lorrigo-workers -f apps/workers/Dockerfile .
-```
-
-### Using Docker Compose
-
-Start all services with Docker Compose:
-
-```bash
-docker-compose up -d
-```
-
-This will start the following services:
-
-- Web application (Next.js) on port 3000
-- API server (Fastify) on port 3001
-- Workers (background jobs)
-- PostgreSQL database on port 5432
-
-## CI/CD Pipeline
-
-The CI/CD pipeline is set up with GitHub Actions and includes:
-
-1. **Lint**: Code quality checks
-2. **Test**: Run all test suites
-3. **Build**: Build all applications
-4. **Deploy**: Push Docker images and deploy (on main branch only)
-
-### Environment Variables for CI/CD
-
-These must be set in your GitHub repository secrets:
-
-- `DOCKER_HUB_USERNAME`: Your Docker Hub username
-- `DOCKER_HUB_ACCESS_TOKEN`: Your Docker Hub access token
-
-## Project Structure
-
-```
-.
-├── apps
-│   ├── api         # Fastify API server
-│   ├── web         # Next.js web application
-│   └── workers     # Background job workers
-├── packages
-│   ├── db          # Database client and schema
-│   ├── ui          # Shared UI components
-│   ├── eslint-config
-│   └── typescript-config
-├── docker-compose.yml
-├── .github
-│   └── workflows
-│       └── ci.yml  # CI/CD configuration
-└── README.md
-```
+1. Create a feature branch (`git checkout -b feature/amazing-feature`)
+2. Commit your changes (`git commit -m 'Add some amazing feature'`)
+3. Push to the branch (`git push origin feature/amazing-feature`)
+4. Open a Pull Request
 
 ## License
 
-This project is licensed under the ISC License.
+This project is proprietary and confidential.

@@ -1,0 +1,52 @@
+i want to build a logdstic platform where 
+
+User: 
+Wallet and Non wallet 
+payment gateway
+Customer (CRUD)
+Hub (CRUD)
+Order creation (CRUD)
+shipment creation 
+Choose coruier 
+remittance
+Invoicing
+dispute orders
+billing
+Notification (System. Whatsapp, mail)
+Bulk operation (Order, shipment)|
+Analytics
+
+
+Admin:
+View each seller's order, shipment, 
+Billing of each awbs, accept reject dispute
+Manage the courier view to seller
+Manager custom pricing for each courier based on seller
+User's sidebar permission
+Bulk courier pricing update : Globally, new login, existing users
+controll notification send acccess which to send which not
+uplaod csv in any format give option to map header of the csv with our require data header
+manager remittance cycle of user
+
+
+As developer ( i want )
+Auth: Auth.js
+rate-limiting: fastify/rate-limit + Redis
+notification: apps/notification
+API Doc: @fastify/swagger
+Error Tracking: Sentry integration
+
+log (who hit api, rate-limit, ip address, sellerId, no of hit request) and admin can see logs on his dashbaord 
+Realtime tracking 
+Code security
+setup BullMq + redis 
+cronjob processing for those shipment whose are in In-transit
+email notification
+whatsapp notification
+Large data processing (when i bulk ship 6k order )/minutes 
+getting last 30 day csv report 
+remittance report 
+billing report
+
+
+ 

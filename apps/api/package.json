@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "ts-node src/index.ts",
+    "dev": "ts-node-dev --respawn src/index.ts",
     "build": "tsc -p .",
     "test": "vitest run",
     "start": "node dist/index.js"
@@ -13,12 +13,29 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@fastify/cors": "^10.0.0",
+    "@fastify/helmet": "^11.1.1",
+    "@fastify/jwt": "^9.1.0",
+    "@fastify/rate-limit": "^9.1.0",
+    "@fastify/swagger": "^9.5.1",
+    "@fastify/swagger-ui": "^3.0.0",
+    "@lorrigo/db": "workspace:*",
+    "@lorrigo/utils": "workspace:*",
+    "@sentry/node": "^7.100.1",
+    "bcrypt": "^5.1.1",
+    "bullmq": "^5.1.5",
+    "dotenv": "^16.4.5",
     "fastify": "^5.3.2",
-    "@lorrigo/db": "workspace:*"
+    "ioredis": "^5.3.2",
+    "next-auth": "^4.24.7",
+    "pino-pretty": "^10.3.1",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
     "@types/node": "^20",
     "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
     "typescript": "^5.7.3",
     "vitest": "^1.4.0"
   }

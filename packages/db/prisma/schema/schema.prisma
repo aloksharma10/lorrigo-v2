@@ -5,20 +5,712 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
+  // Add preview features for better performance with PostgreSQL
+  previewFeatures = ["fullTextSearch", "extendedWhereUnique"]
 }
 
+// Consolidated Enums
+enum Role {
+  ADMIN
+  SUBADMIN
+  SELLER
+  SALESPERSON
+  SUPPORT
+}
+
+enum OrderType {
+  B2C
+  B2B
+}
+
+enum OrderStatus {
+  CREATED
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURNED
+}
+
+enum ShipmentStatus {
+  CREATED
+  PICKUP_SCHEDULED
+  PICKED_UP
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  UNDELIVERED
+  RETURNED
+  EXCEPTION
+}
+
+enum PaymentMethod {
+  WALLET
+  CARD
+  BANK_TRANSFER
+  COD
+  UPI
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum DisputeStatus {
+  OPENED
+  UNDER_REVIEW
+  RESOLVED
+  REJECTED
+}
+
+enum NotificationType {
+  EMAIL
+  WHATSAPP
+  SYSTEM
+}
+
+enum RemittanceStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum RemittanceCycle {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+}
+
+enum DeliveryType {
+  EXPRESS
+  SURFACE
+}
+
+enum Channel {
+  CUSTOM
+  SHOPIFY
+}
+
+// User Model
 model User {
-  id        String      @id @default(cuid())
-  email     String?     @unique
-  name      String?
-  password  String?
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  dashboard Dashboard[]
+  id       String @id @default(cuid())
+  code     String @unique // Custom ID - Format: US-YYMM-XXXXX
+  email    String @unique
+  name     String
+  password String
+  phone    String
 
-  // additional link configurations
-  doIndex         Boolean @default(false) // whether to index the share link on Google or not
-  showConversions Boolean @default(false)
+  role       Role    @default(SELLER)
+  isActive   Boolean @default(true)
+  isVerified Boolean @default(false)
 
-  @@index(email)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  permissions          Permissions[] // Sparse, cached in app layer
+  notificationSettings NotificationSettings[] // Sparse, cached in app layer
+
+  // Business Details
+  businessName String?
+  gstin        String? @db.VarChar(15) // Fixed length for GSTIN
+  margin       Float   @default(20)
+
+  // Relations
+  kycDetails     KycDetails?
+  bankDetails    BankDetails?
+  wallet         Wallet?
+  invoices       Invoice[]        @relation("UserInvoices")
+  remittances    Remittance[]     @relation("UserRemittances")
+  transactions   Transaction[]    @relation("UserTransactions")
+  orders         Order[]          @relation("UserOrders")
+  shipments      Shipment[]       @relation("UserShipments")
+  hubs           Hub[]            @relation("UserHubs")
+  courierPricing CourierPricing[] @relation("UserCourierPricing")
+  disputes       Dispute[]        @relation("UserDisputes")
+  apiRequests    ApiRequest[]
+  config         SellerConfig?
+  Address        Address?
+
+  @@index([email])
+  @@index([code])
+  @@index([phone, role, isActive])
+}
+
+model Permissions {
+  id            String  @id @default(cuid())
+  code          String  @unique // Custom ID - Format: PM-YYMM-XXXXX
+  name          String
+  description   String
+  isActive      Boolean @default(true)
+  isVerified    Boolean @default(false)
+  navPermission Json?
+
+  user   User?   @relation(fields: [userId], references: [id])
+  userId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model NotificationSettings {
+  id          String  @id @default(cuid())
+  code        String  @unique // Custom ID - Format: NS-YYMM-XXXXX
+  name        String
+  description String
+  isWhatsapp  Boolean @default(true)
+  isEmail     Boolean @default(true)
+  isSystem    Boolean @default(true)
+
+  user   User?   @relation(fields: [userId], references: [id])
+  userId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// KycDetails Model
+model KycDetails {
+  id           String   @id @default(cuid())
+  code         String   @unique // Custom ID - Format: KYC-YYMM-XXXXX
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessType String?  @db.VarChar(50)
+  pan          String?  @db.VarChar(10) // Fixed length for PAN
+  adhaar       String?  @db.VarChar(12) // Fixed length for Aadhaar
+  submitted    Boolean  @default(false)
+  verified     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId, verified])
+  @@index([code])
+}
+
+// BankDetails Model
+model BankDetails {
+  id            String   @id @default(cuid())
+  code          String   @unique // Custom ID - Format: BK-YYMM-XXXXX
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accHolderName String?  @db.VarChar(100)
+  accNumber     String?  @db.VarChar(20)
+  ifscNumber    String?  @db.VarChar(11) // Fixed length for IFSC
+  accType       String?  @db.VarChar(20)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([code])
+}
+
+// SellerConfig Model
+model SellerConfig {
+  id     String @id @default(cuid())
+  code   String @unique // Custom ID - Format: SC-YYMM-XXXXX
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  maxNegativeBalance Float? @default(0)
+
+  isD2C     Boolean  @default(true)
+  isB2B     Boolean  @default(true)
+  isPrepaid Boolean  @default(true)
+  isFW      Boolean  @default(true)
+  isRTO     Boolean  @default(true)
+  isCOD     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([code])
+}
+
+// Customer Model
+model Customer {
+  id    String  @id @default(cuid())
+  code  String  @unique // Custom ID - Format: CS-YYMM-XXXXX
+  name  String  @db.VarChar(100)
+  email String? @db.VarChar(255)
+  phone String  @db.VarChar(15)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  addresses Address[] @relation("CustomerAddresses")
+  orders    Order[]
+
+  @@index([phone, email])
+  @@index([code])
+  @@index([name(ops: raw("gin_trgm_ops"))]) // Trigram index for fuzzy search
+}
+
+// Address Model
+model Address {
+  id        String  @id @default(cuid())
+  code      String  @unique // Custom ID - Format: AD-YYMM-XXXXX
+  address   String  @db.VarChar(255)
+  address_2 String? @db.VarChar(255)
+  city      String  @db.VarChar(100)
+  state     String  @db.VarChar(100)
+  pincode   String  @db.VarChar(10)
+  country   String  @default("India") @db.VarChar(50)
+  isDefault Boolean @default(false)
+  phone     String? @db.VarChar(15)
+
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  customerId String?
+  customer   Customer? @relation("CustomerAddresses", fields: [customerId], references: [id], onDelete: SetNull)
+
+  hubPrimary Hub? @relation("HubPrimaryAddress")
+  hubRTO     Hub? @relation("HubRTOAddress")
+
+  orders       Order[] @relation("ShippingAddress")
+  returnOrders Order[] @relation("ReturnAddress")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId, isDefault])
+  @@index([pincode, city])
+  @@index([code])
+}
+
+// Hub Model
+model Hub {
+  id                String       @id @default(cuid())
+  code              String       @unique // Custom ID - Format: HB-YYMM-XXXXX
+  name              String       @db.VarChar(100)
+  hubCode           String       @unique @db.VarChar(50)
+  isActive          Boolean      @default(true)
+  isPrimary         Boolean      @default(false)
+  contactPersonName String       @db.VarChar(100)
+  deliveryType      DeliveryType @default(SURFACE)
+  isRTOAddressSame  Boolean      @default(true)
+
+  userId String
+  user   User   @relation("UserHubs", fields: [userId], references: [id], onDelete: Cascade)
+
+  addressId String  @unique
+  address   Address @relation("HubPrimaryAddress", fields: [addressId], references: [id])
+
+  rtoAddressId String?  @unique
+  rtoAddress   Address? @relation("HubRTOAddress", fields: [rtoAddressId], references: [id])
+
+  shipments Shipment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, hubCode, isActive])
+  @@index([code])
+}
+
+model OrderChannelConfig {
+  id             String  @id @default(cuid())
+  code           String  @unique // Custom ID - Format: OCC-YYMM-XXXXX
+  channel        Channel @default(CUSTOM)
+  channelOrderId String? @db.VarChar(50)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders Order[]
+
+  @@index([code])
+  @@index([channelOrderId])
+}
+
+// Order Model
+model Order {
+  id                   String             @id @default(cuid())
+  code                 String             @unique // Will use your custom ID logic
+  orderNumber          String             @unique @db.VarChar(50)
+  type                 OrderType          @default(B2C)
+  status               OrderStatus        @default(CREATED)
+  paymentMode          PaymentMethod      @default(COD)
+  orderChannelConfigId String
+  orderChannelConfig   OrderChannelConfig @relation(fields: [orderChannelConfigId], references: [id])
+  bucket               Int                @default(0) // For legacy compatibility
+  orderReferenceId     String?
+  ewaybill             String?            @db.VarChar(12)
+  totalAmount          Float
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId            String
+  user              User     @relation("UserOrders", fields: [userId], references: [id], onDelete: Cascade)
+  customerId        String
+  customer          Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  shippingAddressId String
+  shippingAddress   Address  @relation("ShippingAddress", fields: [shippingAddressId], references: [id])
+  returnAddressId   String?
+  returnAddress     Address? @relation("ReturnAddress", fields: [returnAddressId], references: [id])
+
+  items     OrderItem[]
+  payments  Payment[]
+  invoices  Invoice[]
+  shipments Shipment[]
+  disputes  Dispute[]
+
+  // B2B Specific
+  freightType   Int?      @default(0)
+  pickupType    Int?      @default(0)
+  insuranceType Int?      @default(0)
+  Billing       Billing[]
+
+  @@index([userId, customerId, status, createdAt])
+  @@index([orderNumber, orderReferenceId])
+  @@index([createdAt(sort: Desc)]) // For partitioning
+  @@index([code])
+
+  // Full text search across multiple fields
+  @@index([orderNumber, orderReferenceId, ewaybill], map: "order_global_search_idx")
+}
+
+// OrderItem Model
+model OrderItem {
+  id           String   @id @default(cuid())
+  code         String   @unique // Custom ID - Format: OI-YYMM-XXXXX
+  orderId      String
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  name         String?  @db.VarChar(255)
+  sku          String?  @db.VarChar(50)
+  units        Int?     @default(1)
+  sellingPrice Float?
+  discount     Float?   @default(0)
+  tax          Float?   @default(0)
+  hsn          String?  @db.VarChar(8)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([code])
+  @@index([sku])
+}
+
+// Shipment Model
+model Shipment {
+  id             String         @id @default(cuid())
+  code           String         @unique // Custom ID - Format: SH-YYMM-XXXXX
+  awb            String         @unique @db.VarChar(50)
+  status         ShipmentStatus @default(CREATED)
+  weight         Float // in kg
+  numberOfBoxes  Int            @default(1)
+  isReverseOrder Boolean        @default(false)
+
+  shippingCharge Float   @default(0)
+  fwCharge       Float   @default(0)
+  codAmount      Float?  @default(0)
+  rtoCharge      Float   @default(0)
+  orderZone      String? @db.VarChar(50)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orderId        String
+  order          Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User            @relation("UserShipments", fields: [userId], references: [id], onDelete: Cascade)
+  hubId          String
+  hub            Hub             @relation(fields: [hubId], references: [id], onDelete: Cascade)
+  courierId      String
+  courier        Courier         @relation(fields: [courierId], references: [id], onDelete: Cascade)
+  invoice        Invoice?
+  trackingEvents TrackingEvent[]
+
+  @@index([orderId, userId, hubId, courierId, status, createdAt])
+  @@index([awb])
+  @@index([code])
+  @@index([createdAt(sort: Desc)]) // For partitioning
+
+  // Specific index for global AWB search
+  @@index([awb(ops: raw("gin_trgm_ops"))], map: "shipment_awb_search_idx")
+}
+
+// TrackingEvent Model
+model TrackingEvent {
+  id          String         @id @default(cuid())
+  code        String         @unique // Custom ID - Format: TE-YYMM-XXXXX
+  status      ShipmentStatus
+  location    String?        @db.VarChar(100)
+  description String?        @db.VarChar(255)
+  shipmentId  String
+  shipment    Shipment       @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  timestamp   DateTime       @default(now())
+
+  @@index([shipmentId, timestamp])
+  @@index([code])
+}
+
+// Courier Model
+model Courier {
+  id              String   @id @default(cuid())
+  code            String   @unique // Custom ID - Format: CR-YYMM-XXXXX
+  name            String   @db.VarChar(100)
+  courierCode     String   @unique @db.VarChar(50)
+  isActive        Boolean  @default(true)
+  weightSlab      Float?
+  weightUnit      String?  @db.VarChar(10)
+  incrementWeight Float?
+  type            String?  @db.VarChar(20)
+  pickupTime      String?  @db.VarChar(50)
+  apiCredentials  Json? // Sparse, encrypted
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  shipments      Shipment[]
+  courierPricing CourierPricing[]
+
+  @@index([courierCode, isActive])
+  @@index([code])
+}
+
+// CourierPricing Model
+model CourierPricing {
+  id               String   @id @default(cuid())
+  code             String   @unique // Custom ID - Format: CP-YYMM-XXXXX
+  courierId        String
+  courier          Courier  @relation(fields: [courierId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User     @relation("UserCourierPricing", fields: [userId], references: [id], onDelete: Cascade)
+  basePrice        Float
+  weightSlab       Json? // Cached in app layer
+  zonePricing      Json? // Cached in app layer
+  codChargeHard    Float?   @default(40)
+  codChargePercent Float?   @default(1.5)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([courierId, userId])
+  @@index([courierId, userId])
+  @@index([code])
+}
+
+// Wallet Model
+model Wallet {
+  id           String        @id @default(cuid())
+  code         String        @unique // Custom ID - Format: WL-YYMM-XXXXX
+  balance      Float         @default(0)
+  userId       String        @unique
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([code])
+}
+
+// Transaction Model
+model Transaction {
+  id                    String            @id @default(cuid())
+  code                  String            @unique // Custom ID - Format: TR-YYMM-XXXXX
+  amount                Float
+  type                  String            @db.VarChar(20) // CREDIT, DEBIT
+  description           String            @db.VarChar(255)
+  status                TransactionStatus @default(PENDING)
+  merchantTransactionId String?           @unique @db.VarChar(50)
+  currency              String            @default("INR") @db.VarChar(3)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  walletId String
+  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  paymentId String?
+  payment   Payment? @relation(fields: [paymentId], references: [id])
+
+  userId String
+  user   User   @relation("UserTransactions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([walletId, userId, status, createdAt])
+  @@index([merchantTransactionId])
+  @@index([code])
+  @@index([createdAt(sort: Desc)]) // For partitioning
+}
+
+// Payment Model
+model Payment {
+  id               String            @id @default(cuid())
+  code             String            @unique // Custom ID - Format: PY-YYMM-XXXXX
+  amount           Float
+  method           PaymentMethod
+  status           TransactionStatus @default(PENDING)
+  gatewayReference String?           @db.VarChar(50)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  transactions Transaction[]
+
+  @@index([orderId, status])
+  @@index([code])
+  @@index([gatewayReference])
+}
+
+// Invoice Model
+model Invoice {
+  id            String    @id @default(cuid())
+  code          String    @unique // Custom ID - Format: INV-YYMM-XXXXX
+  invoiceNumber String    @unique @db.VarChar(50)
+  amount        Float
+  taxAmount     Float?    @default(0)
+  dueDate       DateTime?
+  isPaid        Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  userId     String
+  user       User      @relation("UserInvoices", fields: [userId], references: [id], onDelete: Cascade)
+  orderId    String?
+  order      Order?    @relation(fields: [orderId], references: [id])
+  shipmentId String?   @unique
+  shipment   Shipment? @relation(fields: [shipmentId], references: [id])
+
+  @@index([userId, invoiceNumber, createdAt])
+  @@index([code])
+  @@index([createdAt(sort: Desc)]) // For partitioning
+}
+
+model Billing {
+  id      String @id @default(cuid())
+  code    String @unique // Custom ID - Format: BL-YYMM-XXXXX
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  billingDate DateTime
+  billingAmount Float
+
+  chargedWeight Float
+  fwExcessCharge Float
+  rtoExcessCharge Float
+  zoneChangeCharge Float
+  isForwardApplicable Boolean
+  isRTOApplicable Boolean
+  
+  incrementPrice Boolean
+  basePrice Boolean
+  baseWeight Boolean
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  dispute Dispute[]
+
+  @@index([orderId])
+  @@index([code])
+}
+
+// Dispute Model
+model Dispute {
+  id          String        @id @default(cuid())
+  code        String        @unique // Custom ID - Format: DS-YYMM-XXXXX
+  reason      String        @db.VarChar(255)
+  description String        @db.Text
+  status      DisputeStatus @default(OPENED)
+
+  image          String?
+  accepted       Boolean @default(false)
+  stage          String?
+  orderBoxHeight Float?
+  orderBoxWidth  Float?
+  orderBoxLength Float?
+  orderSizeUnit  String?
+  orderWeight    Float?
+  chargedWeight  Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  billingId String
+  billing   Billing @relation(fields: [billingId], references: [id])
+
+  userId  String
+  user    User   @relation("UserDisputes", fields: [userId], references: [id], onDelete: Cascade)
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([userId, orderId, status])
+  @@index([code])
+}
+
+// Remittance Model
+model Remittance {
+  id             String           @id @default(cuid())
+  code           String           @unique // Custom ID - Format: RM-YYMM-XXXXX
+  amount         Float
+  status         RemittanceStatus @default(PENDING)
+  remittanceId   String           @unique @db.VarChar(50)
+  remittanceDate DateTime
+  cycle          RemittanceCycle  @default(WEEKLY)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  userId String
+  user   User   @relation("UserRemittances", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status, remittanceDate])
+  @@index([remittanceId])
+  @@index([code])
+}
+
+// Notification Model
+model Notification {
+  id          String           @id @default(cuid())
+  code        String           @unique // Custom ID - Format: NT-YYMM-XXXXX
+  type        NotificationType
+  title       String           @db.VarChar(100)
+  content     String           @db.Text
+  isRead      Boolean          @default(false)
+  recipientId String // Single user ID for simplicity
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([recipientId, isRead, createdAt])
+  @@index([code])
+}
+
+// ApiRequest Model
+model ApiRequest {
+  id             String   @id @default(cuid())
+  code           String   @unique // Custom ID - Format: API-YYMM-XXXXX
+  endpoint       String   @db.VarChar(255)
+  method         String   @db.VarChar(10)
+  ipAddress      String   @db.VarChar(45)
+  userId         String?
+  user           User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  responseStatus Int?
+  responseTime   Int? // in milliseconds
+  timestamp      DateTime @default(now())
+
+  @@index([userId, endpoint, timestamp])
+  @@index([code])
+}
+
+// BulkOperation Model
+model BulkOperation {
+  id             String   @id @default(cuid())
+  code           String   @unique // Custom ID - Format: BO-YYMM-XXXXX
+  type           String   @db.VarChar(50)
+  status         String   @db.VarChar(20)
+  totalCount     Int
+  processedCount Int      @default(0)
+  successCount   Int      @default(0)
+  failedCount    Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([type, status, createdAt])
+  @@index([code])
 }

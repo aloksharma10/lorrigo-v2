@@ -1,5 +1,5 @@
 {
-  "name": "@lorrigo/utils",
+  "name": "@lorrigo/common",
   "version": "0.1.0",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -18,8 +18,5 @@
     "tsup": "^7.2.0",
     "eslint": "^8.42.0",
     "rimraf": "^5.0.1"
-  },
-  "exports": {
-    ".": "./src/index.ts"
   }
 } 

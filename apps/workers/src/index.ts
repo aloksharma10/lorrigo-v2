@@ -1,8 +1,21 @@
 import cron from 'node-cron';
+import { updateShipmentTracking } from './batch/shipmentTracking';
+import { logger } from './utils/logger';
 
-// Example: Runs every minute
-cron.schedule('* * * * *', () => {
-  console.log('Cron job running every minute');
+// Initialize worker
+logger.info('Starting background workers...');
+
+// Run shipment tracking updates every 15 minutes
+cron.schedule('*/15 * * * *', async () => {
+  logger.info('Running scheduled shipment tracking update');
+  try {
+    await updateShipmentTracking();
+    logger.info('Shipment tracking update completed successfully');
+  } catch (error) {
+    logger.error('Error in shipment tracking update:', error);
+  }
 });
 
-console.log('Worker started. Cron jobs are scheduled.');
+// Add additional scheduled jobs here
+
+logger.info('All background workers started successfully');

@@ -1,97 +1,135 @@
 version: '3.8'
 
 services:
+  # PostgreSQL Database
   postgres:
-    image: postgres:15-alpine
+    image: postgres:latest
+    container_name: lorrigo-postgres
+    restart: always
+    ports:
+      - '5432:5432'
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: lorrigo
+      POSTGRES_PASSWORD: lorrigo
       POSTGRES_DB: lorrigo
     volumes:
       - postgres-data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+    networks:
+      - lorrigo-network
 
+  # Redis for caching, rate limiting, and job queues
   redis:
     image: redis:alpine
+    container_name: lorrigo-redis
+    restart: always
     ports:
-      - "6379:6379"
+      - '6379:6379'
+    command: redis-server --appendonly yes
     volumes:
       - redis-data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+    networks:
+      - lorrigo-network
 
-  web:
-    build:
-      context: .
-      dockerfile: ./apps/web/Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/lorrigo
-      - REDIS_URL=redis://redis:6379
-      - API_URL=http://api:3001
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      api:
-        condition: service_started
-    restart: unless-stopped
-
+  # API Server
   api:
     build:
       context: .
-      dockerfile: ./apps/api/Dockerfile
-    ports:
-      - "3001:3001"
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/lorrigo
-      - REDIS_URL=redis://redis:6379
-      - PORT=3001
+      dockerfile: apps/api/Dockerfile
+    container_name: lorrigo-api
+    restart: always
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
+      - postgres
+      - redis
+    ports:
+      - '4000:4000'
+    environment:
+      - DATABASE_URL=postgresql://lorrigo:lorrigo@postgres:5432/lorrigo?schema=public
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PORT=4000
+      - NODE_ENV=development
+      - API_VERSION=v1
+      - API_PREFIX=/api
+      - CORS_ORIGIN=http://localhost:3000
+    volumes:
+      - ./apps/api:/app/apps/api
+      - ./packages:/app/packages
+      - /app/node_modules
+      - /app/apps/api/node_modules
+    networks:
+      - lorrigo-network
 
+  # Web Frontend
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: lorrigo-web
+    restart: always
+    depends_on:
+      - api
+    ports:
+      - '3000:3000'
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:4000
+    volumes:
+      - ./apps/web:/app/apps/web
+      - ./packages:/app/packages
+      - /app/node_modules
+      - /app/apps/web/node_modules
+    networks:
+      - lorrigo-network
+
+  # Notification Service
   notifications:
     build:
       context: .
-      dockerfile: ./apps/notifications/Dockerfile
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/lorrigo
-      - REDIS_URL=redis://redis:6379
+      dockerfile: apps/notifications/Dockerfile
+    container_name: lorrigo-notifications
+    restart: always
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
+      - redis
+      - postgres
+    environment:
+      - DATABASE_URL=postgresql://lorrigo:lorrigo@postgres:5432/lorrigo?schema=public
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - NODE_ENV=development
+    volumes:
+      - ./apps/notifications:/app/apps/notifications
+      - ./packages:/app/packages
+      - /app/node_modules
+      - /app/apps/notifications/node_modules
+    networks:
+      - lorrigo-network
 
+  # Worker Service for background jobs
   workers:
     build:
       context: .
-      dockerfile: ./apps/workers/Dockerfile
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/lorrigo
-      - REDIS_URL=redis://redis:6379
+      dockerfile: apps/workers/Dockerfile
+    container_name: lorrigo-workers
+    restart: always
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
+      - redis
+      - postgres
+    environment:
+      - DATABASE_URL=postgresql://lorrigo:lorrigo@postgres:5432/lorrigo?schema=public
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - NODE_ENV=development
+      - QUEUE_CONCURRENCY=3
+    volumes:
+      - ./apps/workers:/app/apps/workers
+      - ./packages:/app/packages
+      - /app/node_modules
+      - /app/apps/workers/node_modules
+    networks:
+      - lorrigo-network
+
+networks:
+  lorrigo-network:
+    driver: bridge
 
 volumes:
   postgres-data:

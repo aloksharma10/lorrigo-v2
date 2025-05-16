@@ -1,36 +1,127 @@
 import Fastify from 'fastify';
+import cors from '@fastify/cors';
+import helmet from '@fastify/helmet';
 import { prisma } from '@lorrigo/db';
+import { APP_CONFIG } from './config/app';
+import { registerSwagger } from './plugins/swagger';
+import { registerRateLimiter } from './plugins/rate-limiter';
+import { registerAuth } from './plugins/auth';
+import { initSentry, captureException } from './lib/sentry';
 
-const port = parseInt(process.env.PORT || '4000', 10);
-const server = Fastify();
+// Route modules
+import orderRoutes from './modules/orders';
+import shipmentRoutes from './modules/shipments';
+// Import other module routes here as they're implemented
+// import customerRoutes from './modules/customers';
+// import courierRoutes from './modules/couriers';
+// import authRoutes from './modules/auth';
 
-server.get('/', async (request, reply) => {
-  return { hello: 'world' };
-});
+// Using existing routes until refactored
+import authRoutesOld from './routes/auth';
+import customerRoutesOld from './routes/customers';
+import courierRoutesOld from './routes/couriers';
 
-server.get('/create', async (request, reply) => {
-  const user = await prisma.user.create({
-    data: {
-      name: 'John Doe',
-      email: `john${Date.now()}@example.com`,
+// Initialize Sentry
+initSentry();
+
+// Create Fastify server
+const server = Fastify({
+  logger: {
+    level: APP_CONFIG.LOG_LEVEL,
+    transport: {
+      target: 'pino-pretty',
+      options: {
+        translateTime: 'HH:MM:ss Z',
+        ignore: 'pid,hostname',
+      },
     },
-  });
-  return { hello: 'world', user };
+  },
 });
 
-server.get('/users', async (request, reply) => {
-  const users = await prisma.user.findMany();
-  return { users };
-});
+// Attach prisma client to fastify instance
+server.decorate('prisma', prisma);
 
-const start = async () => {
+// Register plugins
+const registerPlugins = async () => {
   try {
-    await server.listen({ port: port, host: '0.0.0.0' });
-    console.log(`API server listening on http://localhost:${port}`);
-  } catch (err) {
-    server.log.error(err);
+    // Security plugins
+    await server.register(helmet);
+    await server.register(cors, {
+      origin: APP_CONFIG.CORS.ORIGIN,
+      credentials: APP_CONFIG.CORS.CREDENTIALS,
+    });
+
+    // Authentication
+    await registerAuth(server);
+
+    // Rate limiter
+    await registerRateLimiter(server);
+
+    // API Documentation
+    await registerSwagger(server);
+
+    // Register API routes
+    await server.register(
+      async (fastify) => {
+        // Register new modular routes
+        fastify.register(orderRoutes, { prefix: '/orders' });
+        fastify.register(shipmentRoutes, { prefix: '/shipments' });
+        
+        // Register existing routes until refactored
+        fastify.register(authRoutesOld, { prefix: '/auth' });
+        fastify.register(customerRoutesOld, { prefix: '/customers' });
+        fastify.register(courierRoutesOld, { prefix: '/couriers' });
+        
+        // Health check route
+        fastify.get('/health', async () => {
+          return {
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            version: APP_CONFIG.API_VERSION,
+            environment: APP_CONFIG.NODE_ENV,
+          };
+        });
+      },
+      { prefix: `${APP_CONFIG.API_PREFIX}/${APP_CONFIG.API_VERSION}` }
+    );
+
+    server.log.info('All plugins registered successfully');
+  } catch (error) {
+    server.log.error('Failed to register plugins');
+    captureException(error as Error);
     process.exit(1);
   }
 };
 
+// Start the server
+const start = async () => {
+  try {
+    await registerPlugins();
+    
+    await server.listen({ 
+      port: APP_CONFIG.PORT, 
+      host: APP_CONFIG.HOST 
+    });
+    
+    server.log.info(`Server running at http://${APP_CONFIG.HOST}:${APP_CONFIG.PORT}`);
+  } catch (error) {
+    server.log.error(error);
+    captureException(error as Error);
+    process.exit(1);
+  }
+};
+
+// Handle unhandled rejections and exceptions
+process.on('unhandledRejection', (error) => {
+  console.error('Unhandled rejection:', error);
+  captureException(error as Error);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught exception:', error);
+  captureException(error as Error);
+  process.exit(1);
+});
+
+// Start server
 start();
