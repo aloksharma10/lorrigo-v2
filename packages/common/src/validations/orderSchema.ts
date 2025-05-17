@@ -24,10 +24,10 @@ export const OrderItemSchema = z.object({
 
 // Schema for creating a new order
 export const CreateOrderSchema = z.object({
-  customerId: z.string(),
-  shippingAddressId: z.string(),
-  returnAddressId: z.string().optional(),
-  totalAmount: z.number().positive(),
+  customer_id: z.string(),
+  shipping_address_id: z.string(),
+  return_address_id: z.string().optional(),
+  total_amount: z.number().positive(),
   notes: z.string().optional(),
   items: z.array(OrderItemSchema),
 });

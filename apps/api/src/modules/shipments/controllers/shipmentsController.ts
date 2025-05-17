@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { ShipmentService } from '../services/shipmentService';
-import { 
+import {
   CreateShipmentSchema,
   UpdateShipmentSchema,
   AddTrackingEventSchema
@@ -12,25 +12,25 @@ import {
  */
 export class ShipmentController {
   private shipmentService: ShipmentService;
-  
+
   constructor() {
     this.shipmentService = new ShipmentService();
   }
-  
+
   /**
    * Create a new shipment
    */
   async createShipment(request: FastifyRequest, reply: FastifyReply) {
     try {
       const data = CreateShipmentSchema.parse(request.body);
-      const userId = request.user.id;
-      
-      const result = await this.shipmentService.createShipment(data, userId);
-      
+      const user_id = request.user.id;
+
+      const result = await this.shipmentService.createShipment(data, user_id);
+
       if (result.error) {
         return reply.code(404).send({ error: result.error });
       }
-      
+
       return reply.code(201).send(result.shipment);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -46,10 +46,10 @@ export class ShipmentController {
    */
   async getAllShipments(request: FastifyRequest, reply: FastifyReply) {
     try {
-      const userId = request.user.id;
-      
-      const shipments = await this.shipmentService.getAllShipments(userId);
-      
+      const user_id = request.user.id;
+
+      const shipments = await this.shipmentService.getAllShipments(user_id);
+
       return reply.send(shipments);
     } catch (error) {
       request.log.error(error);
@@ -63,14 +63,14 @@ export class ShipmentController {
   async getShipmentById(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
     try {
       const { id } = request.params;
-      const userId = request.user.id;
-      
-      const shipment = await this.shipmentService.getShipmentById(id, userId);
-      
+      const user_id = request.user.id;
+
+      const shipment = await this.shipmentService.getShipmentById(id, user_id);
+
       if (!shipment) {
         return reply.code(404).send({ error: 'Shipment not found' });
       }
-      
+
       return reply.send(shipment);
     } catch (error) {
       request.log.error(error);
@@ -85,14 +85,14 @@ export class ShipmentController {
     try {
       const { id } = request.params;
       const updateData = UpdateShipmentSchema.parse(request.body);
-      const userId = request.user.id;
-      
-      const result = await this.shipmentService.updateShipment(id, userId, updateData);
-      
+      const user_id = request.user.id;
+
+      const result = await this.shipmentService.updateShipment(id, user_id, updateData);
+
       if (result.error) {
         return reply.code(404).send({ error: result.error });
       }
-      
+
       return reply.send(result.shipment);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -110,15 +110,15 @@ export class ShipmentController {
     try {
       const { id } = request.params;
       const eventData = AddTrackingEventSchema.parse(request.body);
-      const userId = request.user.id;
-      
-      const result = await this.shipmentService.addTrackingEvent(id, userId, eventData);
-      
+      const user_id = request.user.id;
+
+      const result = await this.shipmentService.addTrackingEvent(id, user_id, eventData);
+
       if (result.error) {
         return reply.code(404).send({ error: result.error });
       }
-      
-      return reply.code(201).send(result.trackingEvent);
+
+      return reply.code(201).send(result.tracking_event);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return reply.code(400).send({ error: error.errors });
@@ -134,15 +134,15 @@ export class ShipmentController {
   async getTrackingEvents(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
     try {
       const { id } = request.params;
-      const userId = request.user.id;
-      
-      const result = await this.shipmentService.getTrackingEvents(id, userId);
-      
+      const user_id = request.user.id;
+
+      const result = await this.shipmentService.getTrackingEvents(id, user_id);
+
       if (result.error) {
         return reply.code(404).send({ error: result.error });
       }
-      
-      return reply.send(result.trackingEvents);
+
+      return reply.send(result.tracking_events);
     } catch (error) {
       request.log.error(error);
       return reply.code(500).send({ error: 'Internal Server Error' });
@@ -155,14 +155,14 @@ export class ShipmentController {
   async cancelShipment(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
     try {
       const { id } = request.params;
-      const userId = request.user.id;
-      
-      const result = await this.shipmentService.cancelShipment(id, userId);
-      
+      const user_id = request.user.id;
+
+      const result = await this.shipmentService.cancelShipment(id, user_id);
+
       if (result.error) {
         return reply.code(400).send({ error: result.error });
       }
-      
+
       return reply.send(result.shipment);
     } catch (error) {
       request.log.error(error);
@@ -175,10 +175,10 @@ export class ShipmentController {
    */
   async getShipmentStats(request: FastifyRequest, reply: FastifyReply) {
     try {
-      const userId = request.user.id;
-      
-      const stats = await this.shipmentService.getShipmentStats(userId);
-      
+      const user_id = request.user.id;
+
+      const stats = await this.shipmentService.getShipmentStats(user_id);
+
       return reply.send(stats);
     } catch (error) {
       request.log.error(error);

@@ -28,7 +28,7 @@ export class ShipmentService {
     const order = await prisma.order.findFirst({
       where: {
         id: data.orderId,
-        userId,
+        user_id: userId,
       },
     });
     
@@ -40,7 +40,7 @@ export class ShipmentService {
     const hub = await prisma.hub.findFirst({
       where: {
         id: data.hubId,
-        userId,
+        user_id: userId,
       },
     });
     
@@ -75,7 +75,7 @@ export class ShipmentService {
             id: data.courierId,
           },
         },
-        trackingEvents: {
+        tracking_events: {
           create: {
             code: `ST-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
             status: ShipmentStatus.CREATED,
@@ -88,7 +88,7 @@ export class ShipmentService {
         order: true,
         hub: true,
         courier: true,
-        trackingEvents: true,
+        tracking_events: true,
       },
     });
     
@@ -109,12 +109,12 @@ export class ShipmentService {
   async getAllShipments(userId: string) {
     return prisma.shipment.findMany({
       where: {
-        userId,
+        user_id: userId,
       },
       include: {
         order: {
           select: {
-            orderNumber: true,
+            order_number: true,
             status: true,
             customer: {
               select: {
@@ -139,7 +139,7 @@ export class ShipmentService {
         },
       },
       orderBy: {
-        createdAt: 'desc',
+        created_at: 'desc',
       },
     });
   }
@@ -151,18 +151,18 @@ export class ShipmentService {
     return prisma.shipment.findFirst({
       where: {
         id,
-        userId,
+        user_id: userId,
       },
       include: {
         order: {
           include: {
             customer: true,
-            shippingAddress: true,
+            shipping_address: true,
           },
         },
         hub: true,
         courier: true,
-        trackingEvents: {
+        tracking_events: {
           orderBy: {
             timestamp: 'desc',
           },
@@ -183,7 +183,7 @@ export class ShipmentService {
     const existingShipment = await prisma.shipment.findFirst({
       where: {
         id,
-        userId,
+        user_id: userId,
       },
     });
     
@@ -197,7 +197,7 @@ export class ShipmentService {
       data: updateData,
       include: {
         order: true,
-        trackingEvents: true,
+        tracking_events: true,
       },
     });
     
@@ -206,7 +206,7 @@ export class ShipmentService {
       await prisma.trackingEvent.create({
         data: {
           code: `ST-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
-          shipmentId: id,
+          shipment_id: id,
           status: updateData.status as ShipmentStatus,
           location: 'System Update',
           description: `Shipment status updated to ${updateData.status}`,
@@ -216,12 +216,12 @@ export class ShipmentService {
       // Update order status based on shipment status
       if (updateData.status === 'DELIVERED') {
         await prisma.order.update({
-          where: { id: existingShipment.orderId },
+          where: { id: existingShipment.order_id },
           data: { status: 'DELIVERED' },
         });
       } else if (updateData.status === 'IN_TRANSIT') {
         await prisma.order.update({
-          where: { id: existingShipment.orderId },
+          where: { id: existingShipment.order_id },
           data: { status: 'SHIPPED' },
         });
       }
@@ -235,14 +235,14 @@ export class ShipmentService {
    */
   async addTrackingEvent(
     id: string,
-    userId: string,
+    user_id: string,
     eventData: z.infer<typeof AddTrackingEventSchema>
   ) {
     // Verify shipment exists and belongs to user
     const shipment = await prisma.shipment.findFirst({
       where: {
         id,
-        userId,
+        user_id: user_id,
       },
     });
     
@@ -251,10 +251,10 @@ export class ShipmentService {
     }
     
     // Create the tracking event
-    const trackingEvent = await prisma.trackingEvent.create({
+    const tracking_event = await prisma.trackingEvent.create({
       data: {
         code: `ST-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
-        shipmentId: id,
+        shipment_id: id,
         status: eventData.status as ShipmentStatus,
         location: eventData.location,
         description: eventData.description,
@@ -270,28 +270,28 @@ export class ShipmentService {
     // Update order status based on tracking event
     if (eventData.status === 'DELIVERED') {
       await prisma.order.update({
-        where: { id: shipment.orderId },
+        where: { id: shipment.order_id },
         data: { status: 'DELIVERED' },
       });
     } else if (eventData.status === 'IN_TRANSIT') {
       await prisma.order.update({
-        where: { id: shipment.orderId },
+        where: { id: shipment.order_id },
         data: { status: 'SHIPPED' },
       });
     }
     
-    return { trackingEvent };
+    return { tracking_event };
   }
   
   /**
    * Get tracking events for a shipment
    */
-  async getTrackingEvents(id: string, userId: string) {
+  async getTrackingEvents(id: string, user_id: string) {
     // Verify shipment exists and belongs to user
     const shipment = await prisma.shipment.findFirst({
       where: {
         id,
-        userId,
+        user_id: user_id,
       },
     });
     
@@ -300,27 +300,27 @@ export class ShipmentService {
     }
     
     // Get tracking events
-    const trackingEvents = await prisma.trackingEvent.findMany({
+    const tracking_events = await prisma.trackingEvent.findMany({
       where: {
-        shipmentId: id,
+        shipment_id: id,
       },
       orderBy: {
         timestamp: 'desc',
       },
     });
     
-    return { trackingEvents };
+    return { tracking_events };
   }
   
   /**
    * Cancel a shipment
    */
-  async cancelShipment(id: string, userId: string) {
+  async cancelShipment(id: string, user_id: string) {
     // Verify shipment exists and belongs to user
     const shipment = await prisma.shipment.findFirst({
       where: {
         id,
-        userId,
+        user_id: user_id,
       },
       include: {
         order: true,
@@ -339,7 +339,7 @@ export class ShipmentService {
     }
     
     // Update shipment status to EXCEPTION
-    const updatedShipment = await prisma.shipment.update({
+    const updated_shipment = await prisma.shipment.update({
       where: { id },
       data: { status: 'EXCEPTION' },
     });
@@ -348,7 +348,7 @@ export class ShipmentService {
     await prisma.trackingEvent.create({
       data: {
         code: `ST-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
-        shipmentId: id,
+        shipment_id: id,
         status: ShipmentStatus.EXCEPTION,
         location: 'System',
         description: 'Shipment cancelled by seller',
@@ -358,7 +358,7 @@ export class ShipmentService {
     // If this was the only shipment for the order, update order status
     const otherShipments = await prisma.shipment.findMany({
       where: {
-        orderId: shipment.orderId,
+        order_id: shipment.order_id,
         id: { not: id },
         status: { notIn: ['EXCEPTION', 'CANCELLED'] },
       },
@@ -366,23 +366,23 @@ export class ShipmentService {
     
     if (otherShipments.length === 0) {
       await prisma.order.update({
-        where: { id: shipment.orderId },
+        where: { id: shipment.order_id },
         data: { status: 'CANCELLED' },
       });
     }
     
-    return { shipment: updatedShipment };
+    return { shipment: updated_shipment };
   }
   
   /**
    * Get shipment statistics
    */
-  async getShipmentStats(userId: string) {
+  async getShipmentStats(user_id: string) {
     // Get count of shipments by status
-    const statusCounts = await prisma.shipment.groupBy({
+    const status_counts = await prisma.shipment.groupBy({
       by: ['status'],
       where: {
-        userId,
+        user_id: user_id,
       },
       _count: {
         id: true,
@@ -393,24 +393,24 @@ export class ShipmentService {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
-    const recentShipments = await prisma.shipment.count({
+    const recent_shipments = await prisma.shipment.count({
       where: {
-        userId,
-        createdAt: {
+        user_id: user_id,
+        created_at: {
           gte: thirtyDaysAgo,
         },
       },
     });
     
     // Format the response
-    const statsByStatus = Object.fromEntries(
-      statusCounts.map(item => [item.status, item._count.id])
+    const stats_by_status = Object.fromEntries(
+      status_counts.map(item => [item.status, item._count.id || 0])
     );
     
     return {
-      total: Object.values(statsByStatus).reduce((a, b) => a + b, 0),
-      byStatus: statsByStatus,
-      recentShipments,
+      total: Object.values(stats_by_status).reduce((a, b) => a + b, 0),
+      by_status: stats_by_status,
+      recent_shipments,
     };
   }
 } 

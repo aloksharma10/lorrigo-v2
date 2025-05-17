@@ -61,7 +61,7 @@ export function authorizePermissions(requiredPermissions: string[]) {
       await authenticateUser(request, reply);
       
       // Get the user's permissions
-      const userPermissions = (request.user.permissions || []) as Permission[];
+      const user_permissions = (request.user.permissions || []) as Permission[];
       
       // If the user is an ADMIN, they have all permissions
       if (request.user.role === 'ADMIN') {
@@ -70,7 +70,7 @@ export function authorizePermissions(requiredPermissions: string[]) {
       
       // Check if the user has all required permissions
       const hasAllPermissions = requiredPermissions.every(permission => 
-        userPermissions.some(p => p.name === permission && p.isActive)
+        user_permissions.some(p => p.name === permission && p.isActive)
       );
       
       if (!hasAllPermissions) {
@@ -91,20 +91,20 @@ export function authorizePermissions(requiredPermissions: string[]) {
  * @param resourceIdParam - The parameter name that contains the resource ID
  * @param resourceType - The type of resource (e.g., 'order', 'shipment')
  */
-export function authorizeOwner(resourceIdParam: string, resourceType: string) {
+export function authorizeOwner(resource_id_param: string, resource_type: string) {
   return async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       // First authenticate the user
       await authenticateUser(request, reply);
       
       // Get the resource ID from the request params
-      const resourceId = (request.params as any)[resourceIdParam];
+      const resource_id = (request.params as any)[resource_id_param];
       
-      if (!resourceId) {
+      if (!resource_id) {
         return reply.code(400).send({
-          statusCode: 400,
+          status_code: 400,
           error: 'Bad Request',
-          message: `${resourceType} ID is required`,
+          message: `${resource_type} ID is required`,
         });
       }
       
@@ -119,30 +119,30 @@ export function authorizeOwner(resourceIdParam: string, resourceType: string) {
       // Check if the resource exists and belongs to the user
       let resource;
       
-      switch (resourceType) {
+      switch (resource_type) {
         case 'order':
           resource = await prisma.order.findUnique({
-            where: { id: resourceId },
-            select: { userId: true },
+            where: { id: resource_id },
+            select: { user_id: true },
           });
           break;
         case 'shipment':
           resource = await prisma.shipment.findUnique({
-            where: { id: resourceId },
-            select: { userId: true },
+            where: { id: resource_id },
+            select: { user_id: true },
           });
           break;
         case 'customer':
           resource = await prisma.customer.findUnique({
-            where: { id: resourceId },
-            select: { userId: true },
+            where: { id: resource_id },
+            select: { user_id: true },
           });
           break;
         default:
           return reply.code(500).send({
             statusCode: 500,
             error: 'Internal Server Error',
-            message: `Unsupported resource type: ${resourceType}`,
+            message: `Unsupported resource type: ${resource_type}`,
           });
       }
       
@@ -150,15 +150,15 @@ export function authorizeOwner(resourceIdParam: string, resourceType: string) {
         return reply.code(404).send({
           statusCode: 404,
           error: 'Not Found',
-          message: `${resourceType.charAt(0).toUpperCase() + resourceType.slice(1)} not found`,
+          message: `${resource_type.charAt(0).toUpperCase() + resource_type.slice(1)} not found`,
         });
       }
       
-      if (resource.userId !== request.user.id) {
+      if (resource.user_id !== request.user.id) {
         return reply.code(403).send({
           statusCode: 403,
           error: 'Forbidden',
-          message: `You do not have permission to access this ${resourceType}`,
+          message: `You do not have permission to access this ${resource_type}`,
         });
       }
     } catch (err) {

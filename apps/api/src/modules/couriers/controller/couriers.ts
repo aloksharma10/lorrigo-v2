@@ -4,36 +4,46 @@ import {
   authenticateUser, 
   authorizeRoles, 
   authorizePermissions 
-} from '../middleware/auth';
+} from '../../../middleware/auth';
 import { Role } from '@lorrigo/db';
 
 // Validation schemas
 const createCourierSchema = z.object({
   name: z.string().min(2).max(100),
   code: z.string().min(2).max(20),
-  description: z.string().optional(),
-  courierCode: z.string(),
+  courier_code: z.string(),
   website: z.string().url().optional(),
-  isActive: z.boolean().default(true),
-  supportedCountries: z.array(z.string()).optional(),
-  apiConfig: z.object({
-    apiKey: z.string().optional(),
-    apiUrl: z.string().url().optional(),
+  is_active: z.boolean().default(true),
+  is_reversed_courier: z.boolean().default(false),
+  is_fw_applicable: z.boolean().default(true),
+  is_rto_applicable: z.boolean().default(true),
+  is_cod_applicable: z.boolean().default(true),
+  is_cod_reversal_applicable: z.boolean().default(true),
+  cod_charge_hard: z.number().optional().default(40),
+  cod_charge_percent: z.number().optional().default(1.5),
+  weight_slab: z.number().optional(),
+  weight_unit: z.string().optional(),
+  increment_weight: z.number().optional(),
+  type: z.enum(['EXPRESS', 'SURFACE']).default('SURFACE'),
+  pickup_time: z.string().optional(),
+  api_credentials: z.object({
+    api_key: z.string().optional(),
+    api_url: z.string().url().optional(),
     username: z.string().optional(),
     password: z.string().optional(),
-    accountNumber: z.string().optional(),
+    account_number: z.string().optional(),
   }).optional(),
 });
 
 const updateCourierSchema = createCourierSchema.partial();
 
 const courierPricingSchema = z.object({
-  courierId: z.string(),
-  basePrice: z.number().positive(),
-  weightSlab: z.number().positive(),
-  zonePricing: z.number().positive(),
-  codChargeHard: z.number().positive(),
-  codChargePercent: z.number().positive(),
+  courier_id: z.string(),
+  base_price: z.number().positive(),
+  weight_slab: z.number().positive(),
+  zone_pricing: z.number().positive(),
+  cod_charge_hard: z.number().positive(),
+  cod_charge_percent: z.number().positive(),
 });
 
 // Admin roles that can manage couriers
@@ -59,7 +69,25 @@ export default async function courierRoutes(fastify: FastifyInstance) {
 
         // Create the courier
         const courier = await fastify.prisma.courier.create({
-          data: courierData,
+          data: {
+            name: courierData.name,
+            code: courierData.code,
+            courier_code: courierData.courier_code,
+            is_active: courierData.is_active,
+            is_reversed_courier: courierData.is_reversed_courier,
+            is_fw_applicable: courierData.is_fw_applicable,
+            is_rto_applicable: courierData.is_rto_applicable,
+            is_cod_applicable: courierData.is_cod_applicable,
+            is_cod_reversal_applicable: courierData.is_cod_reversal_applicable,
+            cod_charge_hard: courierData.cod_charge_hard,
+            cod_charge_percent: courierData.cod_charge_percent,
+            weight_slab: courierData.weight_slab,
+            weight_unit: courierData.weight_unit,
+            increment_weight: courierData.increment_weight,
+            type: courierData.type,
+            pickup_time: courierData.pickup_time,
+            api_credentials: courierData.api_credentials,
+          },
         });
 
         return reply.code(201).send(courier);
@@ -85,19 +113,19 @@ export default async function courierRoutes(fastify: FastifyInstance) {
           // Get all courier pricings for this user
           const courierPricings = await fastify.prisma.courierPricing.findMany({
             where: {
-              userId,
+              user_id: userId,
             },
             select: {
-              courierId: true,
+              courier_id: true,
             },
           });
           
-          const courierIds = courierPricings.map(pricing => pricing.courierId);
+          const courierIds = courierPricings.map(pricing => pricing.courier_id);
           
           const couriers = await fastify.prisma.courier.findMany({
             where: {
               id: { in: courierIds },
-              isActive: true,
+              is_active: true,
             },
             orderBy: {
               name: 'asc',
@@ -110,7 +138,7 @@ export default async function courierRoutes(fastify: FastifyInstance) {
         // For admins, show all couriers
         const couriers = await fastify.prisma.courier.findMany({
           where: {
-            isActive: true,
+            is_active: true,
           },
           orderBy: {
             name: 'asc',
@@ -145,8 +173,8 @@ export default async function courierRoutes(fastify: FastifyInstance) {
         if (!ADMIN_ROLES.includes(request.user.role as any)) {
           const pricing = await fastify.prisma.courierPricing.findFirst({
             where: {
-              userId,
-              courierId: id,
+              user_id: userId,
+              courier_id: id,
             },
           });
 
@@ -218,7 +246,7 @@ export default async function courierRoutes(fastify: FastifyInstance) {
 
         // Check if courier exists
         const courier = await fastify.prisma.courier.findUnique({
-          where: { id: pricingData.courierId },
+          where: { id: pricingData.courier_id },
         });
 
         if (!courier) {
@@ -233,8 +261,8 @@ export default async function courierRoutes(fastify: FastifyInstance) {
         // Check if pricing already exists for this user and courier
         const existingPricing = await fastify.prisma.courierPricing.findFirst({
           where: {
-            userId,
-            courierId: pricingData.courierId,
+            user_id: userId,
+            courier_id: pricingData.courier_id,
           },
         });
 
@@ -245,9 +273,9 @@ export default async function courierRoutes(fastify: FastifyInstance) {
           pricing = await fastify.prisma.courierPricing.update({
             where: { id: existingPricing.id },
             data: {
-              basePrice: pricingData.basePrice,
-              weightSlab: pricingData.weightSlab,
-              zonePricing: pricingData.zonePricing,
+              base_price: pricingData.base_price,
+              weight_slab: pricingData.weight_slab,
+              zone_pricing: pricingData.zone_pricing,
             },
           });
         } else {
@@ -255,11 +283,11 @@ export default async function courierRoutes(fastify: FastifyInstance) {
           pricing = await fastify.prisma.courierPricing.create({
             data: {
               code: `CP-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
-              userId,
-              courierId: pricingData.courierId,
-              basePrice: pricingData.basePrice,
-              weightSlab: pricingData.weightSlab,
-              zonePricing: pricingData.zonePricing,
+              user_id: userId,
+              courier_id: pricingData.courier_id,
+              base_price: pricingData.base_price,
+              weight_slab: pricingData.weight_slab,
+              zone_pricing: pricingData.zone_pricing,
             },
           });
         }
@@ -293,8 +321,8 @@ export default async function courierRoutes(fastify: FastifyInstance) {
       // Get pricing for this user and courier
       const pricing = await fastify.prisma.courierPricing.findFirst({
         where: {
-          userId,
-          courierId,
+          user_id: userId,
+          courier_id: courierId,
         },
       });
 

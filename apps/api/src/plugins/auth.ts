@@ -44,25 +44,28 @@ export const registerAuth = async (fastify: FastifyInstance) => {
       
       // Fetch the user from database to validate they still exist and are active
       const user = await prisma.user.findUnique({
-        where: { id: request.user.id },
-        select: {
+        where: {
+          id: request.user.id,
+          is_active: true,
+        },
+        select: { 
           id: true,
           email: true,
           role: true,
-          isActive: true,
+          is_active: true,
           permissions: true,
-        },
+        }
       });
       
       // Check if user exists and is active
-      if (!user || !user.isActive) {
+      if (!user || !user.is_active) {
         throw new Error('User not found or inactive');
       }
       
       // Update request.user with the latest user data
       request.user = {
         id: user.id,
-        email: user.email as string,
+        email: user.email,
         role: user.role,
         permissions: user.permissions as object,
       };

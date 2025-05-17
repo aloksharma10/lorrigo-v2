@@ -16,15 +16,15 @@ export class OrderService {
       limit = 10,
       status,
       search = '',
-      fromDate,
-      toDate
+      from_date,
+      to_date
     } = queryParams;
 
     const skip = (page - 1) * limit;
 
     // Build the where clause based on filters
     let where: any = {
-      userId: userId
+      user_id: userId
     };
 
     // Add status filter if provided
@@ -33,22 +33,22 @@ export class OrderService {
     }
 
     // Add date range filter if provided
-    if (fromDate || toDate) {
-      where.createdAt = {};
+    if (from_date || to_date) {
+      where.created_at = {};
 
-      if (fromDate) {
-        where.createdAt.gte = new Date(fromDate);
+      if (from_date) {
+        where.created_at.gte = new Date(from_date);
       }
 
-      if (toDate) {
-        where.createdAt.lte = new Date(toDate);
+      if (to_date) {
+        where.created_at.lte = new Date(to_date);
       }
     }
 
     // Add search filter
     if (search) {
       where.OR = [
-        { orderNumber: { contains: search, mode: 'insensitive' } },
+        { order_number: { contains: search, mode: 'insensitive' } },
         { customer: { name: { contains: search, mode: 'insensitive' } } },
         { customer: { email: { contains: search, mode: 'insensitive' } } },
       ];
@@ -60,7 +60,7 @@ export class OrderService {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { created_at: 'desc' },
         include: {
           customer: {
             select: {
@@ -73,20 +73,20 @@ export class OrderService {
     ]);
 
     // Format orders for response
-    const formattedOrders = orders.map(order => ({
+    const formatted_orders = orders.map(order => ({
       id: order.id,
-      orderNumber: order.orderNumber,
+      order_number: order.order_number,
       status: order.status,
-      totalAmount: order.totalAmount,
-      customerId: order.customerId,
-      customerName: order.customer.name,
-      createdAt: order.createdAt,
+      total_amount: order.total_amount,
+      customer_id: order.customer_id,
+      customer_name: order.customer.name,
+      created_at: order.created_at,
     }));
 
     const totalPages = Math.ceil(total / limit);
 
     return {
-      orders: formattedOrders,
+      orders: formatted_orders,
       total,
       page,
       limit,
@@ -101,7 +101,7 @@ export class OrderService {
     return prisma.order.findUnique({
       where: {
         id,
-        userId
+        user_id: userId
       },
       include: {
         customer: {
@@ -112,8 +112,8 @@ export class OrderService {
             phone: true,
           }
         },
-        shippingAddress: true,
-        returnAddress: true,
+        shipping_address: true,
+        return_address: true,
         shipments: {
           include: {
             courier: {
@@ -135,9 +135,9 @@ export class OrderService {
   async createOrder(data: z.infer<typeof CreateOrderSchema>, userId: string) {
     // Generate unique order number (format: ORD-YYYYMMDD-XXXX)
     const today = new Date();
-    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-    const randomStr = Math.floor(1000 + Math.random() * 9000).toString();
-    const orderNumber = `ORD-${dateStr}-${randomStr}`;
+    const date_str = today.toISOString().slice(0, 10).replace(/-/g, '');
+    const random_str = Math.floor(1000 + Math.random() * 9000).toString();
+    const order_number = `ORD-${date_str}-${random_str}`;
 
     // Create order transaction to handle both order and invoice creation
     return prisma.$transaction(async (tx) => {
@@ -145,43 +145,43 @@ export class OrderService {
       const order = await tx.order.create({
         data: {
           code: 'ORD-2505-00001',
-          orderChannelConfig: {
+          order_channel_config: {
             create: {
               code: 'ORD-2505-00001',
               channel: "CUSTOM",
-              channelOrderId: orderNumber,
+              channel_order_id: order_number,
             }
           },
-          orderNumber,
+          order_number: order_number,
           status: 'CREATED',
-          totalAmount: data.totalAmount,
+          total_amount: data.total_amount,
           customer: {
-            connect: { id: data.customerId },
+            connect: { id: data.customer_id },
           },
           user: {
             connect: { id: userId },
           },
-          shippingAddress: {
-            connect: { id: data.shippingAddressId },
+          shipping_address: {
+            connect: { id: data.shipping_address_id },
           },
-          ...(data.returnAddressId ? {
-            returnAddress: {
-              connect: { id: data.returnAddressId },
+          ...(data.return_address_id ? {
+            return_address: {
+              connect: { id: data.return_address_id },
             }
           } : {}),
         },
       });
 
       // Create invoice for the order
-      const invoiceNumber = `INV-${dateStr}-${randomStr}`;
+      const invoice_number = `INV-${date_str}-${random_str}`;
 
       await tx.invoice.create({
         data: {
-          code: invoiceNumber,
-          invoiceNumber,
-          amount: data.totalAmount,
-          isPaid: false,
-          dueDate: new Date(today.setDate(today.getDate() + 7)), // Due in 7 days
+          code: invoice_number,
+          invoice_number: invoice_number,
+          amount: data.total_amount,
+          is_paid: false,
+          due_date: new Date(today.setDate(today.getDate() + 7)), // Due in 7 days
           user: {
             connect: { id: userId },
           },
@@ -198,12 +198,12 @@ export class OrderService {
   /**
    * Update an order status
    */
-  async updateOrderStatus(id: string, updateData: z.infer<typeof UpdateOrderSchema>) {
+  async updateOrderStatus(id: string, update_data: z.infer<typeof UpdateOrderSchema>) {
     return prisma.order.update({
       where: { id },
       data: {
-        status: updateData.status as OrderStatus,
-        ...(updateData.notes && { notes: updateData.notes }),
+        status: update_data.status as OrderStatus,
+        ...(update_data.notes && { notes: update_data.notes }),
       },
     });
   }
@@ -211,12 +211,12 @@ export class OrderService {
   /**
    * Cancel an order
    */
-  async cancelOrder(id: string, userId: string, reason?: string) {
+  async cancelOrder(id: string, user_id: string, reason?: string) {
     // Check if order exists and belongs to the user
     const existingOrder = await prisma.order.findUnique({
       where: {
         id,
-        userId,
+        user_id: user_id,
       },
       include: {
         shipments: true,
@@ -242,7 +242,6 @@ export class OrderService {
     }
 
     // Update order status to CANCELLED and add reason to notes
-
     const order = await prisma.order.update({
       where: { id },
       data: {
@@ -253,11 +252,11 @@ export class OrderService {
     // Cancel any existing shipments in CREATED status
     await prisma.shipment.updateMany({
       where: {
-        orderId: id,
+        order_id: id,
         status: 'CREATED',
       },
       data: {
-        // status: 'CANCELLED',
+        status: 'CANCELLED',
       },
     });
 
@@ -267,84 +266,86 @@ export class OrderService {
   /**
    * Get order statistics
    */
-  async getOrderStats(userId: string, period: string) {
+  async getOrderStats(user_id: string, period: string) {
     // Calculate date range based on period
     const now = new Date();
-    let startDate = new Date();
+    let start_date = new Date();
 
     switch (period) {
       case 'day':
-        startDate.setHours(0, 0, 0, 0);
+        start_date.setHours(0, 0, 0, 0);
         break;
       case 'week':
-        startDate.setDate(now.getDate() - 7);
+        start_date.setDate(now.getDate() - 7);
         break;
       case 'month':
-        startDate.setMonth(now.getMonth() - 1);
+        start_date.setMonth(now.getMonth() - 1);
         break;
       case 'year':
-        startDate.setFullYear(now.getFullYear() - 1);
+        start_date.setFullYear(now.getFullYear() - 1);
         break;
     }
 
     // Get total orders and amount
-    const totalOrdersPromise = prisma.order.count({
+    const total_orders_promise = prisma.order.count({
       where: {
-        userId: userId,
-        createdAt: {
-          gte: startDate,
+        user_id: user_id,
+        created_at: {
+          gte: start_date,
         },
       },
     });
 
-    const totalAmountPromise = prisma.order.aggregate({
+    const total_amount_promise = prisma.order.aggregate({
       where: {
-        userId: userId,
-        createdAt: {
-          gte: startDate,
+        user_id: user_id,
+        created_at: {
+          gte: start_date,
         },
       },
       _sum: {
-        totalAmount: true,
+        total_amount: true,
       },
     });
 
     // Get count of orders by status
-    const statusCountsPromise = prisma.order.groupBy({
+    const status_counts_promise = prisma.order.groupBy({
       by: ['status'],
       where: {
-        userId: userId,
-        createdAt: {
-          gte: startDate,
+        user_id: user_id,
+        created_at: {
+          gte: start_date,
         },
       },
-      _count: true,
+      _count: {
+        id: true,
+      },
     });
 
     // Wait for all promises to resolve
-    const [totalOrders, totalAmountResult, statusCountsResult] = await Promise.all([
-      totalOrdersPromise,
-      totalAmountPromise,
-      statusCountsPromise,
+    const [total_orders, total_amount_result, status_counts_result] = await Promise.all([
+      total_orders_promise,
+      total_amount_promise,
+      status_counts_promise,
     ]);
 
     // Format status counts
-    const statusCounts: Record<string, number> = {};
-    statusCountsResult.forEach(item => {
-      statusCounts[item.status] = item._count;
+    const status_counts: Record<string, number> = {};
+    status_counts_result.forEach(item => {
+      status_counts[item.status] = item._count.id || 0;
     });
 
     return {
-      totalOrders,
-      totalAmount: totalAmountResult._sum.totalAmount || 0,
-      statusCounts: {
-        CREATED: statusCounts.CREATED || 0,
-        CONFIRMED: statusCounts.CONFIRMED || 0,
-        PROCESSING: statusCounts.PROCESSING || 0,
-        SHIPPED: statusCounts.SHIPPED || 0,
-        DELIVERED: statusCounts.DELIVERED || 0,
-        CANCELLED: statusCounts.CANCELLED || 0,
-        RETURNED: statusCounts.RETURNED || 0,
+      total_orders,
+      total_amount: total_amount_result._sum.total_amount || 0,
+      status_counts: {
+        CREATED: status_counts.CREATED || 0,
+        CONFIRMED: status_counts.CONFIRMED || 0,
+        PROCESSING: status_counts.PROCESSING || 0,
+        SHIPPED: status_counts.SHIPPED || 0,
+        DELIVERED: status_counts.DELIVERED || 0,
+        CANCELLED: status_counts.CANCELLED || 0,
+        RETURNED: status_counts.RETURNED || 0,
       },
     };
   }

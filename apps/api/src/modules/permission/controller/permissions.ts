@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { authorizeRoles } from '../middleware/auth';
-import { PermissionService } from '../modules/permission/permissionService';
+import { authorizeRoles } from '../../../middleware/auth';
+import { PermissionService } from '../services/permissionService';
 import { Role } from '@lorrigo/db';
 
 // Define validation schemas

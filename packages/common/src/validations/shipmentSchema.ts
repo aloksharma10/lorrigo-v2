@@ -36,7 +36,7 @@ export const CreateShipmentSchema = z.object({
 // Schema for updating a shipment
 export const UpdateShipmentSchema = z.object({
   status: ShipmentStatusEnum.optional(),
-  trackingUrl: z.string().url().optional(),
+  tracking_url: z.string().url().optional(),
 });
 
 // Schema for adding a tracking event

@@ -17,10 +17,10 @@ import shipmentRoutes from './modules/shipments';
 // import authRoutes from './modules/auth';
 
 // Using existing routes until refactored
-import authRoutesOld from './routes/auth';
-import customerRoutesOld from './routes/customers';
-import courierRoutesOld from './routes/couriers';
-import permissionRoutes from './routes/permissions';
+import authRoutesOld from './modules/auth/controller/auth';
+import customerRoutesOld from './modules/customers/controller/customers';
+import courierRoutesOld from './modules/couriers/controller/couriers';
+import permissionRoutes from './modules/permission/controller/permissions';
 
 // Initialize Sentry
 initSentry();

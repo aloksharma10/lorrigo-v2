@@ -29,8 +29,8 @@ export const UpdateCourierSchema = CreateCourierSchema.partial();
 
 // Schema for pricing rules
 export const PricingRuleSchema = z.object({
-  minWeight: z.number().positive(),
-  maxWeight: z.number().positive().optional(),
+  min_weight: z.number().positive(),
+  max_weight: z.number().positive().optional(),
   price: z.number().positive(),
 });
 
@@ -38,16 +38,16 @@ export const PricingRuleSchema = z.object({
 export const AdditionalChargeSchema = z.object({
   name: z.string(),
   amount: z.number().positive(),
-  isPercentage: z.boolean().default(false),
+  is_percentage: z.boolean().default(false),
 });
 
 // Schema for courier pricing
 export const CourierPricingSchema = z.object({
-  courierId: z.string(),
-  basePrice: z.number().positive(),
-  pricePerKg: z.number().positive(),
+  courier_id: z.string(),
+  base_price: z.number().positive(),
+  price_per_kg: z.number().positive(),
   rules: z.array(PricingRuleSchema).optional(),
-  additionalCharges: z.array(AdditionalChargeSchema).optional(),
+  additional_charges: z.array(AdditionalChargeSchema).optional(),
 });
 
 // Schema for shipping cost calculation request

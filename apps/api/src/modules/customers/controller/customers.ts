@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { captureException } from '../lib/sentry';
+import { captureException } from '../../../lib/sentry';
 
 const createAddressSchema = z.object({
   address: z.string().min(10),
@@ -96,13 +96,13 @@ export default async function customers(fastify: FastifyInstance) {
             },
             skip,
             take: limit,
-            orderBy: { createdAt: 'desc' },
+            orderBy: { created_at: 'desc' },
             select: {
               id: true,
               name: true,
               email: true,
               phone: true,
-              createdAt: true,
+              created_at: true,
             },
           }),
           fastify.prisma.customer.count({ where: {
@@ -369,7 +369,7 @@ export default async function customers(fastify: FastifyInstance) {
           name: customer.name,
           email: customer.email,
           phone: customer.phone,
-          updatedAt: customer.updatedAt,
+          updated_at: customer.updated_at,
         };
       } catch (error) {
         if (error instanceof z.ZodError) {
@@ -429,7 +429,7 @@ export default async function customers(fastify: FastifyInstance) {
         
         // Delete all customer addresses first
         await fastify.prisma.address.deleteMany({
-          where: { customerId: id },
+          where: { customer_id: id },
         });
         
         // Delete customer
@@ -521,8 +521,8 @@ export default async function customers(fastify: FastifyInstance) {
         // If this address is set as default, update all other addresses
         if (addressData.isDefault) {
           await fastify.prisma.address.updateMany({
-            where: { customerId: id },
-            data: { isDefault: false },
+            where: { customer_id: id },
+            data: { is_default: false },
           });
         }
         
@@ -535,8 +535,8 @@ export default async function customers(fastify: FastifyInstance) {
             state: addressData.state,
             pincode: addressData.pincode,
             country: addressData.country,
-            isDefault: addressData.isDefault,
-            customerId: id,
+            is_default: addressData.isDefault,
+            customer_id: id,
           },
         });
         

@@ -12,8 +12,8 @@ export class PermissionService {
   static async getUserPermissions(userId: string) {
     const permissions = await prisma.permissions.findMany({
       where: {
-        userId,
-        isActive: true,
+        user_id: userId,
+        is_active: true,
       },
     });
     
@@ -29,9 +29,9 @@ export class PermissionService {
   static async hasPermission(userId: string, permissionName: string): Promise<boolean> {
     const count = await prisma.permissions.count({
       where: {
-        userId,
+        user_id: userId,
         name: permissionName,
-        isActive: true,
+        is_active: true,
       },
     });
     
@@ -73,24 +73,24 @@ export class PermissionService {
    * @param description Optional description of the permission
    * @returns The created permission
    */
-  static async assignPermission(userId: string, permissionName: string, description?: string) {
+  static async assignPermission(user_id: string, permission_name: string, description?: string) {
     // Check if permission already exists
     const existingPermission = await prisma.permissions.findFirst({
       where: {
-        userId,
-        name: permissionName,
+        user_id: user_id,
+        name: permission_name,
       },
     });
     
     if (existingPermission) {
       // If it exists but inactive, reactivate it
-      if (!existingPermission.isActive) {
+      if (!existingPermission.is_active) {
         return prisma.permissions.update({
           where: {
             id: existingPermission.id,
           },
           data: {
-            isActive: true,
+            is_active: true,
             description: description || existingPermission.description,
           },
         });
@@ -104,12 +104,12 @@ export class PermissionService {
     return prisma.permissions.create({
       data: {
         code: `PM-${Date.now().toString().substring(7)}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
-        name: permissionName,
-        description: description || `Permission for ${permissionName}`,
-        isActive: true,
+        name: permission_name,
+        description: description || `Permission for ${permission_name}`,
+        is_active: true,
         user: {
           connect: {
-            id: userId,
+            id: user_id,
           },
         },
       },
@@ -122,11 +122,11 @@ export class PermissionService {
    * @param permissionName The permission name to remove
    * @returns Boolean indicating success
    */
-  static async removePermission(userId: string, permissionName: string): Promise<boolean> {
+  static async removePermission(user_id: string, permission_name: string): Promise<boolean> {
     const permission = await prisma.permissions.findFirst({
       where: {
-        userId,
-        name: permissionName,
+        user_id: user_id,
+        name: permission_name,
       },
     });
     
@@ -139,7 +139,7 @@ export class PermissionService {
         id: permission.id,
       },
       data: {
-        isActive: false,
+        is_active: false,
       },
     });
     
@@ -148,27 +148,27 @@ export class PermissionService {
   
   /**
    * Set navigation permissions for a user
-   * @param userId The user ID
-   * @param navPermissions Object mapping navigation items to boolean permissions
+   * @param user_id The user ID
+   * @param nav_permissions Object mapping navigation items to boolean permissions
    */
-  static async setNavPermissions(userId: string, navPermissions: Record<string, boolean>) {
+  static async setNavPermissions(user_id: string, nav_permissions: Record<string, boolean>) {
     // Find the navigation permission if it exists
-    const navPermission = await prisma.permissions.findFirst({
+    const nav_permission = await prisma.permissions.findFirst({
       where: {
-        userId,
+        user_id: user_id,
         name: 'navigation',
       },
     });
     
-    if (navPermission) {
+    if (nav_permission) {
       // Update existing permission
       return prisma.permissions.update({
         where: {
-          id: navPermission.id,
+          id: nav_permission.id,
         },
         data: {
-          navPermission: navPermissions,
-          isActive: true,
+          nav_permission: nav_permissions,
+          is_active: true,
         },
       });
     }
@@ -179,11 +179,11 @@ export class PermissionService {
         code: `PM-${Date.now().toString().substring(7)}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
         name: 'navigation',
         description: 'Navigation permissions',
-        navPermission: navPermissions,
-        isActive: true,
+        nav_permission: nav_permissions,
+        is_active: true,
         user: {
           connect: {
-            id: userId,
+            id: user_id,
           },
         },
       },
@@ -195,15 +195,15 @@ export class PermissionService {
    * @param userId The user ID
    * @returns Navigation permissions object or null
    */
-  static async getNavPermissions(userId: string) {
-    const navPermission = await prisma.permissions.findFirst({
+  static async getNavPermissions(user_id: string) {
+    const nav_permission = await prisma.permissions.findFirst({
       where: {
-        userId,
+        user_id: user_id,
         name: 'navigation',
-        isActive: true,
+        is_active: true,
       },
     });
     
-    return navPermission?.navPermission || null;
+    return nav_permission?.nav_permission || null;
   }
 } 

@@ -13,13 +13,13 @@ const shipmentTrackingWorker = new Worker(
     try {
       console.log(`Processing job ${job.id} of type ${job.name}`);
       
-      const { shipmentId, status, location, description } = job.data;
+      const { shipment_id, status, location, description } = job.data;
       
       // Get current shipment
       const shipment = await prisma.shipment.findUnique({
-        where: { id: shipmentId },
+        where: { id: shipment_id },
         include: {
-          trackingEvents: true,
+          tracking_events: true,
           order: {
             include: {
               customer: true,
@@ -30,7 +30,7 @@ const shipmentTrackingWorker = new Worker(
       });
       
       if (!shipment) {
-        throw new Error(`Shipment not found: ${shipmentId}`);
+        throw new Error(`Shipment not found: ${shipment_id}`);
       }
       
       // Add tracking event
@@ -39,24 +39,24 @@ const shipmentTrackingWorker = new Worker(
           status,
           location,
           description,
-          shipmentId,
+          shipment_id: shipment_id,
           code: 'ST-2505-00001',
           shipment: {
-            connect: { id: shipmentId },
+            connect: { id: shipment_id },
           },
         },
       });
       
       // Update shipment status
       await prisma.shipment.update({
-        where: { id: shipmentId },
+        where: { id: shipment_id },
         data: { status },
       });
       
       // If status is DELIVERED, update order status
       if (status === 'DELIVERED' && shipment.order) {
         await prisma.order.update({
-          where: { id: shipment.orderId },
+          where: { id: shipment.order_id },
           data: { status: 'DELIVERED' },
         });
       }
@@ -66,13 +66,13 @@ const shipmentTrackingWorker = new Worker(
         QueueNames.NOTIFICATION,
         'shipment-status-update',
         {
-          recipientId: shipment.user.id,
-          recipientEmail: shipment.user.email,
-          recipientPhone: shipment.user.phone,
+          recipient_id: shipment.user_id,
+          recipient_email: shipment.user.email,
+          recipient_phone: shipment.user.phone,
           awb: shipment.awb,
           status,
-          orderNumber: shipment.order?.orderNumber,
-          customerName: shipment.order?.customer.name,
+          order_number: shipment.order?.order_number,
+          customer_name: shipment.order?.customer.name,
         }
       );
       

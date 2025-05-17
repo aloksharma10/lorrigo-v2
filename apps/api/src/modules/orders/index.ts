@@ -1,4 +1,4 @@
-import { FastifyInstance, FastifyRequest } from 'fastify';
+import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { OrderController } from './controllers/ordersController';
 
 /**
@@ -284,6 +284,6 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    handler: (request, reply) => orderController.getOrderStats(request, reply),
+    handler: (request: FastifyRequest, reply: FastifyReply) => orderController.getOrderStats(request, reply),
   });
 } 

@@ -54,9 +54,9 @@ export class OrderController {
   async getOrderById(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
     try {
       const { id } = request.params;
-      const userId = request.user.id;
+      const user_id = request.user.id;
       
-      const order = await this.orderService.getOrderById(id, userId);
+      const order = await this.orderService.getOrderById(id, user_id);
       
       if (!order) {
         return reply.code(404).send({
@@ -81,9 +81,9 @@ export class OrderController {
   async createOrder(request: FastifyRequest, reply: FastifyReply) {
     try {
       const data = CreateOrderSchema.parse(request.body);
-      const userId = request.user.id;
+      const user_id = request.user.id;
       
-      const order = await this.orderService.createOrder(data, userId);
+      const order = await this.orderService.createOrder(data, user_id);
       
       // Add job to notification queue for order creation
       await addJob(
@@ -91,9 +91,9 @@ export class OrderController {
         'order-created',
         {
           orderId: order.id,
-          orderNumber: order.orderNumber,
-          userId: userId,
-          customerId: data.customerId,
+          orderNumber: order.order_number,
+          userId: user_id,
+          customerId: data.customer_id,
         }
       );
       
@@ -103,19 +103,19 @@ export class OrderController {
           code: 'BO-2505-00001',  
           endpoint: '/orders',
           method: 'POST',
-          ipAddress: request.ip,
-          userId: userId,
-          responseStatus: 201,
+          ip_address: request.ip,
+          user_id: user_id,
+          response_status: 201,
         },
       });
       
       return reply.code(201).send({
         id: order.id,
-        orderNumber: order.orderNumber,
+        orderNumber: order.order_number,
         status: order.status,
-        customerId: order.customerId,
-        totalAmount: order.totalAmount,
-        createdAt: order.createdAt,
+        customerId: order.customer_id,
+        totalAmount: order.total_amount,
+        createdAt: order.created_at,
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -141,9 +141,9 @@ export class OrderController {
     try {
       const { id } = request.params;
       const updateData = UpdateOrderSchema.parse(request.body);
-      const userId = request.user.id;
+      const user_id = request.user.id;
       
-      const existingOrder = await this.orderService.getOrderById(id, userId);
+      const existingOrder = await this.orderService.getOrderById(id, user_id);
       
       if (!existingOrder) {
         return reply.code(404).send({
@@ -160,20 +160,20 @@ export class OrderController {
           'order-status-updated',
           {
             orderId: order.id,
-            orderNumber: order.orderNumber,
+            orderNumber: order.order_number,
             previousStatus: existingOrder.status,
             newStatus: updateData.status,
-            userId: userId,
-            customerId: order.customerId,
+            userId: user_id,
+            customerId: order.customer_id,
           }
         );
       }
       
       return {
         id: order.id,
-        orderNumber: order.orderNumber,
+        orderNumber: order.order_number,
         status: order.status,
-        updatedAt: order.updatedAt,
+        updatedAt: order.updated_at,
       };
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -199,9 +199,9 @@ export class OrderController {
     try {
       const { id } = request.params;
       const { reason } = request.body as { reason?: string };
-      const userId = request.user.id;
+      const user_id = request.user.id;
       
-      const result = await this.orderService.cancelOrder(id, userId, reason);
+      const result = await this.orderService.cancelOrder(id, user_id, reason);
       
       if (result.error) {
         return reply.code(400).send({
@@ -215,18 +215,18 @@ export class OrderController {
         'order-cancelled',
         {
           orderId: result.order?.id,
-          orderNumber: result.order?.orderNumber,
+          orderNumber: result.order?.order_number,
           reason,
-          userId: userId,
-          customerId: result.order?.customerId,
+          userId: user_id,
+          customerId: result.order?.customer_id,
         }
       );
       
       return {
         id: result.order?.id,
-        orderNumber: result.order?.orderNumber,
+        orderNumber: result.order?.order_number,
         status: result.order?.status,
-        updatedAt: result.order?.updatedAt,
+        updatedAt: result.order?.updated_at,
       };
     } catch (error) {
       request.log.error(error);
@@ -244,9 +244,9 @@ export class OrderController {
   async getOrderStats(request: FastifyRequest, reply: FastifyReply) {
     try {
       const { period = 'month' } = OrderStatsQuerySchema.parse(request.query);
-      const userId = request.user.id;
+      const user_id = request.user.id;
       
-      const stats = await this.orderService.getOrderStats(userId, period as string);
+      const stats = await this.orderService.getOrderStats(user_id, period as string);
       
       return stats;
     } catch (error) {

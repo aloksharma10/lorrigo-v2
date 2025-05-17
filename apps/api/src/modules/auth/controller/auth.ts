@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import bcrypt from 'bcrypt';
-import { captureException } from '../lib/sentry';
+import { captureException } from '../../../lib/sentry';
 import { PrismaClient } from '@lorrigo/db';
 import { JWT } from '@fastify/jwt';
 
@@ -33,7 +33,7 @@ const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   name: z.string().min(2),
-  businessName: z.string().min(2),
+  business_name: z.string().min(2),
   phone: z.string().min(10).max(10),
   gstin: z.string().min(15).max(15).optional(),
 });
@@ -46,12 +46,12 @@ export default async function auth(fastify: FastifyInstance) {
       summary: 'Register a new user',
       body: {
         type: 'object',
-        required: ['email', 'password', 'name', 'businessName'],
+        required: ['email', 'password', 'name', 'business_name'],
         properties: {
           email: { type: 'string', format: 'email' },
           password: { type: 'string', minLength: 6 },
           name: { type: 'string', minLength: 2 },
-          businessName: { type: 'string', minLength: 2 },
+          business_name: { type: 'string', minLength: 2 },
           phone: { type: 'string' , nullable: true, minLength: 10, maxLength: 10},
           gstin: { type: 'string' , nullable: true, minLength: 15, maxLength: 15},
         },
@@ -71,7 +71,7 @@ export default async function auth(fastify: FastifyInstance) {
     handler: async (request, reply) => {
       try {
         // Validate request body
-        const { email, password, name, businessName, phone, gstin } = registerSchema.parse(request.body);
+        const { email, password, name, business_name, phone, gstin } = registerSchema.parse(request.body);
         
         // Check if user already exists
         const existingUser = await fastify.prisma.user.findUnique({
@@ -94,7 +94,7 @@ export default async function auth(fastify: FastifyInstance) {
             email,
             password: hashedPassword,
             name,
-            businessName,
+            business_name,
             phone,
             gstin,
             role: 'SELLER', // Default role for new registrations
@@ -106,7 +106,7 @@ export default async function auth(fastify: FastifyInstance) {
           data: {
             code: `WL-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
             balance: 0,
-            userId: user.id,
+            user_id: user.id,
           },
         });
         
@@ -191,7 +191,7 @@ export default async function auth(fastify: FastifyInstance) {
         }
         
         // Check if user is active
-        if (!user.isActive) {
+        if (!user.is_active) {
           return reply.code(401).send({
             message: 'Your account has been deactivated. Please contact support.',
           });
@@ -212,10 +212,10 @@ export default async function auth(fastify: FastifyInstance) {
             code: `AR-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
             endpoint: '/login',
             method: 'POST',
-            ipAddress: request.ip,
-            userId: user.id,
+            ip_address: request.ip,
+            user_id: user.id,
             // userAgent: request.headers['user-agent'],
-            responseStatus: 200,
+            response_status: 200,
           },
         });
         
@@ -268,7 +268,7 @@ export default async function auth(fastify: FastifyInstance) {
             email: { type: 'string' },
             name: { type: 'string' },
             role: { type: 'string' },
-            businessName: { type: 'string' },
+            business_name: { type: 'string' },
             permissions: { type: 'object' },
           },
         },
@@ -285,7 +285,7 @@ export default async function auth(fastify: FastifyInstance) {
             email: true,
             name: true,
             role: true,
-            businessName: true,
+            business_name: true,
             permissions: true,
           },
         });
@@ -326,10 +326,10 @@ export default async function auth(fastify: FastifyInstance) {
             code: `AR-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
             endpoint: '/logout',
             method: 'POST',
-            ipAddress: request.ip,
-            userId: request.user.id,
+            ip_address: request.ip,
+            user_id: request.user.id,
             // userAgent: request.headers['user-agent'],
-            responseStatus: 200,
+            response_status: 200,
           },
         });
         
