@@ -11,16 +11,9 @@ import { initSentry, captureException } from './lib/sentry';
 // Route modules
 import orderRoutes from './modules/orders';
 import shipmentRoutes from './modules/shipments';
-// Import other module routes here as they're implemented
-// import customerRoutes from './modules/customers';
-// import courierRoutes from './modules/couriers';
-// import authRoutes from './modules/auth';
-
-// Using existing routes until refactored
-import authRoutesOld from './modules/auth/controller/auth';
-import customerRoutesOld from './modules/customers/controller/customers';
-import courierRoutesOld from './modules/couriers/controller/couriers';
-import permissionRoutes from './modules/permission/controller/permissions';
+import authRoutes from './modules/auth';
+import customerRoutes from './modules/customers';
+import courierRoutes from './modules/couriers';
 
 // Initialize Sentry
 initSentry();
@@ -69,10 +62,9 @@ const registerPlugins = async () => {
         fastify.register(shipmentRoutes, { prefix: '/shipments' });
         
         // Register existing routes until refactored
-        fastify.register(authRoutesOld, { prefix: '/auth' });
-        fastify.register(customerRoutesOld, { prefix: '/customers' });
-        fastify.register(courierRoutesOld, { prefix: '/couriers' });
-        fastify.register(permissionRoutes, { prefix: '/permissions' });
+        fastify.register(authRoutes, { prefix: '/auth' });
+        fastify.register(customerRoutes, { prefix: '/customers' });
+        fastify.register(courierRoutes, { prefix: '/couriers' });
         
         // Health check route
         fastify.get('/health', async () => {

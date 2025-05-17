@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { OrderController } from './controllers/ordersController';
+import { OrderController } from './controllers/orders-controller';
 
 /**
  * Orders module routes

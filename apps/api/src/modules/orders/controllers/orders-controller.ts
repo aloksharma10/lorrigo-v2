@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { captureException } from '../../../lib/sentry';
-import { OrderService } from '../services/orderService';
+import { OrderService } from '../services/order-service';
 import { 
   CreateOrderSchema,
   UpdateOrderSchema,

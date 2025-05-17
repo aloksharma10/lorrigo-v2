@@ -79,7 +79,7 @@ async function processShipmentUpdate(shipment : Shipment) {
     await prisma.trackingEvent.create({
       data: {
         code: 'SYSTEM_UPDATE',
-        shipmentId: shipment.id,
+        shipment_id: shipment.id,
         status: newStatus,
         location: 'System update',
         description: `Shipment status automatically updated to ${newStatus}`,
@@ -90,7 +90,7 @@ async function processShipmentUpdate(shipment : Shipment) {
     if (newStatus === ShipmentStatus.DELIVERED) {
       await prisma.order.update({
         where: {
-          id: shipment.orderId
+          id: shipment.order_id
         },
         data: {
           status: 'DELIVERED'
@@ -99,7 +99,7 @@ async function processShipmentUpdate(shipment : Shipment) {
     } else if (newStatus === ShipmentStatus.IN_TRANSIT || newStatus === ShipmentStatus.OUT_FOR_DELIVERY) {
       await prisma.order.update({
         where: {
-          id: shipment.orderId
+          id: shipment.order_id
         },
         data: {
           status: 'SHIPPED'
