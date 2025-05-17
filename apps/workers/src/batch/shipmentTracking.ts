@@ -78,6 +78,7 @@ async function processShipmentUpdate(shipment : Shipment) {
     // Create a tracking event
     await prisma.trackingEvent.create({
       data: {
+        code: 'SYSTEM_UPDATE',
         shipmentId: shipment.id,
         status: newStatus,
         location: 'System update',

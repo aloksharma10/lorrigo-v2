@@ -4,9 +4,9 @@ datasource db {
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   // Add preview features for better performance with PostgreSQL
-  previewFeatures = ["fullTextSearch", "extendedWhereUnique"]
+  previewFeatures = ["fullTextSearchPostgres"]
 }
 
 // Consolidated Enums
@@ -43,6 +43,7 @@ enum ShipmentStatus {
   UNDELIVERED
   RETURNED
   EXCEPTION
+  CANCELLED
 }
 
 enum PaymentMethod {
@@ -253,7 +254,7 @@ model Customer {
 // Address Model
 model Address {
   id        String  @id @default(cuid())
-  code      String  @unique // Custom ID - Format: AD-YYMM-XXXXX
+  // code      String  @unique // Custom ID - Format: AD-YYMM-XXXXX
   address   String  @db.VarChar(255)
   address_2 String? @db.VarChar(255)
   city      String  @db.VarChar(100)
@@ -280,7 +281,7 @@ model Address {
 
   @@index([customerId, isDefault])
   @@index([pincode, city])
-  @@index([code])
+  // @@index([code])
 }
 
 // Hub Model
@@ -371,7 +372,6 @@ model Order {
   @@index([orderNumber, orderReferenceId])
   @@index([createdAt(sort: Desc)]) // For partitioning
   @@index([code])
-
   // Full text search across multiple fields
   @@index([orderNumber, orderReferenceId, ewaybill], map: "order_global_search_idx")
 }
@@ -431,7 +431,6 @@ model Shipment {
   @@index([awb])
   @@index([code])
   @@index([createdAt(sort: Desc)]) // For partitioning
-
   // Specific index for global AWB search
   @@index([awb(ops: raw("gin_trgm_ops"))], map: "shipment_awb_search_idx")
 }
@@ -453,19 +452,32 @@ model TrackingEvent {
 
 // Courier Model
 model Courier {
-  id              String   @id @default(cuid())
-  code            String   @unique // Custom ID - Format: CR-YYMM-XXXXX
-  name            String   @db.VarChar(100)
-  courierCode     String   @unique @db.VarChar(50)
-  isActive        Boolean  @default(true)
+  id          String @id @default(cuid())
+  code        String @unique // Custom ID - Format: CR-YYMM-XXXXX
+  name        String @db.VarChar(100)
+  courierCode String @unique @db.VarChar(50)
+
+  codChargeHard    Float? @default(40)
+  codChargePercent Float? @default(1.5)
+
+  isActive          Boolean @default(true)
+  isReversedCourier Boolean @default(false)
+
+  isFwApplicable          Boolean @default(true)
+  isRtoApplicable         Boolean @default(true)
+  isCodApplicable         Boolean @default(true)
+  isCodReversalApplicable Boolean @default(true)
+
   weightSlab      Float?
-  weightUnit      String?  @db.VarChar(10)
+  weightUnit      String? @db.VarChar(10)
   incrementWeight Float?
-  type            String?  @db.VarChar(20)
-  pickupTime      String?  @db.VarChar(50)
-  apiCredentials  Json? // Sparse, encrypted
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  
+  type            DeliveryType  @default(SURFACE) 
+  pickupTime      String? @db.VarChar(50)
+
+  apiCredentials Json? // Sparse, encrypted
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   shipments      Shipment[]
   courierPricing CourierPricing[]
@@ -476,19 +488,19 @@ model Courier {
 
 // CourierPricing Model
 model CourierPricing {
-  id               String   @id @default(cuid())
-  code             String   @unique // Custom ID - Format: CP-YYMM-XXXXX
-  courierId        String
-  courier          Courier  @relation(fields: [courierId], references: [id], onDelete: Cascade)
-  userId           String
-  user             User     @relation("UserCourierPricing", fields: [userId], references: [id], onDelete: Cascade)
-  basePrice        Float
-  weightSlab       Json? // Cached in app layer
-  zonePricing      Json? // Cached in app layer
-  codChargeHard    Float?   @default(40)
-  codChargePercent Float?   @default(1.5)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id        String  @id @default(cuid())
+  code      String  @unique // Custom ID - Format: CP-YYMM-XXXXX
+  courierId String
+  courier   Courier @relation(fields: [courierId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User    @relation("UserCourierPricing", fields: [userId], references: [id], onDelete: Cascade)
+
+  basePrice   Float
+  weightSlab  Json? // Cached in app layer
+  zonePricing Json? // Cached in app layer
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([courierId, userId])
   @@index([courierId, userId])
@@ -589,19 +601,19 @@ model Billing {
   orderId String
   order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
-  billingDate DateTime
+  billingDate   DateTime
   billingAmount Float
 
-  chargedWeight Float
-  fwExcessCharge Float
-  rtoExcessCharge Float
-  zoneChangeCharge Float
+  chargedWeight       Float
+  fwExcessCharge      Float
+  rtoExcessCharge     Float
+  zoneChangeCharge    Float
   isForwardApplicable Boolean
-  isRTOApplicable Boolean
-  
+  isRTOApplicable     Boolean
+
   incrementPrice Boolean
-  basePrice Boolean
-  baseWeight Boolean
+  basePrice      Boolean
+  baseWeight     Boolean
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

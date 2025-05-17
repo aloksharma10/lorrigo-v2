@@ -20,6 +20,7 @@ import shipmentRoutes from './modules/shipments';
 import authRoutesOld from './routes/auth';
 import customerRoutesOld from './routes/customers';
 import courierRoutesOld from './routes/couriers';
+import permissionRoutes from './routes/permissions';
 
 // Initialize Sentry
 initSentry();
@@ -71,6 +72,7 @@ const registerPlugins = async () => {
         fastify.register(authRoutesOld, { prefix: '/auth' });
         fastify.register(customerRoutesOld, { prefix: '/customers' });
         fastify.register(courierRoutesOld, { prefix: '/couriers' });
+        fastify.register(permissionRoutes, { prefix: '/permissions' });
         
         // Health check route
         fastify.get('/health', async () => {

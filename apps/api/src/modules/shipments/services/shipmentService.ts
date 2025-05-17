@@ -1,5 +1,4 @@
-import { prisma } from '@lorrigo/db';
-import { ShipmentStatus } from '@prisma/client';
+import { prisma, ShipmentStatus } from '@lorrigo/db';
 import type { z } from 'zod';
 import { 
   CreateShipmentSchema, 
@@ -52,9 +51,9 @@ export class ShipmentService {
     // Create shipment with tracking number
     const shipment = await prisma.shipment.create({
       data: {
-        trackingNumber: this.generateTrackingNumber(),
+        code: `SHP-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
+        awb: this.generateTrackingNumber(),
         weight: data.weight,
-        dimensions: data.dimensions ? data.dimensions : undefined,
         status: ShipmentStatus.CREATED,
         order: {
           connect: {
@@ -78,6 +77,7 @@ export class ShipmentService {
         },
         trackingEvents: {
           create: {
+            code: `ST-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
             status: ShipmentStatus.CREATED,
             location: hub.name,
             description: 'Shipment created and ready for pickup',
@@ -205,6 +205,7 @@ export class ShipmentService {
     if (updateData.status && updateData.status !== existingShipment.status) {
       await prisma.trackingEvent.create({
         data: {
+          code: `ST-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
           shipmentId: id,
           status: updateData.status as ShipmentStatus,
           location: 'System Update',
@@ -218,7 +219,7 @@ export class ShipmentService {
           where: { id: existingShipment.orderId },
           data: { status: 'DELIVERED' },
         });
-      } else if (updateData.status === 'SHIPPED' || updateData.status === 'IN_TRANSIT') {
+      } else if (updateData.status === 'IN_TRANSIT') {
         await prisma.order.update({
           where: { id: existingShipment.orderId },
           data: { status: 'SHIPPED' },
@@ -252,6 +253,7 @@ export class ShipmentService {
     // Create the tracking event
     const trackingEvent = await prisma.trackingEvent.create({
       data: {
+        code: `ST-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
         shipmentId: id,
         status: eventData.status as ShipmentStatus,
         location: eventData.location,
@@ -271,7 +273,7 @@ export class ShipmentService {
         where: { id: shipment.orderId },
         data: { status: 'DELIVERED' },
       });
-    } else if (eventData.status === 'SHIPPED' || eventData.status === 'IN_TRANSIT') {
+    } else if (eventData.status === 'IN_TRANSIT') {
       await prisma.order.update({
         where: { id: shipment.orderId },
         data: { status: 'SHIPPED' },
@@ -345,6 +347,7 @@ export class ShipmentService {
     // Add tracking event for cancellation
     await prisma.trackingEvent.create({
       data: {
+        code: `ST-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
         shipmentId: id,
         status: ShipmentStatus.EXCEPTION,
         location: 'System',

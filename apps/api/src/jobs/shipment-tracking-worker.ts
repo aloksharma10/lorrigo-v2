@@ -40,6 +40,10 @@ const shipmentTrackingWorker = new Worker(
           location,
           description,
           shipmentId,
+          code: 'ST-2505-00001',
+          shipment: {
+            connect: { id: shipmentId },
+          },
         },
       });
       
@@ -65,18 +69,18 @@ const shipmentTrackingWorker = new Worker(
           recipientId: shipment.user.id,
           recipientEmail: shipment.user.email,
           recipientPhone: shipment.user.phone,
-          trackingNumber: shipment.trackingNumber,
+          awb: shipment.awb,
           status,
           orderNumber: shipment.order?.orderNumber,
           customerName: shipment.order?.customer.name,
         }
       );
       
-      console.log(`Shipment ${shipment.trackingNumber} updated to ${status}`);
+      console.log(`Shipment ${shipment.awb} updated to ${status}`);
       
       return {
         success: true,
-        message: `Shipment ${shipment.trackingNumber} updated to ${status}`,
+        message: `Shipment ${shipment.awb} updated to ${status}`,
       };
     } catch (error) {
       console.error('Error processing shipment tracking update:', error);

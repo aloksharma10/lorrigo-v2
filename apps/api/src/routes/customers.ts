@@ -2,25 +2,23 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { captureException } from '../lib/sentry';
 
+const createAddressSchema = z.object({
+  address: z.string().min(10),
+  address_2: z.string().optional(),
+  city: z.string().min(10),
+  state: z.string().min(10),
+  pincode: z.string().min(10),
+});
 // Define request body schemas
 const createCustomerSchema = z.object({
   name: z.string().min(2),
   email: z.string().email().optional(),
   phone: z.string().min(10),
-  notes: z.string().optional(),
   addresses: z
-    .array(
-      z.object({
-        street: z.string(),
-        city: z.string(),
-        state: z.string(),
-        postalCode: z.string(),
-        country: z.string().default('India'),
-        isDefault: z.boolean().default(false),
-      })
-    )
+    .array(createAddressSchema)
     .optional(),
 });
+
 
 const updateCustomerSchema = createCustomerSchema.partial();
 
@@ -89,7 +87,13 @@ export default async function customers(fastify: FastifyInstance) {
         // Get customers with pagination
         const [customers, total] = await Promise.all([
           fastify.prisma.customer.findMany({
-            where,
+            where: {
+              OR: search ? [
+                { name: { contains: search, mode: 'insensitive' } },
+                { email: { contains: search, mode: 'insensitive' } }, 
+                { phone: { contains: search, mode: 'insensitive' } }
+              ] : undefined
+            },
             skip,
             take: limit,
             orderBy: { createdAt: 'desc' },
@@ -101,7 +105,13 @@ export default async function customers(fastify: FastifyInstance) {
               createdAt: true,
             },
           }),
-          fastify.prisma.customer.count({ where }),
+          fastify.prisma.customer.count({ where: {
+            OR: search ? [
+              { name: { contains: search, mode: 'insensitive' } },
+              { email: { contains: search, mode: 'insensitive' } }, 
+              { phone: { contains: search, mode: 'insensitive' } }
+            ] : undefined
+          } }),
         ]);
         
         const totalPages = Math.ceil(total / limit);
@@ -245,15 +255,15 @@ export default async function customers(fastify: FastifyInstance) {
     handler: async (request, reply) => {
       try {
         // Validate request body
-        const { name, email, phone, notes, addresses } = createCustomerSchema.parse(request.body);
+        const { name, email, phone, addresses } = createCustomerSchema.parse(request.body);
         
         // Create customer in database
         const customer = await fastify.prisma.customer.create({
           data: {
+            code: `CUST-${Math.random().toString(36).substring(2, 15)}`,
             name,
             email,
             phone,
-            notes,
             ...(addresses && addresses.length > 0
               ? {
                   addresses: {
@@ -345,7 +355,13 @@ export default async function customers(fastify: FastifyInstance) {
         // Update customer in database
         const customer = await fastify.prisma.customer.update({
           where: { id },
-          data: validatedData,
+          data: {
+            ...validatedData,
+            addresses: validatedData.addresses ? {
+              deleteMany: {},
+              create: validatedData.addresses
+            } : undefined
+          },
         });
         
         return {
@@ -450,12 +466,13 @@ export default async function customers(fastify: FastifyInstance) {
       },
       body: {
         type: 'object',
-        required: ['street', 'city', 'state', 'postalCode'],
+        required: ['address', 'city', 'state', 'pincode'],
         properties: {
-          street: { type: 'string' },
+          address: { type: 'string' },
+          address_2: { type: 'string' },
           city: { type: 'string' },
           state: { type: 'string' },
-          postalCode: { type: 'string' },
+          pincode: { type: 'string' },
           country: { type: 'string', default: 'India' },
           isDefault: { type: 'boolean', default: false },
         },
@@ -465,10 +482,11 @@ export default async function customers(fastify: FastifyInstance) {
           type: 'object',
           properties: {
             id: { type: 'string' },
-            street: { type: 'string' },
+            address: { type: 'string' },
+            address_2: { type: 'string' },
             city: { type: 'string' },
             state: { type: 'string' },
-            postalCode: { type: 'string' },
+            pincode: { type: 'string' },
             country: { type: 'string' },
             isDefault: { type: 'boolean' },
           },
@@ -480,10 +498,11 @@ export default async function customers(fastify: FastifyInstance) {
       try {
         const { id } = request.params as { id: string };
         const addressData = request.body as {
-          street: string;
+          address: string;
+          address_2: string;
           city: string;
           state: string;
-          postalCode: string;
+          pincode: string;
           country?: string;
           isDefault?: boolean;
         };
@@ -510,7 +529,13 @@ export default async function customers(fastify: FastifyInstance) {
         // Create the address
         const address = await fastify.prisma.address.create({
           data: {
-            ...addressData,
+            address: addressData.address,
+            address_2: addressData.address_2,
+            city: addressData.city,
+            state: addressData.state,
+            pincode: addressData.pincode,
+            country: addressData.country,
+            isDefault: addressData.isDefault,
             customerId: id,
           },
         });

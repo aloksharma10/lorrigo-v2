@@ -382,7 +382,13 @@ export default async function orders(fastify: FastifyInstance) {
               orderNumber,
               status: 'CREATED',
               totalAmount,
-              notes,
+              code: orderNumber,
+              orderChannelConfig: {
+                create: {
+                  channel: 'CUSTOM',
+                  code: orderNumber,
+                }
+              },
               customer: {
                 connect: { id: customerId },
               },
@@ -405,6 +411,7 @@ export default async function orders(fastify: FastifyInstance) {
           
           await tx.invoice.create({
             data: {
+              code: invoiceNumber,
               invoiceNumber,
               amount: totalAmount,
               isPaid: false,
@@ -414,14 +421,6 @@ export default async function orders(fastify: FastifyInstance) {
               },
               order: {
                 connect: { id: order.id },
-              },
-              items: {
-                create: items.map(item => ({
-                  description: item.description,
-                  quantity: item.quantity,
-                  unitPrice: item.unitPrice,
-                  amount: item.quantity * item.unitPrice,
-                })),
               },
             },
           });
@@ -444,11 +443,12 @@ export default async function orders(fastify: FastifyInstance) {
         // Log API request
         await fastify.prisma.apiRequest.create({
           data: {
+            code: orderNumber,
             endpoint: '/orders',
             method: 'POST',
             ipAddress: request.ip,
             userId: request.user.id,
-            userAgent: request.headers['user-agent'],
+            // userAgent: request.headers['user-agent'],
             responseStatus: 201,
           },
         });
@@ -657,15 +657,10 @@ export default async function orders(fastify: FastifyInstance) {
         }
         
         // Update order status to CANCELLED and add reason to notes
-        const updatedNotes = reason 
-          ? `${existingOrder.notes || ''}\nCancellation reason: ${reason}`.trim()
-          : existingOrder.notes;
-          
         const order = await fastify.prisma.order.update({
           where: { id },
           data: {
             status: 'CANCELLED',
-            notes: updatedNotes,
           },
         });
         
@@ -676,7 +671,7 @@ export default async function orders(fastify: FastifyInstance) {
             status: 'CREATED',
           },
           data: {
-            // status: 'CANCELLED',
+            status: 'CANCELLED',
           },
         });
         

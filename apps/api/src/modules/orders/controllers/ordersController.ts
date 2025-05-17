@@ -100,11 +100,11 @@ export class OrderController {
       // Log API request
       await request.server.prisma.apiRequest.create({
         data: {
+          code: 'BO-2505-00001',  
           endpoint: '/orders',
           method: 'POST',
           ipAddress: request.ip,
           userId: userId,
-          userAgent: request.headers['user-agent'] as string,
           responseStatus: 201,
         },
       });
@@ -214,19 +214,19 @@ export class OrderController {
         QueueNames.NOTIFICATION,
         'order-cancelled',
         {
-          orderId: result.order.id,
-          orderNumber: result.order.orderNumber,
+          orderId: result.order?.id,
+          orderNumber: result.order?.orderNumber,
           reason,
           userId: userId,
-          customerId: result.order.customerId,
+          customerId: result.order?.customerId,
         }
       );
       
       return {
-        id: result.order.id,
-        orderNumber: result.order.orderNumber,
-        status: result.order.status,
-        updatedAt: result.order.updatedAt,
+        id: result.order?.id,
+        orderNumber: result.order?.orderNumber,
+        status: result.order?.status,
+        updatedAt: result.order?.updatedAt,
       };
     } catch (error) {
       request.log.error(error);

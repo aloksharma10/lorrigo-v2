@@ -14,8 +14,8 @@ const registerSchema = z.object({
   password: z.string().min(6),
   name: z.string().min(2),
   businessName: z.string().min(2),
-  phone: z.string().optional(),
-  gstin: z.string().optional(),
+  phone: z.string().min(10).max(10),
+  gstin: z.string().min(15).max(15).optional(),
 });
 
 export default async function auth(fastify: FastifyInstance) {
@@ -32,8 +32,8 @@ export default async function auth(fastify: FastifyInstance) {
           password: { type: 'string', minLength: 6 },
           name: { type: 'string', minLength: 2 },
           businessName: { type: 'string', minLength: 2 },
-          phone: { type: 'string' },
-          gstin: { type: 'string' },
+          phone: { type: 'string' , nullable: true, minLength: 10, maxLength: 10},
+          gstin: { type: 'string' , nullable: true, minLength: 15, maxLength: 15},
         },
       },
       response: {

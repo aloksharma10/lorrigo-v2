@@ -47,6 +47,9 @@ importers:
       '@fastify/swagger-ui':
         specifier: ^3.0.0
         version: 3.1.0
+      '@lorrigo/common':
+        specifier: workspace:*
+        version: link:../../packages/common
       '@lorrigo/db':
         specifier: workspace:*
         version: link:../../packages/db
