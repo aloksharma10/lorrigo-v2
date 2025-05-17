@@ -14,6 +14,7 @@ export enum QueueNames {
 // Queue connection options
 const connectionOptions = {
   connection: redis,
+  prefix: APP_CONFIG.REDIS.PREFIX,
 };
 
 // Create queues

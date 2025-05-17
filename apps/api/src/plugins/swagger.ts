@@ -10,7 +10,7 @@ export const registerSwagger = async (fastify: FastifyInstance) => {
       info: {
         title: 'Lorrigo Logistics API',
         description: 'API for logistics platform',
-        version: '1.0.0',
+        version: '2.0.0',
       },
       servers: [
         {

@@ -8,7 +8,7 @@ export const APP_CONFIG = {
   NODE_ENV: process.env.NODE_ENV || 'development',
   
   // API settings
-  API_VERSION: process.env.API_VERSION || 'v1',
+  API_VERSION: process.env.API_VERSION || 'v2',
   API_PREFIX: process.env.API_PREFIX || '/api',
   
   // JWT settings
@@ -17,7 +17,7 @@ export const APP_CONFIG = {
   
   // Rate limiting
   RATE_LIMIT: {
-    MAX: parseInt(process.env.RATE_LIMIT_MAX || '100', 10),
+    MAX: parseInt(process.env.RATE_LIMIT_MAX || '1000', 10),
     TIME_WINDOW: parseInt(process.env.RATE_LIMIT_TIME_WINDOW || '60000', 10), // 1 minute in milliseconds
   },
   

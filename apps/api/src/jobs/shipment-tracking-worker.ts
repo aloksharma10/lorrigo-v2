@@ -90,6 +90,7 @@ const shipmentTrackingWorker = new Worker(
   },
   {
     connection: redis,
+    prefix: APP_CONFIG.REDIS.PREFIX,
     concurrency: APP_CONFIG.QUEUE.CONCURRENCY,
     limiter: {
       max: 50, // maximum number of jobs processed in the timeWindow

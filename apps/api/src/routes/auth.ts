@@ -1,7 +1,27 @@
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import bcrypt from 'bcrypt';
 import { captureException } from '../lib/sentry';
+import { PrismaClient } from '@lorrigo/db';
+import { JWT } from '@fastify/jwt';
+
+// Add type augmentation for Fastify
+declare module 'fastify' {
+  interface FastifyInstance {
+    prisma: PrismaClient;
+    jwt: JWT;
+    authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+  }
+  
+  interface FastifyRequest {
+    user: {
+      id: string;
+      email: string;
+      role: string;
+      permissions?: object;
+    }
+  }
+}
 
 // Define request body schemas
 const loginSchema = z.object({
@@ -70,6 +90,7 @@ export default async function auth(fastify: FastifyInstance) {
         // Create user in database
         const user = await fastify.prisma.user.create({
           data: {
+            code: `US-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
             email,
             password: hashedPassword,
             name,
@@ -83,6 +104,7 @@ export default async function auth(fastify: FastifyInstance) {
         // Create wallet for user
         await fastify.prisma.wallet.create({
           data: {
+            code: `WL-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
             balance: 0,
             userId: user.id,
           },
@@ -187,11 +209,12 @@ export default async function auth(fastify: FastifyInstance) {
         // Create API request log
         await fastify.prisma.apiRequest.create({
           data: {
+            code: `AR-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
             endpoint: '/login',
             method: 'POST',
             ipAddress: request.ip,
             userId: user.id,
-            userAgent: request.headers['user-agent'],
+            // userAgent: request.headers['user-agent'],
             responseStatus: 200,
           },
         });
@@ -300,11 +323,12 @@ export default async function auth(fastify: FastifyInstance) {
         // Create API request log
         await fastify.prisma.apiRequest.create({
           data: {
+            code: `AR-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
             endpoint: '/logout',
             method: 'POST',
             ipAddress: request.ip,
             userId: request.user.id,
-            userAgent: request.headers['user-agent'],
+            // userAgent: request.headers['user-agent'],
             responseStatus: 200,
           },
         });
