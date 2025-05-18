@@ -1,10 +1,10 @@
 import { Worker } from 'bullmq';
 import { prisma } from '@lorrigo/db';
-import { redis } from '../lib/redis';
-import { QueueNames } from '../lib/queue';
-import { APP_CONFIG } from '../config/app';
-import { captureException } from '../lib/sentry';
-import { addJob } from '../lib/queue';
+import { redis } from '@/lib/redis';
+import { QueueNames } from '@/lib/queue';
+import { APP_CONFIG } from '@/config/app';
+import { captureException } from '@/lib/sentry';
+import { addJob } from '@/lib/queue';
 
 // Create a worker to process shipment tracking updates
 const shipmentTrackingWorker = new Worker(

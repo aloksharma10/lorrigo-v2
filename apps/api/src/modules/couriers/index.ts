@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { authenticateUser, authorizeRoles, authorizePermissions } from '../../middleware/auth';
+import { authenticateUser, authorizeRoles } from '@/middleware/auth';
 import { Role } from '@lorrigo/db';
 import { CourierController } from './controller/couriers-controller';
 import { CourierService } from './services/courier-services';

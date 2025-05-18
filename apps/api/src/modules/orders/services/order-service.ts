@@ -106,7 +106,6 @@ export class OrderService {
           },
         },
         shipping_address: true,
-        return_address: true,
         shipments: {
           include: {
             courier: {

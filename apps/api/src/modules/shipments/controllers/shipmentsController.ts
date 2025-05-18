@@ -2,7 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { ShipmentService } from '../services/shipmentService';
 import { CreateShipmentSchema, UpdateShipmentSchema, AddTrackingEventSchema } from '../validations';
-import { checkAuth } from '../../../middleware/auth';
+import { checkAuth } from '@/middleware/auth';
 
 /**
  * Controller for shipment-related API endpoints

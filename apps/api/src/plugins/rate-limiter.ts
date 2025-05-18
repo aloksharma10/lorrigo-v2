@@ -1,8 +1,8 @@
 import fastifyRateLimit from '@fastify/rate-limit';
 import { FastifyInstance } from 'fastify';
-import { redis } from '../lib/redis';
-import { APP_CONFIG } from '../config/app';
-import { captureException } from '../lib/sentry';
+import { redis } from '@/lib/redis';
+import { APP_CONFIG } from '@/config/app';
+import { captureException } from '@/lib/sentry';
 
 // Define a custom type for the extended FastifyInstance with prisma
 

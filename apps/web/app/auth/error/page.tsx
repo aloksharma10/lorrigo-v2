@@ -1,9 +1,9 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
-import { useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Suspense } from 'react';
 
-export default function AuthError() {
+function ErrorContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const error = searchParams.get('error');
@@ -48,5 +48,13 @@ export default function AuthError() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function AuthError() {
+  return (
+    <Suspense fallback={<div className="p-4">Loading...</div>}>
+      <ErrorContent />
+    </Suspense>
   );
 }

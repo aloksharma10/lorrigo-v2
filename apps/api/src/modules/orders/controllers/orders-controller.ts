@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { captureException } from '../../../lib/sentry';
+import { captureException } from '@/lib/sentry';
 import { OrderService } from '../services/order-service';
 import {
   CreateOrderSchema,
@@ -8,9 +8,9 @@ import {
   OrderStatsQuerySchema,
 } from '../validations';
 import { z } from 'zod';
-import { addJob } from '../../../lib/queue';
-import { QueueNames } from '../../../lib/queue';
-import { checkAuth } from '../../../middleware/auth';
+import { addJob } from '@/lib/queue';
+import { QueueNames } from '@/lib/queue';
+import { checkAuth } from '@/middleware/auth';
 
 /**
  * Order Controller handles HTTP request/response logic

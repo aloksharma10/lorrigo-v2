@@ -63,11 +63,6 @@ export class ShipmentService {
             id: userId,
           },
         },
-        hub: {
-          connect: {
-            id: data.hubId,
-          },
-        },
         courier: {
           connect: {
             id: data.courierId,
@@ -84,7 +79,6 @@ export class ShipmentService {
       },
       include: {
         order: true,
-        hub: true,
         courier: true,
         tracking_events: true,
       },
@@ -123,12 +117,6 @@ export class ShipmentService {
             },
           },
         },
-        hub: {
-          select: {
-            name: true,
-            code: true,
-          },
-        },
         courier: {
           select: {
             name: true,
@@ -158,7 +146,6 @@ export class ShipmentService {
             shipping_address: true,
           },
         },
-        hub: true,
         courier: true,
         tracking_events: {
           orderBy: {

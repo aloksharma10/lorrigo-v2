@@ -2,18 +2,18 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import { prisma } from '@lorrigo/db';
-import { APP_CONFIG } from './config/app';
-import { registerSwagger } from './plugins/swagger';
-import { registerRateLimiter } from './plugins/rate-limiter';
-import authPlugin from './plugins/auth';
-import { initSentry, captureException } from './lib/sentry';
+import { APP_CONFIG } from '@/config/app';
+import { registerSwagger } from '@/plugins/swagger';
+import { registerRateLimiter } from '@/plugins/rate-limiter';
+import authPlugin from '@/plugins/auth';
+import { initSentry, captureException } from '@/lib/sentry';
 
 // Route modules
-import orderRoutes from './modules/orders';
-import shipmentRoutes from './modules/shipments';
-import authRoutes from './modules/auth';
-import customerRoutes from './modules/customers';
-import courierRoutes from './modules/couriers';
+import orderRoutes from '@/modules/orders';
+import shipmentRoutes from '@/modules/shipments';
+import authRoutes from '@/modules/auth';
+import customerRoutes from '@/modules/customers';
+import courierRoutes from '@/modules/couriers';
 
 // Initialize Sentry
 initSentry();

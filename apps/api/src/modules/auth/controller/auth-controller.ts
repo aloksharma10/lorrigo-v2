@@ -1,9 +1,8 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import bcrypt from 'bcrypt';
-import { captureException } from '../../../lib/sentry';
-import { PrismaClient } from '@lorrigo/db';
-import { JWT } from '@fastify/jwt';
+import { captureException } from '@/lib/sentry';
+
 import { AuthService } from '../services/auth-services';
 
 // Add type augmentation for Fastify

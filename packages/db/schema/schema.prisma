@@ -138,10 +138,10 @@ model User {
   api_requests    ApiRequest[]
   config          SellerConfig?
   address         Address?
-  
+
   // Auth.js relations
-  accounts      Account[]
-  sessions      Session[]
+  accounts Account[]
+  sessions Session[]
 
   @@index([email])
   @@index([code])
@@ -149,12 +149,12 @@ model User {
 }
 
 model Permissions {
-  id            String  @id @default(cuid())
-  code          String  @unique // Custom ID - Format: PM-YYMM-XXXXX
-  name          String
-  description   String
-  is_active     Boolean @default(true)
-  is_verified   Boolean @default(false)
+  id             String  @id @default(cuid())
+  code           String  @unique // Custom ID - Format: PM-YYMM-XXXXX
+  name           String
+  description    String
+  is_active      Boolean @default(true)
+  is_verified    Boolean @default(false)
   nav_permission Json?
 
   user_id String?
@@ -217,10 +217,10 @@ model BankDetails {
 
 // SellerConfig Model
 model SellerConfig {
-  id     String @id @default(cuid())
-  code   String @unique // Custom ID - Format: SC-YYMM-XXXXX
+  id      String @id @default(cuid())
+  code    String @unique // Custom ID - Format: SC-YYMM-XXXXX
   user_id String @unique
-  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   max_negative_balance Float? @default(0)
 
@@ -258,16 +258,16 @@ model Customer {
 
 // Address Model
 model Address {
-  id        String  @id @default(cuid())
+  id         String  @id @default(cuid())
   // code      String  @unique // Custom ID - Format: AD-YYMM-XXXXX
-  address   String  @db.VarChar(255)
-  address_2 String? @db.VarChar(255)
-  city      String  @db.VarChar(100)
-  state     String  @db.VarChar(100)
-  pincode   String  @db.VarChar(10)
-  country   String  @default("India") @db.VarChar(50)
+  address    String  @db.VarChar(255)
+  address_2  String? @db.VarChar(255)
+  city       String  @db.VarChar(100)
+  state      String  @db.VarChar(100)
+  pincode    String  @db.VarChar(10)
+  country    String  @default("India") @db.VarChar(50)
   is_default Boolean @default(false)
-  phone     String? @db.VarChar(15)
+  phone      String? @db.VarChar(15)
 
   user_id String? @unique
   user    User?   @relation(fields: [user_id], references: [id], onDelete: SetNull)
@@ -278,15 +278,14 @@ model Address {
   hub_primary Hub? @relation("HubPrimaryAddress")
   hub_rto     Hub? @relation("HubRTOAddress")
 
-  orders        Order[] @relation("ShippingAddress")
-  return_orders Order[] @relation("ReturnAddress")
+  orders Order[] @relation("ShippingAddress")
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+  // @@index([code])
 
   @@index([customer_id, is_default])
   @@index([pincode, city])
-  // @@index([code])
 }
 
 // Hub Model
@@ -310,7 +309,7 @@ model Hub {
   rto_address_id String?  @unique
   rto_address    Address? @relation("HubRTOAddress", fields: [rto_address_id], references: [id])
 
-  shipments Shipment[]
+  orders     Order[] @relation("Hub")
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -336,30 +335,30 @@ model OrderChannelConfig {
 
 // Order Model
 model Order {
-  id                     String             @id @default(cuid())
-  code                   String             @unique // Will use your custom ID logic
-  order_number           String             @unique @db.VarChar(50)
-  type                   OrderType          @default(B2C)
-  status                 OrderStatus        @default(CREATED)
-  payment_mode           PaymentMethod      @default(COD)
+  id                      String             @id @default(cuid())
+  code                    String             @unique // Will use your custom ID logic
+  order_number            String             @unique @db.VarChar(50)
+  type                    OrderType          @default(B2C)
+  status                  OrderStatus        @default(CREATED)
+  payment_mode            PaymentMethod      @default(COD)
   order_channel_config_id String
-  order_channel_config   OrderChannelConfig @relation(fields: [order_channel_config_id], references: [id])
-  bucket                 Int                @default(0) // For legacy compatibility
-  order_reference_id     String?
-  ewaybill               String?            @db.VarChar(12)
-  total_amount           Float
+  order_channel_config    OrderChannelConfig @relation(fields: [order_channel_config_id], references: [id])
+  bucket                  Int                @default(0) // For legacy compatibility
+  order_reference_id      String?
+  ewaybill                String?            @db.VarChar(12)
+  total_amount            Float
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  user_id            String
-  user               User     @relation("UserOrders", fields: [user_id], references: [id], onDelete: Cascade)
-  customer_id        String
-  customer           Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  user_id             String
+  user                User     @relation("UserOrders", fields: [user_id], references: [id], onDelete: Cascade)
+  customer_id         String
+  customer            Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
   shipping_address_id String
-  shipping_address   Address  @relation("ShippingAddress", fields: [shipping_address_id], references: [id])
-  return_address_id  String?
-  return_address     Address? @relation("ReturnAddress", fields: [return_address_id], references: [id])
+  shipping_address    Address  @relation("ShippingAddress", fields: [shipping_address_id], references: [id])
+  hub_id              String?
+  hub                 Hub?     @relation("Hub", fields: [hub_id], references: [id])
 
   items     OrderItem[]
   payments  Payment[]
@@ -404,12 +403,12 @@ model OrderItem {
 
 // Shipment Model
 model Shipment {
-  id              String         @id @default(cuid())
-  code            String         @unique // Custom ID - Format: SH-YYMM-XXXXX
-  awb             String         @unique @db.VarChar(50)
-  status          ShipmentStatus @default(CREATED)
-  weight          Float // in kg
-  number_of_boxes Int            @default(1)
+  id               String         @id @default(cuid())
+  code             String         @unique // Custom ID - Format: SH-YYMM-XXXXX
+  awb              String         @unique @db.VarChar(50)
+  status           ShipmentStatus @default(CREATED)
+  weight           Float // in kg
+  number_of_boxes  Int            @default(1)
   is_reverse_order Boolean        @default(false)
 
   shipping_charge Float   @default(0)
@@ -421,18 +420,15 @@ model Shipment {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  order_id       String
-  order          Order           @relation(fields: [order_id], references: [id], onDelete: Cascade)
-  user_id        String
-  user           User            @relation("UserShipments", fields: [user_id], references: [id], onDelete: Cascade)
-  hub_id         String
-  hub            Hub             @relation(fields: [hub_id], references: [id], onDelete: Cascade)
-  courier_id     String
-  courier        Courier         @relation(fields: [courier_id], references: [id], onDelete: Cascade)
-  invoice        Invoice?
+  order_id        String
+  order           Order           @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  user_id         String
+  user            User            @relation("UserShipments", fields: [user_id], references: [id], onDelete: Cascade)
+  courier_id      String
+  courier         Courier         @relation(fields: [courier_id], references: [id], onDelete: Cascade)
   tracking_events TrackingEvent[]
 
-  @@index([order_id, user_id, hub_id, courier_id, status, created_at])
+  @@index([order_id, user_id, courier_id, status, created_at])
   @@index([awb])
   @@index([code])
   @@index([created_at(sort: Desc)]) // For partitioning
@@ -476,9 +472,9 @@ model Courier {
   weight_slab      Float?
   weight_unit      String? @db.VarChar(10)
   increment_weight Float?
-  
-  type            DeliveryType  @default(SURFACE) 
-  pickup_time      String? @db.VarChar(50)
+
+  type        DeliveryType @default(SURFACE)
+  pickup_time String?      @db.VarChar(50)
 
   api_credentials Json? // Sparse, encrypted
   created_at      DateTime @default(now())
@@ -567,7 +563,7 @@ model Payment {
   updated_at        DateTime          @updatedAt
 
   order_id String
-  order     Order  @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  order    Order  @relation(fields: [order_id], references: [id], onDelete: Cascade)
 
   transactions Transaction[]
 
@@ -589,11 +585,9 @@ model Invoice {
   updated_at     DateTime  @updatedAt
 
   user_id     String
-  user         User      @relation("UserInvoices", fields: [user_id], references: [id], onDelete: Cascade)
-  order_id     String?
-  order        Order?    @relation(fields: [order_id], references: [id])
-  shipment_id  String?   @unique
-  shipment     Shipment? @relation(fields: [shipment_id], references: [id])
+  user        User      @relation("UserInvoices", fields: [user_id], references: [id], onDelete: Cascade)
+  order_id    String?
+  order       Order?    @relation(fields: [order_id], references: [id])
 
   @@index([user_id, invoice_number, created_at])
   @@index([code])
@@ -601,20 +595,20 @@ model Invoice {
 }
 
 model Billing {
-  id      String @id @default(cuid())
-  code    String @unique // Custom ID - Format: BL-YYMM-XXXXX
+  id       String @id @default(cuid())
+  code     String @unique // Custom ID - Format: BL-YYMM-XXXXX
   order_id String
   order    Order  @relation(fields: [order_id], references: [id], onDelete: Cascade)
 
   billing_date   DateTime
   billing_amount Float
 
-  charged_weight       Float
-  fw_excess_charge     Float
-  rto_excess_charge    Float
-  zone_change_charge   Float
+  charged_weight        Float
+  fw_excess_charge      Float
+  rto_excess_charge     Float
+  zone_change_charge    Float
   is_forward_applicable Boolean
-  is_rto_applicable    Boolean
+  is_rto_applicable     Boolean
 
   increment_price Boolean
   base_price      Boolean
@@ -637,15 +631,15 @@ model Dispute {
   description String        @db.Text
   status      DisputeStatus @default(OPENED)
 
-  image           String?
-  accepted        Boolean @default(false)
-  stage           String?
+  image            String?
+  accepted         Boolean @default(false)
+  stage            String?
   order_box_height Float?
   order_box_width  Float?
   order_box_length Float?
   order_size_unit  String?
-  order_weight    Float?
-  charged_weight  Float?
+  order_weight     Float?
+  charged_weight   Float?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -675,7 +669,7 @@ model Remittance {
   updated_at      DateTime         @updatedAt
 
   user_id String
-  user     User   @relation("UserRemittances", fields: [user_id], references: [id], onDelete: Cascade)
+  user    User   @relation("UserRemittances", fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([user_id, status, remittance_date])
   @@index([remittance_id])

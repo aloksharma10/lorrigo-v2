@@ -1,10 +1,9 @@
 import { getServerSession } from 'next-auth/next';
 import { redirect } from 'next/navigation';
 import { Navbar } from '@/components/navbar';
-import { authOptions } from '@lorrigo/auth';
 
 export default async function Dashboard() {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession();
 
   if (!session) {
     redirect('/auth/signin');

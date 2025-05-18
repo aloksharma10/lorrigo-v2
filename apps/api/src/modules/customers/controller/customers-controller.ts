@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
-import { captureException } from '../../../lib/sentry';
+import { captureException } from '@/lib/sentry';
 import { CustomerService } from '../services/customer-services';
 
 // Validation schemas

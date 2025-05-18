@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/node';
-import { APP_CONFIG } from '../config/app';
+import { APP_CONFIG } from '@/config/app';
 
 // Initialize Sentry
 export const initSentry = () => {

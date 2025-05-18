@@ -1,6 +1,5 @@
 import { FastifyPluginAsync, FastifyReply } from 'fastify';
 import fp from 'fastify-plugin';
-import { jwtVerify } from 'jose';
 import { FastifyRequest } from 'fastify';
 import { prisma } from '@lorrigo/db';
 
@@ -42,69 +41,68 @@ const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (fastify, _optio
   fastify.decorateRequest('userPayload', null);
 
   // Hook to verify the JWT token on specified routes
-  fastify.addHook('onRequest', async (request, reply) => {
-    try {
-      // Skip auth for non-protected routes
-      const routePath = request.routeOptions?.url || request.url;
-      if (
-        routePath.startsWith('/api/public') ||
-        routePath.startsWith('/docs') ||
-        routePath === '/health' ||
-        routePath.startsWith('/auth')
-      ) {
-        return;
-      }
+  // fastify.addHook('onRequest', async (request, reply) => {
+  //   try {
+  //     // Skip auth for non-protected routes
+  //     const routePath = request.routeOptions?.url || request.url;
+  //     if (
+  //       routePath.startsWith('/api/public') ||
+  //       routePath.startsWith('/docs') ||
+  //       routePath === '/health' ||
+  //       routePath.startsWith('/auth')
+  //     ) {
+  //       return;
+  //     }
 
-      const authHeader = request.headers.authorization;
+  //     const authHeader = request.headers.authorization;
 
-      if (!authHeader) {
-        return reply.code(401).send({ error: 'Unauthorized: No token provided' });
-      }
+  //     if (!authHeader) {
+  //       return reply.code(401).send({ error: 'Unauthorized: No token provided' });
+  //     }
 
-      // Format: "Bearer {token}"
-      const token = authHeader.replace('Bearer ', '');
+  //     // Format: "Bearer {token}"
+  //     const token = authHeader.replace('Bearer ', '');
 
-      try {
-        // Verify token using jose
-        const secret = new TextEncoder().encode(
-          process.env.AUTH_SECRET || 'fallback-secret-do-not-use-in-production'
-        );
+  //     try {
+  //       // Verify token using jose
+  //       const secret = new TextEncoder().encode(
+  //         process.env.AUTH_SECRET || 'fallback-secret-do-not-use-in-production'
+  //       );
 
-        const { payload } = await jwtVerify(token, secret);
+  //       const { payload } = await jwtVerify(token, secret);
 
-        if (!payload) {
-          return reply.code(401).send({ error: 'Unauthorized: Invalid token' });
-        }
+  //       if (!payload) {
+  //         return reply.code(401).send({ error: 'Unauthorized: Invalid token' });
+  //       }
 
-        // Add user to request with proper mapping
-        request.userPayload = {
-          id: payload.sub || '',
-          email: typeof payload.email === 'string' ? payload.email : '',
-          role: typeof payload.role === 'string' ? payload.role : '',
-          ...payload,
-        };
-      } catch (err) {
-        return reply.code(401).send({ error: 'Unauthorized: Invalid token' });
-      }
-    } catch (error) {
-      request.log.error(error, 'Error authenticating request');
-      return reply.code(401).send({ error: 'Unauthorized: Authentication failed' });
-    }
-  });
+  //       // Add user to request with proper mapping
+  //       request.userPayload = {
+  //         id: payload.sub || '',
+  //         email: typeof payload.email === 'string' ? payload.email : '',
+  //         role: typeof payload.role === 'string' ? payload.role : '',
+  //         ...payload,
+  //       };
+  //     } catch (err) {
+  //       return reply.code(401).send({ error: 'Unauthorized: Invalid token' });
+  //     }
+  //   } catch (error) {
+  //     request.log.error(error, 'Error authenticating request');
+  //     return reply.code(401).send({ error: 'Unauthorized: Authentication failed' });
+  //   }
+  // });
 
   // Add authentication decorator
   fastify.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      await request.jwtVerify();
+      const payload: any = await request.jwtVerify();
 
-      // Fetch the user from database to validate they still exist and are active
-      if (!request.userPayload?.id) {
+      if (!payload?.id) {
         throw new Error('User ID not found in token');
       }
 
       const user = await prisma.user.findUnique({
         where: {
-          id: request.userPayload.id,
+          id: payload.id,
           is_active: true,
         },
         select: {
