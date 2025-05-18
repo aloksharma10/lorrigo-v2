@@ -2,6 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { ShipmentService } from '../services/shipmentService';
 import { CreateShipmentSchema, UpdateShipmentSchema, AddTrackingEventSchema } from '../validations';
+import { checkAuth } from '../../../middleware/auth';
 
 /**
  * Controller for shipment-related API endpoints
@@ -18,8 +19,11 @@ export class ShipmentController {
    */
   async createShipment(request: FastifyRequest, reply: FastifyReply) {
     try {
+      // Check if user is authenticated
+      await checkAuth(request, reply);
+      
       const data = CreateShipmentSchema.parse(request.body);
-      const user_id = request.user.id;
+      const user_id = request.userPayload!.id;
 
       const result = await this.shipmentService.createShipment(data, user_id);
 
@@ -42,7 +46,10 @@ export class ShipmentController {
    */
   async getAllShipments(request: FastifyRequest, reply: FastifyReply) {
     try {
-      const user_id = request.user.id;
+      // Check if user is authenticated
+      await checkAuth(request, reply);
+      
+      const user_id = request.userPayload!.id;
 
       const shipments = await this.shipmentService.getAllShipments(user_id);
 
@@ -58,8 +65,11 @@ export class ShipmentController {
    */
   async getShipmentById(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
     try {
+      // Check if user is authenticated
+      await checkAuth(request, reply);
+      
       const { id } = request.params;
-      const user_id = request.user.id;
+      const user_id = request.userPayload!.id;
 
       const shipment = await this.shipmentService.getShipmentById(id, user_id);
 
@@ -79,9 +89,12 @@ export class ShipmentController {
    */
   async updateShipment(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
     try {
+      // Check if user is authenticated
+      await checkAuth(request, reply);
+      
       const { id } = request.params;
       const updateData = UpdateShipmentSchema.parse(request.body);
-      const user_id = request.user.id;
+      const user_id = request.userPayload!.id;
 
       const result = await this.shipmentService.updateShipment(id, user_id, updateData);
 
@@ -104,9 +117,12 @@ export class ShipmentController {
    */
   async addTrackingEvent(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
     try {
+      // Check if user is authenticated
+      await checkAuth(request, reply);
+      
       const { id } = request.params;
       const eventData = AddTrackingEventSchema.parse(request.body);
-      const user_id = request.user.id;
+      const user_id = request.userPayload!.id;
 
       const result = await this.shipmentService.addTrackingEvent(id, user_id, eventData);
 
@@ -132,8 +148,11 @@ export class ShipmentController {
     reply: FastifyReply
   ) {
     try {
+      // Check if user is authenticated
+      await checkAuth(request, reply);
+      
       const { id } = request.params;
-      const user_id = request.user.id;
+      const user_id = request.userPayload!.id;
 
       const result = await this.shipmentService.getTrackingEvents(id, user_id);
 
@@ -153,8 +172,11 @@ export class ShipmentController {
    */
   async cancelShipment(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
     try {
+      // Check if user is authenticated
+      await checkAuth(request, reply);
+      
       const { id } = request.params;
-      const user_id = request.user.id;
+      const user_id = request.userPayload!.id;
 
       const result = await this.shipmentService.cancelShipment(id, user_id);
 
@@ -174,7 +196,10 @@ export class ShipmentController {
    */
   async getShipmentStats(request: FastifyRequest, reply: FastifyReply) {
     try {
-      const user_id = request.user.id;
+      // Check if user is authenticated
+      await checkAuth(request, reply);
+      
+      const user_id = request.userPayload!.id;
 
       const stats = await this.shipmentService.getShipmentStats(user_id);
 

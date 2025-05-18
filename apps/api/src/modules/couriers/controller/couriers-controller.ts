@@ -2,6 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { Role } from '@lorrigo/db';
 import { CourierService } from '../services/courier-services';
+import { checkAuth } from '../../../middleware/auth';
 
 // Validation schemas
 const createCourierSchema = z.object({
@@ -63,8 +64,11 @@ export class CourierController {
 
   async getAllCouriers(request: FastifyRequest, reply: FastifyReply) {
     try {
-      const userId = request.user.id;
-      const userRole = request.user.role as Role;
+      // Check if user is authenticated
+      await checkAuth(request, reply);
+      
+      const userId = request.userPayload!.id;
+      const userRole = request.userPayload!.role as Role;
       const couriers = await this.courierService.getAllCouriers(userId, userRole);
       return reply.send(couriers);
     } catch (error) {
@@ -75,9 +79,12 @@ export class CourierController {
 
   async getCourierById(request: FastifyRequest, reply: FastifyReply) {
     try {
+      // Check if user is authenticated
+      await checkAuth(request, reply);
+      
       const { id } = request.params as { id: string };
-      const userId = request.user.id;
-      const userRole = request.user.role as Role;
+      const userId = request.userPayload!.id;
+      const userRole = request.userPayload!.role as Role;
 
       const courier = await this.courierService.getCourierById(id, userId, userRole);
 
@@ -115,9 +122,12 @@ export class CourierController {
 
   async setCourierPricing(request: FastifyRequest, reply: FastifyReply) {
     try {
+      // Check if user is authenticated
+      await checkAuth(request, reply);
+      
       const pricingData = courierPricingSchema.parse(request.body);
-      const userId = request.user.id;
-      const userRole = request.user.role as Role;
+      const userId = request.userPayload!.id;
+      const userRole = request.userPayload!.role as Role;
 
       const result = await this.courierService.setCourierPricing(pricingData, userId, userRole);
 
@@ -137,8 +147,11 @@ export class CourierController {
 
   async getCourierPricing(request: FastifyRequest, reply: FastifyReply) {
     try {
+      // Check if user is authenticated
+      await checkAuth(request, reply);
+      
       const { courierId } = request.params as { courierId: string };
-      const userId = request.user.id;
+      const userId = request.userPayload!.id;
 
       const result = await this.courierService.getCourierPricing(courierId, userId);
 

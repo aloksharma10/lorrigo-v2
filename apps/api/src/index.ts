@@ -5,7 +5,7 @@ import { prisma } from '@lorrigo/db';
 import { APP_CONFIG } from './config/app';
 import { registerSwagger } from './plugins/swagger';
 import { registerRateLimiter } from './plugins/rate-limiter';
-import { registerAuth } from './plugins/auth';
+import authPlugin from './plugins/auth';
 import { initSentry, captureException } from './lib/sentry';
 
 // Route modules
@@ -46,7 +46,7 @@ const registerPlugins = async () => {
     });
 
     // Authentication
-    await registerAuth(server);
+    await server.register(authPlugin);
 
     // Rate limiter
     await registerRateLimiter(server);

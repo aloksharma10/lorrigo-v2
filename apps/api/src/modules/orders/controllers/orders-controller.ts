@@ -10,6 +10,7 @@ import {
 import { z } from 'zod';
 import { addJob } from '../../../lib/queue';
 import { QueueNames } from '../../../lib/queue';
+import { checkAuth } from '../../../middleware/auth';
 
 /**
  * Order Controller handles HTTP request/response logic
@@ -26,8 +27,11 @@ export class OrderController {
    */
   async getAllOrders(request: FastifyRequest, reply: FastifyReply) {
     try {
+      // Check if user is authenticated
+      await checkAuth(request, reply);
+      
       const queryParams = OrderQuerySchema.parse(request.query);
-      const userId = request.user.id;
+      const userId = request.userPayload!.id;
 
       const result = await this.orderService.getAllOrders(userId, queryParams);
       return result;
@@ -53,8 +57,11 @@ export class OrderController {
    */
   async getOrderById(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
     try {
+      // Check if user is authenticated
+      await checkAuth(request, reply);
+      
       const { id } = request.params;
-      const user_id = request.user.id;
+      const user_id = request.userPayload!.id;
 
       const order = await this.orderService.getOrderById(id, user_id);
 
@@ -80,8 +87,11 @@ export class OrderController {
    */
   async createOrder(request: FastifyRequest, reply: FastifyReply) {
     try {
+      // Check if user is authenticated
+      await checkAuth(request, reply);
+      
       const data = CreateOrderSchema.parse(request.body);
-      const user_id = request.user.id;
+      const user_id = request.userPayload!.id;
 
       const order = await this.orderService.createOrder(data, user_id);
 
@@ -138,9 +148,12 @@ export class OrderController {
     reply: FastifyReply
   ) {
     try {
+      // Check if user is authenticated
+      await checkAuth(request, reply);
+      
       const { id } = request.params;
       const updateData = UpdateOrderSchema.parse(request.body);
-      const user_id = request.user.id;
+      const user_id = request.userPayload!.id;
 
       const existingOrder = await this.orderService.getOrderById(id, user_id);
 
@@ -192,9 +205,12 @@ export class OrderController {
    */
   async cancelOrder(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
     try {
+      // Check if user is authenticated
+      await checkAuth(request, reply);
+      
       const { id } = request.params;
       const { reason } = request.body as { reason?: string };
-      const user_id = request.user.id;
+      const user_id = request.userPayload!.id;
 
       const result = await this.orderService.cancelOrder(id, user_id, reason);
 
@@ -234,8 +250,11 @@ export class OrderController {
    */
   async getOrderStats(request: FastifyRequest, reply: FastifyReply) {
     try {
+      // Check if user is authenticated
+      await checkAuth(request, reply);
+      
       const { period = 'month' } = OrderStatsQuerySchema.parse(request.query);
-      const user_id = request.user.id;
+      const user_id = request.userPayload!.id;
 
       const stats = await this.orderService.getOrderStats(user_id, period as string);
 

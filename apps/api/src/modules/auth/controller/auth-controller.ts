@@ -7,22 +7,22 @@ import { JWT } from '@fastify/jwt';
 import { AuthService } from '../services/auth-services';
 
 // Add type augmentation for Fastify
-declare module 'fastify' {
-  interface FastifyInstance {
-    prisma: PrismaClient;
-    jwt: JWT;
-    authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
-  }
+// declare module 'fastify' {
+//   interface FastifyInstance {
+//     prisma: PrismaClient;
+//     jwt: JWT;
+//     authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+//   }
 
-  interface FastifyRequest {
-    user: {
-      id: string;
-      email: string;
-      role: string;
-      permissions?: object;
-    };
-  }
-}
+//   interface FastifyRequest {
+//     user: {
+//       id: string;
+//       email: string;
+//       role: string;
+//       permissions?: object;
+//     };
+//   }
+// }
 
 // Define request body schemas
 const loginSchema = z.object({
@@ -110,7 +110,13 @@ export class AuthController {
 
   async getMe(request: FastifyRequest, reply: FastifyReply) {
     try {
-      return await this.authService.getMe(request.user.id);
+      if (!request.userPayload) {
+        return reply.code(401).send({
+          message: 'Unauthorized',
+        });
+      }
+      
+      return await this.authService.getMe(request.userPayload.id);
     } catch (error) {
       captureException(error as Error);
       return reply.code(500).send({
@@ -121,7 +127,13 @@ export class AuthController {
 
   async logout(request: FastifyRequest, reply: FastifyReply) {
     try {
-      await this.authService.logout(request.user.id, request.ip);
+      if (!request.userPayload) {
+        return reply.code(401).send({
+          message: 'Unauthorized',
+        });
+      }
+      
+      await this.authService.logout(request.userPayload.id, request.ip);
       return {
         message: 'Logged out successfully',
       };

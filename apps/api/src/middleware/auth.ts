@@ -8,6 +8,20 @@ interface Permission {
 }
 
 /**
+ * Middleware to check if user is authenticated
+ * Returns 401 if userPayload is missing
+ */
+export async function checkAuth(request: FastifyRequest, reply: FastifyReply) {
+  if (!request.userPayload) {
+    return reply.code(401).send({
+      statusCode: 401,
+      error: 'Unauthorized',
+      message: 'Authentication required',
+    });
+  }
+}
+
+/**
  * Middleware for authenticating user
  * Uses the Fastify JWT authentication
  */
@@ -15,6 +29,11 @@ export async function authenticateUser(request: FastifyRequest, reply: FastifyRe
   try {
     // Use the authenticate decorator from the auth plugin
     await request.jwtVerify();
+    
+    // Check if userPayload exists after verification
+    if (!request.userPayload) {
+      throw new Error('User authentication failed');
+    }
   } catch (err) {
     reply.code(401).send({
       statusCode: 401,
@@ -35,9 +54,9 @@ export function authorizeRoles(roles: Role[]) {
       await authenticateUser(request, reply);
 
       // Check if user's role is in the allowed roles
-      const userRole = request.user.role as Role;
+      const userRole = request.userPayload?.role as Role;
 
-      if (!roles.includes(userRole)) {
+      if (!userRole || !roles.includes(userRole)) {
         return reply.code(403).send({
           statusCode: 403,
           error: 'Forbidden',
@@ -61,10 +80,10 @@ export function authorizePermissions(requiredPermissions: string[]) {
       await authenticateUser(request, reply);
 
       // Get the user's permissions
-      const user_permissions = (request.user.permissions || []) as Permission[];
+      const user_permissions = (request.userPayload?.permissions || []) as Permission[];
 
       // If the user is an ADMIN, they have all permissions
-      if (request.user.role === 'ADMIN') {
+      if (request.userPayload?.role === 'ADMIN') {
         return;
       }
 
@@ -109,7 +128,7 @@ export function authorizeOwner(resource_id_param: string, resource_type: string)
       }
 
       // If the user is an ADMIN or SUBADMIN, they can access any resource
-      if (['ADMIN', 'SUBADMIN'].includes(request.user.role)) {
+      if (['ADMIN', 'SUBADMIN'].includes(request.userPayload?.role || '')) {
         return;
       }
 
@@ -154,7 +173,7 @@ export function authorizeOwner(resource_id_param: string, resource_type: string)
         });
       }
 
-      if (resource.user_id !== request.user.id) {
+      if (resource.user_id !== request.userPayload?.id) {
         return reply.code(403).send({
           statusCode: 403,
           error: 'Forbidden',
