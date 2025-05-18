@@ -1,6 +1,6 @@
-import { FastifyInstance } from "fastify";
-import { AuthController } from "./controller/auth-controller";
-import { AuthService } from "./services/auth-services";
+import { FastifyInstance } from 'fastify';
+import { AuthController } from './controller/auth-controller';
+import { AuthService } from './services/auth-services';
 
 export default async function auth(fastify: FastifyInstance) {
   const authService = new AuthService(fastify);

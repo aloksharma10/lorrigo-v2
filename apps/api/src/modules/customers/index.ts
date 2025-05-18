@@ -255,4 +255,4 @@ export default async function customerRoutes(fastify: FastifyInstance) {
     preHandler: fastify.authenticate,
     handler: (request, reply) => customerController.addAddress(request, reply),
   });
-} 
+}

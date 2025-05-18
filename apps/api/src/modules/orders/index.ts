@@ -21,9 +21,17 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
         properties: {
           page: { type: 'integer', default: 1 },
           limit: { type: 'integer', default: 10 },
-          status: { 
+          status: {
             type: 'string',
-            enum: ['CREATED', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'RETURNED']
+            enum: [
+              'CREATED',
+              'CONFIRMED',
+              'PROCESSING',
+              'SHIPPED',
+              'DELIVERED',
+              'CANCELLED',
+              'RETURNED',
+            ],
           },
           search: { type: 'string' },
           fromDate: { type: 'string', format: 'date-time' },
@@ -59,7 +67,7 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
     },
     handler: (request, reply) => orderController.getAllOrders(request, reply),
   });
-  
+
   // Get a single order by ID
   fastify.get('/:id', {
     schema: {
@@ -118,9 +126,10 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    handler: (request: FastifyRequest<{ Params: { id: string } }>, reply) => orderController.getOrderById(request, reply),
+    handler: (request: FastifyRequest<{ Params: { id: string } }>, reply) =>
+      orderController.getOrderById(request, reply),
   });
-  
+
   // Create a new order
   fastify.post('/', {
     schema: {
@@ -166,7 +175,7 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
     },
     handler: (request, reply) => orderController.createOrder(request, reply),
   });
-  
+
   // Update an order status
   fastify.patch('/:id/status', {
     schema: {
@@ -184,9 +193,17 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
         type: 'object',
         required: ['status'],
         properties: {
-          status: { 
+          status: {
             type: 'string',
-            enum: ['CREATED', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'RETURNED']
+            enum: [
+              'CREATED',
+              'CONFIRMED',
+              'PROCESSING',
+              'SHIPPED',
+              'DELIVERED',
+              'CANCELLED',
+              'RETURNED',
+            ],
           },
           notes: { type: 'string' },
         },
@@ -203,12 +220,15 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    handler: async (request: FastifyRequest<{
-      Params: { id: string };
-      Body: { status: string; notes?: string };
-    }>, reply) => orderController.updateOrderStatus(request, reply),
+    handler: async (
+      request: FastifyRequest<{
+        Params: { id: string };
+        Body: { status: string; notes?: string };
+      }>,
+      reply
+    ) => orderController.updateOrderStatus(request, reply),
   });
-  
+
   // Cancel an order
   fastify.post('/:id/cancel', {
     schema: {
@@ -240,12 +260,15 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    handler: (request: FastifyRequest<{
-      Params: { id: string };
-      Body: { reason?: string };
-    }>, reply) => orderController.cancelOrder(request, reply),
+    handler: (
+      request: FastifyRequest<{
+        Params: { id: string };
+        Body: { reason?: string };
+      }>,
+      reply
+    ) => orderController.cancelOrder(request, reply),
   });
-  
+
   // Get order statistics
   fastify.get('/stats', {
     schema: {
@@ -255,10 +278,10 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
       querystring: {
         type: 'object',
         properties: {
-          period: { 
+          period: {
             type: 'string',
             enum: ['day', 'week', 'month', 'year'],
-            default: 'month'
+            default: 'month',
           },
         },
       },
@@ -284,6 +307,7 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    handler: (request: FastifyRequest, reply: FastifyReply) => orderController.getOrderStats(request, reply),
+    handler: (request: FastifyRequest, reply: FastifyReply) =>
+      orderController.getOrderStats(request, reply),
   });
-} 
+}

@@ -34,16 +34,18 @@ export class CustomerService {
 
   async getAllCustomers(page: number, limit: number, search: string) {
     const skip = (page - 1) * limit;
-    
+
     // Build the where clause based on search parameter
-    const searchCondition: Prisma.CustomerWhereInput = search ? {
-      OR: [
-        { name: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
-        { email: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
-        { phone: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
-      ],
-    } : {};
-    
+    const searchCondition: Prisma.CustomerWhereInput = search
+      ? {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
+            { email: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
+            { phone: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
+          ],
+        }
+      : {};
+
     // Get customers with pagination
     const [customers, total] = await Promise.all([
       this.fastify.prisma.customer.findMany({
@@ -61,9 +63,9 @@ export class CustomerService {
       }),
       this.fastify.prisma.customer.count({ where: searchCondition }),
     ]);
-    
+
     const totalPages = Math.ceil(total / limit);
-    
+
     return {
       customers,
       total,
@@ -80,14 +82,14 @@ export class CustomerService {
         addresses: true,
       },
     });
-    
+
     if (!customer) {
       return {
         error: 'Customer not found',
         status: 404,
       };
     }
-    
+
     return customer;
   }
 
@@ -107,7 +109,7 @@ export class CustomerService {
           : {}),
       },
     });
-    
+
     return {
       id: customer.id,
       name: customer.name,
@@ -121,26 +123,28 @@ export class CustomerService {
     const existingCustomer = await this.fastify.prisma.customer.findUnique({
       where: { id },
     });
-    
+
     if (!existingCustomer) {
       return {
         error: 'Customer not found',
         status: 404,
       };
     }
-    
+
     // Update customer in database
     const customer = await this.fastify.prisma.customer.update({
       where: { id },
       data: {
         ...data,
-        addresses: data.addresses ? {
-          deleteMany: {},
-          create: data.addresses
-        } : undefined
+        addresses: data.addresses
+          ? {
+              deleteMany: {},
+              create: data.addresses,
+            }
+          : undefined,
       },
     });
-    
+
     return {
       id: customer.id,
       name: customer.name,
@@ -155,24 +159,24 @@ export class CustomerService {
     const customer = await this.fastify.prisma.customer.findUnique({
       where: { id },
     });
-    
+
     if (!customer) {
       return {
         error: 'Customer not found',
         status: 404,
       };
     }
-    
+
     // Delete all customer addresses first
     await this.fastify.prisma.address.deleteMany({
       where: { customer_id: id },
     });
-    
+
     // Delete customer
     await this.fastify.prisma.customer.delete({
       where: { id },
     });
-    
+
     return {
       message: 'Customer deleted successfully',
     };
@@ -183,14 +187,14 @@ export class CustomerService {
     const customer = await this.fastify.prisma.customer.findUnique({
       where: { id: customerId },
     });
-    
+
     if (!customer) {
       return {
         error: 'Customer not found',
         status: 404,
       };
     }
-    
+
     // If this address is set as default, update all other addresses
     if (data.isDefault) {
       await this.fastify.prisma.address.updateMany({
@@ -198,7 +202,7 @@ export class CustomerService {
         data: { is_default: false },
       });
     }
-    
+
     // Create the address
     const address = await this.fastify.prisma.address.create({
       data: {
@@ -212,7 +216,7 @@ export class CustomerService {
         customer_id: customerId,
       },
     });
-    
+
     return address;
   }
-} 
+}

@@ -26,7 +26,11 @@ export class CustomerController {
 
   async getAllCustomers(request: FastifyRequest, reply: FastifyReply) {
     try {
-      const { page = 1, limit = 10, search = '' } = request.query as {
+      const {
+        page = 1,
+        limit = 10,
+        search = '',
+      } = request.query as {
         page?: number;
         limit?: number;
         search?: string;
@@ -144,4 +148,4 @@ export class CustomerController {
       return reply.code(500).send({ message: 'Internal server error' });
     }
   }
-} 
+}

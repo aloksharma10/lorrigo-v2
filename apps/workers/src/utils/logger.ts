@@ -10,4 +10,4 @@ export const logger = pino({
       ignore: 'pid,hostname',
     },
   },
-}); 
+});

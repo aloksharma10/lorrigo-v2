@@ -1,6 +1,6 @@
-import { PrismaClient } from "@lorrigo/db";
+import { PrismaClient } from '@lorrigo/db';
 import bcrypt from 'bcrypt';
-import { FastifyInstance } from "fastify";
+import { FastifyInstance } from 'fastify';
 
 interface RegisterData {
   email: string;
@@ -35,11 +35,11 @@ export class AuthService {
     const existingUser = await this.prisma.user.findUnique({
       where: { email: data.email },
     });
-    
+
     if (existingUser) {
       throw new Error('User with this email already exists');
     }
-    
+
     // Create user in database
     const user = await this.prisma.user.create({
       data: {
@@ -53,7 +53,7 @@ export class AuthService {
         role: 'SELLER', // Default role for new registrations
       },
     });
-    
+
     // Create wallet for user
     await this.prisma.wallet.create({
       data: {
@@ -62,7 +62,7 @@ export class AuthService {
         user_id: user.id,
       },
     });
-    
+
     // Generate JWT token
     const token = this.fastify.jwt.sign({
       id: user.id,
@@ -86,24 +86,24 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { email },
     });
-    
+
     // Check if user exists
     if (!user) {
       return { error: 'Invalid email or password' };
     }
-    
+
     // Check if user is active
     if (!user.is_active) {
       return { error: 'Your account has been deactivated. Please contact support.' };
     }
-    
+
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password as string);
-    
+
     if (!isPasswordValid) {
       return { error: 'Invalid email or password' };
     }
-    
+
     // Create API request log
     await this.prisma.apiRequest.create({
       data: {
@@ -115,14 +115,14 @@ export class AuthService {
         response_status: 200,
       },
     });
-    
+
     // Generate JWT token
     const token = this.fastify.jwt.sign({
       id: user.id,
       email: user.email,
       role: user.role,
     });
-    
+
     return {
       user: {
         id: user.id,

@@ -56,4 +56,4 @@ export const registerSwagger = async (fastify: FastifyInstance) => {
   });
 
   fastify.log.info('Swagger documentation available at /docs');
-}; 
+};

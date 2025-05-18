@@ -14,11 +14,8 @@ const createCustomerSchema = z.object({
   name: z.string().min(2),
   email: z.string().email().optional(),
   phone: z.string().min(10),
-  addresses: z
-    .array(createAddressSchema)
-    .optional(),
+  addresses: z.array(createAddressSchema).optional(),
 });
-
 
 const updateCustomerSchema = createCustomerSchema.partial();
 
@@ -65,14 +62,18 @@ export default async function customers(fastify: FastifyInstance) {
     preHandler: fastify.authenticate,
     handler: async (request, reply) => {
       try {
-        const { page = 1, limit = 10, search = '' } = request.query as {
+        const {
+          page = 1,
+          limit = 10,
+          search = '',
+        } = request.query as {
           page?: number;
           limit?: number;
           search?: string;
         };
-        
+
         const skip = (page - 1) * limit;
-        
+
         // Build the where clause based on search parameter
         const where = search
           ? {
@@ -83,16 +84,18 @@ export default async function customers(fastify: FastifyInstance) {
               ],
             }
           : {};
-        
+
         // Get customers with pagination
         const [customers, total] = await Promise.all([
           fastify.prisma.customer.findMany({
             where: {
-              OR: search ? [
-                { name: { contains: search, mode: 'insensitive' } },
-                { email: { contains: search, mode: 'insensitive' } }, 
-                { phone: { contains: search, mode: 'insensitive' } }
-              ] : undefined
+              OR: search
+                ? [
+                    { name: { contains: search, mode: 'insensitive' } },
+                    { email: { contains: search, mode: 'insensitive' } },
+                    { phone: { contains: search, mode: 'insensitive' } },
+                  ]
+                : undefined,
             },
             skip,
             take: limit,
@@ -105,17 +108,21 @@ export default async function customers(fastify: FastifyInstance) {
               created_at: true,
             },
           }),
-          fastify.prisma.customer.count({ where: {
-            OR: search ? [
-              { name: { contains: search, mode: 'insensitive' } },
-              { email: { contains: search, mode: 'insensitive' } }, 
-              { phone: { contains: search, mode: 'insensitive' } }
-            ] : undefined
-          } }),
+          fastify.prisma.customer.count({
+            where: {
+              OR: search
+                ? [
+                    { name: { contains: search, mode: 'insensitive' } },
+                    { email: { contains: search, mode: 'insensitive' } },
+                    { phone: { contains: search, mode: 'insensitive' } },
+                  ]
+                : undefined,
+            },
+          }),
         ]);
-        
+
         const totalPages = Math.ceil(total / limit);
-        
+
         return {
           customers,
           total,
@@ -126,14 +133,14 @@ export default async function customers(fastify: FastifyInstance) {
       } catch (error) {
         fastify.log.error(error);
         captureException(error as Error);
-        
+
         return reply.code(500).send({
           message: 'Internal server error',
         });
       }
     },
   });
-  
+
   // Get a single customer by ID
   fastify.get('/:id', {
     schema: {
@@ -181,7 +188,7 @@ export default async function customers(fastify: FastifyInstance) {
     handler: async (request, reply) => {
       try {
         const { id } = request.params as { id: string };
-        
+
         // Get customer by ID with addresses
         const customer = await fastify.prisma.customer.findUnique({
           where: { id },
@@ -189,25 +196,25 @@ export default async function customers(fastify: FastifyInstance) {
             addresses: true,
           },
         });
-        
+
         if (!customer) {
           return reply.code(404).send({
             message: 'Customer not found',
           });
         }
-        
+
         return customer;
       } catch (error) {
         fastify.log.error(error);
         captureException(error as Error);
-        
+
         return reply.code(500).send({
           message: 'Internal server error',
         });
       }
     },
   });
-  
+
   // Create a new customer
   fastify.post('/', {
     schema: {
@@ -256,7 +263,7 @@ export default async function customers(fastify: FastifyInstance) {
       try {
         // Validate request body
         const { name, email, phone, addresses } = createCustomerSchema.parse(request.body);
-        
+
         // Create customer in database
         const customer = await fastify.prisma.customer.create({
           data: {
@@ -273,7 +280,7 @@ export default async function customers(fastify: FastifyInstance) {
               : {}),
           },
         });
-        
+
         return reply.code(201).send({
           id: customer.id,
           name: customer.name,
@@ -287,17 +294,17 @@ export default async function customers(fastify: FastifyInstance) {
             errors: error.errors,
           });
         }
-        
+
         fastify.log.error(error);
         captureException(error as Error);
-        
+
         return reply.code(500).send({
           message: 'Internal server error',
         });
       }
     },
   });
-  
+
   // Update a customer
   fastify.put('/:id', {
     schema: {
@@ -337,33 +344,35 @@ export default async function customers(fastify: FastifyInstance) {
     handler: async (request, reply) => {
       try {
         const { id } = request.params as { id: string };
-        
+
         // Validate request body
         const validatedData = updateCustomerSchema.parse(request.body);
-        
+
         // Find customer to make sure it exists
         const existingCustomer = await fastify.prisma.customer.findUnique({
           where: { id },
         });
-        
+
         if (!existingCustomer) {
           return reply.code(404).send({
             message: 'Customer not found',
           });
         }
-        
+
         // Update customer in database
         const customer = await fastify.prisma.customer.update({
           where: { id },
           data: {
             ...validatedData,
-            addresses: validatedData.addresses ? {
-              deleteMany: {},
-              create: validatedData.addresses
-            } : undefined
+            addresses: validatedData.addresses
+              ? {
+                  deleteMany: {},
+                  create: validatedData.addresses,
+                }
+              : undefined,
           },
         });
-        
+
         return {
           id: customer.id,
           name: customer.name,
@@ -378,17 +387,17 @@ export default async function customers(fastify: FastifyInstance) {
             errors: error.errors,
           });
         }
-        
+
         fastify.log.error(error);
         captureException(error as Error);
-        
+
         return reply.code(500).send({
           message: 'Internal server error',
         });
       }
     },
   });
-  
+
   // Delete a customer
   fastify.delete('/:id', {
     schema: {
@@ -415,42 +424,42 @@ export default async function customers(fastify: FastifyInstance) {
     handler: async (request, reply) => {
       try {
         const { id } = request.params as { id: string };
-        
+
         // Check if customer exists
         const customer = await fastify.prisma.customer.findUnique({
           where: { id },
         });
-        
+
         if (!customer) {
           return reply.code(404).send({
             message: 'Customer not found',
           });
         }
-        
+
         // Delete all customer addresses first
         await fastify.prisma.address.deleteMany({
           where: { customer_id: id },
         });
-        
+
         // Delete customer
         await fastify.prisma.customer.delete({
           where: { id },
         });
-        
+
         return {
           message: 'Customer deleted successfully',
         };
       } catch (error) {
         fastify.log.error(error);
         captureException(error as Error);
-        
+
         return reply.code(500).send({
           message: 'Internal server error',
         });
       }
     },
   });
-  
+
   // Add an address to a customer
   fastify.post('/:id/addresses', {
     schema: {
@@ -506,18 +515,18 @@ export default async function customers(fastify: FastifyInstance) {
           country?: string;
           isDefault?: boolean;
         };
-        
+
         // Check if customer exists
         const customer = await fastify.prisma.customer.findUnique({
           where: { id },
         });
-        
+
         if (!customer) {
           return reply.code(404).send({
             message: 'Customer not found',
           });
         }
-        
+
         // If this address is set as default, update all other addresses
         if (addressData.isDefault) {
           await fastify.prisma.address.updateMany({
@@ -525,7 +534,7 @@ export default async function customers(fastify: FastifyInstance) {
             data: { is_default: false },
           });
         }
-        
+
         // Create the address
         const address = await fastify.prisma.address.create({
           data: {
@@ -539,16 +548,16 @@ export default async function customers(fastify: FastifyInstance) {
             customer_id: id,
           },
         });
-        
+
         return reply.code(201).send(address);
       } catch (error) {
         fastify.log.error(error);
         captureException(error as Error);
-        
+
         return reply.code(500).send({
           message: 'Internal server error',
         });
       }
     },
   });
-} 
+}

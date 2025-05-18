@@ -5,6 +5,7 @@ A comprehensive logistics platform for managing orders, shipments, customers, an
 ## Features
 
 ### User Features
+
 - Wallet and Non-wallet payment gateway
 - Customer management (CRUD)
 - Hub management (CRUD)
@@ -20,6 +21,7 @@ A comprehensive logistics platform for managing orders, shipments, customers, an
 - Analytics
 
 ### Admin Features
+
 - View each seller's orders and shipments
 - Billing management for AWBs
 - Accept/reject disputes
@@ -32,6 +34,7 @@ A comprehensive logistics platform for managing orders, shipments, customers, an
 - Remittance cycle management
 
 ### Technical Features
+
 - Authentication using Auth.js
 - Rate-limiting with Fastify/rate-limit + Redis
 - Notification service
@@ -113,28 +116,33 @@ modules/
 ### Installation
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/your-username/lorrigo-v2.git
    cd lorrigo-v2
    ```
 
 2. Install dependencies:
+
    ```bash
    pnpm install
    ```
 
 3. Set up environment variables by copying the example files:
+
    ```bash
    cp apps/api/.env.example apps/api/.env
    cp packages/db/.env.example packages/db/.env
    ```
 
 4. Start the development environment with Docker:
+
    ```bash
    docker-compose up -d
    ```
 
 5. Run database migrations:
+
    ```bash
    pnpm --filter @lorrigo/db migrate:dev
    ```

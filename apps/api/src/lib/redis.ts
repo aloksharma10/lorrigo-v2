@@ -18,4 +18,4 @@ redis.on('error', (err) => {
 });
 
 // Export Redis client
-export default redis; 
+export default redis;

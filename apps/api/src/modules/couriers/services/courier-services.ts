@@ -80,9 +80,9 @@ export class CourierService {
           courier_id: true,
         },
       });
-      
-      const courierIds = courierPricings.map(pricing => pricing.courier_id);
-      
+
+      const courierIds = courierPricings.map((pricing) => pricing.courier_id);
+
       return await this.fastify.prisma.courier.findMany({
         where: {
           id: { in: courierIds },
@@ -93,7 +93,7 @@ export class CourierService {
         },
       });
     }
-    
+
     // For admins, show all couriers
     return await this.fastify.prisma.courier.findMany({
       where: {

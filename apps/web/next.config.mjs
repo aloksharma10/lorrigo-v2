@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["@lorrigo/ui"],
-}
+  transpilePackages: ["@lorrigo/auth", "@lorrigo/db"],
+  experimental: {
+    serverComponentsExternalPackages: ["@prisma/client", "@prisma/client/runtime/library"],
+  },
+};
 
-export default nextConfig
+export default nextConfig;

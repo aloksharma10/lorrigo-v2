@@ -12,7 +12,7 @@ export const OrderStatusEnum = z.enum([
   'SHIPPED',
   'DELIVERED',
   'CANCELLED',
-  'RETURNED'
+  'RETURNED',
 ]);
 
 // Schema for order items
@@ -51,4 +51,4 @@ export const OrderQuerySchema = z.object({
 // Schema for order statistics query parameters
 export const OrderStatsQuerySchema = z.object({
   period: z.enum(['day', 'week', 'month', 'year']).default('month'),
-}); 
+});

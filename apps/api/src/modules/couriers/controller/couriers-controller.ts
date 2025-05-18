@@ -22,13 +22,15 @@ const createCourierSchema = z.object({
   increment_weight: z.number().optional(),
   type: z.enum(['EXPRESS', 'SURFACE']).default('SURFACE'),
   pickup_time: z.string().optional(),
-  api_credentials: z.object({
-    api_key: z.string().optional(),
-    api_url: z.string().url().optional(),
-    username: z.string().optional(),
-    password: z.string().optional(),
-    account_number: z.string().optional(),
-  }).optional(),
+  api_credentials: z
+    .object({
+      api_key: z.string().optional(),
+      api_url: z.string().url().optional(),
+      username: z.string().optional(),
+      password: z.string().optional(),
+      account_number: z.string().optional(),
+    })
+    .optional(),
 });
 
 const updateCourierSchema = createCourierSchema.partial();
@@ -78,7 +80,7 @@ export class CourierController {
       const userRole = request.user.role as Role;
 
       const courier = await this.courierService.getCourierById(id, userId, userRole);
-      
+
       if ('error' in courier) {
         return reply.code(courier.status).send({ error: courier.error });
       }
@@ -96,7 +98,7 @@ export class CourierController {
       const updateData = updateCourierSchema.parse(request.body);
 
       const result = await this.courierService.updateCourier(id, updateData);
-      
+
       if ('error' in result) {
         return reply.code(result.status).send({ error: result.error });
       }
@@ -118,7 +120,7 @@ export class CourierController {
       const userRole = request.user.role as Role;
 
       const result = await this.courierService.setCourierPricing(pricingData, userId, userRole);
-      
+
       if ('error' in result) {
         return reply.code(result.status).send({ error: result.error });
       }
@@ -139,7 +141,7 @@ export class CourierController {
       const userId = request.user.id;
 
       const result = await this.courierService.getCourierPricing(courierId, userId);
-      
+
       if ('error' in result) {
         return reply.code(result.status).send({ error: result.error });
       }

@@ -60,12 +60,12 @@ const registerPlugins = async () => {
         // Register new modular routes
         fastify.register(orderRoutes, { prefix: '/orders' });
         fastify.register(shipmentRoutes, { prefix: '/shipments' });
-        
+
         // Register existing routes until refactored
         fastify.register(authRoutes, { prefix: '/auth' });
         fastify.register(customerRoutes, { prefix: '/customers' });
         fastify.register(courierRoutes, { prefix: '/couriers' });
-        
+
         // Health check route
         fastify.get('/health', async () => {
           return {
@@ -91,12 +91,12 @@ const registerPlugins = async () => {
 const start = async () => {
   try {
     await registerPlugins();
-    
-    await server.listen({ 
-      port: APP_CONFIG.PORT, 
-      host: APP_CONFIG.HOST 
+
+    await server.listen({
+      port: APP_CONFIG.PORT,
+      host: APP_CONFIG.HOST,
     });
-    
+
     server.log.info(`Server running at http://${APP_CONFIG.HOST}:${APP_CONFIG.PORT}`);
   } catch (error) {
     server.log.error(error);

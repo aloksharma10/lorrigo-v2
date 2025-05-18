@@ -1,10 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { 
-  authenticateUser, 
-  authorizeRoles, 
-  authorizePermissions 
-} from '../../middleware/auth';
+import { authenticateUser, authorizeRoles, authorizePermissions } from '../../middleware/auth';
 import { Role } from '@lorrigo/db';
 import { CourierController } from './controller/couriers-controller';
 import { CourierService } from './services/courier-services';
@@ -28,13 +24,15 @@ const createCourierSchema = z.object({
   increment_weight: z.number().optional(),
   type: z.enum(['EXPRESS', 'SURFACE']).default('SURFACE'),
   pickup_time: z.string().optional(),
-  api_credentials: z.object({
-    api_key: z.string().optional(),
-    api_url: z.string().url().optional(),
-    username: z.string().optional(),
-    password: z.string().optional(),
-    account_number: z.string().optional(),
-  }).optional(),
+  api_credentials: z
+    .object({
+      api_key: z.string().optional(),
+      api_url: z.string().url().optional(),
+      username: z.string().optional(),
+      password: z.string().optional(),
+      account_number: z.string().optional(),
+    })
+    .optional(),
 });
 
 const updateCourierSchema = createCourierSchema.partial();
@@ -164,4 +162,4 @@ export default async function courierRoutes(fastify: FastifyInstance) {
   //     return reply.code(500).send({ error: 'Internal Server Error' });
   //   }
   // });
-} 
+}

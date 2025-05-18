@@ -56,17 +56,17 @@ export default async function permissionRoutes(fastify: FastifyInstance) {
     handler: async (request, reply) => {
       try {
         const { userId } = request.params as { userId: string };
-        
+
         // Check if user exists
         const user = await fastify.prisma.user.findUnique({
           where: { id: userId },
           select: { id: true },
         });
-        
+
         if (!user) {
           return reply.code(404).send({ error: 'User not found' });
         }
-        
+
         const permissions = await PermissionService.getUserPermissions(userId);
         return reply.send(permissions);
       } catch (error) {
@@ -75,7 +75,7 @@ export default async function permissionRoutes(fastify: FastifyInstance) {
       }
     },
   });
-  
+
   // Assign a permission to a user
   fastify.post('/assign', {
     preHandler: [authorizeRoles(ADMIN_ROLES)],
@@ -106,18 +106,22 @@ export default async function permissionRoutes(fastify: FastifyInstance) {
     handler: async (request, reply) => {
       try {
         const { userId, permissionName, description } = assignPermissionSchema.parse(request.body);
-        
+
         // Check if user exists
         const user = await fastify.prisma.user.findUnique({
           where: { id: userId },
           select: { id: true },
         });
-        
+
         if (!user) {
           return reply.code(404).send({ error: 'User not found' });
         }
-        
-        const permission = await PermissionService.assignPermission(userId, permissionName, description);
+
+        const permission = await PermissionService.assignPermission(
+          userId,
+          permissionName,
+          description
+        );
         return reply.send(permission);
       } catch (error) {
         if (error instanceof z.ZodError) {
@@ -128,7 +132,7 @@ export default async function permissionRoutes(fastify: FastifyInstance) {
       }
     },
   });
-  
+
   // Remove a permission from a user
   fastify.post('/remove', {
     preHandler: [authorizeRoles(ADMIN_ROLES)],
@@ -156,19 +160,19 @@ export default async function permissionRoutes(fastify: FastifyInstance) {
     handler: async (request, reply) => {
       try {
         const { userId, permissionName } = removePermissionSchema.parse(request.body);
-        
+
         // Check if user exists
         const user = await fastify.prisma.user.findUnique({
           where: { id: userId },
           select: { id: true },
         });
-        
+
         if (!user) {
           return reply.code(404).send({ error: 'User not found' });
         }
-        
+
         const success = await PermissionService.removePermission(userId, permissionName);
-        
+
         if (success) {
           return reply.send({
             success: true,
@@ -189,7 +193,7 @@ export default async function permissionRoutes(fastify: FastifyInstance) {
       }
     },
   });
-  
+
   // Set navigation permissions for a user
   fastify.post('/nav', {
     preHandler: [authorizeRoles(ADMIN_ROLES)],
@@ -220,19 +224,19 @@ export default async function permissionRoutes(fastify: FastifyInstance) {
     handler: async (request, reply) => {
       try {
         const { userId, navPermissions } = setNavPermissionsSchema.parse(request.body);
-        
+
         // Check if user exists
         const user = await fastify.prisma.user.findUnique({
           where: { id: userId },
           select: { id: true },
         });
-        
+
         if (!user) {
           return reply.code(404).send({ error: 'User not found' });
         }
-        
+
         await PermissionService.setNavPermissions(userId, navPermissions);
-        
+
         return reply.send({
           success: true,
           message: 'Navigation permissions updated',
@@ -246,7 +250,7 @@ export default async function permissionRoutes(fastify: FastifyInstance) {
       }
     },
   });
-  
+
   // Get navigation permissions for a user
   fastify.get('/nav/:userId', {
     preHandler: [authorizeRoles(ADMIN_ROLES)],
@@ -270,19 +274,19 @@ export default async function permissionRoutes(fastify: FastifyInstance) {
     handler: async (request, reply) => {
       try {
         const { userId } = request.params as { userId: string };
-        
+
         // Check if user exists
         const user = await fastify.prisma.user.findUnique({
           where: { id: userId },
           select: { id: true },
         });
-        
+
         if (!user) {
           return reply.code(404).send({ error: 'User not found' });
         }
-        
+
         const navPermissions = await PermissionService.getNavPermissions(userId);
-        
+
         return reply.send(navPermissions || {});
       } catch (error) {
         request.log.error(error);
@@ -290,4 +294,4 @@ export default async function permissionRoutes(fastify: FastifyInstance) {
       }
     },
   });
-} 
+}

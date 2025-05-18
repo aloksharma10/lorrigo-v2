@@ -54,9 +54,11 @@ export const CourierPricingSchema = z.object({
 export const ShippingCostRequestSchema = z.object({
   courierId: z.string(),
   weight: z.number().positive(),
-  dimensions: z.object({
-    length: z.number().positive(),
-    width: z.number().positive(),
-    height: z.number().positive(),
-  }).optional(),
-}); 
+  dimensions: z
+    .object({
+      length: z.number().positive(),
+      width: z.number().positive(),
+      height: z.number().positive(),
+    })
+    .optional(),
+});

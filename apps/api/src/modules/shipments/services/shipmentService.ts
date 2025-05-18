@@ -1,10 +1,6 @@
 import { prisma, ShipmentStatus } from '@lorrigo/db';
 import type { z } from 'zod';
-import { 
-  CreateShipmentSchema, 
-  UpdateShipmentSchema,
-  AddTrackingEventSchema
-} from '../validations';
+import { CreateShipmentSchema, UpdateShipmentSchema, AddTrackingEventSchema } from '../validations';
 
 /**
  * Service for handling shipment-related business logic
@@ -16,10 +12,12 @@ export class ShipmentService {
   private generateTrackingNumber(): string {
     const prefix = 'LOR';
     const timestamp = Date.now().toString().slice(-8);
-    const random = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
+    const random = Math.floor(Math.random() * 100000)
+      .toString()
+      .padStart(5, '0');
     return `${prefix}${timestamp}${random}`;
   }
-  
+
   /**
    * Create a new shipment
    */
@@ -31,11 +29,11 @@ export class ShipmentService {
         user_id: userId,
       },
     });
-    
+
     if (!order) {
       return { error: 'Order not found' };
     }
-    
+
     // Check if hub exists and belongs to the user
     const hub = await prisma.hub.findFirst({
       where: {
@@ -43,11 +41,11 @@ export class ShipmentService {
         user_id: userId,
       },
     });
-    
+
     if (!hub) {
       return { error: 'Hub not found' };
     }
-    
+
     // Create shipment with tracking number
     const shipment = await prisma.shipment.create({
       data: {
@@ -91,7 +89,7 @@ export class ShipmentService {
         tracking_events: true,
       },
     });
-    
+
     // Update order status if it's still in CREATED status
     if (order.status === 'CREATED') {
       await prisma.order.update({
@@ -99,10 +97,10 @@ export class ShipmentService {
         data: { status: 'PROCESSING' },
       });
     }
-    
+
     return { shipment };
   }
-  
+
   /**
    * Get all shipments for a user
    */
@@ -143,7 +141,7 @@ export class ShipmentService {
       },
     });
   }
-  
+
   /**
    * Get shipment by ID
    */
@@ -170,12 +168,12 @@ export class ShipmentService {
       },
     });
   }
-  
+
   /**
    * Update a shipment
    */
   async updateShipment(
-    id: string, 
+    id: string,
     userId: string,
     updateData: z.infer<typeof UpdateShipmentSchema>
   ) {
@@ -186,11 +184,11 @@ export class ShipmentService {
         user_id: userId,
       },
     });
-    
+
     if (!existingShipment) {
       return { error: 'Shipment not found' };
     }
-    
+
     // Update the shipment
     const updatedShipment = await prisma.shipment.update({
       where: { id },
@@ -200,7 +198,7 @@ export class ShipmentService {
         tracking_events: true,
       },
     });
-    
+
     // If status was updated, add a tracking event
     if (updateData.status && updateData.status !== existingShipment.status) {
       await prisma.trackingEvent.create({
@@ -212,7 +210,7 @@ export class ShipmentService {
           description: `Shipment status updated to ${updateData.status}`,
         },
       });
-      
+
       // Update order status based on shipment status
       if (updateData.status === 'DELIVERED') {
         await prisma.order.update({
@@ -226,10 +224,10 @@ export class ShipmentService {
         });
       }
     }
-    
+
     return { shipment: updatedShipment };
   }
-  
+
   /**
    * Add a tracking event to a shipment
    */
@@ -245,11 +243,11 @@ export class ShipmentService {
         user_id: user_id,
       },
     });
-    
+
     if (!shipment) {
       return { error: 'Shipment not found' };
     }
-    
+
     // Create the tracking event
     const tracking_event = await prisma.trackingEvent.create({
       data: {
@@ -260,13 +258,13 @@ export class ShipmentService {
         description: eventData.description,
       },
     });
-    
+
     // Update shipment status
     await prisma.shipment.update({
       where: { id },
       data: { status: eventData.status as ShipmentStatus },
     });
-    
+
     // Update order status based on tracking event
     if (eventData.status === 'DELIVERED') {
       await prisma.order.update({
@@ -279,10 +277,10 @@ export class ShipmentService {
         data: { status: 'SHIPPED' },
       });
     }
-    
+
     return { tracking_event };
   }
-  
+
   /**
    * Get tracking events for a shipment
    */
@@ -294,11 +292,11 @@ export class ShipmentService {
         user_id: user_id,
       },
     });
-    
+
     if (!shipment) {
       return { error: 'Shipment not found' };
     }
-    
+
     // Get tracking events
     const tracking_events = await prisma.trackingEvent.findMany({
       where: {
@@ -308,10 +306,10 @@ export class ShipmentService {
         timestamp: 'desc',
       },
     });
-    
+
     return { tracking_events };
   }
-  
+
   /**
    * Cancel a shipment
    */
@@ -326,24 +324,24 @@ export class ShipmentService {
         order: true,
       },
     });
-    
+
     if (!shipment) {
       return { error: 'Shipment not found' };
     }
-    
+
     // Check if shipment can be cancelled (not already delivered or returned)
     if (shipment.status === 'DELIVERED' || shipment.status === 'RETURNED') {
-      return { 
-        error: `Shipment cannot be cancelled because it is already ${shipment.status.toLowerCase()}` 
+      return {
+        error: `Shipment cannot be cancelled because it is already ${shipment.status.toLowerCase()}`,
       };
     }
-    
+
     // Update shipment status to EXCEPTION
     const updated_shipment = await prisma.shipment.update({
       where: { id },
       data: { status: 'EXCEPTION' },
     });
-    
+
     // Add tracking event for cancellation
     await prisma.trackingEvent.create({
       data: {
@@ -354,7 +352,7 @@ export class ShipmentService {
         description: 'Shipment cancelled by seller',
       },
     });
-    
+
     // If this was the only shipment for the order, update order status
     const otherShipments = await prisma.shipment.findMany({
       where: {
@@ -363,17 +361,17 @@ export class ShipmentService {
         status: { notIn: ['EXCEPTION', 'CANCELLED'] },
       },
     });
-    
+
     if (otherShipments.length === 0) {
       await prisma.order.update({
         where: { id: shipment.order_id },
         data: { status: 'CANCELLED' },
       });
     }
-    
+
     return { shipment: updated_shipment };
   }
-  
+
   /**
    * Get shipment statistics
    */
@@ -388,11 +386,11 @@ export class ShipmentService {
         id: true,
       },
     });
-    
+
     // Get count of recent shipments (last 30 days)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
+
     const recent_shipments = await prisma.shipment.count({
       where: {
         user_id: user_id,
@@ -401,16 +399,16 @@ export class ShipmentService {
         },
       },
     });
-    
+
     // Format the response
     const stats_by_status = Object.fromEntries(
-      status_counts.map(item => [item.status, item._count.id || 0])
+      status_counts.map((item) => [item.status, item._count.id || 0])
     );
-    
+
     return {
       total: Object.values(stats_by_status).reduce((a, b) => a + b, 0),
       by_status: stats_by_status,
       recent_shipments,
     };
   }
-} 
+}

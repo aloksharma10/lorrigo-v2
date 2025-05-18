@@ -12,9 +12,9 @@ const shipmentTrackingWorker = new Worker(
   async (job) => {
     try {
       console.log(`Processing job ${job.id} of type ${job.name}`);
-      
+
       const { shipment_id, status, location, description } = job.data;
-      
+
       // Get current shipment
       const shipment = await prisma.shipment.findUnique({
         where: { id: shipment_id },
@@ -28,11 +28,11 @@ const shipmentTrackingWorker = new Worker(
           user: true,
         },
       });
-      
+
       if (!shipment) {
         throw new Error(`Shipment not found: ${shipment_id}`);
       }
-      
+
       // Add tracking event
       await prisma.trackingEvent.create({
         data: {
@@ -46,13 +46,13 @@ const shipmentTrackingWorker = new Worker(
           },
         },
       });
-      
+
       // Update shipment status
       await prisma.shipment.update({
         where: { id: shipment_id },
         data: { status },
       });
-      
+
       // If status is DELIVERED, update order status
       if (status === 'DELIVERED' && shipment.order) {
         await prisma.order.update({
@@ -60,24 +60,20 @@ const shipmentTrackingWorker = new Worker(
           data: { status: 'DELIVERED' },
         });
       }
-      
+
       // Create notification for status change
-      await addJob(
-        QueueNames.NOTIFICATION,
-        'shipment-status-update',
-        {
-          recipient_id: shipment.user_id,
-          recipient_email: shipment.user.email,
-          recipient_phone: shipment.user.phone,
-          awb: shipment.awb,
-          status,
-          order_number: shipment.order?.order_number,
-          customer_name: shipment.order?.customer.name,
-        }
-      );
-      
+      await addJob(QueueNames.NOTIFICATION, 'shipment-status-update', {
+        recipient_id: shipment.user_id,
+        recipient_email: shipment.user.email,
+        recipient_phone: shipment.user.phone,
+        awb: shipment.awb,
+        status,
+        order_number: shipment.order?.order_number,
+        customer_name: shipment.order?.customer.name,
+      });
+
       console.log(`Shipment ${shipment.awb} updated to ${status}`);
-      
+
       return {
         success: true,
         message: `Shipment ${shipment.awb} updated to ${status}`,
@@ -109,4 +105,4 @@ shipmentTrackingWorker.on('failed', (job, error) => {
   captureException(error);
 });
 
-export default shipmentTrackingWorker; 
+export default shipmentTrackingWorker;

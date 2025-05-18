@@ -16,10 +16,10 @@ export class PermissionService {
         is_active: true,
       },
     });
-    
+
     return permissions;
   }
-  
+
   /**
    * Check if a user has a specific permission
    * @param userId The user ID
@@ -34,10 +34,10 @@ export class PermissionService {
         is_active: true,
       },
     });
-    
+
     return count > 0;
   }
-  
+
   /**
    * Check if a user has all of the specified permissions
    * @param userId The user ID
@@ -46,12 +46,12 @@ export class PermissionService {
    */
   static async hasAllPermissions(userId: string, permissionNames: string[]): Promise<boolean> {
     const permissions = await this.getUserPermissions(userId);
-    
-    const permissionNameSet = new Set(permissions.map(p => p.name));
-    
-    return permissionNames.every(name => permissionNameSet.has(name));
+
+    const permissionNameSet = new Set(permissions.map((p) => p.name));
+
+    return permissionNames.every((name) => permissionNameSet.has(name));
   }
-  
+
   /**
    * Check if a user has any of the specified permissions
    * @param userId The user ID
@@ -60,12 +60,12 @@ export class PermissionService {
    */
   static async hasAnyPermission(userId: string, permissionNames: string[]): Promise<boolean> {
     const permissions = await this.getUserPermissions(userId);
-    
-    const permissionNameSet = new Set(permissions.map(p => p.name));
-    
-    return permissionNames.some(name => permissionNameSet.has(name));
+
+    const permissionNameSet = new Set(permissions.map((p) => p.name));
+
+    return permissionNames.some((name) => permissionNameSet.has(name));
   }
-  
+
   /**
    * Assign a permission to a user
    * @param userId The user ID
@@ -81,7 +81,7 @@ export class PermissionService {
         name: permission_name,
       },
     });
-    
+
     if (existingPermission) {
       // If it exists but inactive, reactivate it
       if (!existingPermission.is_active) {
@@ -95,11 +95,11 @@ export class PermissionService {
           },
         });
       }
-      
+
       // Already active, just return it
       return existingPermission;
     }
-    
+
     // Create new permission
     return prisma.permissions.create({
       data: {
@@ -115,7 +115,7 @@ export class PermissionService {
       },
     });
   }
-  
+
   /**
    * Remove a permission from a user
    * @param userId The user ID
@@ -129,11 +129,11 @@ export class PermissionService {
         name: permission_name,
       },
     });
-    
+
     if (!permission) {
       return false;
     }
-    
+
     await prisma.permissions.update({
       where: {
         id: permission.id,
@@ -142,10 +142,10 @@ export class PermissionService {
         is_active: false,
       },
     });
-    
+
     return true;
   }
-  
+
   /**
    * Set navigation permissions for a user
    * @param user_id The user ID
@@ -159,7 +159,7 @@ export class PermissionService {
         name: 'navigation',
       },
     });
-    
+
     if (nav_permission) {
       // Update existing permission
       return prisma.permissions.update({
@@ -172,7 +172,7 @@ export class PermissionService {
         },
       });
     }
-    
+
     // Create new navigation permission
     return prisma.permissions.create({
       data: {
@@ -189,7 +189,7 @@ export class PermissionService {
       },
     });
   }
-  
+
   /**
    * Get navigation permissions for a user
    * @param userId The user ID
@@ -203,7 +203,7 @@ export class PermissionService {
         is_active: true,
       },
     });
-    
+
     return nav_permission?.nav_permission || null;
   }
-} 
+}

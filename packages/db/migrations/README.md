@@ -24,9 +24,10 @@ npm run db:setup
 ```
 
 This will:
+
 1. Push the schema to the database
 2. Apply the custom GIN indexes
 
 ## Troubleshooting
 
-If you encounter `operator class "gin_trgm_ops" does not exist` errors, it means the `pg_trgm` extension is not installed or enabled in your PostgreSQL database. The script attempts to create the extension, but you may need administrator privileges for this operation. 
+If you encounter `operator class "gin_trgm_ops" does not exist` errors, it means the `pg_trgm` extension is not installed or enabled in your PostgreSQL database. The script attempts to create the extension, but you may need administrator privileges for this operation.

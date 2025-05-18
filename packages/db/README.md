@@ -5,6 +5,7 @@ This package contains the Prisma schema and migrations for the application's dat
 ## Global Search View
 
 The database includes a `global_search` view that provides a unified interface for searching across multiple tables:
+
 - `Order` (searchable by `orderNumber`)
 - `Shipment` (searchable by `awb`)
 - `User` (searchable by `email`)
@@ -55,4 +56,4 @@ To create a new migration for schema changes:
 
 ```bash
 npx prisma migrate dev --name your_migration_name
-``` 
+```

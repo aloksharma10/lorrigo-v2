@@ -14,7 +14,7 @@ export const ShipmentStatusEnum = z.enum([
   'DELIVERED',
   'UNDELIVERED',
   'RETURNED',
-  'EXCEPTION'
+  'EXCEPTION',
 ]);
 
 // Schema for shipment dimensions
@@ -44,4 +44,4 @@ export const AddTrackingEventSchema = z.object({
   location: z.string(),
   description: z.string(),
   status: ShipmentStatusEnum,
-}); 
+});

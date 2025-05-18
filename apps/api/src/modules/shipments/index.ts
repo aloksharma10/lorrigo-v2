@@ -54,7 +54,8 @@ export default async function shipmentRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    handler: async (request: FastifyRequest<{ Params: { id: string } }>, reply) => shipmentController.getShipmentById(request, reply),
+    handler: async (request: FastifyRequest<{ Params: { id: string } }>, reply) =>
+      shipmentController.getShipmentById(request, reply),
   });
   // Cancel a shipment
   fastify.post('/:id/cancel', {
@@ -70,7 +71,8 @@ export default async function shipmentRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    handler: (request: FastifyRequest<{ Params: { id: string } }>, reply) => shipmentController.cancelShipment(request, reply),
+    handler: (request: FastifyRequest<{ Params: { id: string } }>, reply) =>
+      shipmentController.cancelShipment(request, reply),
   });
 
   // Get shipment statistics
@@ -82,4 +84,4 @@ export default async function shipmentRoutes(fastify: FastifyInstance) {
     },
     handler: (request, reply) => shipmentController.getShipmentStats(request, reply),
   });
-} 
+}

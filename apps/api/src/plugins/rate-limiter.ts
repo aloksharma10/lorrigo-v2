@@ -19,14 +19,14 @@ export const registerRateLimiter = async (fastify: FastifyInstance) => {
       keyGenerator: (request) => {
         // Use IP address as the key by default
         const ipAddress = request.ip;
-        
+
         // If authenticated, use user ID as part of the key for more targeted rate limiting
         // @ts-ignore - User property type mismatch
         if (request.user && request.user.id) {
           // @ts-ignore - User property type mismatch
           return `${ipAddress}:${request.user.id}`;
         }
-        
+
         return ipAddress;
       },
       enableDraftSpec: true,
@@ -44,14 +44,17 @@ export const registerRateLimiter = async (fastify: FastifyInstance) => {
       // Log rate limit hits
       // @ts-ignore - Request type mismatch
       onExceeding: (request) => {
-        request.log.warn({
-          // @ts-ignore - Route options property access
-          route: request.routeOptions.url,
-          method: request.method,
-          ip: request.ip,
-          // @ts-ignore - User property type mismatch
-          userId: request.user?.id || 'unauthenticated',
-        }, 'Rate limit exceeded');
+        request.log.warn(
+          {
+            // @ts-ignore - Route options property access
+            route: request.routeOptions.url,
+            method: request.method,
+            ip: request.ip,
+            // @ts-ignore - User property type mismatch
+            userId: request.user?.id || 'unauthenticated',
+          },
+          'Rate limit exceeded'
+        );
       },
       // Track API request attempts in database on overuse
       // @ts-ignore - Request type and callback signature mismatch
@@ -86,4 +89,4 @@ export const registerRateLimiter = async (fastify: FastifyInstance) => {
     fastify.log.error('Failed to register rate limiter plugin');
     captureException(error as Error);
   }
-}; 
+};

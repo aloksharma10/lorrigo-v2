@@ -13,14 +13,14 @@ declare module 'fastify' {
     jwt: JWT;
     authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
   }
-  
+
   interface FastifyRequest {
     user: {
       id: string;
       email: string;
       role: string;
       permissions?: object;
-    }
+    };
   }
 }
 
@@ -46,16 +46,16 @@ export class AuthController {
     try {
       // Validate request body
       const data = registerSchema.parse(request.body);
-      
+
       // Hash password
       const hashedPassword = await bcrypt.hash(data.password, 10);
-      
+
       // Register user using service
       const result = await this.authService.register({
         ...data,
-        password: hashedPassword
+        password: hashedPassword,
       });
-      
+
       // Return user data and token
       return reply.code(201).send({
         id: result.user.id,
@@ -70,7 +70,7 @@ export class AuthController {
           errors: error.errors,
         });
       }
-      
+
       captureException(error as Error);
       return reply.code(500).send({
         message: 'Internal server error',
@@ -82,16 +82,16 @@ export class AuthController {
     try {
       // Validate request body
       const { email, password } = loginSchema.parse(request.body);
-      
+
       // Login user using service
       const result = await this.authService.login(email, password);
-      
+
       if ('error' in result) {
         return reply.code(401).send({
-          message: result.error
+          message: result.error,
         });
       }
-      
+
       return result;
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -100,7 +100,7 @@ export class AuthController {
           errors: error.errors,
         });
       }
-      
+
       captureException(error as Error);
       return reply.code(500).send({
         message: 'Internal server error',
@@ -132,4 +132,4 @@ export class AuthController {
       });
     }
   }
-} 
+}

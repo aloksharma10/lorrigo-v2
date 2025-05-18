@@ -23,7 +23,10 @@ export const queues = {
   [QueueNames.NOTIFICATION]: new Queue(QueueNames.NOTIFICATION, connectionOptions),
   [QueueNames.BULK_OPERATION]: new Queue(QueueNames.BULK_OPERATION, connectionOptions),
   [QueueNames.REPORT_GENERATION]: new Queue(QueueNames.REPORT_GENERATION, connectionOptions),
-  [QueueNames.REMITTANCE_PROCESSING]: new Queue(QueueNames.REMITTANCE_PROCESSING, connectionOptions),
+  [QueueNames.REMITTANCE_PROCESSING]: new Queue(
+    QueueNames.REMITTANCE_PROCESSING,
+    connectionOptions
+  ),
 };
 
 // Helper function to add a job to a queue
@@ -51,4 +54,4 @@ export const addJob = async (
 };
 
 // Export queue-related functions and types
-export { Queue, Worker, QueueEvents }; 
+export { Queue, Worker, QueueEvents };

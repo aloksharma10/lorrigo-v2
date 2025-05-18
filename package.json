@@ -11,7 +11,8 @@
     "start:notifications": "cd apps/notifications && pnpm start",
     "start:workers": "cd apps/workers && pnpm start",
     "start:web": "cd apps/web && pnpm start",
-    "start:api": "cd apps/api && pnpm start"
+    "start:api": "cd apps/api && pnpm start",
+    "clean": "find . \\( -path '*/node_modules' -o -path '*/.turbo' -o -path '*/build' -o -path '*/dist' \\) -type d -prune -exec rm -rf '{}' +"
   },
   "devDependencies": {
     "@lorrigo/typescript-config": "workspace:*",

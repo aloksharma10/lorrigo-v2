@@ -33,10 +33,10 @@ export function authorizeRoles(roles: Role[]) {
     try {
       // First authenticate the user
       await authenticateUser(request, reply);
-      
+
       // Check if user's role is in the allowed roles
       const userRole = request.user.role as Role;
-      
+
       if (!roles.includes(userRole)) {
         return reply.code(403).send({
           statusCode: 403,
@@ -59,20 +59,20 @@ export function authorizePermissions(requiredPermissions: string[]) {
     try {
       // First authenticate the user
       await authenticateUser(request, reply);
-      
+
       // Get the user's permissions
       const user_permissions = (request.user.permissions || []) as Permission[];
-      
+
       // If the user is an ADMIN, they have all permissions
       if (request.user.role === 'ADMIN') {
         return;
       }
-      
+
       // Check if the user has all required permissions
-      const hasAllPermissions = requiredPermissions.every(permission => 
-        user_permissions.some(p => p.name === permission && p.isActive)
+      const hasAllPermissions = requiredPermissions.every((permission) =>
+        user_permissions.some((p) => p.name === permission && p.isActive)
       );
-      
+
       if (!hasAllPermissions) {
         return reply.code(403).send({
           statusCode: 403,
@@ -96,10 +96,10 @@ export function authorizeOwner(resource_id_param: string, resource_type: string)
     try {
       // First authenticate the user
       await authenticateUser(request, reply);
-      
+
       // Get the resource ID from the request params
       const resource_id = (request.params as any)[resource_id_param];
-      
+
       if (!resource_id) {
         return reply.code(400).send({
           status_code: 400,
@@ -107,18 +107,18 @@ export function authorizeOwner(resource_id_param: string, resource_type: string)
           message: `${resource_type} ID is required`,
         });
       }
-      
+
       // If the user is an ADMIN or SUBADMIN, they can access any resource
       if (['ADMIN', 'SUBADMIN'].includes(request.user.role)) {
         return;
       }
-      
+
       // Get the prisma client from the fastify instance
       const prisma = (request as any).server.prisma;
-      
+
       // Check if the resource exists and belongs to the user
       let resource;
-      
+
       switch (resource_type) {
         case 'order':
           resource = await prisma.order.findUnique({
@@ -145,7 +145,7 @@ export function authorizeOwner(resource_id_param: string, resource_type: string)
             message: `Unsupported resource type: ${resource_type}`,
           });
       }
-      
+
       if (!resource) {
         return reply.code(404).send({
           statusCode: 404,
@@ -153,7 +153,7 @@ export function authorizeOwner(resource_id_param: string, resource_type: string)
           message: `${resource_type.charAt(0).toUpperCase() + resource_type.slice(1)} not found`,
         });
       }
-      
+
       if (resource.user_id !== request.user.id) {
         return reply.code(403).send({
           statusCode: 403,
@@ -164,7 +164,7 @@ export function authorizeOwner(resource_id_param: string, resource_type: string)
     } catch (err) {
       // Authentication already handles its own errors
       console.error(err);
-      
+
       return reply.code(500).send({
         statusCode: 500,
         error: 'Internal Server Error',

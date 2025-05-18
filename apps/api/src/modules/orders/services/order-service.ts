@@ -11,20 +11,13 @@ export class OrderService {
    * Get all orders with pagination and filters
    */
   async getAllOrders(userId: string, queryParams: any) {
-    const {
-      page = 1,
-      limit = 10,
-      status,
-      search = '',
-      from_date,
-      to_date
-    } = queryParams;
+    const { page = 1, limit = 10, status, search = '', from_date, to_date } = queryParams;
 
     const skip = (page - 1) * limit;
 
     // Build the where clause based on filters
     let where: any = {
-      user_id: userId
+      user_id: userId,
     };
 
     // Add status filter if provided
@@ -73,7 +66,7 @@ export class OrderService {
     ]);
 
     // Format orders for response
-    const formatted_orders = orders.map(order => ({
+    const formatted_orders = orders.map((order) => ({
       id: order.id,
       order_number: order.order_number,
       status: order.status,
@@ -101,7 +94,7 @@ export class OrderService {
     return prisma.order.findUnique({
       where: {
         id,
-        user_id: userId
+        user_id: userId,
       },
       include: {
         customer: {
@@ -110,7 +103,7 @@ export class OrderService {
             name: true,
             email: true,
             phone: true,
-          }
+          },
         },
         shipping_address: true,
         return_address: true,
@@ -120,9 +113,9 @@ export class OrderService {
               select: {
                 id: true,
                 name: true,
-              }
-            }
-          }
+              },
+            },
+          },
         },
         payments: true,
       },
@@ -148,9 +141,9 @@ export class OrderService {
           order_channel_config: {
             create: {
               code: 'ORD-2505-00001',
-              channel: "CUSTOM",
+              channel: 'CUSTOM',
               channel_order_id: order_number,
-            }
+            },
           },
           order_number: order_number,
           status: 'CREATED',
@@ -164,11 +157,13 @@ export class OrderService {
           shipping_address: {
             connect: { id: data.shipping_address_id },
           },
-          ...(data.return_address_id ? {
-            return_address: {
-              connect: { id: data.return_address_id },
-            }
-          } : {}),
+          ...(data.return_address_id
+            ? {
+                return_address: {
+                  connect: { id: data.return_address_id },
+                },
+              }
+            : {}),
         },
       });
 
@@ -234,7 +229,7 @@ export class OrderService {
 
     // Check if there are any shipments in progress
     const hasShipmentsInProgress = existingOrder.shipments.some(
-      shipment => !['CREATED', 'CANCELLED'].includes(shipment.status)
+      (shipment) => !['CREATED', 'CANCELLED'].includes(shipment.status)
     );
 
     if (hasShipmentsInProgress) {
@@ -331,7 +326,7 @@ export class OrderService {
 
     // Format status counts
     const status_counts: Record<string, number> = {};
-    status_counts_result.forEach(item => {
+    status_counts_result.forEach((item) => {
       status_counts[item.status] = item._count.id || 0;
     });
 
@@ -349,4 +344,4 @@ export class OrderService {
       },
     };
   }
-} 
+}

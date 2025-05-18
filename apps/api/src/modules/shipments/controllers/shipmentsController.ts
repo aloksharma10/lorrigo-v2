@@ -1,11 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { ShipmentService } from '../services/shipmentService';
-import {
-  CreateShipmentSchema,
-  UpdateShipmentSchema,
-  AddTrackingEventSchema
-} from '../validations';
+import { CreateShipmentSchema, UpdateShipmentSchema, AddTrackingEventSchema } from '../validations';
 
 /**
  * Controller for shipment-related API endpoints
@@ -131,7 +127,10 @@ export class ShipmentController {
   /**
    * Get tracking events for a shipment
    */
-  async getTrackingEvents(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+  async getTrackingEvents(
+    request: FastifyRequest<{ Params: { id: string } }>,
+    reply: FastifyReply
+  ) {
     try {
       const { id } = request.params;
       const user_id = request.user.id;
@@ -185,4 +184,4 @@ export class ShipmentController {
       return reply.code(500).send({ error: 'Internal Server Error' });
     }
   }
-} 
+}
