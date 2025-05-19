@@ -1,17 +1,17 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { Button } from "./button";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Check, Copy } from "lucide-react";
+} from "./tooltip";
+import { CheckIcon, CopyIcon } from "lucide-react";
 import { useState } from "react";
 
-function Component() {
+function CopyBtn() {
   const [copied, setCopied] = useState<boolean>(false);
 
   const handleCopy = async () => {
@@ -41,7 +41,7 @@ function Component() {
                 copied ? "scale-100 opacity-100" : "scale-0 opacity-0",
               )}
             >
-              <Check className="stroke-emerald-500" size={16} strokeWidth={2} aria-hidden="true" />
+              <CheckIcon className="stroke-emerald-500" size={16} strokeWidth={2} aria-hidden="true" />
             </div>
             <div
               className={cn(
@@ -49,7 +49,7 @@ function Component() {
                 copied ? "scale-0 opacity-0" : "scale-100 opacity-100",
               )}
             >
-              <Copy size={16} strokeWidth={2} aria-hidden="true" />
+              <CopyIcon size={16} strokeWidth={2} aria-hidden="true" />
             </div>
           </Button>
         </TooltipTrigger>
@@ -59,4 +59,4 @@ function Component() {
   );
 }
 
-export { Component };
+export { CopyBtn };

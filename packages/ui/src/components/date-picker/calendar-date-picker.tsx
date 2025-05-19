@@ -18,16 +18,16 @@ import { DateRange } from 'react-day-picker';
 import { cva, VariantProps } from 'class-variance-authority';
 
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/popover';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
+} from '@/components/select';
+import { Calendar } from '@/components/calendar';
 
 const months = [
   'January',
