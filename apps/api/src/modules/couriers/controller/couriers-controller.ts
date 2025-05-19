@@ -66,7 +66,7 @@ export class CourierController {
     try {
       // Check if user is authenticated
       await checkAuth(request, reply);
-      
+
       const userId = request.userPayload!.id;
       const userRole = request.userPayload!.role as Role;
       const couriers = await this.courierService.getAllCouriers(userId, userRole);
@@ -81,7 +81,7 @@ export class CourierController {
     try {
       // Check if user is authenticated
       await checkAuth(request, reply);
-      
+
       const { id } = request.params as { id: string };
       const userId = request.userPayload!.id;
       const userRole = request.userPayload!.role as Role;
@@ -124,7 +124,7 @@ export class CourierController {
     try {
       // Check if user is authenticated
       await checkAuth(request, reply);
-      
+
       const pricingData = courierPricingSchema.parse(request.body);
       const userId = request.userPayload!.id;
       const userRole = request.userPayload!.role as Role;
@@ -149,7 +149,7 @@ export class CourierController {
     try {
       // Check if user is authenticated
       await checkAuth(request, reply);
-      
+
       const { courierId } = request.params as { courierId: string };
       const userId = request.userPayload!.id;
 

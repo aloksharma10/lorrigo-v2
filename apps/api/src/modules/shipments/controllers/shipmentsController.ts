@@ -21,7 +21,7 @@ export class ShipmentController {
     try {
       // Check if user is authenticated
       await checkAuth(request, reply);
-      
+
       const data = CreateShipmentSchema.parse(request.body);
       const user_id = request.userPayload!.id;
 
@@ -48,7 +48,7 @@ export class ShipmentController {
     try {
       // Check if user is authenticated
       await checkAuth(request, reply);
-      
+
       const user_id = request.userPayload!.id;
 
       const shipments = await this.shipmentService.getAllShipments(user_id);
@@ -67,7 +67,7 @@ export class ShipmentController {
     try {
       // Check if user is authenticated
       await checkAuth(request, reply);
-      
+
       const { id } = request.params;
       const user_id = request.userPayload!.id;
 
@@ -91,7 +91,7 @@ export class ShipmentController {
     try {
       // Check if user is authenticated
       await checkAuth(request, reply);
-      
+
       const { id } = request.params;
       const updateData = UpdateShipmentSchema.parse(request.body);
       const user_id = request.userPayload!.id;
@@ -119,7 +119,7 @@ export class ShipmentController {
     try {
       // Check if user is authenticated
       await checkAuth(request, reply);
-      
+
       const { id } = request.params;
       const eventData = AddTrackingEventSchema.parse(request.body);
       const user_id = request.userPayload!.id;
@@ -150,7 +150,7 @@ export class ShipmentController {
     try {
       // Check if user is authenticated
       await checkAuth(request, reply);
-      
+
       const { id } = request.params;
       const user_id = request.userPayload!.id;
 
@@ -174,7 +174,7 @@ export class ShipmentController {
     try {
       // Check if user is authenticated
       await checkAuth(request, reply);
-      
+
       const { id } = request.params;
       const user_id = request.userPayload!.id;
 
@@ -198,7 +198,7 @@ export class ShipmentController {
     try {
       // Check if user is authenticated
       await checkAuth(request, reply);
-      
+
       const user_id = request.userPayload!.id;
 
       const stats = await this.shipmentService.getShipmentStats(user_id);

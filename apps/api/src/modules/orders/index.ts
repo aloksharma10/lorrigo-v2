@@ -138,7 +138,14 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
       security: [{ bearerAuth: [] }],
       body: {
         type: 'object',
-        required: ['pickup_id', 'payment_method', 'customerId', 'shippingAddressId', 'totalAmount', 'items'],
+        required: [
+          'pickup_id',
+          'payment_method',
+          'customerId',
+          'shippingAddressId',
+          'totalAmount',
+          'items',
+        ],
         properties: {
           pickup_id: { type: 'string' },
           payment_method: { type: 'string' },

@@ -29,7 +29,7 @@ export async function authenticateUser(request: FastifyRequest, reply: FastifyRe
   try {
     // Use the authenticate decorator from the auth plugin
     await request.jwtVerify();
-    
+
     // Check if userPayload exists after verification
     if (!request.userPayload) {
       throw new Error('User authentication failed');

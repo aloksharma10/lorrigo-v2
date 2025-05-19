@@ -11,16 +11,16 @@ module.exports = {
       max_memory_restart: '1G',
       env: {
         NODE_ENV: 'development',
-        PORT: 3000
+        PORT: 3000,
       },
       env_production: {
         NODE_ENV: 'production',
-        PORT: 3000
+        PORT: 3000,
       },
       log_date_format: 'YYYY-MM-DD HH:mm:ss',
       out_file: '../logs/web-out.log',
       error_file: '../logs/web-error.log',
-      merge_logs: true
-    }
-  ]
-}; 
+      merge_logs: true,
+    },
+  ],
+};

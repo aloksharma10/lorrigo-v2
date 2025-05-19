@@ -29,7 +29,7 @@ export class OrderController {
     try {
       // Check if user is authenticated
       await checkAuth(request, reply);
-      
+
       const queryParams = OrderQuerySchema.parse(request.query);
       const userId = request.userPayload!.id;
 
@@ -59,7 +59,7 @@ export class OrderController {
     try {
       // Check if user is authenticated
       await checkAuth(request, reply);
-      
+
       const { id } = request.params;
       const user_id = request.userPayload!.id;
 
@@ -89,7 +89,7 @@ export class OrderController {
     try {
       // Check if user is authenticated
       await checkAuth(request, reply);
-      
+
       const data = CreateOrderSchema.parse(request.body);
       const user_id = request.userPayload!.id;
 
@@ -150,7 +150,7 @@ export class OrderController {
     try {
       // Check if user is authenticated
       await checkAuth(request, reply);
-      
+
       const { id } = request.params;
       const updateData = UpdateOrderSchema.parse(request.body);
       const user_id = request.userPayload!.id;
@@ -207,7 +207,7 @@ export class OrderController {
     try {
       // Check if user is authenticated
       await checkAuth(request, reply);
-      
+
       const { id } = request.params;
       const { reason } = request.body as { reason?: string };
       const user_id = request.userPayload!.id;
@@ -252,7 +252,7 @@ export class OrderController {
     try {
       // Check if user is authenticated
       await checkAuth(request, reply);
-      
+
       const { period = 'month' } = OrderStatsQuerySchema.parse(request.query);
       const user_id = request.userPayload!.id;
 

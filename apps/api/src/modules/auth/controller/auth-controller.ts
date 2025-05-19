@@ -114,7 +114,7 @@ export class AuthController {
           message: 'Unauthorized',
         });
       }
-      
+
       return await this.authService.getMe(request.userPayload.id);
     } catch (error) {
       captureException(error as Error);
@@ -131,7 +131,7 @@ export class AuthController {
           message: 'Unauthorized',
         });
       }
-      
+
       await this.authService.logout(request.userPayload.id, request.ip);
       return {
         message: 'Logged out successfully',
