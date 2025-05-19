@@ -214,17 +214,21 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/lorrigo-workers:latest
 
-      - name: Deploy via SSH to EC2
+      - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
           script: |
             cd /home/ubuntu/lorrigo
             git pull origin main
             docker compose -f docker-compose.yml pull
             docker compose -f docker-compose.yml up -d --build
+          # ✅ Disable strict host key checking
+          ssh-option: "-o StrictHostKeyChecking=no"
+        
 
       # Add deployment steps for your hosting platform
       # e.g., Deploy to Kubernetes, AWS ECS, etc.
