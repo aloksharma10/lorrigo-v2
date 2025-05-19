@@ -1,13 +1,19 @@
 {
   "extends": "@lorrigo/typescript-config/react-library.json",
   "compilerOptions": {
-    "rootDir": "./src",
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "node",
+    "module": "CommonJS",
+    "esModuleInterop": true,
     "outDir": "./dist",
-    "baseUrl": ".",
-    "paths": {
-      "@lorrigo/ui/*": ["./src/*"]
-    }
+    "rootDir": "./src"
   },
-  "include": ["."],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "."
+  ],
+  "exclude": [
+    "dist",
+    "build",
+    "node_modules"
+  ]
 }
