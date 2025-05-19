@@ -2,8 +2,11 @@
   "name": "@lorrigo/db",
   "description": "Database package for Lorrigo",
   "version": "1.0.0",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "npx prisma generate --schema=./schema/schema.prisma && tsc -p .",
+    "build": "npx prisma generate --schema=./schema/schema.prisma && tsc",
     "db:generate": "npx prisma generate --schema=./schema/schema.prisma",
     "db:push": "prisma db push --schema=./schema/schema.prisma",
     "db:deploy": "prisma migrate deploy --schema=./schema/schema.prisma",
@@ -23,6 +26,7 @@
     "@prisma/client": "6.7.0"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./dist/index.js",
+    "./client": "./dist/client.js"
   }
 }

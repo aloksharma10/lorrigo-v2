@@ -19,8 +19,6 @@
     "@fastify/rate-limit": "^10.2.2",
     "@fastify/swagger": "^9.5.1",
     "@fastify/swagger-ui": "^5.2.2",
-    "@lorrigo/auth": "workspace:*",
-    "@lorrigo/common": "workspace:*",
     "@lorrigo/db": "workspace:*",
     "@lorrigo/utils": "workspace:*",
     "@sentry/node": "^7.100.1",

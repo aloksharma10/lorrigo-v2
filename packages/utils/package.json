@@ -20,6 +20,8 @@
     "rimraf": "^5.0.1"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./validations": "./src/validations/index.ts",
+    "./helpers": "./src/helpers/index.ts"
   }
 }

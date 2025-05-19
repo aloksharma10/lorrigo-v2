@@ -3,6 +3,6 @@
  */
 
 // Re-export common validations
-export * from '@lorrigo/common';
+export * from '@lorrigo/utils/validations';
 
 // Additional API-specific validations can be added here

@@ -12,7 +12,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@lorrigo/auth": "workspace:*",
     "@lorrigo/db": "workspace:*",
     "@lorrigo/ui": "workspace:*",
     "@tanstack/react-query": "^5.76.1",
