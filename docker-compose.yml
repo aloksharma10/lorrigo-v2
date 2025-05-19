@@ -32,9 +32,7 @@ services:
 
   # API Server
   api:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
+    image: ${DOCKER_HUB_USERNAME:-aloksharma10969}/lorrigo-api:latest
     container_name: lorrigo-api
     restart: always
     depends_on:
@@ -61,9 +59,7 @@ services:
 
   # Web Frontend
   web:
-    build:
-      context: .
-      dockerfile: apps/web/Dockerfile
+    image: ${DOCKER_HUB_USERNAME:-aloksharma10969}/lorrigo-web:latest
     container_name: lorrigo-web
     restart: always
     depends_on:
@@ -82,9 +78,7 @@ services:
 
   # Notification Service
   notifications:
-    build:
-      context: .
-      dockerfile: apps/notifications/Dockerfile
+    image: ${DOCKER_HUB_USERNAME:-aloksharma10969}/lorrigo-notifications:latest
     container_name: lorrigo-notifications
     restart: always
     depends_on:
@@ -105,9 +99,7 @@ services:
 
   # Worker Service for background jobs
   workers:
-    build:
-      context: .
-      dockerfile: apps/workers/Dockerfile
+    image: ${DOCKER_HUB_USERNAME:-aloksharma10969}/lorrigo-workers:latest
     container_name: lorrigo-workers
     restart: always
     depends_on:

@@ -17,17 +17,17 @@ import { toDate, formatInTimeZone } from 'date-fns-tz';
 import { DateRange } from 'react-day-picker';
 import { cva, VariantProps } from 'class-variance-authority';
 
-import { cn } from '../lib/utils';
-import { Button } from '../components/button';
-import { Popover, PopoverContent, PopoverTrigger } from '../components/popover';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../components/select';
-import { Calendar } from '../components/calendar';
+} from '@/components/ui/select';
+import { Calendar } from '@/components/ui/calendar';
 
 const months = [
   'January',

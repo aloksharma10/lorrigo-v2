@@ -214,6 +214,14 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/lorrigo-workers:latest
 
+      - name: Build and push Notifications container
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/notifications/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/lorrigo-notifications:latest
+
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.0
         with:
