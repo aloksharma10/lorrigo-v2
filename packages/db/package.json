@@ -6,7 +6,7 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "npx prisma generate --schema=./schema/schema.prisma && tsc",
+    "build": "npx prisma generate --schema=./schema/schema.prisma && tsc -p .",
     "db:generate": "npx prisma generate --schema=./schema/schema.prisma",
     "db:push": "prisma db push --schema=./schema/schema.prisma",
     "db:deploy": "prisma migrate deploy --schema=./schema/schema.prisma",
