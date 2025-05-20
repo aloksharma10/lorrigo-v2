@@ -1,7 +1,7 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: ['src/index.ts'],
+  entry: ['src/index.ts', 'src/validations/index.ts', 'src/helpers/index.ts'],
   format: ['cjs', 'esm'],
   dts: true,
   splitting: true,
@@ -14,4 +14,4 @@ export default defineConfig({
   },
   outDir: 'dist',
   target: 'node18',
-}); 
+});  

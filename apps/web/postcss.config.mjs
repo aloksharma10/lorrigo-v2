@@ -1,1 +1,1 @@
-export { default } from '@lorrigo/ui/postcss.config';
+export { default } from "@lorrigo/ui/postcss.config";

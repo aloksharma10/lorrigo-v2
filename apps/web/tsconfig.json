@@ -4,7 +4,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
-      "@lorrigo/ui/*": ["../../packages/ui/src/*"]
+      "@lorrigo/ui/*": ["../../packages/ui/src/*"],
+      "@lorrigo/db/*": ["../../packages/db/src/*"]
     },
     "plugins": [
       {

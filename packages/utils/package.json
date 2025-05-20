@@ -4,9 +4,9 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "build": "tsup",
     "clean": "rimraf .turbo && rimraf dist",
-    "dev": "tsup src/index.ts --format cjs,esm --watch --dts",
+    "dev": "tsup --watch",
     "lint": "eslint src/"
   },
   "dependencies": {
@@ -20,8 +20,33 @@
     "rimraf": "^5.0.1"
   },
   "exports": {
-    ".": "./src/index.ts",
-    "./validations": "./src/validations/index.ts",
-    "./helpers": "./src/helpers/index.ts"
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./validations": {
+      "import": "./dist/validations/index.js",
+      "require": "./dist/validations/index.js",
+      "types": "./dist/validations/index.d.ts"
+    },
+    "./validations/*": {
+      "import": "./dist/validations/*.js",
+      "require": "./dist/validations/*.js",
+      "types": "./dist/validations/*.d.ts"
+    },
+    "./helpers": {
+      "import": "./dist/helpers/index.js",
+      "require": "./dist/helpers/index.js",
+      "types": "./dist/helpers/index.d.ts"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "*": ["./dist/*"],
+      ".": ["./dist/index.d.ts"],
+      "validations": ["./dist/validations/index.d.ts"],
+      "helpers": ["./dist/helpers/index.d.ts"]
+    }
   }
 }

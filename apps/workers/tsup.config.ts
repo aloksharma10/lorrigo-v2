@@ -14,5 +14,4 @@ export default defineConfig({
   },
   outDir: 'dist',
   target: 'node18',
-  onSuccess: 'node dist/index.js',
 }); 

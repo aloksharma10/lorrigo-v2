@@ -70,7 +70,7 @@ export function Navbar() {
           ) : (
             <Link
               href="/auth/signin"
-              className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+              className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
             >
               Sign In
             </Link>
