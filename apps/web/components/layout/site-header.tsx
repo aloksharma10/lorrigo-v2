@@ -1,10 +1,17 @@
-import { Button, Input } from "@lorrigo/ui/components"
-import { Separator } from "@lorrigo/ui/components"
-import { SidebarTrigger } from "@lorrigo/ui/components"
-import { ModeToggle } from "@/components/layout/mode-toggle"
-import { Bell } from "lucide-react"
+import { Button } from "@lorrigo/ui/components";
+import { Input } from "@lorrigo/ui/components";
+import { Separator } from "@lorrigo/ui/components";
+import { SidebarTrigger } from "@lorrigo/ui/components";
+import { IndianRupee, Search, Bell } from "lucide-react";
+import { ModeToggle } from "./mode-toggle";
+import ActionTooltip from "../action-tooltip";
+import HoverCardToolTip from "../hover-card-tooltip";
 
-export function SiteHeader() {
+interface SiteHeaderProps {
+  walletBalance?: number;
+}
+
+export function SiteHeader({ walletBalance = 5000 }: SiteHeaderProps) {
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
       <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
@@ -14,18 +21,56 @@ export function SiteHeader() {
           className="mx-2 data-[orientation=vertical]:h-4"
         />
         <div className="ml-auto flex items-center gap-4">
+          {/* Search input for larger screens */}
           <Input
             placeholder="Search for AWB, Order ID, Customer Name, etc."
-            className="w-72 mr-2 placeholder:text-sm placeholder:text-gray-500 placeholder:text-opacity-50"
+            className="w-72 mr-2 placeholder:text-sm placeholder:text-gray-500 placeholder:text-opacity-50 hidden lg:block"
           />
-          <Button variant="secondary" size="icon"
-            className="group/toggle size-4">
-            <Bell size={10} />
+
+          {/* Search icon for small screens */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden"
+          >
+            <Search className="h-4 w-4" />
+            <span className="sr-only">Search</span>
+          </Button>
+
+          {/* Wallet balance with INR symbol */}
+          <HoverCardToolTip
+            triggerComponent={
+              <div className="flex items-center border rounded-md px-3 py-1 bg-secondary/50">
+                <IndianRupee className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                <span className="text-sm font-medium text-secondary-foreground">
+                  {walletBalance.toLocaleString('en-IN')}
+                </span>
+              </div>
+            }
+            className="w-64 text-center text-sm"
+          >
+            <div className="grid grid-cols-2 gap-2">
+              <p>Usable Amount:</p>
+              <p>₹-50,156.59</p>
+              <p>Total Amount:</p>
+              <p>₹-50,156.59</p>
+              <p>Hold Amount:</p>
+              <p>₹59729.78</p>
+            </div>
+          </HoverCardToolTip>
+
+          <Button
+            variant="secondary"
+            size="icon"
+            className="group/toggle size-8"
+          >
+            <Bell size={16} />
             <span className="sr-only">Notifications</span>
           </Button>
+
           <ModeToggle />
         </div>
       </div>
     </header>
-  )
+  );
 }

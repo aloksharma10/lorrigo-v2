@@ -31,3 +31,6 @@ export * from './modal'
 export * from './collapsible'
 
 export * from './scroll-area'
+
+export * from './hover-card'
+export * from './navigation-menu'

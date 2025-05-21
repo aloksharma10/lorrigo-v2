@@ -15,6 +15,7 @@ import {
   useSidebar,
 } from "@lorrigo/ui/components"
 import { Popover, PopoverContent, PopoverTrigger } from "@lorrigo/ui/components"
+import Link from "next/link"
 
 export function NavMain({
   items,
@@ -63,10 +64,10 @@ export function NavMain({
                     </CollapsibleTrigger>
                   ) : (
                     <SidebarMenuButton asChild tooltip={item.title}>
-                      <a href={item.url || "#"}>
+                      <Link href={item.url || "#"}>
                         <item.icon className="size-4" />
                         <span>{item.title}</span>
-                      </a>
+                      </Link>
                     </SidebarMenuButton>
                   )}
 

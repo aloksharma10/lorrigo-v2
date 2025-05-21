@@ -27,7 +27,7 @@ export default async function DashboardLayout({
       <AppSidebar variant="floating" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col">{children}</div>
+        <div className="flex flex-1 flex-col px-4 md:p-6 ">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   )
