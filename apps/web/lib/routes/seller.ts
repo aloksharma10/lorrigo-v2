@@ -1,18 +1,18 @@
 
-import { AudioWaveform, Bot, Command, GalleryVerticalEnd, Settings2, SquareTerminal } from "lucide-react"
+import { Command, GalleryVerticalEnd } from "lucide-react"
 
 export const SELLER_ROUTES = [
    {
       title: "Home",
       url: "/seller/home",
       icon: GalleryVerticalEnd,
-      isActive: true,
+      isActive: false,
    },
    {
       title: "Dashboard",
       url: "/seller/dashboard",
       icon: GalleryVerticalEnd,
-      isActive: true,
+      isActive: false,
    },
    {
       title: "Orders",
@@ -38,7 +38,7 @@ export const SELLER_ROUTES = [
       title: "Weight Management",
       url: "/seller/weight-management",
       icon: Command,
-      isActive: true,
+      isActive: false,
       items: [
          {
             title: "Weight Discrepancy",
@@ -58,31 +58,31 @@ export const SELLER_ROUTES = [
       title: "Setup & Manage",
       url: "/seller/setup-manage",
       icon: Command,
-      isActive: true,
+      isActive: false,
       items: [
          {
             title: "Channels",
             url: "/seller/channels",
             icon: Command,
-            isActive: true,
+            isActive: false,
          },
          {
             title: "Courier",
             url: "/seller/courier",
             icon: Command,
-            isActive: true,
+            isActive: false,
          },
          {
             title: "Customers",
             url: "/seller/customers",
             icon: Command,
-            isActive: true,
+            isActive: false,
          },
          {
             title: "Products",
             url: "/seller/products",
             icon: Command,
-            isActive: true,
+            isActive: false,
          }
       ]
    },
@@ -90,7 +90,7 @@ export const SELLER_ROUTES = [
       title: "Tools",
       url: "/seller/tools",
       icon: Command,
-      isActive: true,
+      isActive: false,
       items: [
          {
             title: "Rate Calculator",
@@ -114,7 +114,7 @@ export const SELLER_ROUTES = [
       title: "Billing",
       url: "/seller/billing",
       icon: Command,
-      isActive: true,
+      isActive: false,
       items: [
          {
             title: "Shipping Charges",

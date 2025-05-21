@@ -29,3 +29,5 @@ export * from './label'
 
 export * from './modal'
 export * from './collapsible'
+
+export * from './scroll-area'

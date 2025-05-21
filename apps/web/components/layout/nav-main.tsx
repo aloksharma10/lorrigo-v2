@@ -1,12 +1,7 @@
 "use client"
-
 import { ChevronRight, type LucideIcon } from "lucide-react"
 
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@lorrigo/ui/components"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@lorrigo/ui/components"
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -17,7 +12,9 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from "@lorrigo/ui/components"
+import { Popover, PopoverContent, PopoverTrigger } from "@lorrigo/ui/components"
 
 export function NavMain({
   items,
@@ -25,7 +22,7 @@ export function NavMain({
 }: {
   items: {
     title: string
-    url: string
+    url?: string
     icon: LucideIcon
     isActive?: boolean
     items?: {
@@ -35,45 +32,100 @@ export function NavMain({
   }[]
   group: string
 }) {
+  const { state } = useSidebar()
+  const isCollapsed = state === "collapsed"
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel className="capitalize">{group}</SidebarGroupLabel>
       <SidebarMenu>
-        {items.map((item) => (
-          <Collapsible key={item.title} asChild defaultOpen={item.isActive}>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip={item.title}>
-                <a href={item.url || "#"}>
-                  <item.icon />
-                  <span>{item.title}</span>
-                </a>
-              </SidebarMenuButton>
-              {item.items?.length ? (
-                <>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuAction className="data-[state=open]:rotate-90">
-                      <ChevronRight />
-                      <span className="sr-only">Toggle</span>
-                    </SidebarMenuAction>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub>
+        {items.map((item) => {
+          const hasDropdown = item.items && item.items.length > 0
+
+          // When sidebar is expanded, use Collapsible for dropdowns
+          if (!isCollapsed) {
+            return (
+              <Collapsible key={item.title} asChild defaultOpen={item.isActive}>
+                <SidebarMenuItem>
+                  {hasDropdown ? (
+                    <CollapsibleTrigger asChild>
+                      <div className="flex items-center justify-between w-full cursor-pointer">
+                        <SidebarMenuButton tooltip={item.title} asChild>
+                          <div className="flex items-center gap-2">
+                            <item.icon className="size-4" />
+                            <span>{item.title}</span>
+                          </div>
+                        </SidebarMenuButton>
+                        <SidebarMenuAction className="transition-transform data-[state=open]:rotate-90">
+                          <ChevronRight className="size-4" />
+                        </SidebarMenuAction>
+                      </div>
+                    </CollapsibleTrigger>
+                  ) : (
+                    <SidebarMenuButton asChild tooltip={item.title}>
+                      <a href={item.url || "#"}>
+                        <item.icon className="size-4" />
+                        <span>{item.title}</span>
+                      </a>
+                    </SidebarMenuButton>
+                  )}
+
+                  {hasDropdown && (
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {item.items?.map((subItem) => (
+                          <SidebarMenuSubItem key={subItem.title}>
+                            <SidebarMenuSubButton asChild>
+                              <a href={subItem.url}>
+                                <span>{subItem.title}</span>
+                              </a>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  )}
+                </SidebarMenuItem>
+              </Collapsible>
+            )
+          }
+
+          // When sidebar is collapsed, use Popover for dropdowns
+          return (
+            <SidebarMenuItem key={item.title}>
+              {hasDropdown ? (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <SidebarMenuButton tooltip={item.title}>
+                      <item.icon className="size-4" />
+                      <span className="sr-only">{item.title}</span>
+                    </SidebarMenuButton>
+                  </PopoverTrigger>
+                  <PopoverContent side="right" align="start" className="p-0 w-48" sideOffset={5}>
+                    <div className="py-1">
                       {item.items?.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton asChild>
-                            <a href={subItem.url}>
-                              <span>{subItem.title}</span>
-                            </a>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
+                        <a
+                          key={subItem.title}
+                          href={subItem.url}
+                          className="flex items-center px-4 py-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                        >
+                          {subItem.title}
+                        </a>
                       ))}
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </>
-              ) : null}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              ) : (
+                <SidebarMenuButton asChild tooltip={item.title}>
+                  <a href={item.url || "#"}>
+                    <item.icon className="size-4" />
+                    <span className="sr-only">{item.title}</span>
+                  </a>
+                </SidebarMenuButton>
+              )}
             </SidebarMenuItem>
-          </Collapsible>
-        ))}
+          )
+        })}
       </SidebarMenu>
     </SidebarGroup>
   )
