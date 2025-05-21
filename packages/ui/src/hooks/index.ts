@@ -1,6 +1,6 @@
 // Export your hooks here
 // Example:
-// export * from './useMediaQuery';
+export * from './use-media-query';
 // export * from './useDebounce'; 
 
 // Export the useIsMobile hook

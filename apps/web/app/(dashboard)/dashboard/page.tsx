@@ -1,17 +1,28 @@
-import { getServerSession } from 'next-auth/next';
-import { redirect } from 'next/navigation';
+"use client"
 
 import { ChartAreaInteractive } from "./components/chart-area-interactive"
 // import { DataTable } from "@/app/(examples)/dashboard/components/data-table"
 import { SectionCards } from "./components/section-cards"
+import { useModal } from '@/modal/modal-provider';
+import { Button } from '@lorrigo/ui/components';
 // import data from "@/app/(examples)/dashboard/data.json"
 
 
-export default async function Dashboard() {
-  const session = await getServerSession();
+export default function Dashboard() {
+  // const session = await getServerSession();
 
-  if (!session) {
-    redirect('/auth/signin');
+  // if (!session) {
+  //   redirect('/auth/signin');
+  // }
+
+  const { openModal, closeAllModals } = useModal()
+
+  const handleOpenConfirmModal = () => {
+    openModal("confirm", {
+      title: "Confirm Action",
+      description: "Are you sure you want to perform this action?",
+      onConfirm: () => console.log("Confirmed!"),
+    })
   }
 
   return (
@@ -22,6 +33,7 @@ export default async function Dashboard() {
           <div className="px-4 lg:px-6">
             <ChartAreaInteractive />
           </div>
+          <Button onClick={handleOpenConfirmModal}>Open Confirm Modal</Button>
           {/* <DataTable data={data} /> */}
         </div>
       </div>

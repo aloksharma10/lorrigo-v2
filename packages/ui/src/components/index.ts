@@ -26,3 +26,5 @@ export * from './chart'
 export * from './sonner'
 
 export * from './label'
+
+export * from './modal'

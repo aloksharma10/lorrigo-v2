@@ -6,6 +6,8 @@ import { SessionProvider } from 'next-auth/react';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "@lorrigo/ui/components"
+import { ModalRegistry } from '../modal/modal-registry';
+import { ModalProvider } from '@/modal/modal-provider';
 
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -31,8 +33,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
           disableTransitionOnChange
           enableColorScheme
         >
-          {children}
-          <Toaster />
+          <ModalProvider>
+            <ModalRegistry />
+            {children}
+            <Toaster />
+          </ModalProvider>
         </NextThemesProvider>
       </QueryClientProvider>
     </SessionProvider>
