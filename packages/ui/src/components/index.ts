@@ -24,3 +24,5 @@ export * from './toggle-group'
 
 export * from './chart'
 export * from './sonner'
+
+export * from './label'

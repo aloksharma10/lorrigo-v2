@@ -14,10 +14,9 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "typescript": "^5.1.6",
+    "rimraf": "^5.0.1",
     "tsup": "^7.2.0",
-    "eslint": "^8.42.0",
-    "rimraf": "^5.0.1"
+    "typescript": "^5.1.6"
   },
   "exports": {
     ".": {
@@ -43,10 +42,18 @@
   },
   "typesVersions": {
     "*": {
-      "*": ["./dist/*"],
-      ".": ["./dist/index.d.ts"],
-      "validations": ["./dist/validations/index.d.ts"],
-      "helpers": ["./dist/helpers/index.d.ts"]
+      "*": [
+        "./dist/*"
+      ],
+      ".": [
+        "./dist/index.d.ts"
+      ],
+      "validations": [
+        "./dist/validations/index.d.ts"
+      ],
+      "helpers": [
+        "./dist/helpers/index.d.ts"
+      ]
     }
   }
 }
