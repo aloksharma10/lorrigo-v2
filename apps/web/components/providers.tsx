@@ -5,6 +5,8 @@ import { ThemeProvider as NextThemesProvider } from 'next-themes';
 import { SessionProvider } from 'next-auth/react';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from "@lorrigo/ui/components"
+
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = React.useState(
@@ -30,6 +32,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           enableColorScheme
         >
           {children}
+          <Toaster />
         </NextThemesProvider>
       </QueryClientProvider>
     </SessionProvider>

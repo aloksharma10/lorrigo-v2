@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@lorrigo/ui/lib/utils";
 import { Button } from "./button";
 import {
   Tooltip,
