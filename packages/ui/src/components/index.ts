@@ -28,3 +28,4 @@ export * from './sonner'
 export * from './label'
 
 export * from './modal'
+export * from './collapsible'

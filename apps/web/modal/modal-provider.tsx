@@ -9,6 +9,13 @@ import { Modal } from "@lorrigo/ui/components"
 type ModalType = string
 type ModalProps = Record<string, unknown>
 
+
+// export type ModalType = "wallet" | "addPickupLocation" | "payForInvoice" | "addSeller" | "addCustomer" | "schedulePickup" | "cancelOrder" | "cloneOrder" | "trackModal" | "editOrder" | "downloadLabel" | "downloadManifest" | "ndrOrder" | "ndrRTOrder" | "BulkHubUpload" | "BulkPincodeUpload" | 'downloadLabels'  | "BulkPickupUpdate" | 'cancelBulkOrder' | "downloadManifests" | "updateShopifyOrders" | "ViewUserDocsAdmin" | "ClientBillingUpload" | "adminRemittanceManage" | "cloneB2BOrder" | "editB2BOrder" | "addB2BCustomer" | "completeKyc" | 'downloadB2BLabel' | 'alert-kyc' | 'alert-payment' | "downloadB2BManifest" | "BulkShipNow" | "B2BClientBillingUpload" | "B2BShipNow" | "raiseDisputeManage" | "disputeDetails" | "DisputeUpload" | "bulkPickupSchedule" | "sellerRemittanceConfig";
+
+interface ModalData {
+  
+}
+
 // Create context for modal provider
 const ModalContext = createContext<{
   openModal: (type: ModalType, props?: ModalProps) => string

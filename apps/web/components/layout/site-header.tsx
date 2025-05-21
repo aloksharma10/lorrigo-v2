@@ -1,7 +1,8 @@
-import { Button } from "@lorrigo/ui/components"
+import { Button, Input } from "@lorrigo/ui/components"
 import { Separator } from "@lorrigo/ui/components"
 import { SidebarTrigger } from "@lorrigo/ui/components"
 import { ModeToggle } from "@/components/layout/mode-toggle"
+import { Bell } from "lucide-react"
 
 export function SiteHeader() {
   return (
@@ -12,17 +13,15 @@ export function SiteHeader() {
           orientation="vertical"
           className="mx-2 data-[orientation=vertical]:h-4"
         />
-        <h1 className="text-base font-medium">Documents</h1>
-        <div className="ml-auto flex items-center gap-2">
-          <Button variant="ghost" asChild size="sm" className="hidden sm:flex">
-            <a
-              href="https://github.com/shadcn-ui/ui/tree/main/apps/v4/app/(examples)/dashboard"
-              rel="noopener noreferrer"
-              target="_blank"
-              className="dark:text-foreground"
-            >
-              GitHub
-            </a>
+        <div className="ml-auto flex items-center gap-4">
+          <Input
+            placeholder="Search for AWB, Order ID, Customer Name, etc."
+            className="w-72 mr-2 placeholder:text-sm placeholder:text-gray-500 placeholder:text-opacity-50"
+          />
+          <Button variant="secondary" size="icon"
+            className="group/toggle size-4">
+            <Bell size={10} />
+            <span className="sr-only">Notifications</span>
           </Button>
           <ModeToggle />
         </div>

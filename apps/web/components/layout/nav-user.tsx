@@ -90,11 +90,7 @@ export function NavUser({
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <IconCreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconNotification />
-                Notifications
+                Billing Plan
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

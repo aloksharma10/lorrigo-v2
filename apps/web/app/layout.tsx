@@ -20,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${fontSans.variable} ${fontMono.variable} transition-all duration-300 bg-background overscroll-none font-sans antialiased theme-scaled theme-blue-scaled font-sans antialiased`}>
+      <body suppressHydrationWarning className={`${fontSans.variable} ${fontMono.variable} transition-all duration-300 bg-background overscroll-none font-sans antialiased theme-scaled theme-blue-scaled font-sans antialiased`}>
         <Providers>{children}</Providers>
       </body>
     </html>
