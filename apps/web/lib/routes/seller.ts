@@ -21,12 +21,12 @@ export const SELLER_ROUTES = [
       isActive: true,
       items: [
          {
-            title: "Forward Shipment",
-            url: "/seller/orders/forward-shipment",
+            title: "Forward Shipments",
+            url: "/seller/orders/forward-shipments",
          },
          {
-            title: "Reverse Shipment",
-            url: "/seller/orders/reverse-shipment",
+            title: "Reverse Shipments",
+            url: "/seller/orders/reverse-shipments",
          },
          {
             title: "NDR",
@@ -67,8 +67,8 @@ export const SELLER_ROUTES = [
             isActive: false,
          },
          {
-            title: "Courier",
-            url: "/seller/courier",
+            title: "Couriers",
+            url: "/seller/couriers",
             icon: Command,
             isActive: false,
          },
@@ -121,8 +121,8 @@ export const SELLER_ROUTES = [
             url: "/seller/shipping-charges",
          },
          {
-            title: "COD Remittance",
-            url: "/seller/cod-remittance",
+            title: "COD Remittances",
+            url: "/seller/cod-remittances",
          },
          {
             title: "Invoices",

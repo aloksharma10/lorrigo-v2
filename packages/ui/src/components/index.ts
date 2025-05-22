@@ -36,3 +36,9 @@ export * from './hover-card'
 export * from './navigation-menu'
 
 export * from './simple-data-table'
+export * from './data-table/data-table'
+export * from './data-table/data-table-column-header'
+
+export * from './command'
+
+export * from './checkbox'

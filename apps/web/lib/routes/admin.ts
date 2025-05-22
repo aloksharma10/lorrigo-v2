@@ -22,11 +22,11 @@ export const ADMIN_ROUTES = [
       items: [
          {
             title: "Forward Shipment",
-            url: "/admin/orders/forward-shipment",
+            url: "/admin/orders/forward-shipments",
          },
          {
             title: "Reverse Shipment",
-            url: "/admin/orders/reverse-shipment",
+            url: "/admin/orders/reverse-shipments",
          },
          {
             title: "NDR",
@@ -68,7 +68,7 @@ export const ADMIN_ROUTES = [
          },
          {
             title: "Courier",
-            url: "/admin/courier",
+            url: "/admin/couriers",
             icon: Command,
             isActive: false,
          },
@@ -102,7 +102,7 @@ export const ADMIN_ROUTES = [
          },
          {
             title: "Bulk Activity Log",
-            url: "/admin/bulk-activity-log",
+            url: "/admin/bulk-activity-logs",
          },
       ],
    },
@@ -118,7 +118,7 @@ export const ADMIN_ROUTES = [
          },
          {
             title: "COD Remittance",
-            url: "/admin/cod-remittance",
+            url: "/admin/cod-remittances",
          },
          {
             title: "Invoices",
@@ -127,26 +127,26 @@ export const ADMIN_ROUTES = [
       ],
    },
    {
-      title: "User",
-      url: "/admin/user",
+      title: "Users",
+      url: "/admin/users",
       icon: Command,
       isActive: false,
    },
    {
       title: "Wallet",
-      url: "/admin/wallet",
+      url: "/admin/wallets",
       icon: Command,
       isActive: false,
    },
    {
-      title: "Pincode",
-      url: "/admin/pincode",
+      title: "Pincodes",
+      url: "/admin/pincodes",
       icon: Command,
       isActive: false,
    },
    {
-      title: "Courier Status",
-      url: "/admin/courier-status",
+      title: "Courier Statuses",
+      url: "/admin/courier-statuses",
       icon: Command,
       isActive: false,
    }

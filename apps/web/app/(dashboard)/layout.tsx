@@ -24,7 +24,7 @@ export default async function SellerLayout({
         } as React.CSSProperties
       }
     >
-      <AppSidebar variant="floating" />
+      <AppSidebar variant="sidebar" />
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col px-4 md:p-6 ">{children}</div>

@@ -32,10 +32,9 @@ export default function SellerDashboardOverview() {
       </div>
 
 
-
       {/* First row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="bg-indigo-50 dark:bg-indigo-900 border-none">
+        <Card className="border-none">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Today's Orders</CardTitle>
             <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -74,7 +73,7 @@ export default function SellerDashboardOverview() {
           </CardContent>
         </Card>
 
-        <Card className="bg-green-50 dark:bg-green-900 border-none">
+        <Card className="border-none">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Today's Revenue</CardTitle>
             <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -187,7 +186,7 @@ export default function SellerDashboardOverview() {
 
       {/* Third row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="bg-indigo-50 dark:bg-indigo-900 border-none">
+        <Card className="border-none">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div className="flex items-center gap-2">
               <CardTitle className="text-sm font-medium">Average Shipping Cost</CardTitle>
