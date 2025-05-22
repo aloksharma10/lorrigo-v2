@@ -103,7 +103,8 @@ export default function Home() {
             title="Actions Needing Your Attention Today"
             className="p-4"
          />
-         <UpcomingPickups />
+            <UpcomingPickups />
+         
       </div>
    )
 }

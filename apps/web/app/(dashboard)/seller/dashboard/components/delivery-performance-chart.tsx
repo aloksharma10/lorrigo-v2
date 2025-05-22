@@ -1,7 +1,7 @@
 "use client"
 
-import { ChartCard } from "@/components/chart-card"
-import { PieChart, type PieChartData } from "@/components/pie-chart"
+import { ChartCard } from "@/components/charts/chart-card"
+import { PieChart, type PieChartData } from "@/components/charts/pie-chart"
 
 const data = [
   { name: "Ontime Deliveries", value: 8500, color: "#818cf8" },

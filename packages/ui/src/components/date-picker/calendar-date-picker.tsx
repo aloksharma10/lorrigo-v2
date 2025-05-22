@@ -17,17 +17,17 @@ import { toDate, formatInTimeZone } from 'date-fns-tz';
 import { DateRange } from 'react-day-picker';
 import { cva, VariantProps } from 'class-variance-authority';
 
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/popover';
+import { cn } from '@lorrigo/ui/lib/utils';
+import { Button } from '@lorrigo/ui/components';
+import { Popover, PopoverContent, PopoverTrigger } from '@lorrigo/ui/components';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/select';
-import { Calendar } from '@/components/calendar';
+} from '@lorrigo/ui/components';
+import { Calendar } from '@lorrigo/ui/components';
 
 const months = [
   'January',

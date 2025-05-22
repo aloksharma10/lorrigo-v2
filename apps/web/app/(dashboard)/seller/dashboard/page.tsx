@@ -10,16 +10,8 @@ import { ShipmentOverviewTable } from './components/shipment-overview-table'
 // import { IndiaMap } from "@/components/india-map"
 
 
-const menuItems = [
-  { name: "Overview", path: "/overview" },
-  { name: "Orders", path: "/orders" },
-  { name: "Shipments", path: "/shipments" },
-  { name: "NDR", path: "/ndr" },
-  { name: "RTO", path: "/rto" },
-];
 
-
-export default function Dashboard() {
+export default function SellerDashboardOverview() {
   return (
     <div className="mx-auto p-4 space-y-6">
       <div className="flex items-center justify-between">
@@ -32,19 +24,18 @@ export default function Dashboard() {
             <RefreshCw className="h-4 w-4" />
             Refresh
           </Button>
-          <Button variant="outline" size="sm" className="gap-1">
+          {/* <Button variant="outline" size="sm" className="gap-1">
             <Download className="h-4 w-4" />
             Export
-          </Button>
+          </Button> */}
         </div>
       </div>
 
-      <Header menuItems={menuItems} />
 
 
       {/* First row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="bg-indigo-50 border-none">
+        <Card className="bg-indigo-50 dark:bg-indigo-900 border-none">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Today's Orders</CardTitle>
             <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -83,7 +74,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-green-50 border-none">
+        <Card className="bg-green-50 dark:bg-green-900 border-none">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Today's Revenue</CardTitle>
             <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -196,7 +187,7 @@ export default function Dashboard() {
 
       {/* Third row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="bg-indigo-50 border-none">
+        <Card className="bg-indigo-50 dark:bg-indigo-900 border-none">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div className="flex items-center gap-2">
               <CardTitle className="text-sm font-medium">Average Shipping Cost</CardTitle>

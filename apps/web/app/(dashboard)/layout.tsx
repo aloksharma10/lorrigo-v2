@@ -7,7 +7,7 @@ import {
 import { AppSidebar } from "@/components/layout/app-sidebar"
 import { SiteHeader } from "@/components/layout/site-header"
 
-export default async function DashboardLayout({
+export default async function SellerLayout({
   children,
 }: {
   children: React.ReactNode

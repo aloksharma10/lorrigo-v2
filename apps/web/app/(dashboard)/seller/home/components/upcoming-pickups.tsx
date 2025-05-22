@@ -2,8 +2,11 @@
 import { format } from "date-fns";
 import { useState } from "react";
 
-import { Button, Calendar, Card, CardContent, Popover, PopoverContent, PopoverTrigger, Separator, Badge } from "@lorrigo/ui/components";
+import { Button, Calendar, Card, CardContent, Popover, PopoverContent, PopoverTrigger, Separator, Badge, CardHeader, CardTitle } from "@lorrigo/ui/components";
 import { PickupCard } from "./pickup-card";
+import { CalendarDatePicker } from "@lorrigo/ui/components/date-picker/calendar-date-picker";
+import { DateRange } from 'react-day-picker';
+
 
 export const mockPickupData = [
   {
@@ -70,97 +73,55 @@ export const mockPickupData = [
   }
 ];
 export const UpcomingPickups = () => {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [activeDateButton, setActiveDateButton] = useState<string>("today");
-
-  // Format date for display and comparison
-  const formattedDate = selectedDate ? format(selectedDate, "MMM d, yyyy") : "";
-
-  // Filter pickups by selected date
-  const filteredPickups = mockPickupData.filter(pickup => {
-    if (!selectedDate) return true;
-    return pickup.date === format(selectedDate, "MMM d, yyyy");
+  const [selectedDate, setSelectedDate] = useState<DateRange>({
+    from: new Date(),
+    to: new Date()
   });
 
-  const handleDateButtonClick = (buttonId: string, date: Date) => {
+  const handleDateSelect = (date: DateRange) => {
     setSelectedDate(date);
-    setActiveDateButton(buttonId);
   };
 
   return (
-    <main className="container mx-auto p-4 md:p-6">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-6">Your Upcoming Pickups</h1>
-
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-2xl font-bold">Your Upcoming Pickups</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col gap-4 mb-6">
           <div className="flex space-x-2">
             <span className="py-2 text-gray-600">Date</span>
-            <Button
-              variant={activeDateButton === "today" ? "default" : "outline"}
-              onClick={() => handleDateButtonClick("today", new Date())}
-            >
-              {format(new Date(), "MMM d, yyyy")}
-            </Button>
-
-            <Button
-              variant={activeDateButton === "tomorrow" ? "default" : "outline"}
-              onClick={() => {
-                const tomorrow = new Date();
-                tomorrow.setDate(tomorrow.getDate() + 1);
-                handleDateButtonClick("tomorrow", tomorrow);
-              }}
-            >
-              {format(new Date(new Date().setDate(new Date().getDate() + 1)), "MMM d, yyyy")}
-            </Button>
-
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={activeDateButton === "custom" ? "default" : "outline"}
-                  onClick={() => setActiveDateButton("custom")}
-                >
-                  <span>Custom</span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={(date) => {
-                    setSelectedDate(date);
-                    setActiveDateButton("custom");
-                  }}
-                  initialFocus
-                  className="p-3 pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
+            <CalendarDatePicker
+              className="bg-gray-100 text-gray-600 hover:bg-gray-200"
+              date={selectedDate}
+              onDateSelect={handleDateSelect}
+            />
           </div>
 
           <div className="mb-4">
             <div className="flex items-center">
               <h2 className="font-medium text-blue-700 mr-2">Pickups Scheduled</h2>
               <Badge variant="outline" className="bg-green-100 text-green-800 font-medium">
-                {filteredPickups.length}
+                {mockPickupData.length}
               </Badge>
             </div>
           </div>
 
           <div className="space-y-4">
-            {filteredPickups.length > 0 ? (
-              filteredPickups.map((pickup) => (
+            {mockPickupData.length > 0 ? (
+              mockPickupData.map((pickup) => (
                 <PickupCard key={pickup.id} pickup={pickup} />
               ))
             ) : (
               <Card>
                 <CardContent className="flex items-center justify-center h-40">
-                  <p className="text-gray-500">No pickups scheduled for {formattedDate}</p>
+                  <p className="text-gray-500">No pickups scheduled for {format(selectedDate.from || new Date(), "MMM d, yyyy")}</p>
                 </CardContent>
               </Card>
             )}
           </div>
         </div>
-      </div>
-    </main>
+      </CardContent>
+    </Card>
   );
 };
