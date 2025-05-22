@@ -34,3 +34,5 @@ export * from './scroll-area'
 
 export * from './hover-card'
 export * from './navigation-menu'
+
+export * from './simple-data-table'

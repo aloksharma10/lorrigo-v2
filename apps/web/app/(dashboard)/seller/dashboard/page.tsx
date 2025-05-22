@@ -1,11 +1,12 @@
-import { Card, CardContent, CardHeader, CardTitle, Tabs, TabsContent, TabsList, TabsTrigger, Badge, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Button } from '@lorrigo/ui/components'
+import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from '@lorrigo/ui/components'
 
-import { Boxes, CircleHelp, Download, ExternalLink, Home, Info, MoreHorizontal, RefreshCw, Truck } from "lucide-react"
+import { Boxes, CircleHelp, Download, ExternalLink, MoreHorizontal, RefreshCw } from "lucide-react"
 import { ShipmentStatusChart } from "./components/shipment-status-chart"
 import { DeliveryPerformanceChart } from "./components/delivery-performance-chart"
 import { CourierSplitChart } from "./components/courier-split-chart"
 import { IndiaMap } from './components/india-map'
 import { Header } from '@/components/header'
+import { ShipmentOverviewTable } from './components/shipment-overview-table'
 // import { IndiaMap } from "@/components/india-map"
 
 
@@ -271,106 +272,9 @@ export default function Dashboard() {
 
       {/* Fourth row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <div className="flex items-center gap-2">
-              <CardTitle className="text-sm font-medium">Couriers Split</CardTitle>
-              <Badge variant="outline" className="text-xs">
-                Last 30 days
-              </Badge>
-              <CircleHelp className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <ExternalLink className="h-4 w-4" />
-            </Button>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <CourierSplitChart />
-            <div className="mt-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-indigo-400"></div>
-                <span className="text-xs">Bluedart Surface 500 g Surface</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-indigo-600"></div>
-                <span className="text-xs">Bluedart Surface 2Kg-5Kg</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-green-400"></div>
-                <span className="text-xs">Xpressbees Surface</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-yellow-400"></div>
-                <span className="text-xs">Others</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <div className="flex items-center gap-2">
-              <CardTitle className="text-sm font-medium">Overall Shipment Status</CardTitle>
-              <Badge variant="outline" className="text-xs">
-                Last 30 days
-              </Badge>
-              <CircleHelp className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <ExternalLink className="h-4 w-4" />
-            </Button>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <ShipmentStatusChart />
-            <div className="mt-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-indigo-400"></div>
-                <span className="text-xs">Delivered</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-orange-400"></div>
-                <span className="text-xs">Intransit</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-green-400"></div>
-                <span className="text-xs">Undelivered</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-red-400"></div>
-                <span className="text-xs">RTO</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-yellow-400"></div>
-                <span className="text-xs">Lost/Damaged</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <div className="flex items-center gap-2">
-              <CardTitle className="text-sm font-medium">Delivery Performance</CardTitle>
-              <CircleHelp className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <ExternalLink className="h-4 w-4" />
-            </Button>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <DeliveryPerformanceChart />
-            <div className="mt-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-indigo-400"></div>
-                <span className="text-xs">Ontime Deliveries</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-orange-400"></div>
-                <span className="text-xs">Late Deliveries</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <CourierSplitChart />
+        <ShipmentStatusChart />
+        <DeliveryPerformanceChart />
       </div>
 
       {/* Fifth row */}
@@ -484,93 +388,7 @@ export default function Dashboard() {
       </div>
 
       {/* Sixth row */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-sm font-medium">Shipment Overview by Courier</CardTitle>
-            <CircleHelp className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <ExternalLink className="h-4 w-4" />
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[200px]">Courier Name</TableHead>
-                  <TableHead>Pickup Unscheduled</TableHead>
-                  <TableHead>Pickup Scheduled</TableHead>
-                  <TableHead>In-Transit</TableHead>
-                  <TableHead>Delivered</TableHead>
-                  <TableHead>RTO</TableHead>
-                  <TableHead>Lost/Damaged</TableHead>
-                  <TableHead>Total Shipment</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell className="font-medium">Bluedart Surface 500 g Surface</TableCell>
-                  <TableCell>0</TableCell>
-                  <TableCell>532</TableCell>
-                  <TableCell>2,141</TableCell>
-                  <TableCell>8,605</TableCell>
-                  <TableCell>2,933</TableCell>
-                  <TableCell>2</TableCell>
-                  <TableCell>14,809</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium">Bluedart Surface 2Kg-5Kg</TableCell>
-                  <TableCell>0</TableCell>
-                  <TableCell>3</TableCell>
-                  <TableCell>43</TableCell>
-                  <TableCell>337</TableCell>
-                  <TableCell>5</TableCell>
-                  <TableCell>0</TableCell>
-                  <TableCell>388</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium">Blue Dart Air</TableCell>
-                  <TableCell>0</TableCell>
-                  <TableCell>4</TableCell>
-                  <TableCell>7</TableCell>
-                  <TableCell>104</TableCell>
-                  <TableCell>1</TableCell>
-                  <TableCell>0</TableCell>
-                  <TableCell>116</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium">Delivery Air</TableCell>
-                  <TableCell>0</TableCell>
-                  <TableCell>1</TableCell>
-                  <TableCell>2</TableCell>
-                  <TableCell>28</TableCell>
-                  <TableCell>1</TableCell>
-                  <TableCell>0</TableCell>
-                  <TableCell>32</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium">Xpressbees Surface</TableCell>
-                  <TableCell>0</TableCell>
-                  <TableCell>0</TableCell>
-                  <TableCell>1</TableCell>
-                  <TableCell>6</TableCell>
-                  <TableCell>2</TableCell>
-                  <TableCell>0</TableCell>
-                  <TableCell>9</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
-          <div className="mt-4 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Info className="h-3 w-3" />
-              Last updated on 21 May 2025. There might be a slight mismatch in the data.
-            </span>
-          </div>
-        </CardContent>
-      </Card>
+      <ShipmentOverviewTable />
     </div>
   )
 }

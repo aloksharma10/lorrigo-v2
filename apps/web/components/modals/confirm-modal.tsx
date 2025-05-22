@@ -37,7 +37,7 @@ export function ConfirmModal({
         { name: "name", label: "Name", required: true },
         { name: "email", label: "Email", type: "email", required: true },
       ],
-      onSubmit: (data) => console.log("Form submitted:", data),
+      onSubmit: (data: any) => console.log("Form submitted:", data),
     })
   }
 
