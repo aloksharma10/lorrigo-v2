@@ -30,7 +30,7 @@ export function ConfirmModal({
   }
 
   const handleOpenFormModal = () => {
-    openModal("form", {
+    openModal("seller:new-order", {
       title: "User Information",
       description: "Please fill out your information",
       fields: [

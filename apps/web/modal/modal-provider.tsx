@@ -6,7 +6,7 @@ import { useModalStore } from "./modal-store"
 import { Modal } from "@lorrigo/ui/components"
 
 // Define types for our modal system
-type ModalType = string
+export type ModalType = "seller:new-order" 
 type ModalProps = Record<string, unknown>
 
 

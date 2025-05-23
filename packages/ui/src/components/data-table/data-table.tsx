@@ -12,6 +12,7 @@ import {
   getFacetedRowModel,
   getFacetedUniqueValues,
   useReactTable,
+  OnChangeFn,
 } from "@tanstack/react-table"
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../table"
@@ -88,8 +89,8 @@ export function DataTable<TData, TValue>({
   dateRangeFilter = true,
   defaultVisibility = {},
   defaultDateRange = {
-    from: new Date(new Date().setDate(new Date().getDate() - 30)),
-    to: new Date(),
+    from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    to: new Date()
   },
   defaultSort = [],
   pageCount,
@@ -210,11 +211,11 @@ export function DataTable<TData, TValue>({
     },
     enableRowSelection: selectable,
     onRowSelectionChange: setRowSelection,
-    onSortingChange: handleSortingChange,
+    onSortingChange: handleSortingChange as OnChangeFn<SortingState>,
     onColumnVisibilityChange: setColumnVisibility,
-    onColumnFiltersChange: handleFiltersChange,
+    onColumnFiltersChange: handleFiltersChange as OnChangeFn<ColumnFiltersState>,
     onGlobalFilterChange: handleGlobalFilterChange,
-    onPaginationChange: handlePaginationChange,
+    onPaginationChange: handlePaginationChange as OnChangeFn<PaginationState>,
     getCoreRowModel: getCoreRowModel(),
     manualPagination,
     manualSorting,

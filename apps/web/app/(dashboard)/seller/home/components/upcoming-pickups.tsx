@@ -4,7 +4,6 @@ import { useState } from "react";
 
 import { Button, Calendar, Card, CardContent, Popover, PopoverContent, PopoverTrigger, Separator, Badge, CardHeader, CardTitle } from "@lorrigo/ui/components";
 import { PickupCard } from "./pickup-card";
-import { CalendarDatePicker } from "@lorrigo/ui/components/date-picker/calendar-date-picker";
 import { DateRange } from 'react-day-picker';
 
 
@@ -91,11 +90,6 @@ export const UpcomingPickups = () => {
         <div className="flex flex-col gap-4 mb-6">
           <div className="flex space-x-2">
             <span className="py-2 text-gray-600">Date</span>
-            <CalendarDatePicker
-              className="bg-gray-100 text-gray-600 hover:bg-gray-200"
-              date={selectedDate}
-              onDateSelect={handleDateSelect}
-            />
           </div>
 
           <div className="mb-4">

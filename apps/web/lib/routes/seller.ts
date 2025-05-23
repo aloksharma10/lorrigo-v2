@@ -22,7 +22,7 @@ export const SELLER_ROUTES = [
       items: [
          {
             title: "Forward Shipments",
-            url: "/seller/orders/forward-shipments",
+            url: "/seller/orders/forward-shipments/all",
          },
          {
             title: "Reverse Shipments",

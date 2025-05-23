@@ -17,8 +17,15 @@ export function Providers({ children }: { children: React.ReactNode }) {
         defaultOptions: {
           queries: {
             staleTime: 60 * 1000, // 1 minute
-            retry: 1,
+            // retry: 1,
             refetchOnWindowFocus: false,
+            retry: (failureCount, error) => {
+              // Don't retry on 4xx errors
+              if (error instanceof Error && error.message.includes('4')) {
+                return false
+              }
+              return failureCount < 3
+            },
           },
         },
       })
@@ -36,7 +43,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <ModalProvider>
             <ModalRegistry />
             {children}
-            <Toaster />
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                duration: 4000,
+              }}
+            />
           </ModalProvider>
         </NextThemesProvider>
       </QueryClientProvider>

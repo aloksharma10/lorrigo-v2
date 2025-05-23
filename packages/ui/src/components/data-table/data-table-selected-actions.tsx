@@ -42,9 +42,9 @@ export function DataTableSelectedActions<TData>({ table, bulkActions = [] }: Dat
         <X className="h-4 w-4 mr-2" />
         Clear selection
       </Button>
-      <div className="text-sm text-muted-foreground">
+      {/* <div className="text-sm text-muted-foreground">
         {selectedCount} {selectedCount === 1 ? "row" : "rows"} selected
-      </div>
+      </div> */}
       <div className="ml-auto flex items-center gap-2">
         {bulkActions.length === 1 ? (
           <Button
@@ -62,7 +62,7 @@ export function DataTableSelectedActions<TData>({ table, bulkActions = [] }: Dat
             <DropdownMenuTrigger asChild>
               <Button size="sm" className="h-8" disabled={isAnyActionLoading}>
                 {isAnyActionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Bulk Actions
+                Bulk Actions ({selectedCount})
                 <ChevronDown className="ml-2 h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
