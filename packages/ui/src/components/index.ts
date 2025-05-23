@@ -50,3 +50,6 @@ export {
 export * from './command'
 
 export * from './checkbox'
+
+export * from './radio-group'
+export * from './alert'

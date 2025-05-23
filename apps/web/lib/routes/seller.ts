@@ -16,10 +16,13 @@ export const SELLER_ROUTES = [
    },
    {
       title: "Orders",
-      url: "/seller/orders/new",
       icon: Command,
       isActive: true,
       items: [
+         {
+            title: "Add Order",
+            url: "/seller/orders/new",
+         },
          {
             title: "Forward Shipments",
             url: "/seller/orders/forward-shipments/all",
