@@ -71,6 +71,7 @@ export const mockPickupData = [
     ]
   }
 ];
+
 export const UpcomingPickups = () => {
   const [selectedDate, setSelectedDate] = useState<DateRange>({
     from: new Date(),

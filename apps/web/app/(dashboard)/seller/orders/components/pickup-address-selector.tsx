@@ -3,10 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { ChevronDown, ChevronUp, Edit, Plus } from "lucide-react"
 import { Button, Input, Badge, Form, FormControl, FormField, FormItem, FormMessage } from "@lorrigo/ui/components"
-
-import { z } from "zod"
 import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
 
 interface Address {
   id: string
@@ -17,6 +14,11 @@ interface Address {
 
 interface PickupAddressSelectorProps {
   onAddressSelect: (address: Address | null) => void
+}
+
+// Interface for form values
+interface AddressFormValues {
+  address: string;
 }
 
 // This is a mock API function that would be replaced with a real API call
@@ -66,10 +68,6 @@ async function fetchAddresses(query: string): Promise<Address[]> {
   )
 }
 
-const addressFormSchema = z.object({
-  address: z.string().min(1, { message: "Please select or enter an address" }),
-})
-
 export function PickupAddressSelector({ onAddressSelect }: PickupAddressSelectorProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -78,8 +76,7 @@ export function PickupAddressSelector({ onAddressSelect }: PickupAddressSelector
   const [isLoading, setIsLoading] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  const form = useForm<z.infer<typeof addressFormSchema>>({
-    resolver: zodResolver(addressFormSchema),
+  const form = useForm<AddressFormValues>({
     defaultValues: {
       address: "",
     },
@@ -123,90 +120,88 @@ export function PickupAddressSelector({ onAddressSelect }: PickupAddressSelector
     onAddressSelect(address)
   }
 
-  function onSubmit(values: z.infer<typeof addressFormSchema>) {
+  function onSubmit(values: AddressFormValues) {
     console.log(values)
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
-        <div className="relative" ref={dropdownRef}>
-          <div className="flex gap-2">
-            <FormField
-              control={form.control}
-              name="address"
-              render={({ field }) => (
-                <FormItem className="flex-1">
-                  <FormControl>
-                    <div className="relative">
-                      <Input
-                        placeholder="Search by pickup location"
-                        value={selectedAddress ? selectedAddress.address : searchQuery}
-                        onChange={(e) => {
-                          setSearchQuery(e.target.value)
-                          field.onChange(e.target.value)
-                          setSelectedAddress(null)
-                          onAddressSelect(null)
-                          if (!isOpen) setIsOpen(true)
-                        }}
-                        onClick={() => setIsOpen(true)}
-                        className="pr-10"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-0 top-0 h-full"
-                        onClick={() => setIsOpen(!isOpen)}
-                      >
-                        {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="button" variant="outline" size="icon">
-              <Edit className="h-4 w-4" />
-            </Button>
-            <Button type="button" variant="outline" size="icon">
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-
-          {isOpen && (
-            <div className="absolute z-10 mt-1 w-full rounded-md border bg-background shadow-lg">
-              {isLoading ? (
-                <div className="p-4 text-center text-sm text-muted-foreground">Loading...</div>
-              ) : addresses.length > 0 ? (
-                <ul className="max-h-80 overflow-auto py-1">
-                  {addresses.map((address) => (
-                    <li
-                      key={address.id}
-                      className="cursor-pointer px-4 py-2 hover:bg-muted"
-                      onClick={() => handleAddressSelect(address)}
+      <div className="relative" ref={dropdownRef}>
+        <div className="flex gap-2">
+          <FormField
+            control={form.control}
+            name="address"
+            render={({ field }) => (
+              <FormItem className="flex-1">
+                <FormControl>
+                  <div className="relative">
+                    <Input
+                      placeholder="Search by pickup location"
+                      value={selectedAddress ? selectedAddress.address : searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value)
+                        field.onChange(e.target.value)
+                        setSelectedAddress(null)
+                        onAddressSelect(null)
+                        if (!isOpen) setIsOpen(true)
+                      }}
+                      onClick={() => setIsOpen(true)}
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-full"
+                      onClick={() => setIsOpen(!isOpen)}
                     >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="font-medium">{address.name}</span>
-                          <span className="text-muted-foreground"> | </span>
-                          <span className="text-sm">{address.address}</span>
-                        </div>
-                        <Badge variant={address.verified ? "success" : "destructive"} className="ml-2">
-                          {address.verified ? "Verified" : "Unverified"}
-                        </Badge>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="p-4 text-center text-sm text-muted-foreground">No addresses found</div>
-              )}
-            </div>
-          )}
+                      {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <Button type="button" variant="outline" size="icon">
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button type="button" variant="outline" size="icon">
+            <Plus className="h-4 w-4" />
+          </Button>
         </div>
-      </form>
+
+        {isOpen && (
+          <div className="absolute z-10 mt-1 w-full rounded-md border bg-background shadow-lg">
+            {isLoading ? (
+              <div className="p-4 text-center text-sm text-muted-foreground">Loading...</div>
+            ) : addresses.length > 0 ? (
+              <ul className="max-h-80 overflow-auto py-1">
+                {addresses.map((address) => (
+                  <li
+                    key={address.id}
+                    className="cursor-pointer px-4 py-2 hover:bg-muted"
+                    onClick={() => handleAddressSelect(address)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="font-medium">{address.name}</span>
+                        <span className="text-muted-foreground"> | </span>
+                        <span className="text-sm">{address.address}</span>
+                      </div>
+                      <Badge variant={address.verified ? "success" : "destructive"} className="ml-2">
+                        {address.verified ? "Verified" : "Unverified"}
+                      </Badge>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="p-4 text-center text-sm text-muted-foreground">No addresses found</div>
+            )}
+          </div>
+        )}
+      </div>
     </Form>
   )
 }

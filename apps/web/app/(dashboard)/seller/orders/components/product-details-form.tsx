@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Info, Minus, Plus, Trash2 } from "lucide-react"
 import {
    Button,
@@ -9,19 +9,32 @@ import {
    Tooltip,
    TooltipContent,
    TooltipProvider,
-   TooltipTrigger
+   TooltipTrigger,
+   Form
 } from "@lorrigo/ui/components"
 
-
-import { z } from "zod"
 import { useForm, useFieldArray } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
 
+// Product interfaces
 interface Product {
-  id: string
-  name: string
-  price: number
-  hsnCode?: string
+  id: string;
+  name: string;
+  price: number;
+  hsnCode?: string;
+}
+
+interface ProductItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  discount: number;
+  taxRate: number;
+  hsnCode: string;
+}
+
+interface ProductFormValues {
+  products: ProductItem[];
 }
 
 // This is a mock API function that would be replaced with a real API call
@@ -44,29 +57,15 @@ async function fetchProducts(query: string): Promise<Product[]> {
   )
 }
 
-const productSchema = z.object({
-  id: z.string().optional(),
-  name: z.string().min(1, { message: "Product name is required" }),
-  price: z.number().min(0, { message: "Price must be a positive number" }),
-  quantity: z.number().min(1, { message: "Quantity must be at least 1" }),
-  discount: z.number().min(0, { message: "Discount must be a positive number" }).optional(),
-  taxRate: z.number().min(0, { message: "Tax rate must be a positive number" }).optional(),
-  hsnCode: z.string().optional(),
-})
-
-const productFormSchema = z.object({
-  products: z.array(productSchema).min(1, { message: "At least one product is required" }),
-})
-
 interface ProductRowProps {
-  index: number
-  control: any
-  register: any
-  setValue: any
-  getValues: any
-  errors: any
-  remove: any
-  productsLength: number
+  index: number;
+  control: any;
+  register: any;
+  setValue: any;
+  getValues: any;
+  errors: any;
+  remove: any;
+  productsLength: number;
 }
 
 function ProductRow({
@@ -132,7 +131,7 @@ function ProductRow({
   }
 
   return (
-    <div className="grid grid-cols-12 gap-4 mb-4">
+    <div className="grid lg:grid-cols-12 gap-4 mb-4">
       <div className="col-span-4 relative" ref={dropdownRef}>
         <Label htmlFor={`products.${index}.name`} className="text-sm font-medium text-indigo-600">
           Product Name
@@ -219,7 +218,7 @@ function ProductRow({
           Unit Price
         </Label>
         <div className="flex items-center mt-1">
-          <span className="flex h-10 w-10 items-center justify-center rounded-l-md border border-r-0 bg-muted text-muted-foreground">
+          <span className="flex h-9 w-10 items-center justify-center rounded-l-md border border-r-0 bg-muted text-muted-foreground">
             ₹
           </span>
           <Input
@@ -227,7 +226,7 @@ function ProductRow({
             type="text"
             {...register(`products.${index}.price`, {
               valueAsNumber: true,
-              onChange: (e) => {
+              onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
                 const value = e.target.value === "" ? 0 : Number.parseFloat(e.target.value)
                 setValue(`products.${index}.price`, value)
               },
@@ -259,7 +258,7 @@ function ProductRow({
             type="text"
             {...register(`products.${index}.quantity`, {
               valueAsNumber: true,
-              onChange: (e) => {
+              onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
                 const value = e.target.value === "" ? 1 : Number.parseInt(e.target.value)
                 setValue(`products.${index}.quantity`, Math.max(1, value))
               },
@@ -287,7 +286,7 @@ function ProductRow({
           <span className="text-xs text-muted-foreground">(Optional)</span>
         </Label>
         <div className="flex items-center mt-1">
-          <span className="flex h-10 w-10 items-center justify-center rounded-l-md border border-r-0 bg-muted text-muted-foreground">
+          <span className="flex h-9 w-10 items-center justify-center rounded-l-md border border-r-0 bg-muted text-muted-foreground">
             ₹
           </span>
           <Input
@@ -295,12 +294,12 @@ function ProductRow({
             type="text"
             {...register(`products.${index}.discount`, {
               valueAsNumber: true,
-              onChange: (e) => {
+              onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
                 const value = e.target.value === "" ? 0 : Number.parseFloat(e.target.value)
                 setValue(`products.${index}.discount`, value)
               },
             })}
-            className="rounded-l-none rounded-r-none"
+            className="rounded-l-none rounded-r-lg"
           />
         </div>
         {errors?.products?.[index]?.discount && (
@@ -319,14 +318,14 @@ function ProductRow({
             type="text"
             {...register(`products.${index}.taxRate`, {
               valueAsNumber: true,
-              onChange: (e) => {
+              onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
                 const value = e.target.value === "" ? 0 : Number.parseFloat(e.target.value)
                 setValue(`products.${index}.taxRate`, value)
               },
             })}
             className="rounded-r-none"
           />
-          <span className="flex h-10 w-10 items-center justify-center rounded-r-md border border-l-0 bg-muted text-muted-foreground">
+          <span className="flex h-9 w-10 items-center justify-center rounded-r-md border border-l-0 bg-muted text-muted-foreground">
             %
           </span>
         </div>
@@ -352,8 +351,7 @@ function ProductRow({
 }
 
 export function ProductDetailsForm() {
-  const form = useForm<z.infer<typeof productFormSchema>>({
-    resolver: zodResolver(productFormSchema),
+  const form = useForm<ProductFormValues>({
     defaultValues: {
       products: [
         {
@@ -374,7 +372,7 @@ export function ProductDetailsForm() {
     name: "products",
   })
 
-  function onSubmit(values: z.infer<typeof productFormSchema>) {
+  function onSubmit(values: ProductFormValues) {
     console.log(values)
   }
 
@@ -417,4 +415,4 @@ export function ProductDetailsForm() {
       </form>
     </Form>
   )
-}
+} 

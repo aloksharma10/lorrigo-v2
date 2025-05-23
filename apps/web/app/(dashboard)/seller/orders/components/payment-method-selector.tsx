@@ -2,27 +2,21 @@
 
 import { RadioGroup, RadioGroupItem, Label, Form, FormControl, FormField, FormItem, FormMessage } from "@lorrigo/ui/components"
 import { Info } from "lucide-react"
-
-import { z } from "zod"
 import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
 
-
-const paymentFormSchema = z.object({
-  paymentMethod: z.enum(["cod", "prepaid"], {
-    required_error: "Please select a payment method",
-  }),
-})
+// Create explicit interface for form values
+interface PaymentFormValues {
+  paymentMethod: "cod" | "prepaid";
+}
 
 export function PaymentMethodSelector() {
-  const form = useForm<z.infer<typeof paymentFormSchema>>({
-    resolver: zodResolver(paymentFormSchema),
+  const form = useForm<PaymentFormValues>({
     defaultValues: {
       paymentMethod: "cod",
     },
   })
 
-  function onSubmit(values: z.infer<typeof paymentFormSchema>) {
+  function onSubmit(values: PaymentFormValues) {
     console.log(values)
   }
 

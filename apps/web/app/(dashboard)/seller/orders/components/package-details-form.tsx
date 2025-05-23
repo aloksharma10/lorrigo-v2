@@ -2,26 +2,23 @@
 
 import { useState, useEffect } from "react"
 import { Info, LightbulbIcon } from "lucide-react"
-
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, Input, Label, Alert, AlertDescription, Badge, Button } from "@lorrigo/ui/components"
 
-import { z } from "zod"
 import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
 
-const packageFormSchema = z.object({
-  deadWeight: z.string().min(1, { message: "Dead weight is required" }),
-  length: z.string().min(1, { message: "Length is required" }),
-  breadth: z.string().min(1, { message: "Breadth is required" }),
-  height: z.string().min(1, { message: "Height is required" }),
-  volumetricWeight: z.string(),
-})
+// Create explicit interface for form values
+interface PackageFormValues {
+  deadWeight: string;
+  length: string;
+  breadth: string;
+  height: string;
+  volumetricWeight: string;
+}
 
 export function PackageDetailsForm() {
   const [applicableWeight, setApplicableWeight] = useState("0")
 
-  const form = useForm<z.infer<typeof packageFormSchema>>({
-    resolver: zodResolver(packageFormSchema),
+  const form = useForm<PackageFormValues>({
     defaultValues: {
       deadWeight: "0.00",
       length: "",
@@ -52,7 +49,7 @@ export function PackageDetailsForm() {
     }
   }, [watchedDimensions, form])
 
-  function onSubmit(values: z.infer<typeof packageFormSchema>) {
+  function onSubmit(values: PackageFormValues) {
     console.log(values)
   }
 
@@ -80,7 +77,7 @@ export function PackageDetailsForm() {
                   <FormControl>
                     <Input {...field} className="rounded-r-none" />
                   </FormControl>
-                  <div className="flex items-center justify-center h-10 px-3 border border-l-0 rounded-r-md bg-muted">
+                  <div className="flex items-center justify-center px-3 border border-l-0 rounded-r-md bg-muted">
                     kg
                   </div>
                 </div>
@@ -105,7 +102,7 @@ export function PackageDetailsForm() {
                       <FormControl>
                         <Input placeholder="Length" {...field} className="rounded-r-none" />
                       </FormControl>
-                      <div className="flex items-center justify-center h-10 px-3 border border-l-0 rounded-r-md bg-muted">
+                      <div className="flex items-center justify-center px-3 border border-l-0 rounded-r-md bg-muted">
                         cm
                       </div>
                     </div>
@@ -122,7 +119,7 @@ export function PackageDetailsForm() {
                       <FormControl>
                         <Input placeholder="Breadth" {...field} className="rounded-r-none" />
                       </FormControl>
-                      <div className="flex items-center justify-center h-10 px-3 border border-l-0 rounded-r-md bg-muted">
+                      <div className="flex items-center justify-center px-3 border border-l-0 rounded-r-md bg-muted">
                         cm
                       </div>
                     </div>
@@ -139,7 +136,7 @@ export function PackageDetailsForm() {
                       <FormControl>
                         <Input placeholder="Height" {...field} className="rounded-r-none" />
                       </FormControl>
-                      <div className="flex items-center justify-center h-10 px-3 border border-l-0 rounded-r-md bg-muted">
+                      <div className="flex items-center justify-center px-3 border border-l-0 rounded-r-md bg-muted">
                         cm
                       </div>
                     </div>
@@ -164,7 +161,7 @@ export function PackageDetailsForm() {
                   <FormControl>
                     <Input {...field} readOnly className="rounded-r-none bg-muted" />
                   </FormControl>
-                  <div className="flex items-center justify-center h-10 px-3 border border-l-0 rounded-r-md bg-muted">
+                  <div className="flex items-center justify-center px-3 border border-l-0 rounded-r-md bg-muted">
                     kg
                   </div>
                 </div>
@@ -186,7 +183,7 @@ export function PackageDetailsForm() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="hidden lg:flex items-center gap-2">
           <span className="text-sm font-medium">Pack like a Pro - </span>
           <Button variant="link" className="h-auto p-0 text-indigo-600">
             Guidelines for Packaging and Measuring

@@ -1,50 +1,36 @@
 "use client"
 
 import { Checkbox, Input, Label, Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@lorrigo/ui/components"
-
+import { phoneRegex } from "@/lib/validation/form-schemas"
 import { useState, useEffect } from "react"
-import { z } from "zod"
 import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
 
-const phoneRegex = /^[0-9]{10}$/
-
-const deliveryFormSchema = z.object({
-  isBusiness: z.boolean().default(false),
-  mobileNumber: z.string().regex(phoneRegex, { message: "Please enter a valid 10-digit mobile number" }),
-  fullName: z.string().min(1, { message: "Full name is required" }),
-  completeAddress: z.string().min(1, { message: "Address is required" }),
-  landmark: z.string().optional(),
-  pincode: z.string().min(1, { message: "Pincode is required" }),
-  city: z.string().min(1, { message: "City is required" }),
-  state: z.string().min(1, { message: "State is required" }),
-  alternateMobile: z
-    .string()
-    .regex(phoneRegex, { message: "Please enter a valid 10-digit mobile number" })
-    .optional()
-    .or(z.literal("")),
-  email: z
-    .string()
-    .email({ message: "Please enter a valid email address" })
-    .or(z.literal(''))
-    .optional(),
-  billingIsSameAsDelivery: z.boolean().default(true),
-  billingMobileNumber: z
-    .string()
-    .regex(phoneRegex, { message: "Please enter a valid 10-digit mobile number" })
-    .optional(),
-  billingFullName: z.string().optional(),
-  billingCompleteAddress: z.string().optional(),
-  billingLandmark: z.string().optional(),
-  billingPincode: z.string().optional(),
-  billingCity: z.string().optional(),
-  billingState: z.string().optional(),
-})
+// Create explicit interface for form values
+interface DeliveryFormValues {
+  isBusiness: boolean;
+  mobileNumber: string;
+  fullName: string;
+  completeAddress: string;
+  landmark: string;
+  pincode: string;
+  city: string;
+  state: string;
+  alternateMobile: string;
+  email: string;
+  billingIsSameAsDelivery: boolean;
+  billingMobileNumber: string;
+  billingFullName: string;
+  billingCompleteAddress: string;
+  billingLandmark: string;
+  billingPincode: string;
+  billingCity: string;
+  billingState: string;
+}
 
 export function DeliveryDetailsForm() {
   const [billingIsSameAsDelivery, setBillingIsSameAsDelivery] = useState(true)
-  const form = useForm<z.infer<typeof deliveryFormSchema>>({
-    resolver: zodResolver(deliveryFormSchema),
+  
+  const form = useForm<DeliveryFormValues>({
     defaultValues: {
       isBusiness: false,
       mobileNumber: "",
@@ -88,14 +74,103 @@ export function DeliveryDetailsForm() {
       form.setValue("billingMobileNumber", form.getValues("mobileNumber"))
       form.setValue("billingFullName", form.getValues("fullName"))
       form.setValue("billingCompleteAddress", form.getValues("completeAddress"))
-      form.setValue("billingLandmark", form.getValues("landmark"))
+      form.setValue("billingLandmark", form.getValues("landmark") || "")
       form.setValue("billingPincode", form.getValues("pincode"))
       form.setValue("billingCity", form.getValues("city"))
       form.setValue("billingState", form.getValues("state"))
     }
   }, [billingIsSameAsDelivery, watchedFields, form])
 
-  function onSubmit(values: z.infer<typeof deliveryFormSchema>) {
+  // Custom validation function
+  const validateForm = (values: DeliveryFormValues) => {
+    const errors: Record<string, any> = {}
+
+    // Mobile number validation
+    if (!values.mobileNumber) {
+      errors.mobileNumber = "Mobile number is required"
+    } else if (!phoneRegex.test(values.mobileNumber)) {
+      errors.mobileNumber = "Please enter a valid 10-digit mobile number"
+    }
+
+    // Full name validation
+    if (!values.fullName) {
+      errors.fullName = "Full name is required"
+    }
+
+    // Complete address validation
+    if (!values.completeAddress) {
+      errors.completeAddress = "Address is required"
+    }
+
+    // Pincode validation
+    if (!values.pincode) {
+      errors.pincode = "Pincode is required"
+    }
+
+    // City validation
+    if (!values.city) {
+      errors.city = "City is required"
+    }
+
+    // State validation
+    if (!values.state) {
+      errors.state = "State is required"
+    }
+
+    // Alternate mobile validation
+    if (values.alternateMobile && !phoneRegex.test(values.alternateMobile)) {
+      errors.alternateMobile = "Please enter a valid 10-digit mobile number"
+    }
+
+    // Email validation
+    if (values.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
+      errors.email = "Please enter a valid email address"
+    }
+
+    // Billing validations if billing is not same as delivery
+    if (!values.billingIsSameAsDelivery) {
+      if (!values.billingMobileNumber) {
+        errors.billingMobileNumber = "Mobile number is required"
+      } else if (!phoneRegex.test(values.billingMobileNumber)) {
+        errors.billingMobileNumber = "Please enter a valid 10-digit mobile number"
+      }
+
+      if (!values.billingFullName) {
+        errors.billingFullName = "Full name is required"
+      }
+
+      if (!values.billingCompleteAddress) {
+        errors.billingCompleteAddress = "Address is required"
+      }
+
+      if (!values.billingPincode) {
+        errors.billingPincode = "Pincode is required"
+      }
+
+      if (!values.billingCity) {
+        errors.billingCity = "City is required"
+      }
+
+      if (!values.billingState) {
+        errors.billingState = "State is required"
+      }
+    }
+
+    return errors
+  }
+
+  function onSubmit(values: DeliveryFormValues) {
+    const errors = validateForm(values)
+    if (Object.keys(errors).length > 0) {
+      // Set errors manually
+      Object.keys(errors).forEach(key => {
+        form.setError(key as any, {
+          type: "manual",
+          message: errors[key]
+        })
+      })
+      return
+    }
     console.log(values)
   }
 
@@ -127,7 +202,7 @@ export function DeliveryDetailsForm() {
               <FormItem>
                 <FormLabel className="text-sm font-medium">Mobile Number</FormLabel>
                 <div className="flex">
-                  <div className="flex items-center justify-center h-10 px-3 border rounded-l-md bg-muted">+91</div>
+                  <div className="flex items-center justify-center px-3 border rounded-l-md bg-muted">+91</div>
                   <FormControl>
                     <Input {...field} placeholder="Enter mobile number" className="rounded-l-none" />
                   </FormControl>
@@ -234,7 +309,7 @@ export function DeliveryDetailsForm() {
                   <span className="text-xs text-muted-foreground">(Optional)</span>
                 </FormLabel>
                 <div className="flex">
-                  <div className="flex items-center justify-center h-10 px-3 border rounded-l-md bg-muted">+91</div>
+                  <div className="flex items-center justify-center px-3 border rounded-l-md bg-muted">+91</div>
                   <FormControl>
                     <Input {...field} placeholder="Enter mobile number" className="rounded-l-none" />
                   </FormControl>
@@ -284,7 +359,7 @@ export function DeliveryDetailsForm() {
                   <FormItem>
                     <FormLabel className="text-sm font-medium">Mobile Number</FormLabel>
                     <div className="flex">
-                      <div className="flex items-center justify-center h-10 px-3 border rounded-l-md bg-muted">+91</div>
+                      <div className="flex items-center justify-center px-3 border rounded-l-md bg-muted">+91</div>
                       <FormControl>
                         <Input {...field} placeholder="Enter mobile number" className="rounded-l-none" />
                       </FormControl>

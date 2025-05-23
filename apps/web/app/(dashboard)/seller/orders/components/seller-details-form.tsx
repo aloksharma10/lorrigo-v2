@@ -2,26 +2,23 @@
 
 import { useState } from "react"
 import { Input, Label, Button, Checkbox, Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@lorrigo/ui/components"
-import { z } from "zod"
 import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
 
-const sellerFormSchema = z.object({
-  sellerName: z.string().min(1, { message: "Seller name is required" }),
-  gstNo: z.string().optional(),
-  address: z.string().optional(),
-  contactNumber: z.string().optional(),
-  pincode: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  country: z.string().default("India"),
-})
+interface SellerFormValues {
+  sellerName: string
+  gstNo?: string
+  address?: string
+  contactNumber?: string
+  pincode?: string
+  city?: string
+  state?: string
+  country: string
+}
 
 export function SellerDetailsForm() {
   const [addSellerAddress, setAddSellerAddress] = useState(false)
 
-  const form = useForm<z.infer<typeof sellerFormSchema>>({
-    resolver: zodResolver(sellerFormSchema),
+  const form = useForm<SellerFormValues>({
     defaultValues: {
       sellerName: "",
       gstNo: "",
@@ -34,7 +31,7 @@ export function SellerDetailsForm() {
     },
   })
 
-  function onSubmit(values: z.infer<typeof sellerFormSchema>) {
+  function onSubmit(values: SellerFormValues) {
     console.log(values)
   }
 
@@ -48,7 +45,7 @@ export function SellerDetailsForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-sm font-medium flex items-center">
-                  SELLER NAME <span className="text-red-500 ml-1">*</span>
+                  Seller Name <span className="text-red-500 ml-1">*</span>
                 </FormLabel>
                 <FormControl>
                   <Input placeholder="Enter the seller name" {...field} />
@@ -164,7 +161,7 @@ export function SellerDetailsForm() {
                   <FormItem>
                     <FormLabel className="text-sm font-medium">COUNTRY</FormLabel>
                     <FormControl>
-                      <Input value="India" disabled {...field} />
+                      <Input disabled {...field} value="India" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

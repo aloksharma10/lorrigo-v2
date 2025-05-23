@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { ArrowLeft, Info } from "lucide-react"
-
 import { Form, Alert, AlertDescription, Collapsible, CollapsibleContent, CollapsibleTrigger, Tabs, TabsList, TabsTrigger, Button, Card, CardContent, CardHeader, CardTitle } from "@lorrigo/ui/components"
 
 import { PickupAddressSelector } from "./pickup-address-selector"
@@ -12,28 +11,37 @@ import { PaymentMethodSelector } from "./payment-method-selector"
 import { PackageDetailsForm } from "./package-details-form"
 import { SellerDetailsForm } from "./seller-details-form"
 
-import { z } from "zod"
 import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
 
-const orderFormSchema = z.object({
-   // Schema will be implemented in each component
-})
+// Create explicit interface for form values
+interface OrderFormValues {
+   orderType: "domestic" | "international";
+   orderMode: "single" | "bulk";
+}
 
 export default function OrderForm() {
-   const [orderType, setOrderType] = useState("domestic")
-   const [orderMode, setOrderMode] = useState("single")
+   const [orderType, setOrderType] = useState<"domestic" | "international">("domestic")
+   const [orderMode, setOrderMode] = useState<"single" | "bulk">("single")
    const [selectedAddress, setSelectedAddress] = useState<any>(null)
    const [isAddressVerified, setIsAddressVerified] = useState(false)
 
-   const form = useForm<z.infer<typeof orderFormSchema>>({
-      resolver: zodResolver(orderFormSchema),
-      defaultValues: {},
+   const form = useForm<OrderFormValues>({
+      defaultValues: {
+         orderType: "domestic",
+         orderMode: "single",
+      },
    })
 
-   function onSubmit(values: z.infer<typeof orderFormSchema>) {
+   function onSubmit(values: OrderFormValues) {
       console.log(values)
    }
+
+   // Safe handler for Tabs onValueChange
+   const handleOrderTypeChange = (value: string) => {
+      const safeValue = value === "international" ? "international" : "domestic";
+      setOrderType(safeValue);
+      form.setValue("orderType", safeValue);
+   };
 
    return (
       <div className="w-full">
@@ -43,7 +51,7 @@ export default function OrderForm() {
                   <Button variant="ghost" size="icon" className="h-8 w-8">
                      <ArrowLeft className="h-4 w-4" />
                   </Button>
-                  <h1 className="text-xl font-semibold">Add Order</h1>
+                  <h1 className="text-sm lg:text-xl font-semibold">Add Order</h1>
                </div>
                <div className="flex gap-4">
                   <Button variant="outline">Add Order</Button>
@@ -55,7 +63,7 @@ export default function OrderForm() {
          <div className="container max-w-full px-4 py-6">
             <Form {...form}>
                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <Tabs defaultValue="domestic" onValueChange={setOrderType}>
+                  <Tabs defaultValue="domestic" onValueChange={handleOrderTypeChange}>
                      <TabsList className="grid w-full grid-cols-2 max-w-md">
                         <TabsTrigger value="domestic" className="relative">
                            Domestic Order
@@ -76,7 +84,10 @@ export default function OrderForm() {
                      <Button
                         variant={orderMode === "single" ? "default" : "ghost"}
                         size="sm"
-                        onClick={() => setOrderMode("single")}
+                        onClick={() => {
+                           setOrderMode("single")
+                           form.setValue("orderMode", "single")
+                        }}
                         className="rounded-md text-xs"
                      >
                         Single Order
@@ -84,7 +95,10 @@ export default function OrderForm() {
                      <Button
                         variant={orderMode === "bulk" ? "default" : "ghost"}
                         size="sm"
-                        onClick={() => setOrderMode("bulk")}
+                        onClick={() => {
+                           setOrderMode("bulk")
+                           form.setValue("orderMode", "bulk")
+                        }}
                         className="rounded-md text-xs"
                      >
                         Bulk Order
@@ -191,6 +205,10 @@ export default function OrderForm() {
                         </Collapsible>
                      </CardContent>
                   </Card>
+
+                  <Button type="submit" className="w-full">
+                     Create Order
+                  </Button>
                </form>
             </Form>
          </div>
