@@ -1,8 +1,8 @@
-"use client"
+'use client';
 
-import * as React from "react"
-import { IconBrightness, type Icon } from "@tabler/icons-react"
-import { useTheme } from "next-themes"
+import * as React from 'react';
+import { IconBrightness, type Icon } from '@tabler/icons-react';
+import { useTheme } from 'next-themes';
 
 import {
   SidebarGroup,
@@ -10,26 +10,26 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@lorrigo/ui/components"
-import { Skeleton } from "@lorrigo/ui/components"
-import { Switch } from "@lorrigo/ui/components"
+} from '@lorrigo/ui/components';
+import { Skeleton } from '@lorrigo/ui/components';
+import { Switch } from '@lorrigo/ui/components';
 
 export function NavSecondary({
   items,
   ...props
 }: {
   items: {
-    title: string
-    url: string
-    icon: Icon
-  }[]
+    title: string;
+    url: string;
+    icon: Icon;
+  }[];
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
-  const { resolvedTheme, setTheme } = useTheme()
-  const [mounted, setMounted] = React.useState(false)
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
-    setMounted(true)
-  }, [])
+    setMounted(true);
+  }, []);
 
   return (
     <SidebarGroup {...props}>
@@ -53,10 +53,8 @@ export function NavSecondary({
                 {mounted ? (
                   <Switch
                     className="ml-auto"
-                    checked={resolvedTheme !== "light"}
-                    onCheckedChange={() =>
-                      setTheme(resolvedTheme === "dark" ? "light" : "dark")
-                    }
+                    checked={resolvedTheme !== 'light'}
+                    onCheckedChange={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
                   />
                 ) : (
                   <Skeleton className="ml-auto h-4 w-8 rounded-full" />
@@ -67,5 +65,5 @@ export function NavSecondary({
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
-  )
+  );
 }

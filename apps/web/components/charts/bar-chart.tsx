@@ -1,4 +1,4 @@
-"use client"
+'use client';
 
 import {
   BarChart as RechartsBarChart,
@@ -9,41 +9,41 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from "recharts"
+} from 'recharts';
 
 export interface BarChartData {
-  name: string
-  [key: string]: any
+  name: string;
+  [key: string]: any;
 }
 
 interface BarConfig {
-  dataKey: string
-  name?: string
-  color: string
-  stackId?: string
+  dataKey: string;
+  name?: string;
+  color: string;
+  stackId?: string;
 }
 
 interface BarChartProps {
-  data: BarChartData[]
-  bars: BarConfig[]
-  xAxisDataKey?: string
-  height?: number
-  showGrid?: boolean
-  showLegend?: boolean
-  showTooltip?: boolean
+  data: BarChartData[];
+  bars: BarConfig[];
+  xAxisDataKey?: string;
+  height?: number;
+  showGrid?: boolean;
+  showLegend?: boolean;
+  showTooltip?: boolean;
 }
 
 export function BarChart({
   data,
   bars,
-  xAxisDataKey = "name",
+  xAxisDataKey = 'name',
   height = 300,
   showGrid = true,
   showLegend = true,
   showTooltip = true,
 }: BarChartProps) {
   return (
-    <div style={{ width: "100%", height }}>
+    <div style={{ width: '100%', height }}>
       <ResponsiveContainer width="100%" height="100%">
         <RechartsBarChart
           data={data}
@@ -71,5 +71,5 @@ export function BarChart({
         </RechartsBarChart>
       </ResponsiveContainer>
     </div>
-  )
+  );
 }

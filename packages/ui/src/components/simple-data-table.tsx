@@ -1,29 +1,29 @@
-"use client"
+'use client';
 
-import type * as React from "react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./table"
-import { Card, CardContent, CardHeader, CardTitle } from "./card"
-import { Button } from "./button"
-import { ExternalLink } from "lucide-react"
-import { Badge } from "./badge"
-import { Skeleton } from "./skeleton"
-import { CircleHelp } from "lucide-react"
+import type * as React from 'react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './table';
+import { Card, CardContent, CardHeader, CardTitle } from './card';
+import { Button } from './button';
+import { ExternalLink } from 'lucide-react';
+import { Badge } from './badge';
+import { Skeleton } from './skeleton';
+import { CircleHelp } from 'lucide-react';
 
 export interface Column<T> {
-  header: string
-  accessorKey: keyof T
-  cell?: (value: any, row: T) => React.ReactNode
+  header: string;
+  accessorKey: keyof T;
+  cell?: (value: any, row: T) => React.ReactNode;
 }
 
 interface SimpleDataTableProps<T> {
-  title: string
-  description?: string
-  badge?: string
-  helpText?: string
-  columns: Column<T>[]
-  data: T[]
-  isLoading?: boolean
-  onExternalLinkClick?: () => void
+  title: string;
+  description?: string;
+  badge?: string;
+  helpText?: string;
+  columns: Column<T>[];
+  data: T[];
+  isLoading?: boolean;
+  onExternalLinkClick?: () => void;
 }
 
 export function SimpleDataTable<T>({
@@ -54,7 +54,7 @@ export function SimpleDataTable<T>({
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -67,7 +67,7 @@ export function SimpleDataTable<T>({
               {badge}
             </Badge>
           )}
-          {helpText && <CircleHelp className="h-4 w-4 text-muted-foreground"  />}
+          {helpText && <CircleHelp className="text-muted-foreground h-4 w-4" />}
         </div>
         {onExternalLinkClick && (
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onExternalLinkClick}>
@@ -90,7 +90,9 @@ export function SimpleDataTable<T>({
                 <TableRow key={i}>
                   {columns.map((column) => (
                     <TableCell key={String(column.accessorKey)}>
-                      {column.cell ? column.cell(row[column.accessorKey], row) : String(row[column.accessorKey])}
+                      {column.cell
+                        ? column.cell(row[column.accessorKey], row)
+                        : String(row[column.accessorKey])}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -98,8 +100,8 @@ export function SimpleDataTable<T>({
             </TableBody>
           </Table>
         </div>
-        {description && <div className="mt-4 text-sm text-muted-foreground">{description}</div>}
+        {description && <div className="text-muted-foreground mt-4 text-sm">{description}</div>}
       </CardContent>
     </Card>
-  )
+  );
 }

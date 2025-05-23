@@ -1,50 +1,60 @@
-"use client"
+'use client';
 
-import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import {
+  ComposedChart,
+  Line,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 
 export interface ComboChartData {
-  name: string
-  [key: string]: any
+  name: string;
+  [key: string]: any;
 }
 
 interface BarConfig {
-  dataKey: string
-  name?: string
-  color: string
-  stackId?: string
+  dataKey: string;
+  name?: string;
+  color: string;
+  stackId?: string;
 }
 
 interface LineConfig {
-  dataKey: string
-  name?: string
-  color: string
-  yAxisId?: string
-  strokeWidth?: number
+  dataKey: string;
+  name?: string;
+  color: string;
+  yAxisId?: string;
+  strokeWidth?: number;
 }
 
 interface ComboChartProps {
-  data: ComboChartData[]
-  bars: BarConfig[]
-  lines: LineConfig[]
-  xAxisDataKey?: string
-  height?: number
-  showGrid?: boolean
-  showLegend?: boolean
-  showTooltip?: boolean
+  data: ComboChartData[];
+  bars: BarConfig[];
+  lines: LineConfig[];
+  xAxisDataKey?: string;
+  height?: number;
+  showGrid?: boolean;
+  showLegend?: boolean;
+  showTooltip?: boolean;
 }
 
 export function ComboChart({
   data,
   bars,
   lines,
-  xAxisDataKey = "name",
+  xAxisDataKey = 'name',
   height = 300,
   showGrid = true,
   showLegend = true,
   showTooltip = true,
 }: ComboChartProps) {
   return (
-    <div style={{ width: "100%", height }}>
+    <div style={{ width: '100%', height }}>
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart
           data={data}
@@ -83,5 +93,5 @@ export function ComboChart({
         </ComposedChart>
       </ResponsiveContainer>
     </div>
-  )
+  );
 }

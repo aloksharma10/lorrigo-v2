@@ -1,7 +1,7 @@
-"use client"
+'use client';
 
-import type * as React from "react"
-import { IconHelp, IconInnerShadowTop, IconSettings } from "@tabler/icons-react"
+import type * as React from 'react';
+import { IconHelp, IconInnerShadowTop, IconSettings } from '@tabler/icons-react';
 
 import {
   Sidebar,
@@ -12,41 +12,41 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-} from "@lorrigo/ui/components"
-import { ScrollArea } from "@lorrigo/ui/components"
+} from '@lorrigo/ui/components';
+import { ScrollArea } from '@lorrigo/ui/components';
 
-import { NavMain } from "./nav-main"
-import { NavSecondary } from "./nav-secondary"
-import { NavUser } from "./nav-user"
-import { SELLER_ROUTES } from "@/lib/routes/seller"
-import { ADMIN_ROUTES } from "@/lib/routes/admin"
+import { NavMain } from './nav-main';
+import { NavSecondary } from './nav-secondary';
+import { NavUser } from './nav-user';
+import { SELLER_ROUTES } from '@/lib/routes/seller';
+import { ADMIN_ROUTES } from '@/lib/routes/admin';
 
 const data = {
   user: {
-    name: "Lorrigo",
-    email: "noreply@lorrigo.com",
-    avatar: "https://lorrigo.in/_next/static/media/lorrigologo.e54a51f3.svg",
+    name: 'Lorrigo',
+    email: 'noreply@lorrigo.com',
+    avatar: 'https://lorrigo.in/_next/static/media/lorrigologo.e54a51f3.svg',
   },
   seller: SELLER_ROUTES,
   admin: ADMIN_ROUTES,
   navSecondary: [
     {
-      title: "Settings",
-      url: "/seller/settings",
+      title: 'Settings',
+      url: '/seller/settings',
       icon: IconSettings,
     },
     {
-      title: "Get Help",
-      url: "/seller/get-help",
+      title: 'Get Help',
+      url: '/seller/get-help',
       icon: IconHelp,
     },
     {
-      title: "Terms & Conditions",
-      url: "/seller/terms-conditions",
+      title: 'Terms & Conditions',
+      url: '/seller/terms-conditions',
       icon: IconHelp,
     },
   ],
-}
+};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
@@ -75,5 +75,5 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }

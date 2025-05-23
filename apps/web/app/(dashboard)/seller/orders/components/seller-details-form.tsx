@@ -1,51 +1,62 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { Input, Label, Button, Checkbox, Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@lorrigo/ui/components"
-import { useForm } from "react-hook-form"
+import { useState } from 'react';
+import {
+  Input,
+  Label,
+  Button,
+  Checkbox,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@lorrigo/ui/components';
+import { useForm } from 'react-hook-form';
 
 interface SellerFormValues {
-  sellerName: string
-  gstNo?: string
-  address?: string
-  contactNumber?: string
-  pincode?: string
-  city?: string
-  state?: string
-  country: string
+  sellerName: string;
+  gstNo?: string;
+  address?: string;
+  contactNumber?: string;
+  pincode?: string;
+  city?: string;
+  state?: string;
+  country: string;
 }
 
 export function SellerDetailsForm() {
-  const [addSellerAddress, setAddSellerAddress] = useState(false)
+  const [addSellerAddress, setAddSellerAddress] = useState(false);
 
   const form = useForm<SellerFormValues>({
     defaultValues: {
-      sellerName: "",
-      gstNo: "",
-      address: "",
-      contactNumber: "",
-      pincode: "",
-      city: "",
-      state: "",
-      country: "India",
+      sellerName: '',
+      gstNo: '',
+      address: '',
+      contactNumber: '',
+      pincode: '',
+      city: '',
+      state: '',
+      country: 'India',
     },
-  })
+  });
 
   function onSubmit(values: SellerFormValues) {
-    console.log(values)
+    console.log(values);
   }
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <FormField
             control={form.control}
             name="sellerName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm font-medium flex items-center">
-                  Seller Name <span className="text-red-500 ml-1">*</span>
+                <FormLabel className="flex items-center text-sm font-medium">
+                  Seller Name <span className="ml-1 text-red-500">*</span>
                 </FormLabel>
                 <FormControl>
                   <Input placeholder="Enter the seller name" {...field} />
@@ -97,7 +108,7 @@ export function SellerDetailsForm() {
               )}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <FormField
                 control={form.control}
                 name="contactNumber"
@@ -173,7 +184,7 @@ export function SellerDetailsForm() {
               <Button type="button" variant="outline" onClick={() => form.reset()}>
                 Reset
               </Button>
-              <Button type="submit" className="bg-red-600 hover:bg-red-700 text-white">
+              <Button type="submit" className="bg-red-600 text-white hover:bg-red-700">
                 Add Seller
               </Button>
             </div>
@@ -181,5 +192,5 @@ export function SellerDetailsForm() {
         )}
       </form>
     </Form>
-  )
+  );
 }

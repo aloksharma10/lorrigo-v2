@@ -1,16 +1,16 @@
-"use client"
+'use client';
 
-import { ChevronLeftIcon, ChevronRightIcon, ChevronsLeft, ChevronsRight } from "lucide-react"
-import type { Table } from "@tanstack/react-table"
-import { Button } from "../button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../select"
-import { Loader2 } from "lucide-react"
+import { ChevronLeftIcon, ChevronRightIcon, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import type { Table } from '@tanstack/react-table';
+import { Button } from '../button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../select';
+import { Loader2 } from 'lucide-react';
 
 interface DataTablePaginationProps<TData> {
-  table: Table<TData>
-  pageSizeOptions?: number[]
-  totalCount?: number
-  isLoading?: boolean
+  table: Table<TData>;
+  pageSizeOptions?: number[];
+  totalCount?: number;
+  isLoading?: boolean;
 }
 
 export function DataTablePagination<TData>({
@@ -22,12 +22,12 @@ export function DataTablePagination<TData>({
   return (
     <div className="flex items-center justify-between px-2">
       <div className="flex items-center space-x-6 lg:space-x-8">
-        <div className="hidden lg:flex items-center space-x-2">
+        <div className="hidden items-center space-x-2 lg:flex">
           <p className="text-sm font-medium">Items per page</p>
           <Select
             value={`${table.getState().pagination.pageSize}`}
             onValueChange={(value) => {
-              table.setPageSize(Number(value))
+              table.setPageSize(Number(value));
             }}
             disabled={isLoading}
           >
@@ -85,7 +85,7 @@ export function DataTablePagination<TData>({
           </Button>
         </div>
       </div>
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="text-muted-foreground flex items-center gap-2 text-sm">
         {isLoading ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -99,12 +99,13 @@ export function DataTablePagination<TData>({
               </span>
             ) : (
               <span>
-                {table.getFilteredRowModel().rows.length} of {table.getCoreRowModel().rows.length} row(s) displayed
+                {table.getFilteredRowModel().rows.length} of {table.getCoreRowModel().rows.length}{' '}
+                row(s) displayed
               </span>
             )}
           </>
         )}
       </div>
     </div>
-  )
+  );
 }

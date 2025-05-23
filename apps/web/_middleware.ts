@@ -35,7 +35,7 @@ export async function middleware(request: NextRequest) {
   // Optimize protected pages with ISR cache headers
   if (isProtectedPath && isAuthenticated) {
     const response = NextResponse.next();
-    
+
     // Set different cache strategies based on the route type
     if (request.nextUrl.pathname.startsWith('/seller')) {
       // Seller routes - moderate caching for business data
@@ -94,14 +94,14 @@ export async function middleware(request: NextRequest) {
         response.headers.set('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
       }
     }
-    
+
     return response;
   }
 
   // For public routes, add basic caching
   if (!isProtectedPath) {
     const response = NextResponse.next();
-    
+
     // Public pages can be cached longer
     if (
       request.nextUrl.pathname === '/' ||
@@ -115,7 +115,7 @@ export async function middleware(request: NextRequest) {
       // Auth pages should not be cached
       response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
     }
-    
+
     return response;
   }
 
@@ -126,7 +126,7 @@ export const config = {
   matcher: [
     // Protected routes
     '/seller/:path*',
-    '/staff/:path*', 
+    '/staff/:path*',
     '/admin/:path*',
     // API routes for CORS
     '/api/:path*',

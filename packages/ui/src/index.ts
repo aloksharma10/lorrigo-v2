@@ -5,4 +5,4 @@ export * from './components';
 export * from './lib/utils';
 
 // Export hooks
-export * from './hooks'; 
+export * from './hooks';

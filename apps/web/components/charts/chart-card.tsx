@@ -1,5 +1,13 @@
-import { Card, CardContent, CardHeader, CardTitle, Badge, Button, Skeleton } from "@lorrigo/ui/components"
-import { CircleHelp, ExternalLink } from "lucide-react"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Badge,
+  Button,
+  Skeleton,
+} from '@lorrigo/ui/components';
+import { CircleHelp, ExternalLink } from 'lucide-react';
 
 interface ChartCardProps {
   title: string;
@@ -32,17 +40,10 @@ export function ChartCard({
               {badge}
             </Badge>
           )}
-          {helpText && !isLoading && (
-            <CircleHelp className="h-4 w-4 text-muted-foreground" />
-          )}
+          {helpText && !isLoading && <CircleHelp className="text-muted-foreground h-4 w-4" />}
         </div>
         {onExternalLinkClick && !isLoading && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={onExternalLinkClick}
-          >
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onExternalLinkClick}>
             <ExternalLink className="h-4 w-4" />
           </Button>
         )}
@@ -62,5 +63,5 @@ export function ChartCard({
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

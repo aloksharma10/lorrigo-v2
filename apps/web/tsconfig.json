@@ -5,7 +5,8 @@
     "paths": {
       "@/*": ["./*"],
       "@lorrigo/ui/*": ["../../packages/ui/src/*"],
-      "@lorrigo/db/*": ["../../packages/db/src/*"]
+      "@lorrigo/db/*": ["../../packages/db/src/*"],
+      "@lorrigo/utils/*": ["../../packages/utils/src/*"]
     },
     "plugins": [
       {

@@ -1,23 +1,31 @@
-"use client"
+'use client';
 
-import type * as React from "react"
-import { Button } from "../button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../dropdown-menu"
-import { ChevronDown } from "lucide-react"
+import type * as React from 'react';
+import { Button } from '../button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../dropdown-menu';
+import { ChevronDown } from 'lucide-react';
 
 interface BulkAction<TData> {
-  label: string
-  action: (selectedRows: TData[]) => void
-  icon?: React.ReactNode
+  label: string;
+  action: (selectedRows: TData[]) => void;
+  icon?: React.ReactNode;
 }
 
 interface DataTableBulkActionsMenuProps<TData> {
-  selectedRows: TData[]
-  actions: BulkAction<TData>[]
+  selectedRows: TData[];
+  actions: BulkAction<TData>[];
 }
 
-export function DataTableBulkActionsMenu<TData>({ selectedRows, actions }: DataTableBulkActionsMenuProps<TData>) {
-  if (!selectedRows.length || !actions.length) return null
+export function DataTableBulkActionsMenu<TData>({
+  selectedRows,
+  actions,
+}: DataTableBulkActionsMenuProps<TData>) {
+  if (!selectedRows.length || !actions.length) return null;
 
   return (
     <DropdownMenu>
@@ -36,5 +44,5 @@ export function DataTableBulkActionsMenu<TData>({ selectedRows, actions }: DataT
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

@@ -1,37 +1,37 @@
-"use client"
+'use client';
 
-import * as React from "react"
-import type { Table } from "@tanstack/react-table"
-import { Button } from "../button"
-import { Input } from "../input"
+import * as React from 'react';
+import type { Table } from '@tanstack/react-table';
+import { Button } from '../button';
+import { Input } from '../input';
 // import { DataTableViewOptions } from "./data-table-view-options"
-import { DataTableFacetedFilter } from "./data-table-faceted-filter"
-import { DataTableDateRangePicker } from "./data-table-date-range-picker"
-import { Download, Filter, Search, X, Loader2 } from "lucide-react"
+import { DataTableFacetedFilter } from './data-table-faceted-filter';
+import { DataTableDateRangePicker } from './data-table-date-range-picker';
+import { Download, Filter, Search, X, Loader2 } from 'lucide-react';
 
 interface DataTableToolbarProps<TData> {
-  table: Table<TData>
+  table: Table<TData>;
   filterableColumns?: {
-    id: string
-    title: string
+    id: string;
+    title: string;
     options: {
-      label: string
-      value: string
-      icon?: React.ComponentType<{ className?: string }>
-    }[]
-  }[]
+      label: string;
+      value: string;
+      icon?: React.ComponentType<{ className?: string }>;
+    }[];
+  }[];
   searchableColumns?: {
-    id: string
-    title: string
-  }[]
-  advancedFilter?: boolean
-  dateRangeFilter?: boolean
-  dateRange: { from: Date; to: Date }
-  setDateRange: (dateRange: { from: Date; to: Date }) => void
-  searchPlaceholder?: string
-  globalFilter: string
-  setGlobalFilter: (value: string) => void
-  isLoading?: boolean
+    id: string;
+    title: string;
+  }[];
+  advancedFilter?: boolean;
+  dateRangeFilter?: boolean;
+  dateRange: { from: Date; to: Date };
+  setDateRange: (dateRange: { from: Date; to: Date }) => void;
+  searchPlaceholder?: string;
+  globalFilter: string;
+  setGlobalFilter: (value: string) => void;
+  isLoading?: boolean;
 }
 
 export function DataTableToolbar<TData>({
@@ -42,52 +42,52 @@ export function DataTableToolbar<TData>({
   dateRangeFilter = true,
   dateRange,
   setDateRange,
-  searchPlaceholder = "Search...",
+  searchPlaceholder = 'Search...',
   globalFilter,
   setGlobalFilter,
   isLoading = false,
 }: DataTableToolbarProps<TData>) {
-  const isFiltered = table.getState().columnFilters.length > 0 || globalFilter !== ""
-  const [showFilters, setShowFilters] = React.useState(false)
-  const [searchValue, setSearchValue] = React.useState(globalFilter)
+  const isFiltered = table.getState().columnFilters.length > 0 || globalFilter !== '';
+  const [showFilters, setShowFilters] = React.useState(false);
+  const [searchValue, setSearchValue] = React.useState(globalFilter);
 
   // Debounce search to avoid excessive API calls
   React.useEffect(() => {
     const handler = setTimeout(() => {
-      setGlobalFilter(searchValue)
-    }, 300)
+      setGlobalFilter(searchValue);
+    }, 300);
 
     return () => {
-      clearTimeout(handler)
-    }
-  }, [searchValue, setGlobalFilter])
+      clearTimeout(handler);
+    };
+  }, [searchValue, setGlobalFilter]);
 
   // Sync external global filter with internal state
   React.useEffect(() => {
-    setSearchValue(globalFilter)
-  }, [globalFilter])
+    setSearchValue(globalFilter);
+  }, [globalFilter]);
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:justify-between">
-        <div className="lg:flex flex-1 items-center space-y-2 lg:space-y-0 lg:space-x-2">
+      <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex-1 items-center space-y-2 lg:flex lg:space-x-2 lg:space-y-0">
           <div className="relative w-full flex-1 sm:max-w-xl">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Search className="text-muted-foreground absolute left-2.5 top-2.5 h-4 w-4" />
             <Input
               placeholder={searchPlaceholder}
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
-              className="w-full pl-8 sm:max-w-xl placeholder:text-muted-foreground placeholder:text-xs"
+              className="placeholder:text-muted-foreground w-full pl-8 placeholder:text-xs sm:max-w-xl"
               disabled={isLoading}
             />
             {searchValue && (
               <Button
                 variant="ghost"
-                onClick={() => setSearchValue("")}
+                onClick={() => setSearchValue('')}
                 className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                 disabled={isLoading}
               >
-                <X className="h-4 w-4 text-muted-foreground" />
+                <X className="text-muted-foreground h-4 w-4" />
               </Button>
             )}
           </div>
@@ -96,7 +96,9 @@ export function DataTableToolbar<TData>({
             {dateRangeFilter && (
               <DataTableDateRangePicker
                 dateRange={dateRange}
-                setDateRange={(dateRange) => setDateRange({ from: dateRange.from!, to: dateRange.to! })}
+                setDateRange={(dateRange) =>
+                  setDateRange({ from: dateRange.from!, to: dateRange.to! })
+                }
                 disabled={isLoading}
               />
             )}
@@ -105,7 +107,7 @@ export function DataTableToolbar<TData>({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 lg:flex items-center gap-1"
+                className="h-9 items-center gap-1 lg:flex"
                 onClick={() => setShowFilters(!showFilters)}
                 disabled={isLoading}
               >
@@ -135,14 +137,14 @@ export function DataTableToolbar<TData>({
                   options={column.options}
                   disabled={isLoading}
                 />
-              ),
+              )
           )}
           {isFiltered && (
             <Button
               variant="ghost"
               onClick={() => {
-                table.resetColumnFilters()
-                setGlobalFilter("")
+                table.resetColumnFilters();
+                setGlobalFilter('');
               }}
               className="h-8 px-2 lg:px-3"
               disabled={isLoading}
@@ -152,7 +154,7 @@ export function DataTableToolbar<TData>({
             </Button>
           )}
           {isLoading && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="text-muted-foreground flex items-center gap-2 text-sm">
               <Loader2 className="h-4 w-4 animate-spin" />
               <span>Loading filters...</span>
             </div>
@@ -160,5 +162,5 @@ export function DataTableToolbar<TData>({
         </div>
       )}
     </div>
-  )
+  );
 }

@@ -1,45 +1,36 @@
-import { Suspense } from "react"
-import ShipmentsTable from "@/components/tables/shipmen-table"
-import { getInitialShipments } from "@/app/(dashboard)/seller/orders/action"
-import { Badge, Button } from "@lorrigo/ui/components"
-import ScrollableTabsProps from "@/components/client-tabs"
-import { Plus, RefreshCw } from "lucide-react"
-import { SHIPMENT_TAB_ROUTES } from "@/lib/routes/nested-shipments"
-import OpenModalBtn from "@/components/open-modal-btn"
+import { Suspense } from 'react';
+import ShipmentsTable from '@/components/tables/shipmen-table';
+import { getInitialShipments } from '@/app/(dashboard)/seller/orders/action';
+import { Badge, Button } from '@lorrigo/ui/components';
+import ScrollableTabsProps from '@/components/client-tabs';
+import { Plus, RefreshCw } from 'lucide-react';
+import { SHIPMENT_TAB_ROUTES } from '@/lib/routes/nested-shipments';
+import OpenModalBtn from '@/components/open-modal-btn';
 
 interface PageProps {
   params: Promise<{
-    tab: string
-  }>
+    tab: string;
+  }>;
   searchParams: Promise<{
-    page?: string
-    pageSize?: string
-    sort?: string
-    filters?: string
-    search?: string
-    dateFrom?: string
-    dateTo?: string
-  }>
+    page?: string;
+    pageSize?: string;
+    sort?: string;
+    filters?: string;
+    search?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }>;
 }
 
 // Force dynamic rendering with no caching
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function ShipmentsPage({ params, searchParams }: PageProps) {
-
-  const { tab } = await params
+  const { tab } = await params;
   const queryParams = await searchParams;
 
-  const {
-    page = "0",
-    pageSize = "15",
-    sort,
-    filters,
-    search,
-    dateFrom,
-    dateTo,
-  } = queryParams
+  const { page = '0', pageSize = '15', sort, filters, search, dateFrom, dateTo } = queryParams;
 
   // Parse parameters
   const parsedParams = {
@@ -47,24 +38,27 @@ export default async function ShipmentsPage({ params, searchParams }: PageProps)
     pageSize: parseInt(pageSize),
     sort: sort ? JSON.parse(sort) : [],
     filters: filters ? JSON.parse(filters) : [],
-    globalFilter: search || "",
-    dateRange: dateFrom && dateTo ? {
-      from: new Date(dateFrom),
-      to: new Date(dateTo)
-    } : {
-      from: new Date(new Date().setDate(new Date().getDate() - 30)),
-      to: new Date(),
-    },
+    globalFilter: search || '',
+    dateRange:
+      dateFrom && dateTo
+        ? {
+            from: new Date(dateFrom),
+            to: new Date(dateTo),
+          }
+        : {
+            from: new Date(new Date().setDate(new Date().getDate() - 30)),
+            to: new Date(),
+          },
     status: tab,
-  }
+  };
 
   // Get initial data on server - only for first load
-  const initialData = await getInitialShipments(parsedParams)
+  const initialData = await getInitialShipments(parsedParams);
 
   return (
-    <div className="w-full mx-auto p-4 space-y-6">
+    <div className="mx-auto w-full space-y-6 p-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl lg:text-2xl font-bold capitalize">{tab || "All"} Orders</h1>
+        <h1 className="text-xl font-bold capitalize lg:text-2xl">{tab || 'All'} Orders</h1>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="px-3 py-1">
             Domestic
@@ -82,9 +76,11 @@ export default async function ShipmentsPage({ params, searchParams }: PageProps)
 
       <ScrollableTabsProps menuItems={SHIPMENT_TAB_ROUTES} />
 
-      <div className="flex justify-between items-center mb-4">
+      <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <OpenModalBtn modalType="seller:new-order" icon={<Plus/>} >Add Order</OpenModalBtn>
+          <OpenModalBtn modalType="seller:new-order" icon={<Plus />}>
+            Add Order
+          </OpenModalBtn>
           <Button variant="outline" size="sm" className="gap-2">
             <RefreshCw className="h-4 w-4" />
             <span>Sync Orders</span>
@@ -92,10 +88,7 @@ export default async function ShipmentsPage({ params, searchParams }: PageProps)
         </div>
       </div>
 
-      <ShipmentsTable
-        initialData={initialData}
-        initialParams={parsedParams}
-      />
-    </div >
-  )
+      <ShipmentsTable initialData={initialData} initialParams={parsedParams} />
+    </div>
+  );
 }

@@ -1,48 +1,44 @@
-import { Card, CardAction, CardDescription, CardHeader, CardTitle } from "@lorrigo/ui/components";
-import { IconProps } from "@tabler/icons-react";
-import { Badge } from "@lorrigo/ui/components";
-import ActionTooltip from "./action-tooltip";
-import { ComponentType } from "react";
+import { Card, CardAction, CardDescription, CardHeader, CardTitle } from '@lorrigo/ui/components';
+import { IconProps } from '@tabler/icons-react';
+import { Badge } from '@lorrigo/ui/components';
+import ActionTooltip from './action-tooltip';
+import { ComponentType } from 'react';
 
 interface CardItemsProps {
-   title: string;
-   value: string;
-   percentage?: string;
-   description: string;
-   icon: ComponentType<IconProps>;
+  title: string;
+  value: string;
+  percentage?: string;
+  description: string;
+  icon: ComponentType<IconProps>;
 }
 
-export function CardItems({
-   title,
-   value,
-   percentage,
-   description,
-   icon: Icon,
-}: CardItemsProps) {
-   return (
-      <Card className="@container/card">
-         <CardHeader>
-            <div className="flex items-center gap-2">
-               <div>
-                  <CardDescription className="flex items-center gap-2 ">
-                     <span className="text-sm md:text-base lg:text-base">{title}</span>
-                     <ActionTooltip label={description} >
-                        <Icon className="size-7" />
-                     </ActionTooltip>
-                  </CardDescription>
-                  <CardTitle className="flex items-center gap-2 text-2xl font-semibold tabular-nums @[250px]/card:text-2xl">
-                     {value}
-                  </CardTitle>
-               </div>
-            </div>
-            {percentage && <CardAction>
-               <Badge variant={'outline'}>
-                  <Icon />
-                  {percentage}
-               </Badge>
-            </CardAction>}
-         </CardHeader>
-         {/* <CardFooter className="flex-col items-start gap-1.5 text-sm">
+export function CardItems({ title, value, percentage, description, icon: Icon }: CardItemsProps) {
+  return (
+    <Card className="@container/card">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <div>
+            <CardDescription className="flex items-center gap-2">
+              <span className="text-sm md:text-base lg:text-base">{title}</span>
+              <ActionTooltip label={description}>
+                <Icon className="size-7" />
+              </ActionTooltip>
+            </CardDescription>
+            <CardTitle className="@[250px]/card:text-2xl flex items-center gap-2 text-2xl font-semibold tabular-nums">
+              {value}
+            </CardTitle>
+          </div>
+        </div>
+        {percentage && (
+          <CardAction>
+            <Badge variant={'outline'}>
+              <Icon />
+              {percentage}
+            </Badge>
+          </CardAction>
+        )}
+      </CardHeader>
+      {/* <CardFooter className="flex-col items-start gap-1.5 text-sm">
             <div className="line-clamp-1 flex gap-2 font-medium">
                {description} <IconTrendingUp className="size-4" />
             </div>
@@ -50,7 +46,6 @@ export function CardItems({
                {description}
             </div>
          </CardFooter> */}
-      </Card>
-   )
+    </Card>
+  );
 }
-

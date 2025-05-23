@@ -94,7 +94,7 @@ export class AuthController {
       // Return success response
       return reply.code(200).send({
         user: result.user,
-        token: result.token
+        token: result.token,
       });
     } catch (error) {
       if (error instanceof z.ZodError) {

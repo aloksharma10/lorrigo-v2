@@ -17,11 +17,11 @@ export default defineConfig({
   esbuildOptions(options) {
     options.jsx = 'automatic';
     options.alias = {
-      '@/*': './src/*'
+      '@/*': './src/*',
     };
   },
   loader: {
     '.css': 'css',
   },
-  onSuccess: 'echo Build completed successfully!'
-}); 
+  onSuccess: 'echo Build completed successfully!',
+});

@@ -1,40 +1,40 @@
-"use client"
+'use client';
 
-import type React from "react"
-import { useState } from "react"
-import { Button, Input, Label } from "@lorrigo/ui/components"
-import { X } from "lucide-react"
+import type React from 'react';
+import { useState } from 'react';
+import { Button, Input, Label } from '@lorrigo/ui/components';
+import { X } from 'lucide-react';
 
 interface FormModalProps {
-  title: string
-  description?: string
-  onSubmit: (data: Record<string, string>) => void
-  onClose: () => void
+  title: string;
+  description?: string;
+  onSubmit: (data: Record<string, string>) => void;
+  onClose: () => void;
   fields: Array<{
-    name: string
-    label: string
-    type?: string
-    placeholder?: string
-    required?: boolean
-  }>
-  modalId?: string
+    name: string;
+    label: string;
+    type?: string;
+    placeholder?: string;
+    required?: boolean;
+  }>;
+  modalId?: string;
 }
 
 export function FormModal({ title, description, onSubmit, onClose, fields }: FormModalProps) {
-  const [formData, setFormData] = useState<Record<string, string>>({})
+  const [formData, setFormData] = useState<Record<string, string>>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
-    })
-  }
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSubmit(formData)
-    onClose()
-  }
+    e.preventDefault();
+    onSubmit(formData);
+    onClose();
+  };
 
   return (
     <div className="flex flex-col p-6">
@@ -55,11 +55,11 @@ export function FormModal({ title, description, onSubmit, onClose, fields }: For
               <Input
                 id={field.name}
                 name={field.name}
-                type={field.type || "text"}
+                type={field.type || 'text'}
                 placeholder={field.placeholder}
                 required={field.required}
                 onChange={handleChange}
-                value={formData[field.name] || ""}
+                value={formData[field.name] || ''}
               />
             </div>
           ))}
@@ -73,5 +73,5 @@ export function FormModal({ title, description, onSubmit, onClose, fields }: For
         </div>
       </form>
     </div>
-  )
+  );
 }

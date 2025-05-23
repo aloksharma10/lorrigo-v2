@@ -5,10 +5,9 @@ import { ThemeProvider as NextThemesProvider } from 'next-themes';
 import { SessionProvider } from 'next-auth/react';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from "@lorrigo/ui/components"
+import { Toaster } from '@lorrigo/ui/components';
 import { ModalRegistry } from '../modal/modal-registry';
 import { ModalProvider } from '@/modal/modal-provider';
-
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = React.useState(
@@ -22,9 +21,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
             retry: (failureCount, error) => {
               // Don't retry on 4xx errors
               if (error instanceof Error && error.message.includes('4')) {
-                return false
+                return false;
               }
-              return failureCount < 3
+              return failureCount < 3;
             },
           },
         },

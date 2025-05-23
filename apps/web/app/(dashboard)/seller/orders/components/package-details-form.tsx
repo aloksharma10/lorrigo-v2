@@ -1,10 +1,23 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import { Info, LightbulbIcon } from "lucide-react"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, Input, Label, Alert, AlertDescription, Badge, Button } from "@lorrigo/ui/components"
+import { useState, useEffect } from 'react';
+import { Info, LightbulbIcon } from 'lucide-react';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  Input,
+  Label,
+  Alert,
+  AlertDescription,
+  Badge,
+  Button,
+} from '@lorrigo/ui/components';
 
-import { useForm } from "react-hook-form"
+import { useForm } from 'react-hook-form';
 
 // Create explicit interface for form values
 interface PackageFormValues {
@@ -16,54 +29,54 @@ interface PackageFormValues {
 }
 
 export function PackageDetailsForm() {
-  const [applicableWeight, setApplicableWeight] = useState("0")
+  const [applicableWeight, setApplicableWeight] = useState('0');
 
   const form = useForm<PackageFormValues>({
     defaultValues: {
-      deadWeight: "0.00",
-      length: "",
-      breadth: "",
-      height: "",
-      volumetricWeight: "0",
+      deadWeight: '0.00',
+      length: '',
+      breadth: '',
+      height: '',
+      volumetricWeight: '0',
     },
-  })
+  });
 
   // Calculate volumetric weight when dimensions change
-  const watchedDimensions = form.watch(["length", "breadth", "height", "deadWeight"])
+  const watchedDimensions = form.watch(['length', 'breadth', 'height', 'deadWeight']);
 
   useEffect(() => {
-    const [length, breadth, height, deadWeight] = watchedDimensions
+    const [length, breadth, height, deadWeight] = watchedDimensions;
 
     if (length && breadth && height) {
-      const l = Number.parseFloat(length)
-      const b = Number.parseFloat(breadth)
-      const h = Number.parseFloat(height)
+      const l = Number.parseFloat(length);
+      const b = Number.parseFloat(breadth);
+      const h = Number.parseFloat(height);
       if (l > 0 && b > 0 && h > 0) {
-        const volumetric = (l * b * h) / 5000
-        form.setValue("volumetricWeight", volumetric.toFixed(2))
+        const volumetric = (l * b * h) / 5000;
+        form.setValue('volumetricWeight', volumetric.toFixed(2));
 
         // Update applicable weight (higher of dead weight and volumetric)
-        const dead = Number.parseFloat(deadWeight) || 0
-        setApplicableWeight(Math.max(dead, volumetric).toFixed(2))
+        const dead = Number.parseFloat(deadWeight) || 0;
+        setApplicableWeight(Math.max(dead, volumetric).toFixed(2));
       }
     }
-  }, [watchedDimensions, form])
+  }, [watchedDimensions, form]);
 
   function onSubmit(values: PackageFormValues) {
-    console.log(values)
+    console.log(values);
   }
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <Alert className="bg-blue-50 border-blue-200">
+        <Alert className="border-blue-200 bg-blue-50">
           <LightbulbIcon className="h-4 w-4 text-blue-500" />
           <AlertDescription className="text-blue-700">
             Tip: Add correct values to avoid weight discrepancy
           </AlertDescription>
         </Alert>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           <FormField
             control={form.control}
             name="deadWeight"
@@ -71,17 +84,21 @@ export function PackageDetailsForm() {
               <FormItem>
                 <FormLabel className="text-sm font-medium">
                   Dead Weight
-                  <span className="block text-xs text-muted-foreground">Physical weight of a package</span>
+                  <span className="text-muted-foreground block text-xs">
+                    Physical weight of a package
+                  </span>
                 </FormLabel>
                 <div className="flex">
                   <FormControl>
                     <Input {...field} className="rounded-r-none" />
                   </FormControl>
-                  <div className="flex items-center justify-center px-3 border border-l-0 rounded-r-md bg-muted">
+                  <div className="bg-muted flex items-center justify-center rounded-r-md border border-l-0 px-3">
                     kg
                   </div>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">Note: Minimum chargeable wt is 0.5 kg</p>
+                <p className="text-muted-foreground mt-1 text-xs">
+                  Note: Minimum chargeable wt is 0.5 kg
+                </p>
                 <FormMessage />
               </FormItem>
             )}
@@ -90,9 +107,11 @@ export function PackageDetailsForm() {
           <div className="md:col-span-2">
             <Label className="text-sm font-medium">
               Package Dimensions
-              <span className="block text-xs text-muted-foreground">LxBxH of the complete package</span>
+              <span className="text-muted-foreground block text-xs">
+                LxBxH of the complete package
+              </span>
             </Label>
-            <div className="grid grid-cols-3 gap-2 mt-1">
+            <div className="mt-1 grid grid-cols-3 gap-2">
               <FormField
                 control={form.control}
                 name="length"
@@ -102,7 +121,7 @@ export function PackageDetailsForm() {
                       <FormControl>
                         <Input placeholder="Length" {...field} className="rounded-r-none" />
                       </FormControl>
-                      <div className="flex items-center justify-center px-3 border border-l-0 rounded-r-md bg-muted">
+                      <div className="bg-muted flex items-center justify-center rounded-r-md border border-l-0 px-3">
                         cm
                       </div>
                     </div>
@@ -119,7 +138,7 @@ export function PackageDetailsForm() {
                       <FormControl>
                         <Input placeholder="Breadth" {...field} className="rounded-r-none" />
                       </FormControl>
-                      <div className="flex items-center justify-center px-3 border border-l-0 rounded-r-md bg-muted">
+                      <div className="bg-muted flex items-center justify-center rounded-r-md border border-l-0 px-3">
                         cm
                       </div>
                     </div>
@@ -136,7 +155,7 @@ export function PackageDetailsForm() {
                       <FormControl>
                         <Input placeholder="Height" {...field} className="rounded-r-none" />
                       </FormControl>
-                      <div className="flex items-center justify-center px-3 border border-l-0 rounded-r-md bg-muted">
+                      <div className="bg-muted flex items-center justify-center rounded-r-md border border-l-0 px-3">
                         cm
                       </div>
                     </div>
@@ -145,7 +164,9 @@ export function PackageDetailsForm() {
                 )}
               />
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">Note: Value should be greater than 0.50 cm</p>
+            <p className="text-muted-foreground mt-1 text-xs">
+              Note: Value should be greater than 0.50 cm
+            </p>
           </div>
 
           <FormField
@@ -153,15 +174,15 @@ export function PackageDetailsForm() {
             name="volumetricWeight"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm font-medium flex items-center gap-1">
+                <FormLabel className="flex items-center gap-1 text-sm font-medium">
                   Volumetric Weight
-                  <Info className="h-4 w-4 text-muted-foreground" />
+                  <Info className="text-muted-foreground h-4 w-4" />
                 </FormLabel>
                 <div className="flex">
                   <FormControl>
-                    <Input {...field} readOnly className="rounded-r-none bg-muted" />
+                    <Input {...field} readOnly className="bg-muted rounded-r-none" />
                   </FormControl>
-                  <div className="flex items-center justify-center px-3 border border-l-0 rounded-r-md bg-muted">
+                  <div className="bg-muted flex items-center justify-center rounded-r-md border border-l-0 px-3">
                     kg
                   </div>
                 </div>
@@ -171,28 +192,28 @@ export function PackageDetailsForm() {
           />
         </div>
 
-        <div className="bg-green-50 border border-green-200 rounded-md p-4">
+        <div className="rounded-md border border-green-200 bg-green-50 p-4">
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
+            <Badge variant="outline" className="border-green-300 bg-green-100 text-green-800">
               Applicable Weight: {applicableWeight} kg
             </Badge>
           </div>
           <p className="mt-2 text-sm text-green-700">
-            Applicable weight is the higher of the dead weight or volumetric weight, used by the courier for freight
-            charges.
+            Applicable weight is the higher of the dead weight or volumetric weight, used by the
+            courier for freight charges.
           </p>
         </div>
 
-        <div className="hidden lg:flex items-center gap-2">
+        <div className="hidden items-center gap-2 lg:flex">
           <span className="text-sm font-medium">Pack like a Pro - </span>
           <Button variant="link" className="h-auto p-0 text-indigo-600">
             Guidelines for Packaging and Measuring
           </Button>
-          <Button variant="link" className="h-auto p-0 ml-auto text-indigo-600">
+          <Button variant="link" className="ml-auto h-auto p-0 text-indigo-600">
             See Guidelines
           </Button>
         </div>
       </form>
     </Form>
-  )
+  );
 }

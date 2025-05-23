@@ -1,15 +1,10 @@
-"use client";
+'use client';
 
-import { cn } from "@lorrigo/ui/lib/utils";
-import { Button } from "./button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "./tooltip";
-import { CheckIcon, CopyIcon } from "lucide-react";
-import { useState } from "react";
+import { cn } from '@lorrigo/ui/lib/utils';
+import { Button } from './button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip';
+import { CheckIcon, CopyIcon } from 'lucide-react';
+import { useState } from 'react';
 
 function CopyBtn() {
   const [copied, setCopied] = useState<boolean>(false);
@@ -19,7 +14,7 @@ function CopyBtn() {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch (err) {
-      console.error("Failed to copy text: ", err);
+      console.error('Failed to copy text: ', err);
     }
   };
 
@@ -32,21 +27,26 @@ function CopyBtn() {
             size="icon"
             className="disabled:opacity-100"
             onClick={handleCopy}
-            aria-label={copied ? "Copied" : "Copy to clipboard"}
+            aria-label={copied ? 'Copied' : 'Copy to clipboard'}
             disabled={copied}
           >
             <div
               className={cn(
-                "transition-all",
-                copied ? "scale-100 opacity-100" : "scale-0 opacity-0",
+                'transition-all',
+                copied ? 'scale-100 opacity-100' : 'scale-0 opacity-0'
               )}
             >
-              <CheckIcon className="stroke-emerald-500" size={16} strokeWidth={2} aria-hidden="true" />
+              <CheckIcon
+                className="stroke-emerald-500"
+                size={16}
+                strokeWidth={2}
+                aria-hidden="true"
+              />
             </div>
             <div
               className={cn(
-                "absolute transition-all",
-                copied ? "scale-0 opacity-0" : "scale-100 opacity-100",
+                'absolute transition-all',
+                copied ? 'scale-0 opacity-0' : 'scale-100 opacity-100'
               )}
             >
               <CopyIcon size={16} strokeWidth={2} aria-hidden="true" />

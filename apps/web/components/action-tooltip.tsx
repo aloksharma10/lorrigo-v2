@@ -1,28 +1,20 @@
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@lorrigo/ui/components";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@lorrigo/ui/components';
 
 interface ActionTooltipProps {
-  side?: "left" | "right" | "top" | "bottom";
-  align?: "start" | "center" | "end";
+  side?: 'left' | 'right' | 'top' | 'bottom';
+  align?: 'start' | 'center' | 'end';
   label: string;
   children: React.ReactNode;
 }
-const ActionTooltip = ({
-  side,
-  align,
-  label,
-  children,
-}: ActionTooltipProps) => {
+const ActionTooltip = ({ side, align, label, children }: ActionTooltipProps) => {
   return (
     <TooltipProvider>
       <Tooltip delayDuration={50}>
-        <TooltipTrigger asChild className="cursor-pointer hover:rounded-md p-1">{children}</TooltipTrigger>
+        <TooltipTrigger asChild className="cursor-pointer p-1 hover:rounded-md">
+          {children}
+        </TooltipTrigger>
         <TooltipContent side={side} align={align} className="text-secondary-foreground">
-          <p className="font-semibold text-sm capitalize">{label.toLowerCase()}</p>
+          <p className="text-sm font-semibold capitalize">{label.toLowerCase()}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

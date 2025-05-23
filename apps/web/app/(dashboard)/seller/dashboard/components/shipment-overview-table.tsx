@@ -1,21 +1,21 @@
-"use client"
+'use client';
 
-import { Column, SimpleDataTable } from "@lorrigo/ui/components"
+import { Column, SimpleDataTable } from '@lorrigo/ui/components';
 
 interface ShipmentData {
-  courierName: string
-  pickupUnscheduled: number
-  pickupScheduled: number
-  inTransit: number
-  delivered: number
-  rto: number
-  lostDamaged: number
-  totalShipment: number
+  courierName: string;
+  pickupUnscheduled: number;
+  pickupScheduled: number;
+  inTransit: number;
+  delivered: number;
+  rto: number;
+  lostDamaged: number;
+  totalShipment: number;
 }
 
 const data: ShipmentData[] = [
   {
-    courierName: "Bluedart Surface 500 g Surface",
+    courierName: 'Bluedart Surface 500 g Surface',
     pickupUnscheduled: 0,
     pickupScheduled: 532,
     inTransit: 2141,
@@ -25,7 +25,7 @@ const data: ShipmentData[] = [
     totalShipment: 14809,
   },
   {
-    courierName: "Bluedart Surface 2Kg-5Kg",
+    courierName: 'Bluedart Surface 2Kg-5Kg',
     pickupUnscheduled: 0,
     pickupScheduled: 3,
     inTransit: 43,
@@ -35,7 +35,7 @@ const data: ShipmentData[] = [
     totalShipment: 388,
   },
   {
-    courierName: "Blue Dart Air",
+    courierName: 'Blue Dart Air',
     pickupUnscheduled: 0,
     pickupScheduled: 4,
     inTransit: 7,
@@ -44,21 +44,21 @@ const data: ShipmentData[] = [
     lostDamaged: 0,
     totalShipment: 116,
   },
-]
+];
 
 const columns = [
-  { header: "Courier Name", accessorKey: "courierName" },
-  { header: "Pickup Unscheduled", accessorKey: "pickupUnscheduled" },
-  { header: "Pickup Scheduled", accessorKey: "pickupScheduled" },
-  { header: "In-Transit", accessorKey: "inTransit" },
-  { header: "Delivered", accessorKey: "delivered" },
-  { header: "RTO", accessorKey: "rto" },
-  { header: "Lost/Damaged", accessorKey: "lostDamaged" },
-  { header: "Total Shipment", accessorKey: "totalShipment" },
-]
+  { header: 'Courier Name', accessorKey: 'courierName' },
+  { header: 'Pickup Unscheduled', accessorKey: 'pickupUnscheduled' },
+  { header: 'Pickup Scheduled', accessorKey: 'pickupScheduled' },
+  { header: 'In-Transit', accessorKey: 'inTransit' },
+  { header: 'Delivered', accessorKey: 'delivered' },
+  { header: 'RTO', accessorKey: 'rto' },
+  { header: 'Lost/Damaged', accessorKey: 'lostDamaged' },
+  { header: 'Total Shipment', accessorKey: 'totalShipment' },
+];
 
 interface ShipmentOverviewTableProps {
-  isLoading?: boolean
+  isLoading?: boolean;
 }
 
 export function ShipmentOverviewTable({ isLoading = false }: ShipmentOverviewTableProps) {
@@ -69,7 +69,7 @@ export function ShipmentOverviewTable({ isLoading = false }: ShipmentOverviewTab
       columns={columns as Column<ShipmentData>[]}
       data={data}
       isLoading={isLoading}
-      onExternalLinkClick={() => console.log("External link clicked")}
+      onExternalLinkClick={() => console.log('External link clicked')}
     />
-  )
+  );
 }

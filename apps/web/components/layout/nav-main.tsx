@@ -1,7 +1,7 @@
-"use client"
-import { ChevronRight, type LucideIcon } from "lucide-react"
+'use client';
+import { ChevronRight, type LucideIcon } from 'lucide-react';
 
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@lorrigo/ui/components"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@lorrigo/ui/components';
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -13,35 +13,35 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   useSidebar,
-} from "@lorrigo/ui/components"
-import { Popover, PopoverContent, PopoverTrigger } from "@lorrigo/ui/components"
-import Link from "next/link"
+} from '@lorrigo/ui/components';
+import { Popover, PopoverContent, PopoverTrigger } from '@lorrigo/ui/components';
+import Link from 'next/link';
 
 export function NavMain({
   items,
   group,
 }: {
   items: {
-    title: string
-    url?: string
-    icon: LucideIcon
-    isActive?: boolean
+    title: string;
+    url?: string;
+    icon: LucideIcon;
+    isActive?: boolean;
     items?: {
-      title: string
-      url: string
-    }[]
-  }[]
-  group: string
+      title: string;
+      url: string;
+    }[];
+  }[];
+  group: string;
 }) {
-  const { state } = useSidebar()
-  const isCollapsed = state === "collapsed"
+  const { state } = useSidebar();
+  const isCollapsed = state === 'collapsed';
 
   return (
     <SidebarGroup>
       <SidebarGroupLabel className="capitalize">{group}</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => {
-          const hasDropdown = item.items && item.items.length > 0
+          const hasDropdown = item.items && item.items.length > 0;
 
           // When sidebar is expanded, use Collapsible for dropdowns
           if (!isCollapsed) {
@@ -50,7 +50,7 @@ export function NavMain({
                 <SidebarMenuItem>
                   {hasDropdown ? (
                     <CollapsibleTrigger asChild>
-                      <div className="flex items-center justify-between w-full cursor-pointer">
+                      <div className="flex w-full cursor-pointer items-center justify-between">
                         <SidebarMenuButton tooltip={item.title} asChild>
                           <div className="flex items-center gap-2">
                             <item.icon className="size-4" />
@@ -64,7 +64,7 @@ export function NavMain({
                     </CollapsibleTrigger>
                   ) : (
                     <SidebarMenuButton asChild tooltip={item.title}>
-                      <Link href={item.url || "#"}>
+                      <Link href={item.url || '#'}>
                         <item.icon className="size-4" />
                         <span>{item.title}</span>
                       </Link>
@@ -88,7 +88,7 @@ export function NavMain({
                   )}
                 </SidebarMenuItem>
               </Collapsible>
-            )
+            );
           }
 
           // When sidebar is collapsed, use Popover for dropdowns
@@ -102,13 +102,13 @@ export function NavMain({
                       <span className="sr-only">{item.title}</span>
                     </SidebarMenuButton>
                   </PopoverTrigger>
-                  <PopoverContent side="right" align="start" className="p-0 w-48" sideOffset={5}>
+                  <PopoverContent side="right" align="start" className="w-48 p-0" sideOffset={5}>
                     <div className="py-1">
                       {item.items?.map((subItem) => (
                         <a
                           key={subItem.title}
                           href={subItem.url}
-                          className="flex items-center px-4 py-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                          className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center px-4 py-2 text-sm"
                         >
                           {subItem.title}
                         </a>
@@ -118,16 +118,16 @@ export function NavMain({
                 </Popover>
               ) : (
                 <SidebarMenuButton asChild tooltip={item.title}>
-                  <a href={item.url || "#"}>
+                  <a href={item.url || '#'}>
                     <item.icon className="size-4" />
                     <span className="sr-only">{item.title}</span>
                   </a>
                 </SidebarMenuButton>
               )}
             </SidebarMenuItem>
-          )
+          );
         })}
       </SidebarMenu>
     </SidebarGroup>
-  )
+  );
 }

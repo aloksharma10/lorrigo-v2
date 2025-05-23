@@ -1,78 +1,76 @@
-"use client"
+'use client';
 
-import type React from "react"
-import { createContext, useContext, useState, useEffect } from "react"
-import { useModalStore } from "./modal-store"
-import { Modal } from "@lorrigo/ui/components"
+import type React from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
+import { useModalStore } from './modal-store';
+import { Modal } from '@lorrigo/ui/components';
 
 // Define types for our modal system
-export type ModalType = "seller:new-order" 
-type ModalProps = Record<string, unknown>
-
+export type ModalType = 'seller:new-order';
+type ModalProps = Record<string, unknown>;
 
 // export type ModalType = "wallet" | "addPickupLocation" | "payForInvoice" | "addSeller" | "addCustomer" | "schedulePickup" | "cancelOrder" | "cloneOrder" | "trackModal" | "editOrder" | "downloadLabel" | "downloadManifest" | "ndrOrder" | "ndrRTOrder" | "BulkHubUpload" | "BulkPincodeUpload" | 'downloadLabels'  | "BulkPickupUpdate" | 'cancelBulkOrder' | "downloadManifests" | "updateShopifyOrders" | "ViewUserDocsAdmin" | "ClientBillingUpload" | "adminRemittanceManage" | "cloneB2BOrder" | "editB2BOrder" | "addB2BCustomer" | "completeKyc" | 'downloadB2BLabel' | 'alert-kyc' | 'alert-payment' | "downloadB2BManifest" | "BulkShipNow" | "B2BClientBillingUpload" | "B2BShipNow" | "raiseDisputeManage" | "disputeDetails" | "DisputeUpload" | "bulkPickupSchedule" | "sellerRemittanceConfig";
 
-interface ModalData {
-  
-}
+interface ModalData {}
 
 // Create context for modal provider
 const ModalContext = createContext<{
-  openModal: (type: ModalType, props?: ModalProps) => string
-  closeModal: (id: string) => void
-  closeAllModals: () => void
-} | null>(null)
+  openModal: (type: ModalType, props?: ModalProps) => string;
+  closeModal: (id: string) => void;
+  closeAllModals: () => void;
+} | null>(null);
 
 export const useModal = () => {
-  const context = useContext(ModalContext)
+  const context = useContext(ModalContext);
   if (!context) {
-    throw new Error("useModal must be used within a ModalProvider")
+    throw new Error('useModal must be used within a ModalProvider');
   }
-  return context
-}
+  return context;
+};
 
 export function ModalProvider({ children }: { children: React.ReactNode }) {
   // Use the store directly
-  const modals = useModalStore((state) => state.modals)
-  const modalComponents = useModalStore((state) => state.modalComponents)
-  const openModal = useModalStore((state) => state.openModal)
-  const closeModal = useModalStore((state) => state.closeModal)
-  const closeAllModals = useModalStore((state) => state.closeAllModals)
+  const modals = useModalStore((state) => state.modals);
+  const modalComponents = useModalStore((state) => state.modalComponents);
+  const openModal = useModalStore((state) => state.openModal);
+  const closeModal = useModalStore((state) => state.closeModal);
+  const closeAllModals = useModalStore((state) => state.closeAllModals);
 
   // Track which modals are visible with local state
-  const [visibleModals, setVisibleModals] = useState<Record<string, boolean>>({})
+  const [visibleModals, setVisibleModals] = useState<Record<string, boolean>>({});
 
   // Update visible modals when modals change
   useEffect(() => {
-    const newVisibleModals: Record<string, boolean> = {}
+    const newVisibleModals: Record<string, boolean> = {};
 
     modals.forEach((modal) => {
       // A modal is visible if it's in entering or entered state
-      newVisibleModals[modal.id] = modal.animationState === "entering" || modal.animationState === "entered"
-    })
+      newVisibleModals[modal.id] =
+        modal.animationState === 'entering' || modal.animationState === 'entered';
+    });
 
-    setVisibleModals(newVisibleModals)
-  }, [modals])
+    setVisibleModals(newVisibleModals);
+  }, [modals]);
 
   return (
     <ModalContext.Provider value={{ openModal, closeModal, closeAllModals }}>
       {children}
       {modals.map(({ id, type, props, animationState }) => {
-        const ModalComponent = modalComponents[type]
+        const ModalComponent = modalComponents[type];
         if (!ModalComponent) {
-          console.warn(`No modal component registered for type: ${type}`)
-          return null
+          console.warn(`No modal component registered for type: ${type}`);
+          return null;
         }
 
         // Only render if the modal is not in "exited" state
-        if (animationState === "exited") return null
+        if (animationState === 'exited') return null;
 
         return (
           <Modal
             key={id}
             showModal={visibleModals[id]}
             setShowModal={(isOpen) => {
-              if (!isOpen) closeModal(id)
+              if (!isOpen) closeModal(id);
             }}
             onClose={() => closeModal(id)}
             className={props.className as string}
@@ -81,8 +79,8 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
           >
             <ModalComponent {...props} modalId={id} onClose={() => closeModal(id)} />
           </Modal>
-        )
+        );
       })}
     </ModalContext.Provider>
-  )
+  );
 }

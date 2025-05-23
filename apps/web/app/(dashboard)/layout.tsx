@@ -1,34 +1,27 @@
-import { cookies } from "next/headers"
+import { cookies } from 'next/headers';
 
-import {
-  SidebarInset,
-  SidebarProvider,
-} from "@lorrigo/ui/components"
-import { AppSidebar } from "@/components/layout/app-sidebar"
-import { SiteHeader } from "@/components/layout/site-header"
+import { SidebarInset, SidebarProvider } from '@lorrigo/ui/components';
+import { AppSidebar } from '@/components/layout/app-sidebar';
+import { SiteHeader } from '@/components/layout/site-header';
 
-export default async function SellerLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const cookieStore = await cookies()
-  const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"
+export default async function SellerLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies();
+  const defaultOpen = cookieStore.get('sidebar_state')?.value === 'true';
 
   return (
     <SidebarProvider
       defaultOpen={defaultOpen}
       style={
         {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
+          '--sidebar-width': 'calc(var(--spacing) * 72)',
         } as React.CSSProperties
       }
     >
       <AppSidebar variant="sidebar" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col px-4 md:p-6 ">{children}</div>
+        <div className="flex flex-1 flex-col px-4 md:p-6">{children}</div>
       </SidebarInset>
     </SidebarProvider>
-  )
+  );
 }

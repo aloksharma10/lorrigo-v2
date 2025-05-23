@@ -2,9 +2,7 @@
   "extends": "@lorrigo/typescript-config/base.json",
   "compilerOptions": {
     "paths": {
-      "@/*": [
-        "./src/*"
-      ]
+      "@/*": ["./src/*"]
     },
     "outDir": "./dist",
     "rootDir": "./src",
@@ -15,19 +13,12 @@
     "skipLibCheck": true
   },
   "ts-node": {
-    "require": [
-      "tsconfig-paths/register"
-    ],
+    "require": ["tsconfig-paths/register"],
     "transpileOnly": true,
     "files": true
   },
   "moduleResolution": "node",
   "module": "CommonJS",
-  "include": [
-    "src"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
 }

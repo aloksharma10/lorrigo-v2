@@ -1,37 +1,45 @@
-"use client"
-import type { Table } from "@tanstack/react-table"
-import { Button } from "../button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../dropdown-menu"
-import { ChevronDown, X, Loader2 } from "lucide-react"
+'use client';
+import type { Table } from '@tanstack/react-table';
+import { Button } from '../button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../dropdown-menu';
+import { ChevronDown, X, Loader2 } from 'lucide-react';
 
 interface DataTableSelectedActionsProps<TData> {
-  table: Table<TData>
+  table: Table<TData>;
   bulkActions?: {
-    label: string
-    action: (selectedRows: TData[]) => void | Promise<void>
-    variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
-    isLoading?: boolean
-  }[]
+    label: string;
+    action: (selectedRows: TData[]) => void | Promise<void>;
+    variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+    isLoading?: boolean;
+  }[];
 }
 
-export function DataTableSelectedActions<TData>({ table, bulkActions = [] }: DataTableSelectedActionsProps<TData>) {
-  const selectedRowIds = Object.keys(table.getState().rowSelection)
-  const selectedCount = selectedRowIds.length
+export function DataTableSelectedActions<TData>({
+  table,
+  bulkActions = [],
+}: DataTableSelectedActionsProps<TData>) {
+  const selectedRowIds = Object.keys(table.getState().rowSelection);
+  const selectedCount = selectedRowIds.length;
 
-  if (selectedCount === 0) return null
+  if (selectedCount === 0) return null;
 
   // Get selected rows data
   const selectedRows = selectedRowIds
     .map((id) => {
-      const row = table.getRowModel().rowsById[id]
-      return row?.original as TData
+      const row = table.getRowModel().rowsById[id];
+      return row?.original as TData;
     })
-    .filter(Boolean)
+    .filter(Boolean);
 
-  const isAnyActionLoading = bulkActions.some((action) => action.isLoading)
+  const isAnyActionLoading = bulkActions.some((action) => action.isLoading);
 
   return (
-    <div className="flex items-center gap-2 bg-muted/50 p-2 rounded-md">
+    <div className="bg-muted/50 flex items-center gap-2 rounded-md p-2">
       <Button
         variant="ghost"
         size="sm"
@@ -39,7 +47,7 @@ export function DataTableSelectedActions<TData>({ table, bulkActions = [] }: Dat
         className="h-8 px-2"
         disabled={isAnyActionLoading}
       >
-        <X className="h-4 w-4 mr-2" />
+        <X className="mr-2 h-4 w-4" />
         Clear selection
       </Button>
       {/* <div className="text-sm text-muted-foreground">
@@ -50,7 +58,7 @@ export function DataTableSelectedActions<TData>({ table, bulkActions = [] }: Dat
           <Button
             size="sm"
             onClick={() => bulkActions?.[0]?.action?.(selectedRows)}
-            variant={bulkActions?.[0]?.variant || "default"}
+            variant={bulkActions?.[0]?.variant || 'default'}
             className="h-8"
             disabled={bulkActions?.[0]?.isLoading}
           >
@@ -83,5 +91,5 @@ export function DataTableSelectedActions<TData>({ table, bulkActions = [] }: Dat
         ) : null}
       </div>
     </div>
-  )
+  );
 }

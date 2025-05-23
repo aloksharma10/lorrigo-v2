@@ -1,7 +1,7 @@
-import { Card, CardHeader, CardTitle } from "@lorrigo/ui/components/card";
-import { CardItems } from "@/components/card-items";
-import { IconProps } from "@tabler/icons-react";
-import { FC, ComponentType } from "react";
+import { Card, CardHeader, CardTitle } from '@lorrigo/ui/components/card';
+import { CardItems } from '@/components/card-items';
+import { IconProps } from '@tabler/icons-react';
+import { FC, ComponentType } from 'react';
 
 export interface CardItemData {
   title: string;
@@ -21,17 +21,19 @@ export interface SectionCardsProps {
 export const SectionCards: FC<SectionCardsProps> = ({
   title,
   items = [],
-  className = "",
-  gridClassName = "",
+  className = '',
+  gridClassName = '',
 }) => {
   return (
     <Card className={`p-4 ${className}`}>
       <CardHeader>
-        <CardTitle className="scroll-m-20 text-lg md:text-xl font-semibold tracking-tight">
+        <CardTitle className="scroll-m-20 text-lg font-semibold tracking-tight md:text-xl">
           {title}
         </CardTitle>
       </CardHeader>
-      <div className={`*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4 ${gridClassName}`}>
+      <div
+        className={`*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card *:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-4 grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t lg:px-6 ${gridClassName}`}
+      >
         {items.map((item, index) => (
           <CardItems
             key={index}

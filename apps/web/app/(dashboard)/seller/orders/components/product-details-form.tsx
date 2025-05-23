@@ -1,19 +1,19 @@
-"use client"
+'use client';
 
-import { useState, useEffect, useRef } from "react"
-import { Info, Minus, Plus, Trash2 } from "lucide-react"
+import { useState, useEffect, useRef } from 'react';
+import { Info, Minus, Plus, Trash2 } from 'lucide-react';
 import {
-   Button,
-   Input,
-   Label,
-   Tooltip,
-   TooltipContent,
-   TooltipProvider,
-   TooltipTrigger,
-   Form
-} from "@lorrigo/ui/components"
+  Button,
+  Input,
+  Label,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  Form,
+} from '@lorrigo/ui/components';
 
-import { useForm, useFieldArray } from "react-hook-form"
+import { useForm, useFieldArray } from 'react-hook-form';
 
 // Product interfaces
 interface Product {
@@ -40,21 +40,21 @@ interface ProductFormValues {
 // This is a mock API function that would be replaced with a real API call
 async function fetchProducts(query: string): Promise<Product[]> {
   // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 500))
+  await new Promise((resolve) => setTimeout(resolve, 500));
 
   // Mock data
   return [
-    { id: "5J091710752", name: "Vastu Product", price: 10 },
-    { id: "test1", name: "test product // - test product //", price: 15 },
-    { id: "dummy1", name: "dummy product - dummy product", price: 20 },
-    { id: "prod13", name: "Product 13 - Product 13", price: 25 },
-    { id: "home25", name: "Home & Kitchen - Product 25", price: 30 },
+    { id: '5J091710752', name: 'Vastu Product', price: 10 },
+    { id: 'test1', name: 'test product // - test product //', price: 15 },
+    { id: 'dummy1', name: 'dummy product - dummy product', price: 20 },
+    { id: 'prod13', name: 'Product 13 - Product 13', price: 25 },
+    { id: 'home25', name: 'Home & Kitchen - Product 25', price: 30 },
   ].filter(
     (product) =>
       !query ||
       product.name.toLowerCase().includes(query.toLowerCase()) ||
-      product.id.toLowerCase().includes(query.toLowerCase()),
-  )
+      product.id.toLowerCase().includes(query.toLowerCase())
+  );
 }
 
 interface ProductRowProps {
@@ -78,61 +78,61 @@ function ProductRow({
   remove,
   productsLength,
 }: ProductRowProps) {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const [productOptions, setProductOptions] = useState<Product[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const dropdownRef = useRef<HTMLDivElement>(null)
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [productOptions, setProductOptions] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false)
+        setIsDropdownOpen(false);
       }
     }
 
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [])
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const fetchProductOptions = async () => {
       if (isDropdownOpen && searchQuery) {
-        setIsLoading(true)
+        setIsLoading(true);
         try {
-          const data = await fetchProducts(searchQuery)
-          setProductOptions(data)
+          const data = await fetchProducts(searchQuery);
+          setProductOptions(data);
         } catch (error) {
-          console.error("Error fetching products:", error)
+          console.error('Error fetching products:', error);
         } finally {
-          setIsLoading(false)
+          setIsLoading(false);
         }
       }
-    }
+    };
 
-    fetchProductOptions()
-  }, [searchQuery, isDropdownOpen])
+    fetchProductOptions();
+  }, [searchQuery, isDropdownOpen]);
 
   const handleProductSelect = async (selectedProduct: Product) => {
-    setValue(`products.${index}.name`, selectedProduct.name)
-    setValue(`products.${index}.price`, selectedProduct.price)
-    setValue(`products.${index}.id`, selectedProduct.id)
+    setValue(`products.${index}.name`, selectedProduct.name);
+    setValue(`products.${index}.price`, selectedProduct.price);
+    setValue(`products.${index}.id`, selectedProduct.id);
     if (selectedProduct.hsnCode) {
-      setValue(`products.${index}.hsnCode`, selectedProduct.hsnCode)
+      setValue(`products.${index}.hsnCode`, selectedProduct.hsnCode);
     }
-    setIsDropdownOpen(false)
-  }
+    setIsDropdownOpen(false);
+  };
 
   const handleQuantityChange = (change: number) => {
-    const currentQuantity = getValues(`products.${index}.quantity`) || 1
-    const newQuantity = Math.max(1, currentQuantity + change)
-    setValue(`products.${index}.quantity`, newQuantity)
-  }
+    const currentQuantity = getValues(`products.${index}.quantity`) || 1;
+    const newQuantity = Math.max(1, currentQuantity + change);
+    setValue(`products.${index}.quantity`, newQuantity);
+  };
 
   return (
-    <div className="grid lg:grid-cols-12 gap-4 mb-4">
-      <div className="col-span-4 relative" ref={dropdownRef}>
+    <div className="mb-4 grid gap-4 lg:grid-cols-12">
+      <div className="relative col-span-4" ref={dropdownRef}>
         <Label htmlFor={`products.${index}.name`} className="text-sm font-medium text-indigo-600">
           Product Name
         </Label>
@@ -142,9 +142,9 @@ function ProductRow({
             {...register(`products.${index}.name`)}
             value={getValues(`products.${index}.name`) || searchQuery}
             onChange={(e) => {
-              setSearchQuery(e.target.value)
-              setValue(`products.${index}.name`, e.target.value)
-              if (!isDropdownOpen) setIsDropdownOpen(true)
+              setSearchQuery(e.target.value);
+              setValue(`products.${index}.name`, e.target.value);
+              if (!isDropdownOpen) setIsDropdownOpen(true);
             }}
             onClick={() => setIsDropdownOpen(true)}
             placeholder="Enter or search your product name"
@@ -152,15 +152,15 @@ function ProductRow({
           />
 
           {isDropdownOpen && (
-            <div className="absolute z-10 mt-1 w-full rounded-md border bg-background shadow-lg">
+            <div className="bg-background absolute z-10 mt-1 w-full rounded-md border shadow-lg">
               {isLoading ? (
-                <div className="p-4 text-center text-sm text-muted-foreground">Loading...</div>
+                <div className="text-muted-foreground p-4 text-center text-sm">Loading...</div>
               ) : productOptions.length > 0 ? (
                 <ul className="max-h-60 overflow-auto py-1">
                   {productOptions.map((option) => (
                     <li
                       key={option.id}
-                      className="cursor-pointer px-4 py-2 hover:bg-muted"
+                      className="hover:bg-muted cursor-pointer px-4 py-2"
                       onClick={() => handleProductSelect(option)}
                     >
                       <div className="font-medium">
@@ -170,20 +170,25 @@ function ProductRow({
                   ))}
                 </ul>
               ) : (
-                <div className="p-4 text-center text-sm text-muted-foreground">No products found</div>
+                <div className="text-muted-foreground p-4 text-center text-sm">
+                  No products found
+                </div>
               )}
             </div>
           )}
         </div>
         {errors?.products?.[index]?.name && (
-          <p className="text-sm text-red-500 mt-1">{errors.products[index].name.message}</p>
+          <p className="mt-1 text-sm text-red-500">{errors.products[index].name.message}</p>
         )}
 
         {getValues(`products.${index}.name`) && getValues(`products.${index}.name`).length > 0 && (
           <div className="mt-2">
-            <Label htmlFor={`products.${index}.hsnCode`} className="text-sm font-medium flex items-center gap-1">
+            <Label
+              htmlFor={`products.${index}.hsnCode`}
+              className="flex items-center gap-1 text-sm font-medium"
+            >
               HSN Code
-              <span className="text-xs text-muted-foreground">(Optional)</span>
+              <span className="text-muted-foreground text-xs">(Optional)</span>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -203,8 +208,8 @@ function ProductRow({
               placeholder="Enter product HSN Code"
               className="mt-1"
             />
-            <div className="mt-1 text-xs text-muted-foreground">
-              Don&apos;t know your HSN Code?{" "}
+            <div className="text-muted-foreground mt-1 text-xs">
+              Don&apos;t know your HSN Code?{' '}
               <Button variant="link" className="h-auto p-0 text-xs text-indigo-600">
                 Know Here
               </Button>
@@ -217,8 +222,8 @@ function ProductRow({
         <Label htmlFor={`products.${index}.price`} className="text-sm font-medium">
           Unit Price
         </Label>
-        <div className="flex items-center mt-1">
-          <span className="flex h-9 w-10 items-center justify-center rounded-l-md border border-r-0 bg-muted text-muted-foreground">
+        <div className="mt-1 flex items-center">
+          <span className="bg-muted text-muted-foreground flex h-9 w-10 items-center justify-center rounded-l-md border border-r-0">
             ₹
           </span>
           <Input
@@ -227,15 +232,15 @@ function ProductRow({
             {...register(`products.${index}.price`, {
               valueAsNumber: true,
               onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-                const value = e.target.value === "" ? 0 : Number.parseFloat(e.target.value)
-                setValue(`products.${index}.price`, value)
+                const value = e.target.value === '' ? 0 : Number.parseFloat(e.target.value);
+                setValue(`products.${index}.price`, value);
               },
             })}
             className="rounded-l-none"
           />
         </div>
         {errors?.products?.[index]?.price && (
-          <p className="text-sm text-red-500 mt-1">{errors.products[index].price.message}</p>
+          <p className="mt-1 text-sm text-red-500">{errors.products[index].price.message}</p>
         )}
       </div>
 
@@ -243,7 +248,7 @@ function ProductRow({
         <Label htmlFor={`products.${index}.quantity`} className="text-sm font-medium">
           Quantity
         </Label>
-        <div className="flex items-center mt-1">
+        <div className="mt-1 flex items-center">
           <Button
             type="button"
             variant="outline"
@@ -259,8 +264,8 @@ function ProductRow({
             {...register(`products.${index}.quantity`, {
               valueAsNumber: true,
               onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-                const value = e.target.value === "" ? 1 : Number.parseInt(e.target.value)
-                setValue(`products.${index}.quantity`, Math.max(1, value))
+                const value = e.target.value === '' ? 1 : Number.parseInt(e.target.value);
+                setValue(`products.${index}.quantity`, Math.max(1, value));
               },
             })}
             className="h-10 rounded-none text-center"
@@ -276,17 +281,20 @@ function ProductRow({
           </Button>
         </div>
         {errors?.products?.[index]?.quantity && (
-          <p className="text-sm text-red-500 mt-1">{errors.products[index].quantity.message}</p>
+          <p className="mt-1 text-sm text-red-500">{errors.products[index].quantity.message}</p>
         )}
       </div>
 
       <div className="col-span-2">
-        <Label htmlFor={`products.${index}.discount`} className="text-sm font-medium flex items-center gap-1">
+        <Label
+          htmlFor={`products.${index}.discount`}
+          className="flex items-center gap-1 text-sm font-medium"
+        >
           Product Discount
-          <span className="text-xs text-muted-foreground">(Optional)</span>
+          <span className="text-muted-foreground text-xs">(Optional)</span>
         </Label>
-        <div className="flex items-center mt-1">
-          <span className="flex h-9 w-10 items-center justify-center rounded-l-md border border-r-0 bg-muted text-muted-foreground">
+        <div className="mt-1 flex items-center">
+          <span className="bg-muted text-muted-foreground flex h-9 w-10 items-center justify-center rounded-l-md border border-r-0">
             ₹
           </span>
           <Input
@@ -295,46 +303,49 @@ function ProductRow({
             {...register(`products.${index}.discount`, {
               valueAsNumber: true,
               onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-                const value = e.target.value === "" ? 0 : Number.parseFloat(e.target.value)
-                setValue(`products.${index}.discount`, value)
+                const value = e.target.value === '' ? 0 : Number.parseFloat(e.target.value);
+                setValue(`products.${index}.discount`, value);
               },
             })}
             className="rounded-l-none rounded-r-lg"
           />
         </div>
         {errors?.products?.[index]?.discount && (
-          <p className="text-sm text-red-500 mt-1">{errors.products[index].discount.message}</p>
+          <p className="mt-1 text-sm text-red-500">{errors.products[index].discount.message}</p>
         )}
       </div>
 
       <div className="col-span-1">
-        <Label htmlFor={`products.${index}.taxRate`} className="text-sm font-medium flex items-center gap-1">
+        <Label
+          htmlFor={`products.${index}.taxRate`}
+          className="flex items-center gap-1 text-sm font-medium"
+        >
           Tax Rate
-          <span className="text-xs text-muted-foreground">(Optional)</span>
+          <span className="text-muted-foreground text-xs">(Optional)</span>
         </Label>
-        <div className="flex items-center mt-1">
+        <div className="mt-1 flex items-center">
           <Input
             id={`products.${index}.taxRate`}
             type="text"
             {...register(`products.${index}.taxRate`, {
               valueAsNumber: true,
               onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-                const value = e.target.value === "" ? 0 : Number.parseFloat(e.target.value)
-                setValue(`products.${index}.taxRate`, value)
+                const value = e.target.value === '' ? 0 : Number.parseFloat(e.target.value);
+                setValue(`products.${index}.taxRate`, value);
               },
             })}
             className="rounded-r-none"
           />
-          <span className="flex h-9 w-10 items-center justify-center rounded-r-md border border-l-0 bg-muted text-muted-foreground">
+          <span className="bg-muted text-muted-foreground flex h-9 w-10 items-center justify-center rounded-r-md border border-l-0">
             %
           </span>
         </div>
         {errors?.products?.[index]?.taxRate && (
-          <p className="text-sm text-red-500 mt-1">{errors.products[index].taxRate.message}</p>
+          <p className="mt-1 text-sm text-red-500">{errors.products[index].taxRate.message}</p>
         )}
       </div>
 
-      <div className="col-span-1 flex items-end justify-center mb-1">
+      <div className="col-span-1 mb-1 flex items-end justify-center">
         <Button
           type="button"
           variant="ghost"
@@ -347,7 +358,7 @@ function ProductRow({
         </Button>
       </div>
     </div>
-  )
+  );
 }
 
 export function ProductDetailsForm() {
@@ -355,25 +366,25 @@ export function ProductDetailsForm() {
     defaultValues: {
       products: [
         {
-          id: "",
-          name: "",
+          id: '',
+          name: '',
           price: 0,
           quantity: 1,
           discount: 0,
           taxRate: 0,
-          hsnCode: "",
+          hsnCode: '',
         },
       ],
     },
-  })
+  });
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "products",
-  })
+    name: 'products',
+  });
 
   function onSubmit(values: ProductFormValues) {
-    console.log(values)
+    console.log(values);
   }
 
   return (
@@ -398,21 +409,21 @@ export function ProductDetailsForm() {
           variant="outline"
           onClick={() =>
             append({
-              id: "",
-              name: "",
+              id: '',
+              name: '',
               price: 0,
               quantity: 1,
               discount: 0,
               taxRate: 0,
-              hsnCode: "",
+              hsnCode: '',
             })
           }
           className="mt-2 text-indigo-600"
         >
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="mr-2 h-4 w-4" />
           Add Another Product
         </Button>
       </form>
     </Form>
-  )
-} 
+  );
+}

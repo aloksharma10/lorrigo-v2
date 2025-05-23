@@ -1,17 +1,17 @@
-"use client"
+'use client';
 
-import { useModal } from "@/modal/modal-provider"
-import { Button } from "@lorrigo/ui/components"
-import { X } from "lucide-react"
+import { useModal } from '@/modal/modal-provider';
+import { Button } from '@lorrigo/ui/components';
+import { X } from 'lucide-react';
 
 interface ConfirmModalProps {
-  title: string
-  description: string
-  onConfirm: () => void
-  onClose: () => void
-  confirmText?: string
-  cancelText?: string
-  modalId?: string
+  title: string;
+  description: string;
+  onConfirm: () => void;
+  onClose: () => void;
+  confirmText?: string;
+  cancelText?: string;
+  modalId?: string;
 }
 
 export function ConfirmModal({
@@ -19,28 +19,27 @@ export function ConfirmModal({
   description,
   onConfirm,
   onClose,
-  confirmText = "Confirm",
-  cancelText = "Cancel",
+  confirmText = 'Confirm',
+  cancelText = 'Cancel',
 }: ConfirmModalProps) {
-  const { openModal, closeAllModals } = useModal()
+  const { openModal, closeAllModals } = useModal();
 
   const handleConfirm = () => {
-    onConfirm()
-    onClose()
-  }
+    onConfirm();
+    onClose();
+  };
 
   const handleOpenFormModal = () => {
-    openModal("seller:new-order", {
-      title: "User Information",
-      description: "Please fill out your information",
+    openModal('seller:new-order', {
+      title: 'User Information',
+      description: 'Please fill out your information',
       fields: [
-        { name: "name", label: "Name", required: true },
-        { name: "email", label: "Email", type: "email", required: true },
+        { name: 'name', label: 'Name', required: true },
+        { name: 'email', label: 'Email', type: 'email', required: true },
       ],
-      onSubmit: (data: any) => console.log("Form submitted:", data),
-    })
-  }
-
+      onSubmit: (data: any) => console.log('Form submitted:', data),
+    });
+  };
 
   return (
     <div className="flex flex-col p-6">
@@ -61,5 +60,5 @@ export function ConfirmModal({
         <Button onClick={handleOpenFormModal}>Open Form Modal</Button>
       </div>
     </div>
-  )
+  );
 }

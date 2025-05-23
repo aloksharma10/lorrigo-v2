@@ -14,4 +14,4 @@ export default defineConfig({
   },
   outDir: 'dist',
   target: 'node18',
-});  
+});

@@ -1,19 +1,17 @@
-import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from '@lorrigo/ui/components'
+import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from '@lorrigo/ui/components';
 
-import { Boxes, CircleHelp, Download, ExternalLink, MoreHorizontal, RefreshCw } from "lucide-react"
-import { ShipmentStatusChart } from "./components/shipment-status-chart"
-import { DeliveryPerformanceChart } from "./components/delivery-performance-chart"
-import { CourierSplitChart } from "./components/courier-split-chart"
-import { IndiaMap } from './components/india-map'
-import { Header } from '@/components/header'
-import { ShipmentOverviewTable } from './components/shipment-overview-table'
+import { Boxes, CircleHelp, Download, ExternalLink, MoreHorizontal, RefreshCw } from 'lucide-react';
+import { ShipmentStatusChart } from './components/shipment-status-chart';
+import { DeliveryPerformanceChart } from './components/delivery-performance-chart';
+import { CourierSplitChart } from './components/courier-split-chart';
+import { IndiaMap } from './components/india-map';
+import { Header } from '@/components/header';
+import { ShipmentOverviewTable } from './components/shipment-overview-table';
 // import { IndiaMap } from "@/components/india-map"
-
-
 
 export default function SellerDashboardOverview() {
   return (
-    <div className="mx-auto p-4 space-y-6">
+    <div className="mx-auto space-y-6 p-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <div className="flex items-center gap-2">
@@ -31,9 +29,8 @@ export default function SellerDashboardOverview() {
         </div>
       </div>
 
-
       {/* First row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <Card className="border-none">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Today's Orders</CardTitle>
@@ -43,7 +40,7 @@ export default function SellerDashboardOverview() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-4">
-              <div className="flex items-center justify-center bg-white rounded-full h-12 w-12">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="24"
@@ -65,7 +62,7 @@ export default function SellerDashboardOverview() {
               </div>
               <div>
                 <div className="text-3xl font-bold">0</div>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-muted-foreground text-xs">
                   Yesterday: <span className="font-medium">587</span>
                 </div>
               </div>
@@ -82,7 +79,7 @@ export default function SellerDashboardOverview() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-4">
-              <div className="flex items-center justify-center bg-white rounded-full h-12 w-12">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="24"
@@ -104,7 +101,7 @@ export default function SellerDashboardOverview() {
               </div>
               <div>
                 <div className="text-3xl font-bold">₹0</div>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-muted-foreground text-xs">
                   Yesterday: <span className="font-medium">₹13,28,355</span>
                 </div>
               </div>
@@ -114,38 +111,38 @@ export default function SellerDashboardOverview() {
       </div>
 
       {/* Second row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div className="flex items-center gap-2">
               <CardTitle className="text-sm font-medium">Shipments Details</CardTitle>
-              <CircleHelp className="h-4 w-4 text-muted-foreground" />
+              <CircleHelp className="text-muted-foreground h-4 w-4" />
             </div>
             <Button variant="ghost" size="icon" className="h-8 w-8">
               <ExternalLink className="h-4 w-4" />
             </Button>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <div className="flex flex-col items-center justify-center p-3 border rounded-md">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+              <div className="flex flex-col items-center justify-center rounded-md border p-3">
                 <div className="text-sm font-medium">16.4K</div>
-                <div className="text-xs text-muted-foreground">Total Shipments</div>
+                <div className="text-muted-foreground text-xs">Total Shipments</div>
               </div>
-              <div className="flex flex-col items-center justify-center p-3 border rounded-md">
+              <div className="flex flex-col items-center justify-center rounded-md border p-3">
                 <div className="text-sm font-medium">541</div>
-                <div className="text-xs text-muted-foreground">Pickup Pending</div>
+                <div className="text-muted-foreground text-xs">Pickup Pending</div>
               </div>
-              <div className="flex flex-col items-center justify-center p-3 border rounded-md">
+              <div className="flex flex-col items-center justify-center rounded-md border p-3">
                 <div className="text-sm font-medium">2.2K</div>
-                <div className="text-xs text-muted-foreground">In-Transit</div>
+                <div className="text-muted-foreground text-xs">In-Transit</div>
               </div>
-              <div className="flex flex-col items-center justify-center p-3 border rounded-md">
+              <div className="flex flex-col items-center justify-center rounded-md border p-3">
                 <div className="text-sm font-medium">9.3K</div>
-                <div className="text-xs text-muted-foreground">Delivered</div>
+                <div className="text-muted-foreground text-xs">Delivered</div>
               </div>
-              <div className="flex flex-col items-center justify-center p-3 border rounded-md">
+              <div className="flex flex-col items-center justify-center rounded-md border p-3">
                 <div className="text-sm font-medium">2.9K</div>
-                <div className="text-xs text-muted-foreground">RTO</div>
+                <div className="text-muted-foreground text-xs">RTO</div>
               </div>
             </div>
           </CardContent>
@@ -155,29 +152,29 @@ export default function SellerDashboardOverview() {
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div className="flex items-center gap-2">
               <CardTitle className="text-sm font-medium">NDR Details</CardTitle>
-              <CircleHelp className="h-4 w-4 text-muted-foreground" />
+              <CircleHelp className="text-muted-foreground h-4 w-4" />
             </div>
             <Button variant="ghost" size="icon" className="h-8 w-8">
               <ExternalLink className="h-4 w-4" />
             </Button>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="flex flex-col items-center justify-center p-3 border rounded-md">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              <div className="flex flex-col items-center justify-center rounded-md border p-3">
                 <div className="text-sm font-medium">5.9K</div>
-                <div className="text-xs text-muted-foreground">Total NDR</div>
+                <div className="text-muted-foreground text-xs">Total NDR</div>
               </div>
-              <div className="flex flex-col items-center justify-center p-3 border rounded-md">
+              <div className="flex flex-col items-center justify-center rounded-md border p-3">
                 <div className="text-sm font-medium">49</div>
-                <div className="text-xs text-muted-foreground">Your Reattmpt Request</div>
+                <div className="text-muted-foreground text-xs">Your Reattmpt Request</div>
               </div>
-              <div className="flex flex-col items-center justify-center p-3 border rounded-md">
+              <div className="flex flex-col items-center justify-center rounded-md border p-3">
                 <div className="text-sm font-medium">2</div>
-                <div className="text-xs text-muted-foreground">Buyer Reattmpt Request</div>
+                <div className="text-muted-foreground text-xs">Buyer Reattmpt Request</div>
               </div>
-              <div className="flex flex-col items-center justify-center p-3 border rounded-md">
+              <div className="flex flex-col items-center justify-center rounded-md border p-3">
                 <div className="text-sm font-medium">1.6K</div>
-                <div className="text-xs text-muted-foreground">NDR Delivered</div>
+                <div className="text-muted-foreground text-xs">NDR Delivered</div>
               </div>
             </div>
           </CardContent>
@@ -185,7 +182,7 @@ export default function SellerDashboardOverview() {
       </div>
 
       {/* Third row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <Card className="border-none">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div className="flex items-center gap-2">
@@ -200,7 +197,7 @@ export default function SellerDashboardOverview() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-4">
-              <div className="flex items-center justify-center bg-white rounded-full h-12 w-12">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="24"
@@ -231,29 +228,31 @@ export default function SellerDashboardOverview() {
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div className="flex items-center gap-2">
               <CardTitle className="text-sm font-medium">COD Status</CardTitle>
-              <CircleHelp className="h-4 w-4 text-muted-foreground" />
+              <CircleHelp className="text-muted-foreground h-4 w-4" />
             </div>
             <Button variant="ghost" size="icon" className="h-8 w-8">
               <ExternalLink className="h-4 w-4" />
             </Button>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="flex flex-col items-center justify-center p-3 border rounded-md">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              <div className="flex flex-col items-center justify-center rounded-md border p-3">
                 <div className="text-sm font-medium">₹54.4L</div>
-                <div className="text-xs text-muted-foreground">Total COD (Last 30 Days)</div>
+                <div className="text-muted-foreground text-xs">Total COD (Last 30 Days)</div>
               </div>
-              <div className="flex flex-col items-center justify-center p-3 border rounded-md">
+              <div className="flex flex-col items-center justify-center rounded-md border p-3">
                 <div className="text-sm font-medium">₹0</div>
-                <div className="text-xs text-muted-foreground">COD Available</div>
+                <div className="text-muted-foreground text-xs">COD Available</div>
               </div>
-              <div className="flex flex-col items-center justify-center p-3 border rounded-md">
+              <div className="flex flex-col items-center justify-center rounded-md border p-3">
                 <div className="text-sm font-medium">₹0</div>
-                <div className="text-xs text-muted-foreground">COD Pending (Greater than 5 days)</div>
+                <div className="text-muted-foreground text-xs">
+                  COD Pending (Greater than 5 days)
+                </div>
               </div>
-              <div className="flex flex-col items-center justify-center p-3 border rounded-md">
+              <div className="flex flex-col items-center justify-center rounded-md border p-3">
                 <div className="text-sm font-medium">₹1.8L</div>
-                <div className="text-xs text-muted-foreground">Last COD Remitted</div>
+                <div className="text-muted-foreground text-xs">Last COD Remitted</div>
               </div>
             </div>
           </CardContent>
@@ -261,14 +260,14 @@ export default function SellerDashboardOverview() {
       </div>
 
       {/* Fourth row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <CourierSplitChart />
         <ShipmentStatusChart />
         <DeliveryPerformanceChart />
       </div>
 
       {/* Fifth row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div className="flex items-center gap-2">
@@ -276,7 +275,7 @@ export default function SellerDashboardOverview() {
               <Badge variant="outline" className="text-xs">
                 Last 30 days
               </Badge>
-              <CircleHelp className="h-4 w-4 text-muted-foreground" />
+              <CircleHelp className="text-muted-foreground h-4 w-4" />
             </div>
             <Button variant="ghost" size="icon" className="h-8 w-8">
               <MoreHorizontal className="h-4 w-4" />
@@ -294,7 +293,7 @@ export default function SellerDashboardOverview() {
               <Badge variant="outline" className="text-xs">
                 Last 30 days
               </Badge>
-              <CircleHelp className="h-4 w-4 text-muted-foreground" />
+              <CircleHelp className="text-muted-foreground h-4 w-4" />
             </div>
             <Button variant="ghost" size="icon" className="h-8 w-8">
               <ExternalLink className="h-4 w-4" />
@@ -348,7 +347,7 @@ export default function SellerDashboardOverview() {
               <Badge variant="outline" className="text-xs">
                 Last 30 days
               </Badge>
-              <CircleHelp className="h-4 w-4 text-muted-foreground" />
+              <CircleHelp className="text-muted-foreground h-4 w-4" />
             </div>
             <Button variant="ghost" size="icon" className="h-8 w-8">
               <ExternalLink className="h-4 w-4" />
@@ -380,5 +379,5 @@ export default function SellerDashboardOverview() {
       {/* Sixth row */}
       <ShipmentOverviewTable />
     </div>
-  )
+  );
 }

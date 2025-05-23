@@ -1,4 +1,4 @@
-"use client"
+'use client';
 
 import {
   LineChart as RechartsLineChart,
@@ -9,42 +9,51 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from "recharts"
+} from 'recharts';
 
 export interface LineChartData {
-  name: string
-  [key: string]: any
+  name: string;
+  [key: string]: any;
 }
 
 interface LineConfig {
-  dataKey: string
-  name?: string
-  color: string
-  type?: "monotone" | "linear" | "step" | "stepBefore" | "stepAfter" | "basis" | "basisOpen" | "basisClosed" | "natural"
-  strokeWidth?: number
+  dataKey: string;
+  name?: string;
+  color: string;
+  type?:
+    | 'monotone'
+    | 'linear'
+    | 'step'
+    | 'stepBefore'
+    | 'stepAfter'
+    | 'basis'
+    | 'basisOpen'
+    | 'basisClosed'
+    | 'natural';
+  strokeWidth?: number;
 }
 
 interface LineChartProps {
-  data: LineChartData[]
-  lines: LineConfig[]
-  xAxisDataKey?: string
-  height?: number
-  showGrid?: boolean
-  showLegend?: boolean
-  showTooltip?: boolean
+  data: LineChartData[];
+  lines: LineConfig[];
+  xAxisDataKey?: string;
+  height?: number;
+  showGrid?: boolean;
+  showLegend?: boolean;
+  showTooltip?: boolean;
 }
 
 export function LineChart({
   data,
   lines,
-  xAxisDataKey = "name",
+  xAxisDataKey = 'name',
   height = 300,
   showGrid = true,
   showLegend = true,
   showTooltip = true,
 }: LineChartProps) {
   return (
-    <div style={{ width: "100%", height }}>
+    <div style={{ width: '100%', height }}>
       <ResponsiveContainer width="100%" height="100%">
         <RechartsLineChart
           data={data}
@@ -63,7 +72,7 @@ export function LineChart({
           {lines.map((line, index) => (
             <Line
               key={index}
-              type={line.type || "monotone"}
+              type={line.type || 'monotone'}
               dataKey={line.dataKey}
               name={line.name || line.dataKey}
               stroke={line.color}
@@ -74,5 +83,5 @@ export function LineChart({
         </RechartsLineChart>
       </ResponsiveContainer>
     </div>
-  )
+  );
 }

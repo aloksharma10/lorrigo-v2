@@ -1,7 +1,7 @@
-"use client"
+'use client';
 
-import type { Table } from "@tanstack/react-table"
-import { Button } from "../button"
+import type { Table } from '@tanstack/react-table';
+import { Button } from '../button';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -9,15 +9,18 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "../dropdown-menu"
-import { Loader2, Columns } from "lucide-react"
+} from '../dropdown-menu';
+import { Loader2, Columns } from 'lucide-react';
 
 interface DataTableViewOptionsProps<TData> {
-  table: Table<TData>
-  disabled?: boolean
+  table: Table<TData>;
+  disabled?: boolean;
 }
 
-export function DataTableViewOptions<TData>({ table, disabled = false }: DataTableViewOptionsProps<TData>) {
+export function DataTableViewOptions<TData>({
+  table,
+  disabled = false,
+}: DataTableViewOptionsProps<TData>) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -32,7 +35,7 @@ export function DataTableViewOptions<TData>({ table, disabled = false }: DataTab
         <DropdownMenuSeparator />
         {table
           .getAllColumns()
-          .filter((column) => typeof column.accessorFn !== "undefined" && column.getCanHide())
+          .filter((column) => typeof column.accessorFn !== 'undefined' && column.getCanHide())
           .map((column) => {
             return (
               <DropdownMenuCheckboxItem
@@ -41,11 +44,11 @@ export function DataTableViewOptions<TData>({ table, disabled = false }: DataTab
                 checked={column.getIsVisible()}
                 onCheckedChange={(value) => column.toggleVisibility(!!value)}
               >
-                {column.id.replace(/([A-Z])/g, " $1").toLowerCase()}
+                {column.id.replace(/([A-Z])/g, ' $1').toLowerCase()}
               </DropdownMenuCheckboxItem>
-            )
+            );
           })}
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

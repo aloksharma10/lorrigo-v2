@@ -1,6 +1,6 @@
-"use client"
+'use client';
 
-import * as React from "react"
+import * as React from 'react';
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -13,69 +13,69 @@ import {
   getFacetedUniqueValues,
   useReactTable,
   OnChangeFn,
-} from "@tanstack/react-table"
+} from '@tanstack/react-table';
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../table';
 
-import { DataTablePagination } from "./data-table-pagination"
-import { DataTableToolbar } from "./data-table-toolbar"
-import { DataTableSelectedActions } from "./data-table-selected-actions"
+import { DataTablePagination } from './data-table-pagination';
+import { DataTableToolbar } from './data-table-toolbar';
+import { DataTableSelectedActions } from './data-table-selected-actions';
 
-import { Skeleton } from "../skeleton"
-import { Alert, AlertDescription, AlertTitle } from "../alert"
-import { AlertCircle } from "lucide-react"
+import { Skeleton } from '../skeleton';
+import { Alert, AlertDescription, AlertTitle } from '../alert';
+import { AlertCircle } from 'lucide-react';
 
 interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[]
-  data: TData[]
-  count: number
+  columns: ColumnDef<TData, TValue>[];
+  data: TData[];
+  count: number;
   filterableColumns?: {
-    id: string
-    title: string
+    id: string;
+    title: string;
     options: {
-      label: string
-      value: string
-      icon?: React.ComponentType<{ className?: string }>
-    }[]
-  }[]
+      label: string;
+      value: string;
+      icon?: React.ComponentType<{ className?: string }>;
+    }[];
+  }[];
   searchableColumns?: {
-    id: string
-    title: string
-  }[]
-  advancedFilter?: boolean
+    id: string;
+    title: string;
+  }[];
+  advancedFilter?: boolean;
   bulkActions?: {
-    label: string
-    action: (selectedRows: TData[]) => void | Promise<void>
-    variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
-    isLoading?: boolean
-  }[]
-  dateRangeFilter?: boolean
-  defaultVisibility?: VisibilityState
+    label: string;
+    action: (selectedRows: TData[]) => void | Promise<void>;
+    variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+    isLoading?: boolean;
+  }[];
+  dateRangeFilter?: boolean;
+  defaultVisibility?: VisibilityState;
   defaultDateRange?: {
-    from: Date
-    to: Date
-  }
-  defaultSort?: SortingState
-  pageCount: number
-  pageSize: number
-  page: number
-  pageSizeOptions?: number[]
-  searchPlaceholder?: string
-  selectable?: boolean
-  onRowClick?: (row: TData) => void
-  onSelectionChange?: (selectedRows: TData[]) => void
-  onPaginationChange?: (pagination: { pageIndex: number; pageSize: number }) => void
-  onSortingChange?: (sorting: SortingState) => void
-  onFiltersChange?: (filters: ColumnFiltersState) => void
-  onGlobalFilterChange?: (value: string) => void
-  onDateRangeChange?: (dateRange: { from: Date; to: Date }) => void
-  isLoading?: boolean
-  isError?: boolean
-  errorMessage?: string
-  className?: string
-  manualPagination?: boolean
-  manualSorting?: boolean
-  manualFiltering?: boolean
+    from: Date;
+    to: Date;
+  };
+  defaultSort?: SortingState;
+  pageCount: number;
+  pageSize: number;
+  page: number;
+  pageSizeOptions?: number[];
+  searchPlaceholder?: string;
+  selectable?: boolean;
+  onRowClick?: (row: TData) => void;
+  onSelectionChange?: (selectedRows: TData[]) => void;
+  onPaginationChange?: (pagination: { pageIndex: number; pageSize: number }) => void;
+  onSortingChange?: (sorting: SortingState) => void;
+  onFiltersChange?: (filters: ColumnFiltersState) => void;
+  onGlobalFilterChange?: (value: string) => void;
+  onDateRangeChange?: (dateRange: { from: Date; to: Date }) => void;
+  isLoading?: boolean;
+  isError?: boolean;
+  errorMessage?: string;
+  className?: string;
+  manualPagination?: boolean;
+  manualSorting?: boolean;
+  manualFiltering?: boolean;
 }
 
 export function DataTable<TData, TValue>({
@@ -90,14 +90,14 @@ export function DataTable<TData, TValue>({
   defaultVisibility = {},
   defaultDateRange = {
     from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-    to: new Date()
+    to: new Date(),
   },
   defaultSort = [],
   pageCount,
   pageSize = 15,
   page = 0,
   pageSizeOptions = [15, 25, 50, 100],
-  searchPlaceholder = "Search for AWB, Order ID, Buyer Mobile Number, Email, SKU, Pickup ID",
+  searchPlaceholder = 'Search for AWB, Order ID, Buyer Mobile Number, Email, SKU, Pickup ID',
   selectable = true,
   onRowClick,
   onSelectionChange,
@@ -108,91 +108,94 @@ export function DataTable<TData, TValue>({
   onDateRangeChange,
   isLoading = false,
   isError = false,
-  errorMessage = "An error occurred while fetching data.",
+  errorMessage = 'An error occurred while fetching data.',
   className,
   manualPagination = true,
   manualSorting = true,
   manualFiltering = true,
 }: DataTableProps<TData, TValue>) {
-  const [rowSelection, setRowSelection] = React.useState({})
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>(defaultVisibility)
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [sorting, setSorting] = React.useState<SortingState>(defaultSort)
-  const [globalFilter, setGlobalFilter] = React.useState<string>("")
-  const [dateRange, setDateRange] = React.useState(defaultDateRange)
-  const [{ pageIndex, pageSize: currentPageSize }, setPagination] = React.useState<PaginationState>({
-    pageIndex: page,
-    pageSize: pageSize,
-  })
+  const [rowSelection, setRowSelection] = React.useState({});
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>(defaultVisibility);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const [sorting, setSorting] = React.useState<SortingState>(defaultSort);
+  const [globalFilter, setGlobalFilter] = React.useState<string>('');
+  const [dateRange, setDateRange] = React.useState(defaultDateRange);
+  const [{ pageIndex, pageSize: currentPageSize }, setPagination] = React.useState<PaginationState>(
+    {
+      pageIndex: page,
+      pageSize: pageSize,
+    }
+  );
 
   // Reset row selection when data changes
   React.useEffect(() => {
-    setRowSelection({})
-  }, [data])
+    setRowSelection({});
+  }, [data]);
 
   // Handle pagination state changes
   const handlePaginationChange = React.useCallback(
     (updater: (state: PaginationState) => PaginationState) => {
       setPagination((prev) => {
-        const next = updater(prev)
+        const next = updater(prev);
         if (onPaginationChange) {
-          onPaginationChange(next)
+          onPaginationChange(next);
         }
-        return next
-      })
+        return next;
+      });
     },
-    [onPaginationChange],
-  )
+    [onPaginationChange]
+  );
 
   // Handle sorting state changes
   const handleSortingChange = React.useCallback(
     (updater: (state: SortingState) => SortingState) => {
       setSorting((prev) => {
-        const next = updater(prev)
+        const next = updater(prev);
         if (onSortingChange) {
-          onSortingChange(next)
+          onSortingChange(next);
         }
-        return next
-      })
+        return next;
+      });
     },
-    [onSortingChange],
-  )
+    [onSortingChange]
+  );
 
   // Handle column filters state changes
   const handleFiltersChange = React.useCallback(
     (updater: (state: ColumnFiltersState) => ColumnFiltersState) => {
       setColumnFilters((prev) => {
-        const next = updater(prev)
+        const next = updater(prev);
         if (onFiltersChange) {
-          onFiltersChange(next)
+          onFiltersChange(next);
         }
-        return next
-      })
+        return next;
+      });
     },
-    [onFiltersChange],
-  )
+    [onFiltersChange]
+  );
 
   // Handle global filter state changes
   const handleGlobalFilterChange = React.useCallback(
     (value: string) => {
-      setGlobalFilter(value)
+      setGlobalFilter(value);
       if (onGlobalFilterChange) {
-        onGlobalFilterChange(value)
+        onGlobalFilterChange(value);
       }
     },
-    [onGlobalFilterChange],
-  )
+    [onGlobalFilterChange]
+  );
 
   // Handle date range changes
   const handleDateRangeChange = React.useCallback(
     (value: { from: Date; to: Date }) => {
-      setDateRange(value)
+      setDateRange(value);
       if (onDateRangeChange) {
-        onDateRangeChange(value)
+        onDateRangeChange(value);
       }
     },
-    [onDateRangeChange],
-  )
+    [onDateRangeChange]
+  );
 
   const table = useReactTable({
     data,
@@ -223,27 +226,27 @@ export function DataTable<TData, TValue>({
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
     getRowId: (row: any) => row.id?.toString() || Math.random().toString(),
-  })
+  });
 
   React.useEffect(() => {
     if (onSelectionChange) {
       const selectedRows = Object.keys(rowSelection)
         .map((key) => {
-          const row = data.find((item: any) => item.id?.toString() === key || "")
-          return row as TData
+          const row = data.find((item: any) => item.id?.toString() === key || '');
+          return row as TData;
         })
-        .filter(Boolean)
-      onSelectionChange(selectedRows)
+        .filter(Boolean);
+      onSelectionChange(selectedRows);
     }
-  }, [data, rowSelection, onSelectionChange])
+  }, [data, rowSelection, onSelectionChange]);
 
   // Sync external pagination state with table state
   React.useEffect(() => {
     setPagination({
       pageIndex: page,
       pageSize: pageSize,
-    })
-  }, [page, pageSize])
+    });
+  }, [page, pageSize]);
 
   if (isError) {
     return (
@@ -252,7 +255,7 @@ export function DataTable<TData, TValue>({
         <AlertTitle>Error</AlertTitle>
         <AlertDescription>{errorMessage}</AlertDescription>
       </Alert>
-    )
+    );
   }
 
   return (
@@ -283,9 +286,11 @@ export function DataTable<TData, TValue>({
                 {headerGroup.headers.map((header) => {
                   return (
                     <TableHead key={header.id} colSpan={header.colSpan}>
-                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.header, header.getContext())}
                     </TableHead>
-                  )
+                  );
                 })}
               </TableRow>
             ))}
@@ -305,12 +310,14 @@ export function DataTable<TData, TValue>({
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
+                  data-state={row.getIsSelected() && 'selected'}
                   onClick={() => onRowClick && onRowClick(row.original)}
-                  className={onRowClick ? "cursor-pointer" : ""}
+                  className={onRowClick ? 'cursor-pointer' : ''}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
                   ))}
                 </TableRow>
               ))
@@ -325,7 +332,12 @@ export function DataTable<TData, TValue>({
         </Table>
       </div>
 
-      <DataTablePagination table={table} pageSizeOptions={pageSizeOptions} totalCount={count} isLoading={isLoading} />
+      <DataTablePagination
+        table={table}
+        pageSizeOptions={pageSizeOptions}
+        totalCount={count}
+        isLoading={isLoading}
+      />
     </div>
-  )
+  );
 }
