@@ -12,6 +12,11 @@ import {
    TooltipTrigger
 } from "@lorrigo/ui/components"
 
+
+import { z } from "zod"
+import { useForm, useFieldArray } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+
 interface Product {
   id: string
   name: string
@@ -39,27 +44,58 @@ async function fetchProducts(query: string): Promise<Product[]> {
   )
 }
 
+const productSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, { message: "Product name is required" }),
+  price: z.number().min(0, { message: "Price must be a positive number" }),
+  quantity: z.number().min(1, { message: "Quantity must be at least 1" }),
+  discount: z.number().min(0, { message: "Discount must be a positive number" }).optional(),
+  taxRate: z.number().min(0, { message: "Tax rate must be a positive number" }).optional(),
+  hsnCode: z.string().optional(),
+})
+
+const productFormSchema = z.object({
+  products: z.array(productSchema).min(1, { message: "At least one product is required" }),
+})
+
 interface ProductRowProps {
   index: number
-  product: {
-    id: string
-    name: string
-    price: number
-    quantity: number
-    discount: number
-    taxRate: number
-    hsnCode?: string
-  }
-  onProductChange: (index: number, field: string, value: any) => void
-  onRemove: (index: number) => void
-  isLast: boolean
+  control: any
+  register: any
+  setValue: any
+  getValues: any
+  errors: any
+  remove: any
+  productsLength: number
 }
 
-function ProductRow({ index, product, onProductChange, onRemove, isLast }: ProductRowProps) {
+function ProductRow({
+  index,
+  control,
+  register,
+  setValue,
+  getValues,
+  errors,
+  remove,
+  productsLength,
+}: ProductRowProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [productOptions, setProductOptions] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
 
   useEffect(() => {
     const fetchProductOptions = async () => {
@@ -80,32 +116,35 @@ function ProductRow({ index, product, onProductChange, onRemove, isLast }: Produ
   }, [searchQuery, isDropdownOpen])
 
   const handleProductSelect = async (selectedProduct: Product) => {
-    onProductChange(index, "name", selectedProduct.name)
-    onProductChange(index, "price", selectedProduct.price)
-    onProductChange(index, "id", selectedProduct.id)
+    setValue(`products.${index}.name`, selectedProduct.name)
+    setValue(`products.${index}.price`, selectedProduct.price)
+    setValue(`products.${index}.id`, selectedProduct.id)
     if (selectedProduct.hsnCode) {
-      onProductChange(index, "hsnCode", selectedProduct.hsnCode)
+      setValue(`products.${index}.hsnCode`, selectedProduct.hsnCode)
     }
     setIsDropdownOpen(false)
   }
 
   const handleQuantityChange = (change: number) => {
-    const newQuantity = Math.max(1, product.quantity + change)
-    onProductChange(index, "quantity", newQuantity)
+    const currentQuantity = getValues(`products.${index}.quantity`) || 1
+    const newQuantity = Math.max(1, currentQuantity + change)
+    setValue(`products.${index}.quantity`, newQuantity)
   }
 
   return (
     <div className="grid grid-cols-12 gap-4 mb-4">
-      <div className="col-span-4 relative">
-        <Label htmlFor={`product-name-${index}`} className="text-sm font-medium text-indigo-600">
+      <div className="col-span-4 relative" ref={dropdownRef}>
+        <Label htmlFor={`products.${index}.name`} className="text-sm font-medium text-indigo-600">
           Product Name
         </Label>
         <div className="relative">
           <Input
-            id={`product-name-${index}`}
-            value={product.name || searchQuery}
+            id={`products.${index}.name`}
+            {...register(`products.${index}.name`)}
+            value={getValues(`products.${index}.name`) || searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value)
+              setValue(`products.${index}.name`, e.target.value)
               if (!isDropdownOpen) setIsDropdownOpen(true)
             }}
             onClick={() => setIsDropdownOpen(true)}
@@ -137,10 +176,13 @@ function ProductRow({ index, product, onProductChange, onRemove, isLast }: Produ
             </div>
           )}
         </div>
+        {errors?.products?.[index]?.name && (
+          <p className="text-sm text-red-500 mt-1">{errors.products[index].name.message}</p>
+        )}
 
-        {product.name && product.name.length > 0 && (
+        {getValues(`products.${index}.name`) && getValues(`products.${index}.name`).length > 0 && (
           <div className="mt-2">
-            <Label htmlFor={`hsn-code-${index}`} className="text-sm font-medium flex items-center gap-1">
+            <Label htmlFor={`products.${index}.hsnCode`} className="text-sm font-medium flex items-center gap-1">
               HSN Code
               <span className="text-xs text-muted-foreground">(Optional)</span>
               <TooltipProvider>
@@ -157,9 +199,8 @@ function ProductRow({ index, product, onProductChange, onRemove, isLast }: Produ
               </TooltipProvider>
             </Label>
             <Input
-              id={`hsn-code-${index}`}
-              value={product.hsnCode || ""}
-              onChange={(e) => onProductChange(index, "hsnCode", e.target.value)}
+              id={`products.${index}.hsnCode`}
+              {...register(`products.${index}.hsnCode`)}
               placeholder="Enter product HSN Code"
               className="mt-1"
             />
@@ -174,7 +215,7 @@ function ProductRow({ index, product, onProductChange, onRemove, isLast }: Produ
       </div>
 
       <div className="col-span-2">
-        <Label htmlFor={`unit-price-${index}`} className="text-sm font-medium">
+        <Label htmlFor={`products.${index}.price`} className="text-sm font-medium">
           Unit Price
         </Label>
         <div className="flex items-center mt-1">
@@ -182,21 +223,30 @@ function ProductRow({ index, product, onProductChange, onRemove, isLast }: Produ
             ₹
           </span>
           <Input
-            id={`unit-price-${index}`}
+            id={`products.${index}.price`}
             type="text"
-            value={product.price || ""}
-            onChange={(e) => onProductChange(index, "price", Number.parseFloat(e.target.value) || 0)}
+            {...register(`products.${index}.price`, {
+              valueAsNumber: true,
+              onChange: (e) => {
+                const value = e.target.value === "" ? 0 : Number.parseFloat(e.target.value)
+                setValue(`products.${index}.price`, value)
+              },
+            })}
             className="rounded-l-none"
           />
         </div>
+        {errors?.products?.[index]?.price && (
+          <p className="text-sm text-red-500 mt-1">{errors.products[index].price.message}</p>
+        )}
       </div>
 
       <div className="col-span-2">
-        <Label htmlFor={`quantity-${index}`} className="text-sm font-medium">
+        <Label htmlFor={`products.${index}.quantity`} className="text-sm font-medium">
           Quantity
         </Label>
         <div className="flex items-center mt-1">
           <Button
+            type="button"
             variant="outline"
             size="icon"
             className="h-10 w-10 rounded-r-none"
@@ -205,13 +255,19 @@ function ProductRow({ index, product, onProductChange, onRemove, isLast }: Produ
             <Minus className="h-4 w-4" />
           </Button>
           <Input
-            id={`quantity-${index}`}
+            id={`products.${index}.quantity`}
             type="text"
-            value={product.quantity}
-            onChange={(e) => onProductChange(index, "quantity", Number.parseInt(e.target.value) || 1)}
+            {...register(`products.${index}.quantity`, {
+              valueAsNumber: true,
+              onChange: (e) => {
+                const value = e.target.value === "" ? 1 : Number.parseInt(e.target.value)
+                setValue(`products.${index}.quantity`, Math.max(1, value))
+              },
+            })}
             className="h-10 rounded-none text-center"
           />
           <Button
+            type="button"
             variant="outline"
             size="icon"
             className="h-10 w-10 rounded-l-none"
@@ -220,10 +276,13 @@ function ProductRow({ index, product, onProductChange, onRemove, isLast }: Produ
             <Plus className="h-4 w-4" />
           </Button>
         </div>
+        {errors?.products?.[index]?.quantity && (
+          <p className="text-sm text-red-500 mt-1">{errors.products[index].quantity.message}</p>
+        )}
       </div>
 
       <div className="col-span-2">
-        <Label htmlFor={`discount-${index}`} className="text-sm font-medium flex items-center gap-1">
+        <Label htmlFor={`products.${index}.discount`} className="text-sm font-medium flex items-center gap-1">
           Product Discount
           <span className="text-xs text-muted-foreground">(Optional)</span>
         </Label>
@@ -232,40 +291,58 @@ function ProductRow({ index, product, onProductChange, onRemove, isLast }: Produ
             ₹
           </span>
           <Input
-            id={`discount-${index}`}
+            id={`products.${index}.discount`}
             type="text"
-            value={product.discount || ""}
-            onChange={(e) => onProductChange(index, "discount", Number.parseFloat(e.target.value) || 0)}
+            {...register(`products.${index}.discount`, {
+              valueAsNumber: true,
+              onChange: (e) => {
+                const value = e.target.value === "" ? 0 : Number.parseFloat(e.target.value)
+                setValue(`products.${index}.discount`, value)
+              },
+            })}
             className="rounded-l-none rounded-r-none"
           />
         </div>
+        {errors?.products?.[index]?.discount && (
+          <p className="text-sm text-red-500 mt-1">{errors.products[index].discount.message}</p>
+        )}
       </div>
 
       <div className="col-span-1">
-        <Label htmlFor={`tax-rate-${index}`} className="text-sm font-medium flex items-center gap-1">
+        <Label htmlFor={`products.${index}.taxRate`} className="text-sm font-medium flex items-center gap-1">
           Tax Rate
           <span className="text-xs text-muted-foreground">(Optional)</span>
         </Label>
         <div className="flex items-center mt-1">
           <Input
-            id={`tax-rate-${index}`}
+            id={`products.${index}.taxRate`}
             type="text"
-            value={product.taxRate || ""}
-            onChange={(e) => onProductChange(index, "taxRate", Number.parseFloat(e.target.value) || 0)}
+            {...register(`products.${index}.taxRate`, {
+              valueAsNumber: true,
+              onChange: (e) => {
+                const value = e.target.value === "" ? 0 : Number.parseFloat(e.target.value)
+                setValue(`products.${index}.taxRate`, value)
+              },
+            })}
             className="rounded-r-none"
           />
           <span className="flex h-10 w-10 items-center justify-center rounded-r-md border border-l-0 bg-muted text-muted-foreground">
             %
           </span>
         </div>
+        {errors?.products?.[index]?.taxRate && (
+          <p className="text-sm text-red-500 mt-1">{errors.products[index].taxRate.message}</p>
+        )}
       </div>
 
       <div className="col-span-1 flex items-end justify-center mb-1">
         <Button
+          type="button"
           variant="ghost"
           size="icon"
-          onClick={() => onRemove(index)}
+          onClick={() => productsLength > 1 && remove(index)}
           className="text-destructive hover:text-destructive hover:bg-destructive/10"
+          disabled={productsLength <= 1}
         >
           <Trash2 className="h-5 w-5" />
         </Button>
@@ -275,67 +352,69 @@ function ProductRow({ index, product, onProductChange, onRemove, isLast }: Produ
 }
 
 export function ProductDetailsForm() {
-  const [products, setProducts] = useState([
-    {
-      id: "",
-      name: "",
-      price: 0,
-      quantity: 1,
-      discount: 0,
-      taxRate: 0,
-      hsnCode: "",
+  const form = useForm<z.infer<typeof productFormSchema>>({
+    resolver: zodResolver(productFormSchema),
+    defaultValues: {
+      products: [
+        {
+          id: "",
+          name: "",
+          price: 0,
+          quantity: 1,
+          discount: 0,
+          taxRate: 0,
+          hsnCode: "",
+        },
+      ],
     },
-  ])
+  })
 
-  const handleProductChange = (index: number, field: string, value: any) => {
-    const updatedProducts = [...products]
-    updatedProducts[index] = {
-      ...updatedProducts[index],
-      [field]: value,
-    }
-    setProducts(updatedProducts)
-  }
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "products",
+  })
 
-  const handleAddProduct = () => {
-    setProducts([
-      ...products,
-      {
-        id: "",
-        name: "",
-        price: 0,
-        quantity: 1,
-        discount: 0,
-        taxRate: 0,
-        hsnCode: "",
-      },
-    ])
-  }
-
-  const handleRemoveProduct = (index: number) => {
-    if (products.length > 1) {
-      const updatedProducts = [...products]
-      updatedProducts.splice(index, 1)
-      setProducts(updatedProducts)
-    }
+  function onSubmit(values: z.infer<typeof productFormSchema>) {
+    console.log(values)
   }
 
   return (
-    <div>
-      {products.map((product, index) => (
-        <ProductRow
-          key={index}
-          index={index}
-          product={product}
-          onProductChange={handleProductChange}
-          onRemove={handleRemoveProduct}
-          isLast={index === products.length - 1}
-        />
-      ))}
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {fields.map((field, index) => (
+          <ProductRow
+            key={field.id}
+            index={index}
+            control={form.control}
+            register={form.register}
+            setValue={form.setValue}
+            getValues={form.getValues}
+            errors={form.formState.errors}
+            remove={remove}
+            productsLength={fields.length}
+          />
+        ))}
 
-      <Button variant="outline" onClick={handleAddProduct} className="mt-2 text-indigo-600">
-        <Plus className="h-4 w-4 mr-2" />
-        Add Another Product
-      </Button>
-    </div>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() =>
+            append({
+              id: "",
+              name: "",
+              price: 0,
+              quantity: 1,
+              discount: 0,
+              taxRate: 0,
+              hsnCode: "",
+            })
+          }
+          className="mt-2 text-indigo-600"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add Another Product
+        </Button>
+      </form>
+    </Form>
   )
 }
