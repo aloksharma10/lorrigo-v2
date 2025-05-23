@@ -77,9 +77,9 @@ export function NavMain({
                         {item.items?.map((subItem) => (
                           <SidebarMenuSubItem key={subItem.title}>
                             <SidebarMenuSubButton asChild>
-                              <a href={subItem.url}>
+                              <Link href={subItem.url}>
                                 <span>{subItem.title}</span>
-                              </a>
+                              </Link>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
                         ))}
@@ -103,25 +103,26 @@ export function NavMain({
                     </SidebarMenuButton>
                   </PopoverTrigger>
                   <PopoverContent side="right" align="start" className="w-48 p-0" sideOffset={5}>
+                    <div className="p-4 text-sm font-medium">{item.title}</div>
                     <div className="py-1">
                       {item.items?.map((subItem) => (
-                        <a
+                        <Link
                           key={subItem.title}
                           href={subItem.url}
                           className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center px-4 py-2 text-sm"
                         >
                           {subItem.title}
-                        </a>
+                        </Link>
                       ))}
                     </div>
                   </PopoverContent>
                 </Popover>
               ) : (
                 <SidebarMenuButton asChild tooltip={item.title}>
-                  <a href={item.url || '#'}>
+                  <Link href={item.url || '#'}>
                     <item.icon className="size-4" />
                     <span className="sr-only">{item.title}</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
               )}
             </SidebarMenuItem>

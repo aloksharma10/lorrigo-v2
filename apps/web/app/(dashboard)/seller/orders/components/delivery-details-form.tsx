@@ -11,7 +11,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@lorrigo/ui/components';
-import { phoneRegex } from '@/lib/validation/form-schemas';
+import { phoneRegex } from '@lorrigo/utils/validations';
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 

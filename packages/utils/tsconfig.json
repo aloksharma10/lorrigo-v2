@@ -6,6 +6,6 @@
   },
   "moduleResolution": "node",
   "module": "CommonJS",
-  "include": ["src", "../../apps/web/lib/validation/form-schemas.ts"],
+  "include": ["src"],
   "exclude": ["node_modules", "dist"]
 }

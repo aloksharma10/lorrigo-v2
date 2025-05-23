@@ -89,7 +89,6 @@ export const sellerFormSchema = z.object({
 
 // OrderForm Schema
 export const orderFormSchema = z.object({
-  // Add other schema fields as needed for the order form
   orderType: z.enum(['domestic', 'international']).default('domestic'),
   orderMode: z.enum(['single', 'bulk']).default('single'),
-});
+}); 
