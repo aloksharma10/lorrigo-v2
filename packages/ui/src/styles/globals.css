@@ -132,6 +132,11 @@ body {
   }
 }
 
+.PopoverContent {
+	width: var(--radix-popover-trigger-width);
+	max-height: var(--radix-popover-content-available-height);
+}
+
 .theme-scaled {
   @media (min-width: 1024px) {
     --radius: 0.6rem;

@@ -41,11 +41,11 @@ export const ADMIN_ROUTES = [
     items: [
       {
         title: 'Weight Discrepancy',
-        url: '/admin/weight-discrepancy',
+        url: '/admin/weight-management/weight-discrepancy',
       },
       {
         title: 'Weight Freeze',
-        url: '/admin/weight-freeze',
+        url: '/admin/weight-management/weight-freeze',
       },
       // {
       //    title: "All Shipment",
@@ -61,25 +61,25 @@ export const ADMIN_ROUTES = [
     items: [
       {
         title: 'Channels',
-        url: '/admin/channels',
+        url: '/admin/setup-manage/channels',
         icon: Command,
         isActive: false,
       },
       {
         title: 'Courier',
-        url: '/admin/couriers',
+        url: '/admin/setup-manage/couriers',
         icon: Command,
         isActive: false,
       },
       {
         title: 'Customers',
-        url: '/admin/customers',
+        url: '/admin/setup-manage/customers',
         icon: Command,
         isActive: false,
       },
       {
         title: 'Products',
-        url: '/admin/products',
+        url: '/admin/setup-manage/products',
         icon: Command,
         isActive: false,
       },
@@ -113,15 +113,15 @@ export const ADMIN_ROUTES = [
     items: [
       {
         title: 'Shipping Charges',
-        url: '/admin/shipping-charges',
+        url: '/admin/billing/shipping-charges',
       },
       {
         title: 'COD Remittance',
-        url: '/admin/cod-remittances',
+        url: '/admin/billing/cod-remittances',
       },
       {
         title: 'Invoices',
-        url: '/admin/invoices',
+        url: '/admin/billing/invoices',
       },
     ],
   },

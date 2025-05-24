@@ -1,5 +1,5 @@
 import NDRTable from '@/components/tables/ndr-table';
-import { getInitialShipments } from '@/app/(seller)/seller/orders/action';
+import { getInitialShipments } from '@/app/(www)/(seller)/seller/orders/action';
 import { Badge, Button } from '@lorrigo/ui/components';
 import ScrollableTabsProps from '@/components/client-tabs';
 import { Plus, RefreshCw } from 'lucide-react';

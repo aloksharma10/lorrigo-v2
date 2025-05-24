@@ -7,6 +7,7 @@ export * from './select';
 export * from './calendar';
 export * from './separator';
 export * from './sheet';
+export * from './textarea';
 
 export * from './tooltip';
 export * from './input';

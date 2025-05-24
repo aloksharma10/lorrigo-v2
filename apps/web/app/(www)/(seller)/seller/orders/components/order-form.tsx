@@ -107,10 +107,6 @@ export default function OrderForm() {
     },
   });
 
-  const {
-    formState: { errors },
-  } = form;
-
   async function onSubmit(values: OrderFormValues) {
     try {
       const validatedData = orderFormSchema.parse(values);
@@ -135,11 +131,11 @@ export default function OrderForm() {
   }
 
   // Safe handler for Tabs onValueChange
-  const handleOrderTypeChange = (value: string) => {
-    const safeValue = value === 'international' ? 'international' : 'domestic';
-    setOrderType(safeValue);
-    form.setValue('orderType', safeValue);
-  };
+  // const handleOrderTypeChange = (value: string) => {
+  //   const safeValue = value === 'international' ? 'international' : 'domestic';
+  //   setOrderType(safeValue);
+  //   form.setValue('orderType', safeValue);
+  // };
 
   const handlePickupAddressSelect = (address: any) => {
     setSelectedAddress(address);

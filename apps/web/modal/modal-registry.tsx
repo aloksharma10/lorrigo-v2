@@ -5,7 +5,6 @@ import { create } from 'zustand';
 
 // Import your modal components
 import { ConfirmModal } from '@/components/modals/confirm-modal';
-import { FormModal } from '@/components/modals/form-modal';
 import { ImageModal } from '@/components/modals/image-modal';
 import { useModalStore } from './modal-store';
 
@@ -29,7 +28,6 @@ export function ModalRegistry() {
     if (!isRegistered) {
       // Register all your modal components here
       registerModal('confirm', ConfirmModal);
-      registerModal('form', FormModal);
       registerModal('image', ImageModal);
 
       setRegistered(true);

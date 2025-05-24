@@ -26,7 +26,7 @@ import {
   type Shipment,
   type ApiResponse,
   type ShipmentParams,
-} from '@/app/(seller)/seller/orders/action';
+} from '@/app/(www)/(seller)/seller/orders/action';
 
 interface ShipmentsTableProps {
   initialData: ApiResponse;
@@ -132,7 +132,7 @@ export default function ShipmentsTable({ initialData, initialParams }: Shipments
   });
 
   // Define the columns for the data table
-  const columns: ColumnDef<Shipment>[] = [
+  const columns: ColumnDef<any>[] = [
     {
       id: 'select',
       header: ({ table }) => (
