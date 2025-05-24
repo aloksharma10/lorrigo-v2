@@ -49,4 +49,37 @@ export const APP_CONFIG = {
     ORIGIN: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000'],
     CREDENTIALS: process.env.CORS_CREDENTIALS === 'true',
   },
+
+  // Vendor settings
+  VENDOR: {
+    SMART_SHIP: {
+      API_KEY: process.env.SMART_SHIP_API_KEY || '',
+      API_BASEURL: process.env.SMART_SHIP_API_BASEURL,
+      EMAIL: process.env.SMART_SHIP_EMAIL,
+      PASSWORD: process.env.SMART_SHIP_PASSWORD,
+    },
+    SHIPROCKET: {
+      API_KEY: process.env.SHIPROCKET_API_KEY || '',
+      API_BASEURL: process.env.SHIPROCKET_API_BASEURL,
+      EMAIL: process.env.SHIPROCKET_EMAIL,
+      PASSWORD: process.env.SHIPROCKET_PASSWORD,
+    },
+    DELHIVERY: {
+      API_BASEURL: process.env.DELHIVERY_API_BASEURL,
+
+      API_KEY_0_5: process.env.API_KEY_0_5 || '',
+      API_KEY_5: process.env.DELHIVERY_API_KEY_5,
+      API_KEY_10: process.env.DELHIVERY_API_KEY_10,
+    },
+
+    // Zoho settings
+    ZOHO: {
+      API_KEY: process.env.ZOHO_API_KEY || '',
+      API_BASEURL: process.env.ZOHO_API_BASEURL,
+      CLIENT_ID: process.env.ZOHO_CLIENT_ID || '',
+      CLIENT_SECRET: process.env.ZOHO_CLIENT_SECRET || '',
+      GRANT_TYPE: process.env.ZOHO_GRANT_TYPE || '',
+      REFRESH_TOKEN: process.env.ZOHO_REFRESH_TOKEN || '',
+    },
+  },
 };

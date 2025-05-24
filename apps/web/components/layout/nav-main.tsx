@@ -16,6 +16,7 @@ import {
 } from '@lorrigo/ui/components';
 import { Popover, PopoverContent, PopoverTrigger } from '@lorrigo/ui/components';
 import Link from 'next/link';
+import LoadingIndicator from '../loading-spinner';
 
 export function NavMain({
   items,
@@ -63,9 +64,10 @@ export function NavMain({
                     </CollapsibleTrigger>
                   ) : (
                     <SidebarMenuButton asChild>
-                      <Link href={item.url || '#'}>
+                      <Link href={item.url || '#'} prefetch={false} >
                         <item.icon className="size-4" />
                         <span>{item.title}</span>
+                        <LoadingIndicator className="size-4 ml-auto" />
                       </Link>
                     </SidebarMenuButton>
                   )}
@@ -78,6 +80,7 @@ export function NavMain({
                             <SidebarMenuSubButton asChild>
                               <Link href={subItem.url}>
                                 <span>{subItem.title}</span>
+                                <LoadingIndicator className="size-4 ml-auto" />
                               </Link>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
@@ -111,6 +114,7 @@ export function NavMain({
                           className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex items-center px-4 py-2 text-sm"
                         >
                           {subItem.title}
+                          <LoadingIndicator className="size-4 ml-auto" />
                         </Link>
                       ))}
                     </div>

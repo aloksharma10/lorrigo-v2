@@ -297,8 +297,11 @@ model Hub {
   is_active           Boolean      @default(true)
   is_primary          Boolean      @default(false)
   contact_person_name String       @db.VarChar(100)
+  phone               Int
   delivery_type       DeliveryType @default(SURFACE)
   is_rto_address_same Boolean      @default(true)
+
+  is_pickup_address_same_as_rto Boolean @default(true)
 
   user_id String
   user    User   @relation("UserHubs", fields: [user_id], references: [id], onDelete: Cascade)
@@ -309,7 +312,7 @@ model Hub {
   rto_address_id String?  @unique
   rto_address    Address? @relation("HubRTOAddress", fields: [rto_address_id], references: [id])
 
-  orders     Order[] @relation("Hub")
+  orders Order[] @relation("Hub")
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -584,10 +587,10 @@ model Invoice {
   created_at     DateTime  @default(now())
   updated_at     DateTime  @updatedAt
 
-  user_id     String
-  user        User      @relation("UserInvoices", fields: [user_id], references: [id], onDelete: Cascade)
-  order_id    String?
-  order       Order?    @relation(fields: [order_id], references: [id])
+  user_id  String
+  user     User    @relation("UserInvoices", fields: [user_id], references: [id], onDelete: Cascade)
+  order_id String?
+  order    Order?  @relation(fields: [order_id], references: [id])
 
   @@index([user_id, invoice_number, created_at])
   @@index([code])
@@ -764,4 +767,16 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model Pincode {
+  id      String @id @default(cuid())
+  pincode Int    @unique
+  city    String
+  state   String
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([pincode])
 }
