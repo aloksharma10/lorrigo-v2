@@ -43,13 +43,13 @@ export default async function ShipmentsPage({ params, searchParams }: PageProps)
     dateRange:
       dateFrom && dateTo
         ? {
-          from: new Date(dateFrom),
-          to: new Date(dateTo),
-        }
+            from: new Date(dateFrom),
+            to: new Date(dateTo),
+          }
         : {
-          from: new Date(new Date().setDate(new Date().getDate() - 30)),
-          to: new Date(),
-        },
+            from: new Date(new Date().setDate(new Date().getDate() - 30)),
+            to: new Date(),
+          },
     status: tab,
   };
 

@@ -6,7 +6,11 @@ import { Tabs, TabsList, TabsTrigger, Button } from '@lorrigo/ui/components';
 import { useRouter, usePathname } from 'next/navigation';
 
 interface ClientTabsProps {
-  menuItems: { name: string; path?: string; icon?: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>> }[];
+  menuItems: {
+    name: string;
+    path?: string;
+    icon?: ForwardRefExoticComponent<Omit<LucideProps, 'ref'> & RefAttributes<SVGSVGElement>>;
+  }[];
   onValueChange?: (value: string) => void;
 }
 
@@ -22,7 +26,7 @@ export default function ClientTabs({ menuItems, onValueChange }: ClientTabsProps
     menuItems.find((item) => item.path === pathname)?.path || menuItems[0]?.path || '';
 
   const handleValueChange = (value: string) => {
-    if (value.includes("/")) {
+    if (value.includes('/')) {
       router.push(value, { scroll: false });
     } else {
       onValueChange?.(value);
@@ -122,7 +126,7 @@ export default function ClientTabs({ menuItems, onValueChange }: ClientTabsProps
                     key={index}
                     value={item.path || ''}
                     onClick={() => handleValueChange(item.path?.toLowerCase() || '')}
-                    className={"whitespace-nowrap"}
+                    className={'whitespace-nowrap'}
                   >
                     {item.icon && <item.icon className="h-4 w-4" />}
                     {item.name}

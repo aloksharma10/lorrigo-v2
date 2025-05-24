@@ -1,6 +1,6 @@
-"use client"
+'use client';
 
-import { useEffect } from "react"
+import { useEffect } from 'react';
 import {
   Input,
   Label,
@@ -11,55 +11,55 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@lorrigo/ui/components"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { type SellerFormValues, sellerDetailsSchema } from "../types"
+} from '@lorrigo/ui/components';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { type SellerFormValues, sellerDetailsSchema } from '../types';
 
 interface SellerDetailsFormProps {
-  onSubmit: (values: SellerFormValues) => void
-  errors?: Record<string, any>
+  onSubmit: (values: SellerFormValues) => void;
+  errors?: Record<string, any>;
 }
 
 export function SellerDetailsForm({ onSubmit, errors }: SellerDetailsFormProps) {
   const form = useForm<SellerFormValues>({
     resolver: zodResolver(sellerDetailsSchema),
     defaultValues: {
-      sellerName: "",
-      gstNo: "",
-      address: "",
-      contactNumber: "",
-      pincode: "",
-      city: "",
-      state: "",
-      country: "India",
+      sellerName: '',
+      gstNo: '',
+      address: '',
+      contactNumber: '',
+      pincode: '',
+      city: '',
+      state: '',
+      country: 'India',
     },
-  })
+  });
 
   // Watch for form changes and update parent
   useEffect(() => {
     const subscription = form.watch((value) => {
-      onSubmit(value as SellerFormValues)
-    })
-    return () => subscription.unsubscribe()
-  }, [form, onSubmit])
+      onSubmit(value as SellerFormValues);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, onSubmit]);
 
   // Add this effect to handle errors passed from parent
   useEffect(() => {
     if (errors) {
       Object.entries(errors).forEach(([key, value]) => {
-        if (value && typeof value === "object" && "message" in value) {
+        if (value && typeof value === 'object' && 'message' in value) {
           form.setError(key as any, {
-            type: "manual",
+            type: 'manual',
             message: value.message as string,
-          })
+          });
         }
-      })
+      });
     }
-  }, [errors, form])
+  }, [errors, form]);
 
   function handleSubmit(values: SellerFormValues) {
-    onSubmit(values)
+    onSubmit(values);
   }
 
   return (
@@ -71,9 +71,7 @@ export function SellerDetailsForm({ onSubmit, errors }: SellerDetailsFormProps) 
             name="sellerName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="flex items-center text-sm font-medium">
-                  Seller Name
-                </FormLabel>
+                <FormLabel className="flex items-center text-sm font-medium">Seller Name</FormLabel>
                 <FormControl>
                   <Input placeholder="Enter the seller name" {...field} />
                 </FormControl>
@@ -114,7 +112,7 @@ export function SellerDetailsForm({ onSubmit, errors }: SellerDetailsFormProps) 
           )}
         />
 
-        {form.watch("isAddressAvailable") && (
+        {form.watch('isAddressAvailable') && (
           <div className="space-y-6">
             <FormField
               control={form.control}
@@ -205,5 +203,5 @@ export function SellerDetailsForm({ onSubmit, errors }: SellerDetailsFormProps) 
         )}
       </form>
     </Form>
-  )
+  );
 }

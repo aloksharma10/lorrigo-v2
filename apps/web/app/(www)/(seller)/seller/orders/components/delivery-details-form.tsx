@@ -1,4 +1,4 @@
-"use client"
+'use client';
 
 import {
   Checkbox,
@@ -14,176 +14,176 @@ import {
   CollapsibleTrigger,
   Button,
   CollapsibleContent,
-} from "@lorrigo/ui/components"
-import { phoneRegex } from "@lorrigo/utils/validations"
-import { useState, useEffect } from "react"
-import { ChevronDown } from "lucide-react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { type DeliveryFormValues, deliveryDetailsSchema } from "../types"
-import { ChevronUp } from "lucide-react"
+} from '@lorrigo/ui/components';
+import { phoneRegex } from '@lorrigo/utils/validations';
+import { useState, useEffect } from 'react';
+import { ChevronDown } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { type DeliveryFormValues, deliveryDetailsSchema } from '../types';
+import { ChevronUp } from 'lucide-react';
 
 interface DeliveryDetailsFormProps {
-  onSubmit: (values: DeliveryFormValues) => void
-  errors?: Record<string, any>
+  onSubmit: (values: DeliveryFormValues) => void;
+  errors?: Record<string, any>;
 }
 
 export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormProps) {
-  const [billingIsSameAsDelivery, setBillingIsSameAsDelivery] = useState(true)
-  const [billingOpen, setBillingOpen] = useState(false)
+  const [billingIsSameAsDelivery, setBillingIsSameAsDelivery] = useState(true);
+  const [billingOpen, setBillingOpen] = useState(false);
 
   const form = useForm<DeliveryFormValues>({
     resolver: zodResolver(deliveryDetailsSchema),
     defaultValues: {
       isBusiness: false,
-      mobileNumber: "",
-      fullName: "",
-      completeAddress: "",
-      landmark: "",
-      pincode: "",
-      city: "",
-      state: "",
-      email: "",
+      mobileNumber: '',
+      fullName: '',
+      completeAddress: '',
+      landmark: '',
+      pincode: '',
+      city: '',
+      state: '',
+      email: '',
       billingIsSameAsDelivery: true,
-      billingMobileNumber: "",
-      billingFullName: "",
-      billingCompleteAddress: "",
-      billingLandmark: "",
-      billingPincode: "",
-      billingCity: "",
-      billingState: "",
+      billingMobileNumber: '',
+      billingFullName: '',
+      billingCompleteAddress: '',
+      billingLandmark: '',
+      billingPincode: '',
+      billingCity: '',
+      billingState: '',
     },
-  })
+  });
 
   // Update form value when checkbox changes
   useEffect(() => {
-    form.setValue("billingIsSameAsDelivery", billingIsSameAsDelivery)
+    form.setValue('billingIsSameAsDelivery', billingIsSameAsDelivery);
     if (!billingIsSameAsDelivery) {
-      setBillingOpen(true)
+      setBillingOpen(true);
     }
-  }, [billingIsSameAsDelivery, form])
+  }, [billingIsSameAsDelivery, form]);
 
   // When delivery details change and billing is same as delivery, update billing fields
   const watchedFields = form.watch([
-    "mobileNumber",
-    "fullName",
-    "completeAddress",
-    "landmark",
-    "pincode",
-    "city",
-    "state",
-  ])
+    'mobileNumber',
+    'fullName',
+    'completeAddress',
+    'landmark',
+    'pincode',
+    'city',
+    'state',
+  ]);
 
   useEffect(() => {
     if (billingIsSameAsDelivery) {
-      form.setValue("billingMobileNumber", form.getValues("mobileNumber"))
-      form.setValue("billingFullName", form.getValues("fullName"))
-      form.setValue("billingCompleteAddress", form.getValues("completeAddress"))
-      form.setValue("billingLandmark", form.getValues("landmark") || "")
-      form.setValue("billingPincode", form.getValues("pincode"))
-      form.setValue("billingCity", form.getValues("city"))
-      form.setValue("billingState", form.getValues("state"))
+      form.setValue('billingMobileNumber', form.getValues('mobileNumber'));
+      form.setValue('billingFullName', form.getValues('fullName'));
+      form.setValue('billingCompleteAddress', form.getValues('completeAddress'));
+      form.setValue('billingLandmark', form.getValues('landmark') || '');
+      form.setValue('billingPincode', form.getValues('pincode'));
+      form.setValue('billingCity', form.getValues('city'));
+      form.setValue('billingState', form.getValues('state'));
     }
-  }, [billingIsSameAsDelivery, watchedFields, form])
+  }, [billingIsSameAsDelivery, watchedFields, form]);
 
   // Watch for form changes and update parent
   useEffect(() => {
     const subscription = form.watch((value) => {
-      onSubmit(value as DeliveryFormValues)
-    })
-    return () => subscription.unsubscribe()
-  }, [form, onSubmit])
+      onSubmit(value as DeliveryFormValues);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, onSubmit]);
 
   // Add this effect to handle errors passed from parent
   useEffect(() => {
     if (errors) {
       Object.entries(errors).forEach(([key, value]) => {
-        if (value && typeof value === "object" && "message" in value) {
+        if (value && typeof value === 'object' && 'message' in value) {
           form.setError(key as any, {
-            type: "manual",
+            type: 'manual',
             message: value.message as string,
-          })
+          });
         }
-      })
+      });
     }
-  }, [errors, form])
+  }, [errors, form]);
 
   function handleSubmit(values: DeliveryFormValues) {
-    onSubmit(values)
+    onSubmit(values);
   }
 
   // Custom validation function
   const validateForm = (values: DeliveryFormValues) => {
-    const errors: Record<string, any> = {}
+    const errors: Record<string, any> = {};
 
     // Mobile number validation
     if (!values.mobileNumber) {
-      errors.mobileNumber = "Mobile number is required"
+      errors.mobileNumber = 'Mobile number is required';
     } else if (!phoneRegex.test(values.mobileNumber)) {
-      errors.mobileNumber = "Please enter a valid 10-digit mobile number"
+      errors.mobileNumber = 'Please enter a valid 10-digit mobile number';
     }
 
     // Full name validation
     if (!values.fullName) {
-      errors.fullName = "Full name is required"
+      errors.fullName = 'Full name is required';
     }
 
     // Complete address validation
     if (!values.completeAddress) {
-      errors.completeAddress = "Address is required"
+      errors.completeAddress = 'Address is required';
     }
 
     // Pincode validation
     if (!values.pincode) {
-      errors.pincode = "Pincode is required"
+      errors.pincode = 'Pincode is required';
     }
 
     // City validation
     if (!values.city) {
-      errors.city = "City is required"
+      errors.city = 'City is required';
     }
 
     // State validation
     if (!values.state) {
-      errors.state = "State is required"
+      errors.state = 'State is required';
     }
 
     // Email validation
     if (values.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
-      errors.email = "Please enter a valid email address"
+      errors.email = 'Please enter a valid email address';
     }
 
     // Billing validations if billing is not same as delivery
     if (!values.billingIsSameAsDelivery) {
       if (!values.billingMobileNumber) {
-        errors.billingMobileNumber = "Mobile number is required"
+        errors.billingMobileNumber = 'Mobile number is required';
       } else if (!phoneRegex.test(values.billingMobileNumber)) {
-        errors.billingMobileNumber = "Please enter a valid 10-digit mobile number"
+        errors.billingMobileNumber = 'Please enter a valid 10-digit mobile number';
       }
 
       if (!values.billingFullName) {
-        errors.billingFullName = "Full name is required"
+        errors.billingFullName = 'Full name is required';
       }
 
       if (!values.billingCompleteAddress) {
-        errors.billingCompleteAddress = "Address is required"
+        errors.billingCompleteAddress = 'Address is required';
       }
 
       if (!values.billingPincode) {
-        errors.billingPincode = "Pincode is required"
+        errors.billingPincode = 'Pincode is required';
       }
 
       if (!values.billingCity) {
-        errors.billingCity = "City is required"
+        errors.billingCity = 'City is required';
       }
 
       if (!values.billingState) {
-        errors.billingState = "State is required"
+        errors.billingState = 'State is required';
       }
     }
 
-    return errors
-  }
+    return errors;
+  };
 
   return (
     <Form {...form}>
@@ -196,7 +196,7 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
               <FormControl>
                 <Checkbox checked={field.value} onCheckedChange={field.onChange} id="is-business" />
               </FormControl>
-              <FormLabel htmlFor="is-business" className="cursor-pointer font-normal text-sm">
+              <FormLabel htmlFor="is-business" className="cursor-pointer text-sm font-normal">
                 This is a B2B Order
               </FormLabel>
               <FormMessage />
@@ -212,9 +212,11 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
               <FormItem>
                 <FormLabel className="text-xs font-medium">Mobile Number</FormLabel>
                 <div className="flex">
-                  <div className="bg-muted flex items-center justify-center rounded-l-md border px-2 text-xs">+91</div>
+                  <div className="bg-muted flex items-center justify-center rounded-l-md border px-2 text-xs">
+                    +91
+                  </div>
                   <FormControl>
-                    <Input {...field} placeholder="Mobile" className="rounded-l-none h-8 text-sm" />
+                    <Input {...field} placeholder="Mobile" className="h-8 rounded-l-none text-sm" />
                   </FormControl>
                 </div>
                 <FormMessage className="text-xs" />
@@ -257,7 +259,9 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
             name="landmark"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs font-medium text-muted-foreground">Landmark (Optional)</FormLabel>
+                <FormLabel className="text-muted-foreground text-xs font-medium">
+                  Landmark (Optional)
+                </FormLabel>
                 <FormControl>
                   <Input {...field} placeholder="Landmark" className="h-8 text-sm" />
                 </FormControl>
@@ -314,7 +318,9 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs font-medium text-muted-foreground">Email (Optional)</FormLabel>
+                <FormLabel className="text-muted-foreground text-xs font-medium">
+                  Email (Optional)
+                </FormLabel>
                 <FormControl>
                   <Input {...field} placeholder="Email" className="h-8 text-sm" />
                 </FormControl>
@@ -338,9 +344,13 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
         {!billingIsSameAsDelivery && (
           <Collapsible open={billingOpen} onOpenChange={setBillingOpen}>
             <CollapsibleTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto text-sm">
+              <Button variant="ghost" className="flex h-auto items-center gap-2 p-0 text-sm">
                 Billing Details
-                {billingOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                {billingOpen ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-3 pt-3">
@@ -356,7 +366,11 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
                           +91
                         </div>
                         <FormControl>
-                          <Input {...field} placeholder="Mobile" className="rounded-l-none h-8 text-sm" />
+                          <Input
+                            {...field}
+                            placeholder="Mobile"
+                            className="h-8 rounded-l-none text-sm"
+                          />
                         </FormControl>
                       </div>
                       <FormMessage className="text-xs" />
@@ -399,7 +413,9 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
                   name="billingLandmark"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs font-medium text-muted-foreground">Landmark (Optional)</FormLabel>
+                      <FormLabel className="text-muted-foreground text-xs font-medium">
+                        Landmark (Optional)
+                      </FormLabel>
                       <FormControl>
                         <Input {...field} placeholder="Landmark" className="h-8 text-sm" />
                       </FormControl>
@@ -455,5 +471,5 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
         )}
       </form>
     </Form>
-  )
+  );
 }

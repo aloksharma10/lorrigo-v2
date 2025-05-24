@@ -1,4 +1,4 @@
-"use client"
+'use client';
 
 import {
   RadioGroup,
@@ -9,48 +9,48 @@ import {
   FormField,
   FormItem,
   FormMessage,
-} from "@lorrigo/ui/components"
-import { Info } from "lucide-react"
-import { useForm } from "react-hook-form"
-import { useEffect } from "react"
+} from '@lorrigo/ui/components';
+import { Info } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { useEffect } from 'react';
 
 // Create explicit interface for form values
 interface PaymentFormValues {
-  paymentMethod: "cod" | "prepaid"
+  paymentMethod: 'cod' | 'prepaid';
 }
 
 interface PaymentMethodSelectorProps {
-  onSubmit: (values: PaymentFormValues) => void
-  error?: string
+  onSubmit: (values: PaymentFormValues) => void;
+  error?: string;
 }
 
 export function PaymentMethodSelector({ onSubmit, error }: PaymentMethodSelectorProps) {
   const form = useForm<PaymentFormValues>({
     defaultValues: {
-      paymentMethod: "prepaid",
+      paymentMethod: 'prepaid',
     },
-  })
+  });
 
   // Watch for form changes and update parent
   useEffect(() => {
     const subscription = form.watch((value) => {
-      onSubmit(value as PaymentFormValues)
-    })
-    return () => subscription.unsubscribe()
-  }, [form, onSubmit])
+      onSubmit(value as PaymentFormValues);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, onSubmit]);
 
   // Add this effect to handle error passed from parent
   useEffect(() => {
     if (error) {
-      form.setError("paymentMethod", {
-        type: "manual",
+      form.setError('paymentMethod', {
+        type: 'manual',
         message: error,
-      })
+      });
     }
-  }, [error, form])
+  }, [error, form]);
 
   function handleSubmit(values: PaymentFormValues) {
-    onSubmit(values)
+    onSubmit(values);
   }
 
   return (
@@ -62,7 +62,11 @@ export function PaymentMethodSelector({ onSubmit, error }: PaymentMethodSelector
           render={({ field }) => (
             <FormItem>
               <FormControl>
-                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex gap-4">
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  className="flex gap-4"
+                >
                   <div className="flex items-center space-x-2 rounded-md border p-2">
                     <RadioGroupItem value="prepaid" id="prepaid" />
                     <Label htmlFor="prepaid" className="flex items-center gap-2">
@@ -85,5 +89,5 @@ export function PaymentMethodSelector({ onSubmit, error }: PaymentMethodSelector
         />
       </form>
     </Form>
-  )
+  );
 }

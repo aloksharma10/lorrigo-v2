@@ -16,8 +16,10 @@ const badgeVariants = cva(
           'border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60',
         outline: 'text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
         success: 'border-transparent bg-green-100 text-green-800 hover:bg-green-200/80',
-        status_success: 'text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground text-xs bg-green-50 text-green-600 border-green-200 dark:bg-green-900 dark:text-green-50 dark:border-green-700',
-        status_warning: 'text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground text-xs bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-900 dark:text-orange-50 dark:border-orange-700',
+        status_success:
+          'text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground text-xs bg-green-50 text-green-600 border-green-200 dark:bg-green-900 dark:text-green-50 dark:border-green-700',
+        status_warning:
+          'text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground text-xs bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-900 dark:text-orange-50 dark:border-orange-700',
       },
     },
     defaultVariants: {

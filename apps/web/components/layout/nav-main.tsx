@@ -119,7 +119,7 @@ export function NavMain({
               ) : (
                 <SidebarMenuButton asChild tooltip={item.title}>
                   <Link href={item.url || '#'}>
-                    <item.icon className="size-4 " />
+                    <item.icon className="size-4" />
                     <span className="sr-only">{item.title}</span>
                   </Link>
                 </SidebarMenuButton>

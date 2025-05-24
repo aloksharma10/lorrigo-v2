@@ -10,65 +10,66 @@ export const pickupAddressSchema = z.object({
 });
 
 // Seller Details Schema
-export const sellerDetailsSchema = z.object({
-  sellerName: z.string().min(1, 'Seller name is required'),
-  gstNo: z.string().optional(),
-  isAddressAvailable: z.boolean(),
-  address: z.string().optional(),
-  contactNumber: z.string().optional(),
-  pincode: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  country: z.string().min(1, 'Country is required'),
-}).superRefine((data, ctx) => {
-  if (data.isAddressAvailable) {
-    // Address must be present and not empty
-    if (!data.address || data.address.trim() === '') {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Address is required',
-        path: ['address'],
-      });
-    }
+export const sellerDetailsSchema = z
+  .object({
+    sellerName: z.string().min(1, 'Seller name is required'),
+    gstNo: z.string().optional(),
+    isAddressAvailable: z.boolean(),
+    address: z.string().optional(),
+    contactNumber: z.string().optional(),
+    pincode: z.string().optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
+    country: z.string().min(1, 'Country is required'),
+  })
+  .superRefine((data, ctx) => {
+    if (data.isAddressAvailable) {
+      // Address must be present and not empty
+      if (!data.address || data.address.trim() === '') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Address is required',
+          path: ['address'],
+        });
+      }
 
-    // Pincode must be exactly 6 digits
-    if (!data.pincode || !/^\d{6}$/.test(data.pincode)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Invalid pincode',
-        path: ['pincode'],
-      });
-    }
+      // Pincode must be exactly 6 digits
+      if (!data.pincode || !/^\d{6}$/.test(data.pincode)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Invalid pincode',
+          path: ['pincode'],
+        });
+      }
 
-    // City required
-    if (!data.city || data.city.trim() === '') {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'City is required',
-        path: ['city'],
-      });
-    }
+      // City required
+      if (!data.city || data.city.trim() === '') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'City is required',
+          path: ['city'],
+        });
+      }
 
-    // State required
-    if (!data.state || data.state.trim() === '') {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'State is required',
-        path: ['state'],
-      });
-    }
+      // State required
+      if (!data.state || data.state.trim() === '') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'State is required',
+          path: ['state'],
+        });
+      }
 
-    // Contact number validation using regex
-    if (!data.contactNumber || !phoneRegex.test(data.contactNumber)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Invalid phone number',
-        path: ['contactNumber'],
-      });
+      // Contact number validation using regex
+      if (!data.contactNumber || !phoneRegex.test(data.contactNumber)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Invalid phone number',
+          path: ['contactNumber'],
+        });
+      }
     }
-  }
-});
-
+  });
 
 // Delivery Details Schema
 export const deliveryDetailsSchema = z.object({
@@ -141,4 +142,4 @@ export type ProductItem = z.infer<typeof productSchema>;
 export type ProductFormValues = z.infer<typeof productDetailsSchema>;
 export type PaymentFormValues = z.infer<typeof paymentMethodSchema>;
 export type PackageFormValues = z.infer<typeof packageDetailsSchema>;
-export type OrderFormValues = z.infer<typeof orderFormSchema>; 
+export type OrderFormValues = z.infer<typeof orderFormSchema>;

@@ -1,7 +1,7 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { ArrowLeft, ChevronDown, Info } from "lucide-react"
+import { useState } from 'react';
+import { ArrowLeft, ChevronDown, Info } from 'lucide-react';
 import {
   Form,
   Alert,
@@ -22,154 +22,156 @@ import {
   FormLabel,
   Input,
   FormControl,
-} from "@lorrigo/ui/components"
+} from '@lorrigo/ui/components';
 
-import { PickupAddressSelector } from "./pickup-address-selector"
-import { DeliveryDetailsForm } from "./delivery-details-form"
-import { ProductDetailsForm } from "./product-details-form"
-import { PaymentMethodSelector } from "./payment-method-selector"
-import { PackageDetailsForm } from "./package-details-form"
-import { SellerDetailsForm } from "./seller-details-form"
+import { PickupAddressSelector } from './pickup-address-selector';
+import { DeliveryDetailsForm } from './delivery-details-form';
+import { ProductDetailsForm } from './product-details-form';
+import { PaymentMethodSelector } from './payment-method-selector';
+import { PackageDetailsForm } from './package-details-form';
+import { SellerDetailsForm } from './seller-details-form';
 
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { type OrderFormValues, orderFormSchema } from "../types"
-import { z } from "zod"
-import { ORDER_CHANNELS } from "@/lib/order-channels"
-import { useRouter } from "next/navigation"
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { type OrderFormValues, orderFormSchema } from '../types';
+import { z } from 'zod';
+import { ORDER_CHANNELS } from '@/lib/order-channels';
+import { useRouter } from 'next/navigation';
 
 export default function OrderForm() {
-  const router = useRouter()
-  const [orderType, setOrderType] = useState<"domestic" | "international">("domestic")
-  const [orderMode, setOrderMode] = useState<"single" | "bulk">("single")
-  const [selectedAddress, setSelectedAddress] = useState<any>(null)
-  const [isAddressVerified, setIsAddressVerified] = useState(false)
+  const router = useRouter();
+  const [orderType, setOrderType] = useState<'domestic' | 'international'>('domestic');
+  const [orderMode, setOrderMode] = useState<'single' | 'bulk'>('single');
+  const [selectedAddress, setSelectedAddress] = useState<any>(null);
+  const [isAddressVerified, setIsAddressVerified] = useState(false);
 
   const form = useForm<OrderFormValues>({
     resolver: zodResolver(orderFormSchema),
     defaultValues: {
-      orderId: "",
-      orderChannel: "",
-      orderType: "domestic",
-      orderMode: "single",
-      pickupAddressId: "",
+      orderId: '',
+      orderChannel: '',
+      orderType: 'domestic',
+      orderMode: 'single',
+      pickupAddressId: '',
       sellerDetails: {
-        sellerName: "",
-        gstNo: "",
-        address: "",
-        contactNumber: "",
-        pincode: "",
-        city: "",
-        state: "",
-        country: "India",
+        sellerName: '',
+        gstNo: '',
+        address: '',
+        contactNumber: '',
+        pincode: '',
+        city: '',
+        state: '',
+        country: 'India',
       },
       deliveryDetails: {
         isBusiness: false,
-        mobileNumber: "",
-        fullName: "",
-        completeAddress: "",
-        landmark: "",
-        pincode: "",
-        city: "",
-        state: "",
-        email: "",
+        mobileNumber: '',
+        fullName: '',
+        completeAddress: '',
+        landmark: '',
+        pincode: '',
+        city: '',
+        state: '',
+        email: '',
         billingIsSameAsDelivery: true,
-        billingMobileNumber: "",
-        billingFullName: "",
-        billingCompleteAddress: "",
-        billingLandmark: "",
-        billingPincode: "",
-        billingCity: "",
-        billingState: "",
+        billingMobileNumber: '',
+        billingFullName: '',
+        billingCompleteAddress: '',
+        billingLandmark: '',
+        billingPincode: '',
+        billingCity: '',
+        billingState: '',
       },
       productDetails: {
         products: [
           {
-            id: "",
-            name: "",
+            id: '',
+            name: '',
             price: 0,
             quantity: 1,
             taxRate: 0,
-            hsnCode: "",
+            hsnCode: '',
           },
         ],
       },
       paymentMethod: {
-        paymentMethod: "prepaid",
+        paymentMethod: 'prepaid',
       },
       packageDetails: {
-        deadWeight: "0.00",
-        length: "",
-        breadth: "",
-        height: "",
-        volumetricWeight: "0",
+        deadWeight: '0.00',
+        length: '',
+        breadth: '',
+        height: '',
+        volumetricWeight: '0',
       },
     },
-  })
+  });
 
-  const { formState: { errors } } = form;
+  const {
+    formState: { errors },
+  } = form;
 
   async function onSubmit(values: OrderFormValues) {
     try {
-      const validatedData = orderFormSchema.parse(values)
-      console.log("Complete Form Values:", validatedData)
-      toast.success("Order created successfully")
+      const validatedData = orderFormSchema.parse(values);
+      console.log('Complete Form Values:', validatedData);
+      toast.success('Order created successfully');
     } catch (error) {
       if (error instanceof z.ZodError) {
         // Set form errors
         error.errors.forEach((err) => {
-          const path = err.path.join(".")
+          const path = err.path.join('.');
           form.setError(path as any, {
-            type: "manual",
+            type: 'manual',
             message: err.message,
-          })
-        })
+          });
+        });
 
         // Show error toast
-        toast.error("Please check all fields and try again")
+        toast.error('Please check all fields and try again');
       }
-      console.error("Validation error:", error)
+      console.error('Validation error:', error);
     }
   }
 
   // Safe handler for Tabs onValueChange
   const handleOrderTypeChange = (value: string) => {
-    const safeValue = value === "international" ? "international" : "domestic"
-    setOrderType(safeValue)
-    form.setValue("orderType", safeValue)
-  }
+    const safeValue = value === 'international' ? 'international' : 'domestic';
+    setOrderType(safeValue);
+    form.setValue('orderType', safeValue);
+  };
 
   const handlePickupAddressSelect = (address: any) => {
-    setSelectedAddress(address)
-    setIsAddressVerified(address?.verified || false)
-    form.setValue("pickupAddressId", address.id)
-  }
+    setSelectedAddress(address);
+    setIsAddressVerified(address?.verified || false);
+    form.setValue('pickupAddressId', address.id);
+  };
 
-  const handleSellerDetailsSubmit = (values: OrderFormValues["sellerDetails"]) => {
-    form.setValue("sellerDetails", values)
-  }
+  const handleSellerDetailsSubmit = (values: OrderFormValues['sellerDetails']) => {
+    form.setValue('sellerDetails', values);
+  };
 
-  const handleDeliveryDetailsSubmit = (values: OrderFormValues["deliveryDetails"]) => {
-    form.setValue("deliveryDetails", values)
-  }
+  const handleDeliveryDetailsSubmit = (values: OrderFormValues['deliveryDetails']) => {
+    form.setValue('deliveryDetails', values);
+  };
 
-  const handleProductDetailsSubmit = (values: OrderFormValues["productDetails"]) => {
-    form.setValue("productDetails", values)
-  }
+  const handleProductDetailsSubmit = (values: OrderFormValues['productDetails']) => {
+    form.setValue('productDetails', values);
+  };
 
-  const handlePaymentMethodSubmit = (values: OrderFormValues["paymentMethod"]) => {
-    form.setValue("paymentMethod", values)
-  }
+  const handlePaymentMethodSubmit = (values: OrderFormValues['paymentMethod']) => {
+    form.setValue('paymentMethod', values);
+  };
 
-  const handlePackageDetailsSubmit = (values: OrderFormValues["packageDetails"]) => {
-    form.setValue("packageDetails", values)
-  }
+  const handlePackageDetailsSubmit = (values: OrderFormValues['packageDetails']) => {
+    form.setValue('packageDetails', values);
+  };
 
   return (
     <div className="w-full">
-      <div className="sticky top-0 z-10 border-b bg-white dark:bg-stone-900 rounded-t-md shadow-sm">
+      <div className="sticky top-0 z-10 rounded-t-md border-b bg-white shadow-sm dark:bg-stone-900">
         <div className="container flex max-w-full items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => router.back()}>
+          <div className="flex cursor-pointer items-center gap-2" onClick={() => router.back()}>
             <Button variant="ghost" size="icon" className="h-8 w-8">
               <ArrowLeft className="h-4 w-4" />
             </Button>
@@ -179,7 +181,11 @@ export default function OrderForm() {
             <Button variant="outline" onClick={() => console.log(form.getValues())}>
               Create Order
             </Button>
-            <Button type="submit" onClick={form.handleSubmit(onSubmit)} className="bg-indigo-600 hover:bg-indigo-700">
+            <Button
+              type="submit"
+              onClick={form.handleSubmit(onSubmit)}
+              className="bg-indigo-600 hover:bg-indigo-700"
+            >
               Ship Now
             </Button>
           </div>
@@ -189,9 +195,9 @@ export default function OrderForm() {
       <div className="container max-w-full px-4 py-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="max-w-28 flex text-center items-center gap-2 text-xs py-2 relative">
+            <div className="relative flex max-w-28 items-center gap-2 py-2 text-center text-xs">
               <span className="pl-2">Domestic Order</span>
-              {orderType === "domestic" && (
+              {orderType === 'domestic' && (
                 <div className="bg-primary absolute bottom-0 left-0 right-0 h-1 rounded-t-sm" />
               )}
             </div>
@@ -214,22 +220,22 @@ export default function OrderForm() {
 
             <div className="inline-flex items-center gap-1 rounded-lg border p-1">
               <Button
-                variant={orderMode === "single" ? "default" : "ghost"}
+                variant={orderMode === 'single' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => {
-                  setOrderMode("single")
-                  form.setValue("orderMode", "single")
+                  setOrderMode('single');
+                  form.setValue('orderMode', 'single');
                 }}
                 className="rounded-md text-xs"
               >
                 Single Order
               </Button>
               <Button
-                variant={orderMode === "bulk" ? "default" : "ghost"}
+                variant={orderMode === 'bulk' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => {
-                  setOrderMode("bulk")
-                  form.setValue("orderMode", "bulk")
+                  setOrderMode('bulk');
+                  form.setValue('orderMode', 'bulk');
                 }}
                 className="rounded-md text-xs"
               >
@@ -242,26 +248,26 @@ export default function OrderForm() {
                 <CardTitle>Order Details</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
-                <div className="text-sm flex flex-row items-center gap-2">
+                <div className="flex flex-row items-center gap-2 text-sm">
                   <span> Order Channel</span>
-                  <span className="text-xs text-muted-foreground">
-                    (Your order source)
-                  </span>
+                  <span className="text-muted-foreground text-xs">(Your order source)</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {ORDER_CHANNELS.map((channel) => (
                     <div
                       key={channel.name}
                       onClick={() => {
-                        form.setValue("orderChannel", channel.name)
+                        form.setValue('orderChannel', channel.name);
                       }}
-                      className="cursor-pointer flex items-center gap-2"
+                      className="flex cursor-pointer items-center gap-2"
                     >
-
-                      <Badge variant={form.watch("orderChannel") === channel.name ? "default" : "outline"}>
+                      <Badge
+                        variant={
+                          form.watch('orderChannel') === channel.name ? 'default' : 'outline'
+                        }
+                      >
                         {channel.icon} {channel.name}
                       </Badge>
-
                     </div>
                   ))}
                 </div>
@@ -281,7 +287,6 @@ export default function OrderForm() {
                     </FormItem>
                   )}
                 />
-
               </CardContent>
             </Card>
 
@@ -298,7 +303,8 @@ export default function OrderForm() {
                 {selectedAddress && !isAddressVerified && (
                   <Alert variant="destructive" className="mt-4">
                     <AlertDescription className="flex items-center gap-2">
-                      To ship an order, you will need to verify the unverified address with the associated phone number.
+                      To ship an order, you will need to verify the unverified address with the
+                      associated phone number.
                       <Button variant="link" className="text-destructive h-auto p-0 underline">
                         Verify Address
                       </Button>
@@ -313,7 +319,10 @@ export default function OrderForm() {
                 <CardTitle>Seller Details</CardTitle>
               </CardHeader>
               <CardContent>
-                <SellerDetailsForm onSubmit={handleSellerDetailsSubmit} errors={form.formState.errors.sellerDetails} />
+                <SellerDetailsForm
+                  onSubmit={handleSellerDetailsSubmit}
+                  errors={form.formState.errors.sellerDetails}
+                />
               </CardContent>
             </Card>
 
@@ -363,7 +372,8 @@ export default function OrderForm() {
               <CardHeader>
                 <CardTitle>Package Details</CardTitle>
                 <p className="text-muted-foreground text-sm">
-                  Provide the details of the final package that includes all the ordered items packed together.
+                  Provide the details of the final package that includes all the ordered items
+                  packed together.
                 </p>
               </CardHeader>
               <CardContent>
@@ -374,11 +384,8 @@ export default function OrderForm() {
               </CardContent>
             </Card>
 
-
             <div className="flex gap-2">
-              <Button type="submit">
-                Create Order
-              </Button>
+              <Button type="submit">Create Order</Button>
               <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
                 Ship Now
               </Button>
@@ -387,5 +394,5 @@ export default function OrderForm() {
         </Form>
       </div>
     </div>
-  )
+  );
 }

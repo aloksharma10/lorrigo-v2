@@ -1,4 +1,4 @@
-import { Role } from "@lorrigo/db";
+import { Role } from '@lorrigo/db';
 
 export function getRoleBasedRedirect(role?: Role): string {
   switch (role) {
@@ -9,7 +9,6 @@ export function getRoleBasedRedirect(role?: Role): string {
     case 'SELLER':
       return '/seller/dashboard';
     default:
-       return '/'; // Regular users go to homepage
-   }
- }
- 
+      return '/'; // Regular users go to homepage
+  }
+}

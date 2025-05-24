@@ -1,17 +1,22 @@
-"use client"
+'use client';
 
-import * as React from "react"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { Checkbox } from "@lorrigo/ui/components"
-import { DataTable } from "@lorrigo/ui/components"
-import { DataTableColumnHeader } from "@lorrigo/ui/components"
-import { Badge } from "@lorrigo/ui/components"
-import { Button } from "@lorrigo/ui/components"
-import { MoreHorizontal } from "lucide-react"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@lorrigo/ui/components"
-import { toast } from "@lorrigo/ui/components"
-import type { ColumnDef } from "@lorrigo/ui/components"
-import { useDebounce } from "@/lib/hooks/use-debounce"
+import * as React from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Checkbox } from '@lorrigo/ui/components';
+import { DataTable } from '@lorrigo/ui/components';
+import { DataTableColumnHeader } from '@lorrigo/ui/components';
+import { Badge } from '@lorrigo/ui/components';
+import { Button } from '@lorrigo/ui/components';
+import { MoreHorizontal } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@lorrigo/ui/components';
+import { toast } from '@lorrigo/ui/components';
+import type { ColumnDef } from '@lorrigo/ui/components';
+import { useDebounce } from '@/lib/hooks/use-debounce';
 
 import {
   fetchShipments,
@@ -21,36 +26,40 @@ import {
   type Shipment,
   type ApiResponse,
   type ShipmentParams,
-} from "@/app/(seller)/seller/orders/action"
+} from '@/app/(seller)/seller/orders/action';
 
 interface ShipmentsTableProps {
-  initialData: ApiResponse
-  initialParams: ShipmentParams
+  initialData: ApiResponse;
+  initialParams: ShipmentParams;
 }
 
 export default function ShipmentsTable({ initialData, initialParams }: ShipmentsTableProps) {
-  const [activeTab, setActiveTab] = React.useState(initialParams.status || "all")
+  const [activeTab, setActiveTab] = React.useState(initialParams.status || 'all');
   const [pagination, setPagination] = React.useState({
     pageIndex: initialParams.page || 0,
     pageSize: initialParams.pageSize || 15,
-  })
-  const [sorting, setSorting] = React.useState<{ id: string; desc: boolean }[]>(initialParams.sort || [])
-  const [filters, setFilters] = React.useState<{ id: string; value: any }[]>(initialParams.filters || [])
-  const [globalFilter, setGlobalFilter] = React.useState(initialParams.globalFilter || "")
-  const debouncedGlobalFilter = useDebounce(globalFilter, 500)
+  });
+  const [sorting, setSorting] = React.useState<{ id: string; desc: boolean }[]>(
+    initialParams.sort || []
+  );
+  const [filters, setFilters] = React.useState<{ id: string; value: any }[]>(
+    initialParams.filters || []
+  );
+  const [globalFilter, setGlobalFilter] = React.useState(initialParams.globalFilter || '');
+  const debouncedGlobalFilter = useDebounce(globalFilter, 500);
   const [dateRange, setDateRange] = React.useState<{ from: Date; to: Date }>(
     initialParams.dateRange || {
       from: new Date(new Date().setDate(new Date().getDate() - 30)),
       to: new Date(),
-    },
-  )
+    }
+  );
 
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   // Fetch shipments with React Query
   const { data, isLoading, isError, isFetching } = useQuery({
     queryKey: [
-      "shipments",
+      'shipments',
       pagination.pageIndex,
       pagination.pageSize,
       sorting,
@@ -79,56 +88,59 @@ export default function ShipmentsTable({ initialData, initialParams }: Shipments
     refetchInterval: false,
     retryOnMount: false,
     retry: false,
-  })
+  });
 
   // Bulk action mutations
   const downloadManifestMutation = useMutation({
     mutationFn: async (shipments: Shipment[]) => {
-      const shipmentIds = shipments.map((s) => s.id)
-      return downloadManifest(shipmentIds)
+      const shipmentIds = shipments.map((s) => s.id);
+      return downloadManifest(shipmentIds);
     },
     onSuccess: (result) => {
-      toast.success(`Downloaded manifest for ${result.count} shipments`)
+      toast.success(`Downloaded manifest for ${result.count} shipments`);
     },
     onError: () => {
-      toast.error("Failed to download manifest")
+      toast.error('Failed to download manifest');
     },
-  })
+  });
 
   const generateLabelsMutation = useMutation({
     mutationFn: async (shipments: Shipment[]) => {
-      const shipmentIds = shipments.map((s) => s.id)
-      return generateLabels(shipmentIds)
+      const shipmentIds = shipments.map((s) => s.id);
+      return generateLabels(shipmentIds);
     },
     onSuccess: (result) => {
-      toast.success(`Generated labels for ${result.count} shipments`)
+      toast.success(`Generated labels for ${result.count} shipments`);
     },
     onError: () => {
-      toast.error("Failed to generate labels")
+      toast.error('Failed to generate labels');
     },
-  })
+  });
 
   const cancelOrdersMutation = useMutation({
     mutationFn: async (shipments: Shipment[]) => {
-      const shipmentIds = shipments.map((s) => s.id)
-      return cancelOrders(shipmentIds)
+      const shipmentIds = shipments.map((s) => s.id);
+      return cancelOrders(shipmentIds);
     },
     onSuccess: (result) => {
-      toast.success(`Cancelled ${result.count} orders`)
-      queryClient.invalidateQueries({ queryKey: ["shipments"] })
+      toast.success(`Cancelled ${result.count} orders`);
+      queryClient.invalidateQueries({ queryKey: ['shipments'] });
     },
     onError: () => {
-      toast.error("Failed to cancel orders")
+      toast.error('Failed to cancel orders');
     },
-  })
+  });
 
   // Define the columns for the data table
   const columns: ColumnDef<Shipment>[] = [
     {
-      id: "select",
+      id: 'select',
       header: ({ table }) => (
         <Checkbox
-          checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && 'indeterminate')
+          }
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all"
           disabled={isLoading}
@@ -147,121 +159,132 @@ export default function ShipmentsTable({ initialData, initialParams }: Shipments
       enableHiding: false,
     },
     {
-      accessorKey: "ndrDetails",
+      accessorKey: 'ndrDetails',
       header: ({ column }) => <DataTableColumnHeader column={column} title="NDR Details" />,
       cell: ({ row }) => {
-        const shipment = row.original
+        const shipment = row.original;
         return (
           <div className="flex flex-col space-y-1">
             <div className="text-sm">
-              {new Date(shipment.createdAt).toLocaleDateString("en-GB", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })}{" "}
-              |{" "}
+              {new Date(shipment.createdAt).toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+              })}{' '}
+              |{' '}
               {new Date(shipment.createdAt).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
+                hour: '2-digit',
+                minute: '2-digit',
               })}
             </div>
-            <div className="text-sm font-medium">{shipment.attemptNumber || "2nd"} Attempt</div>
-            <div className="text-xs text-muted-foreground">NDR Reason:</div>
-            <div className="text-xs text-orange-600 font-medium">{shipment.ndrReason || "Wrong Address"}</div>
-            <Badge variant="outline" className="w-fit text-xs bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-900 dark:text-orange-50 dark:border-orange-700">
+            <div className="text-sm font-medium">{shipment.attemptNumber || '2nd'} Attempt</div>
+            <div className="text-muted-foreground text-xs">NDR Reason:</div>
+            <div className="text-xs font-medium text-orange-600">
+              {shipment.ndrReason || 'Wrong Address'}
+            </div>
+            <Badge
+              variant="outline"
+              className="w-fit border-orange-200 bg-orange-50 text-xs text-orange-600 dark:border-orange-700 dark:bg-orange-900 dark:text-orange-50"
+            >
               PENDING SINCE TODAY
             </Badge>
           </div>
-        )
+        );
       },
       enableSorting: true,
       enableHiding: true,
     },
     {
-      accessorKey: "orderDetails",
+      accessorKey: 'orderDetails',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Order Details" />,
       cell: ({ row }) => {
-        const shipment = row.original
-        const amount = new Intl.NumberFormat("en-IN", {
-          style: "currency",
-          currency: "INR",
+        const shipment = row.original;
+        const amount = new Intl.NumberFormat('en-IN', {
+          style: 'currency',
+          currency: 'INR',
           minimumFractionDigits: 2,
-        }).format(shipment.amount)
+        }).format(shipment.amount);
 
         return (
           <div className="flex flex-col space-y-1">
-            <div className="text-blue-600 font-medium">Id: {shipment.orderNumber}</div>
+            <div className="font-medium text-blue-600">Id: {shipment.orderNumber}</div>
             <div className="font-medium">{amount}</div>
-            <Button variant="link" size="sm" className="h-auto justify-start p-0 text-blue-600 text-xs">
+            <Button
+              variant="link"
+              size="sm"
+              className="h-auto justify-start p-0 text-xs text-blue-600"
+            >
               View Products
             </Button>
           </div>
-        )
+        );
       },
       enableSorting: true,
       enableHiding: true,
     },
     {
-      accessorKey: "customerDetails",
+      accessorKey: 'customerDetails',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Customer details" />,
       cell: ({ row }) => {
-        const shipment = row.original
+        const shipment = row.original;
         return (
           <div className="flex flex-col space-y-1">
             <div className="font-medium">{shipment.customerName}</div>
-            <div className="text-sm text-muted-foreground">{shipment.customerEmail}</div>
-            <div className="text-sm text-muted-foreground">{shipment.customerPhone}</div>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs text-muted-foreground">RTO Risk:</span>
-              <Badge variant="status_success">
-                {shipment.rtoRisk || "LOW"}
-              </Badge>
+            <div className="text-muted-foreground text-sm">{shipment.customerEmail}</div>
+            <div className="text-muted-foreground text-sm">{shipment.customerPhone}</div>
+            <div className="mt-1 flex items-center gap-2">
+              <span className="text-muted-foreground text-xs">RTO Risk:</span>
+              <Badge variant="status_success">{shipment.rtoRisk || 'LOW'}</Badge>
             </div>
           </div>
-        )
+        );
       },
       enableSorting: true,
       enableHiding: true,
     },
     {
-      accessorKey: "deliveryAddress",
+      accessorKey: 'deliveryAddress',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Delivery address" />,
       cell: ({ row }) => {
-        const shipment = row.original
+        const shipment = row.original;
         return (
           <div className="flex flex-col space-y-1">
-            <div className="text-sm max-w-xs">{shipment.deliveryAddress || shipment.pickupAddress}</div>
-            <div className="text-xs text-muted-foreground">Address Quality:</div>
-            <Badge variant="status_success">
-              Valid
-            </Badge>
+            <div className="max-w-xs text-sm">
+              {shipment.deliveryAddress || shipment.pickupAddress}
+            </div>
+            <div className="text-muted-foreground text-xs">Address Quality:</div>
+            <Badge variant="status_success">Valid</Badge>
           </div>
-        )
+        );
       },
       enableSorting: true,
       enableHiding: true,
     },
     {
-      accessorKey: "fieldExecutiveInfo",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Field Executive Info" />,
+      accessorKey: 'fieldExecutiveInfo',
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Field Executive Info" />
+      ),
       cell: ({ row }) => {
-        const shipment = row.original
+        const shipment = row.original;
         return (
           <div className="flex flex-col space-y-1">
-            <div className="text-sm font-medium">{shipment.brandInfo || "Bluedart brands 500 g"}</div>
+            <div className="text-sm font-medium">
+              {shipment.brandInfo || 'Bluedart brands 500 g'}
+            </div>
             <div className="text-sm font-medium">Surface</div>
             <div className="text-sm text-blue-600">{shipment.awbNumber}</div>
           </div>
-        )
+        );
       },
       enableSorting: true,
       enableHiding: true,
     },
     {
-      accessorKey: "shipmentDetails",
+      accessorKey: 'shipmentDetails',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Shipment Details" />,
       cell: ({ row }) => {
-        const shipment = row.original
+        const shipment = row.original;
         return (
           <div className="flex items-center gap-2">
             {/* <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
@@ -269,37 +292,39 @@ export default function ShipmentsTable({ initialData, initialParams }: Shipments
             </div>
             <span className="text-sm font-medium">Shiprocket</span> */}
           </div>
-        )
+        );
       },
       enableSorting: true,
       enableHiding: true,
     },
     {
-      accessorKey: "lastActionBy",
+      accessorKey: 'lastActionBy',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Last Action By" />,
       cell: ({ row }) => {
-        return <div className="text-sm text-muted-foreground">
-          <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
-            <span className="text-white text-xs font-bold">S</span>
+        return (
+          <div className="text-muted-foreground text-sm">
+            <div className="flex h-8 w-8 items-center justify-center rounded bg-blue-600">
+              <span className="text-xs font-bold text-white">S</span>
+            </div>
+            <span className="text-sm font-medium">Shiprocket</span>
           </div>
-          <span className="text-sm font-medium">Shiprocket</span>
-        </div>
+        );
       },
       enableSorting: true,
       enableHiding: true,
     },
     {
-      id: "actions",
+      id: 'actions',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Action" />,
       cell: ({ row }) => {
         return (
           <div className="flex flex-col items-center gap-2">
             <Button
-              className="w-full bg-blue-600 hover:bg-blue-700 text-xs"
+              className="w-full bg-blue-600 text-xs hover:bg-blue-700"
               size="sm"
               onClick={() => {
                 // Handle re-attempt action
-                toast.success("Re-attempt scheduled")
+                toast.success('Re-attempt scheduled');
               }}
             >
               Re-attempt
@@ -324,10 +349,10 @@ export default function ShipmentsTable({ initialData, initialParams }: Shipments
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        )
+        );
       },
     },
-  ]
+  ];
 
   return (
     <DataTable
@@ -349,5 +374,5 @@ export default function ShipmentsTable({ initialData, initialParams }: Shipments
       onGlobalFilterChange={setGlobalFilter}
       onDateRangeChange={setDateRange}
     />
-  )
+  );
 }

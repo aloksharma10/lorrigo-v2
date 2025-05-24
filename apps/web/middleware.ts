@@ -5,7 +5,6 @@ import { checkAccessAndRedirect } from './lib/routes/check-permission';
 import { Role } from '@lorrigo/db';
 import { getRoleBasedRedirect } from './lib/routes/redirect';
 
-
 interface TokenWithRole {
   role?: Role;
   email?: string;
@@ -13,10 +12,10 @@ interface TokenWithRole {
 }
 
 export async function middleware(request: NextRequest) {
-  const token = await getToken({
+  const token = (await getToken({
     req: request,
     secret: process.env.AUTH_SECRET,
-  }) as TokenWithRole | null;
+  })) as TokenWithRole | null;
 
   const isAuthenticated = !!token;
   const userRole = token?.role;
@@ -37,13 +36,9 @@ export async function middleware(request: NextRequest) {
   // Role-based access control for authenticated users
   // Helper function to check access and get redirect path
 
-
   // Handle protected routes access control
   if (isProtectedPath && isAuthenticated) {
-    const { hasAccess, redirectPath } = checkAccessAndRedirect(
-      request.nextUrl.pathname,
-      userRole
-    );
+    const { hasAccess, redirectPath } = checkAccessAndRedirect(request.nextUrl.pathname, userRole);
 
     if (!hasAccess && redirectPath) {
       const redirectUrl = new URL(redirectPath, request.url);
