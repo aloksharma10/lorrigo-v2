@@ -10,12 +10,18 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  Collapsible,
+  CollapsibleTrigger,
+  Button,
+  CollapsibleContent,
 } from "@lorrigo/ui/components"
 import { phoneRegex } from "@lorrigo/utils/validations"
 import { useState, useEffect } from "react"
+import { ChevronDown } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { type DeliveryFormValues, deliveryDetailsSchema } from "../types"
+import { ChevronUp } from "lucide-react"
 
 interface DeliveryDetailsFormProps {
   onSubmit: (values: DeliveryFormValues) => void
@@ -24,6 +30,7 @@ interface DeliveryDetailsFormProps {
 
 export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormProps) {
   const [billingIsSameAsDelivery, setBillingIsSameAsDelivery] = useState(true)
+  const [billingOpen, setBillingOpen] = useState(false)
 
   const form = useForm<DeliveryFormValues>({
     resolver: zodResolver(deliveryDetailsSchema),
@@ -36,7 +43,6 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
       pincode: "",
       city: "",
       state: "",
-      alternateMobile: "",
       email: "",
       billingIsSameAsDelivery: true,
       billingMobileNumber: "",
@@ -52,6 +58,9 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
   // Update form value when checkbox changes
   useEffect(() => {
     form.setValue("billingIsSameAsDelivery", billingIsSameAsDelivery)
+    if (!billingIsSameAsDelivery) {
+      setBillingOpen(true)
+    }
   }, [billingIsSameAsDelivery, form])
 
   // When delivery details change and billing is same as delivery, update billing fields
@@ -139,11 +148,6 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
       errors.state = "State is required"
     }
 
-    // Alternate mobile validation
-    if (values.alternateMobile && !phoneRegex.test(values.alternateMobile)) {
-      errors.alternateMobile = "Please enter a valid 10-digit mobile number"
-    }
-
     // Email validation
     if (values.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
       errors.email = "Please enter a valid email address"
@@ -183,39 +187,37 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        <div className="flex items-center space-x-2">
-          <FormField
-            control={form.control}
-            name="isBusiness"
-            render={({ field }) => (
-              <FormItem className="flex items-center space-x-2">
-                <FormControl>
-                  <Checkbox checked={field.value} onCheckedChange={field.onChange} id="is-business" />
-                </FormControl>
-                <FormLabel htmlFor="is-business" className="cursor-pointer font-normal">
-                  This is a B2B Order
-                </FormLabel>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-3">
+        <FormField
+          control={form.control}
+          name="isBusiness"
+          render={({ field }) => (
+            <FormItem className="flex items-center space-x-2">
+              <FormControl>
+                <Checkbox checked={field.value} onCheckedChange={field.onChange} id="is-business" />
+              </FormControl>
+              <FormLabel htmlFor="is-business" className="cursor-pointer font-normal text-sm">
+                This is a B2B Order
+              </FormLabel>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3">
           <FormField
             control={form.control}
             name="mobileNumber"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm font-medium">Mobile Number</FormLabel>
+                <FormLabel className="text-xs font-medium">Mobile Number</FormLabel>
                 <div className="flex">
-                  <div className="bg-muted flex items-center justify-center rounded-l-md border px-3">+91</div>
+                  <div className="bg-muted flex items-center justify-center rounded-l-md border px-2 text-xs">+91</div>
                   <FormControl>
-                    <Input {...field} placeholder="Enter mobile number" className="rounded-l-none" />
+                    <Input {...field} placeholder="Mobile" className="rounded-l-none h-8 text-sm" />
                   </FormControl>
                 </div>
-                <FormMessage />
+                <FormMessage className="text-xs" />
               </FormItem>
             )}
           />
@@ -225,42 +227,41 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
             name="fullName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm font-medium">Full Name</FormLabel>
+                <FormLabel className="text-xs font-medium">Full Name</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="Enter Full Name" />
+                  <Input {...field} placeholder="Full Name" className="h-8 text-sm" />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-xs" />
               </FormItem>
             )}
           />
+        </div>
 
-          <FormField
-            control={form.control}
-            name="completeAddress"
-            render={({ field }) => (
-              <FormItem className="md:col-span-3">
-                <FormLabel className="text-sm font-medium">Complete Address</FormLabel>
-                <FormControl>
-                  <Input {...field} placeholder="Enter Buyer's full address" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        <FormField
+          control={form.control}
+          name="completeAddress"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-xs font-medium">Complete Address</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="Full address" className="h-8 text-sm" />
+              </FormControl>
+              <FormMessage className="text-xs" />
+            </FormItem>
+          )}
+        />
 
+        <div className="grid grid-cols-3 gap-3">
           <FormField
             control={form.control}
             name="landmark"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="flex items-center gap-1 text-sm font-medium">
-                  Landmark
-                  <span className="text-muted-foreground text-xs">(Optional)</span>
-                </FormLabel>
+                <FormLabel className="text-xs font-medium text-muted-foreground">Landmark (Optional)</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="Enter any near by landmark" />
+                  <Input {...field} placeholder="Landmark" className="h-8 text-sm" />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-xs" />
               </FormItem>
             )}
           />
@@ -270,11 +271,11 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
             name="pincode"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm font-medium">Pincode</FormLabel>
+                <FormLabel className="text-xs font-medium">Pincode</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="Enter pincode" />
+                  <Input {...field} placeholder="Pincode" className="h-8 text-sm" />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-xs" />
               </FormItem>
             )}
           />
@@ -284,187 +285,173 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
             name="city"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm font-medium">City</FormLabel>
+                <FormLabel className="text-xs font-medium">City</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="City" />
+                  <Input {...field} placeholder="City" className="h-8 text-sm" />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-xs" />
               </FormItem>
             )}
           />
+        </div>
 
+        <div className="grid grid-cols-3 gap-3">
           <FormField
             control={form.control}
             name="state"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm font-medium">State</FormLabel>
+                <FormLabel className="text-xs font-medium">State</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="State" />
+                  <Input {...field} placeholder="State" className="h-8 text-sm" />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-xs" />
               </FormItem>
             )}
           />
-
-          <FormField
-            control={form.control}
-            name="alternateMobile"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="flex items-center gap-1 text-sm font-medium">
-                  Alternate Mobile Number
-                  <span className="text-muted-foreground text-xs">(Optional)</span>
-                </FormLabel>
-                <div className="flex">
-                  <div className="bg-muted flex items-center justify-center rounded-l-md border px-3">+91</div>
-                  <FormControl>
-                    <Input {...field} placeholder="Enter mobile number" className="rounded-l-none" />
-                  </FormControl>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
           <FormField
             control={form.control}
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="flex items-center gap-1 text-sm font-medium">
-                  Email Id
-                  <span className="text-muted-foreground text-xs">(Optional)</span>
-                </FormLabel>
+                <FormLabel className="text-xs font-medium text-muted-foreground">Email (Optional)</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="Enter Email Address" />
+                  <Input {...field} placeholder="Email" className="h-8 text-sm" />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-xs" />
               </FormItem>
             )}
           />
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 pt-2">
           <Checkbox
             id="billing-same"
             checked={billingIsSameAsDelivery}
             onCheckedChange={(checked) => setBillingIsSameAsDelivery(!!checked)}
           />
-          <Label htmlFor="billing-same" className="cursor-pointer">
-            Billing Details are same as Delivery Details
+          <Label htmlFor="billing-same" className="cursor-pointer text-sm">
+            Billing same as delivery
           </Label>
         </div>
 
         {!billingIsSameAsDelivery && (
-          <div className="space-y-6 border-t pt-4">
-            <h3 className="font-medium">Billing Details</h3>
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-              <FormField
-                control={form.control}
-                name="billingMobileNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-medium">Mobile Number</FormLabel>
-                    <div className="flex">
-                      <div className="bg-muted flex items-center justify-center rounded-l-md border px-3">+91</div>
-                      <FormControl>
-                        <Input {...field} placeholder="Enter mobile number" className="rounded-l-none" />
-                      </FormControl>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          <Collapsible open={billingOpen} onOpenChange={setBillingOpen}>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto text-sm">
+                Billing Details
+                {billingOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-3 pt-3">
+              <div className="grid grid-cols-2 gap-3">
+                <FormField
+                  control={form.control}
+                  name="billingMobileNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs font-medium">Mobile Number</FormLabel>
+                      <div className="flex">
+                        <div className="bg-muted flex items-center justify-center rounded-l-md border px-2 text-xs">
+                          +91
+                        </div>
+                        <FormControl>
+                          <Input {...field} placeholder="Mobile" className="rounded-l-none h-8 text-sm" />
+                        </FormControl>
+                      </div>
+                      <FormMessage className="text-xs" />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="billingFullName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-medium">Full Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Enter Full Name" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="billingFullName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs font-medium">Full Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Full Name" className="h-8 text-sm" />
+                      </FormControl>
+                      <FormMessage className="text-xs" />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <FormField
                 control={form.control}
                 name="billingCompleteAddress"
                 render={({ field }) => (
-                  <FormItem className="md:col-span-3">
-                    <FormLabel className="text-sm font-medium">Complete Address</FormLabel>
+                  <FormItem>
+                    <FormLabel className="text-xs font-medium">Complete Address</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Enter Buyer's full address" />
+                      <Input {...field} placeholder="Full address" className="h-8 text-sm" />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-xs" />
                   </FormItem>
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="billingLandmark"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-1 text-sm font-medium">
-                      Landmark
-                      <span className="text-muted-foreground text-xs">(Optional)</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Enter any near by landmark" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-3 gap-3">
+                <FormField
+                  control={form.control}
+                  name="billingLandmark"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs font-medium text-muted-foreground">Landmark (Optional)</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Landmark" className="h-8 text-sm" />
+                      </FormControl>
+                      <FormMessage className="text-xs" />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="billingPincode"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-medium">Pincode</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Enter pincode" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="billingPincode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs font-medium">Pincode</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Pincode" className="h-8 text-sm" />
+                      </FormControl>
+                      <FormMessage className="text-xs" />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="billingCity"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-medium">City</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="City" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="billingCity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs font-medium">City</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="City" className="h-8 text-sm" />
+                      </FormControl>
+                      <FormMessage className="text-xs" />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <FormField
                 control={form.control}
                 name="billingState"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium">State</FormLabel>
+                    <FormLabel className="text-xs font-medium">State</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="State" />
+                      <Input {...field} placeholder="State" className="h-8 text-sm" />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="text-xs" />
                   </FormItem>
                 )}
               />
-            </div>
-          </div>
+            </CollapsibleContent>
+          </Collapsible>
         )}
       </form>
     </Form>

@@ -1,10 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect } from "react"
 import {
   Input,
   Label,
-  Button,
   Checkbox,
   Form,
   FormControl,
@@ -23,8 +22,6 @@ interface SellerDetailsFormProps {
 }
 
 export function SellerDetailsForm({ onSubmit, errors }: SellerDetailsFormProps) {
-  const [addSellerAddress, setAddSellerAddress] = useState(false)
-
   const form = useForm<SellerFormValues>({
     resolver: zodResolver(sellerDetailsSchema),
     defaultValues: {
@@ -100,18 +97,24 @@ export function SellerDetailsForm({ onSubmit, errors }: SellerDetailsFormProps) 
           />
         </div>
 
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="add-seller-address"
-            checked={addSellerAddress}
-            onCheckedChange={(checked) => setAddSellerAddress(checked as boolean)}
-          />
-          <Label htmlFor="add-seller-address" className="font-medium">
-            Add Seller Address
-          </Label>
-        </div>
+        <FormField
+          control={form.control}
+          name="isAddressAvailable"
+          render={({ field }) => (
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="add-seller-address"
+                checked={field.value}
+                onCheckedChange={(checked) => field.onChange(checked as boolean)}
+              />
+              <Label htmlFor="add-seller-address" className="font-medium">
+                Add Seller Address
+              </Label>
+            </div>
+          )}
+        />
 
-        {addSellerAddress && (
+        {form.watch("isAddressAvailable") && (
           <div className="space-y-6">
             <FormField
               control={form.control}

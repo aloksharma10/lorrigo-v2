@@ -32,7 +32,7 @@ export const SELLER_ROUTES = [
       },
       {
         title: 'NDR',
-        url: '/seller/orders/ndr',
+        url: '/seller/orders/ndr/action-required',
       },
     ],
   },

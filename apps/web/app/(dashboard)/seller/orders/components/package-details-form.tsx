@@ -14,12 +14,21 @@ import {
   Alert,
   AlertDescription,
   Badge,
-  Button,
 } from "@lorrigo/ui/components"
 
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { type PackageFormValues, packageDetailsSchema } from "../types"
+import { z } from "zod"
+
+const packageDetailsSchema = z.object({
+  deadWeight: z.string().min(1, "Dead weight is required"),
+  length: z.string().min(1, "Length is required"),
+  breadth: z.string().min(1, "Breadth is required"),
+  height: z.string().min(1, "Height is required"),
+  volumetricWeight: z.string(),
+})
+
+type PackageFormValues = z.infer<typeof packageDetailsSchema>
 
 interface PackageDetailsFormProps {
   onSubmit: (values: PackageFormValues) => void
@@ -89,134 +98,124 @@ export function PackageDetailsForm({ onSubmit, errors }: PackageDetailsFormProps
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        <Alert className="border-blue-200 bg-blue-50">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-3">
+        <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-900 py-2">
           <LightbulbIcon className="h-4 w-4 text-blue-500" />
-          <AlertDescription className="text-blue-700">
-            Tip: Add correct values to avoid weight discrepancy
+          <AlertDescription className="text-blue-700 dark:text-blue-400 text-sm">
+            Add correct values to avoid weight discrepancy
           </AlertDescription>
         </Alert>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3">
           <FormField
             control={form.control}
             name="deadWeight"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm font-medium">
-                  Dead Weight
-                  <span className="text-muted-foreground block text-xs">Physical weight of a package</span>
+                <FormLabel className="text-xs font-medium">Dead Weight (kg)
+                  <p className="text-muted-foreground text-[10px]">Min: 0.5 kg</p>
+
                 </FormLabel>
                 <div className="flex">
                   <FormControl>
-                    <Input {...field} className="rounded-r-none" />
+                    <Input {...field} className="rounded-r-none h-8 text-sm" />
                   </FormControl>
-                  <div className="bg-muted flex items-center justify-center rounded-r-md border border-l-0 px-3">
+                  <div className="bg-muted flex items-center justify-center rounded-r-md border border-l-0 px-2 text-xs">
                     kg
                   </div>
                 </div>
-                <p className="text-muted-foreground mt-1 text-xs">Note: Minimum chargeable wt is 0.5 kg</p>
-                <FormMessage />
+                <FormMessage className="text-xs" />
               </FormItem>
             )}
           />
-
-          <div className="md:col-span-2">
-            <Label className="text-sm font-medium">
-              Package Dimensions
-              <span className="text-muted-foreground block text-xs">LxBxH of the complete package</span>
-            </Label>
-            <div className="mt-1 grid grid-cols-3 gap-2">
-              <FormField
-                control={form.control}
-                name="length"
-                render={({ field }) => (
-                  <FormItem>
-                    <div className="flex">
-                      <FormControl>
-                        <Input placeholder="Length" {...field} className="rounded-r-none" />
-                      </FormControl>
-                      <div className="bg-muted flex items-center justify-center rounded-r-md border border-l-0 px-3">
-                        cm
-                      </div>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="breadth"
-                render={({ field }) => (
-                  <FormItem>
-                    <div className="flex">
-                      <FormControl>
-                        <Input placeholder="Breadth" {...field} className="rounded-r-none" />
-                      </FormControl>
-                      <div className="bg-muted flex items-center justify-center rounded-r-md border border-l-0 px-3">
-                        cm
-                      </div>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="height"
-                render={({ field }) => (
-                  <FormItem>
-                    <div className="flex">
-                      <FormControl>
-                        <Input placeholder="Height" {...field} className="rounded-r-none" />
-                      </FormControl>
-                      <div className="bg-muted flex items-center justify-center rounded-r-md border border-l-0 px-3">
-                        cm
-                      </div>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <p className="text-muted-foreground mt-1 text-xs">Note: Value should be greater than 0.50 cm</p>
-          </div>
 
           <FormField
             control={form.control}
             name="volumetricWeight"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="flex items-center gap-1 text-sm font-medium">
+                <FormLabel className="flex items-center gap-1 text-xs font-medium">
                   Volumetric Weight
-                  <Info className="text-muted-foreground h-4 w-4" />
+                  <Info className="text-muted-foreground h-3 w-3" />
                 </FormLabel>
                 <div className="flex">
                   <FormControl>
-                    <Input {...field} readOnly className="bg-muted rounded-r-none" />
+                    <Input {...field} readOnly className="bg-muted rounded-r-none h-8 text-sm" />
                   </FormControl>
-                  <div className="bg-muted flex items-center justify-center rounded-r-md border border-l-0 px-3">
+                  <div className="bg-muted flex items-center justify-center rounded-r-md border border-l-0 px-2 text-xs">
                     kg
                   </div>
                 </div>
-                <FormMessage />
+                <FormMessage className="text-xs" />
               </FormItem>
             )}
           />
         </div>
 
-        <div className="rounded-md border border-green-200 bg-green-50 p-4">
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="border-green-300 bg-green-100 text-green-800">
-              Applicable Weight: {applicableWeight} kg
-            </Badge>
+        <div>
+          <Label className="text-xs font-medium">Package Dimensions (L×B×H)</Label>
+          <div className="mt-1 grid grid-cols-3 gap-2">
+            <FormField
+              control={form.control}
+              name="length"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex">
+                    <FormControl>
+                      <Input placeholder="L" {...field} className="rounded-r-none h-8 text-sm" />
+                    </FormControl>
+                    <div className="bg-muted flex items-center justify-center rounded-r-md border border-l-0 px-1 text-xs">
+                      cm
+                    </div>
+                  </div>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="breadth"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex">
+                    <FormControl>
+                      <Input placeholder="B" {...field} className="rounded-r-none h-8 text-sm" />
+                    </FormControl>
+                    <div className="bg-muted flex items-center justify-center rounded-r-md border border-l-0 px-1 text-xs">
+                      cm
+                    </div>
+                  </div>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="height"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex">
+                    <FormControl>
+                      <Input placeholder="H" {...field} className="rounded-r-none h-8 text-sm" />
+                    </FormControl>
+                    <div className="bg-muted flex items-center justify-center rounded-r-md border border-l-0 px-1 text-xs">
+                      cm
+                    </div>
+                  </div>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )}
+            />
           </div>
-          <p className="mt-2 text-sm text-green-700">
-            Applicable weight is the higher of the dead weight or volumetric weight, used by the courier for freight
-            charges.
-          </p>
+          <p className="text-muted-foreground mt-1 text-[10px]">Min: 0.50 cm each</p>
         </div>
 
+        <div className="rounded-md border border-green-200 bg-green-50 dark:bg-green-800 p-2">
+          <Badge variant="outline" className="border-green-300 bg-green-100 text-green-800 dark:text-green-400 dark:bg-green-900 text-xs">
+            Applicable Weight: {applicableWeight} kg
+          </Badge>
+          <p className="mt-1 text-xs text-green-700 dark:text-green-400">Higher of dead weight or volumetric weight</p>
+        </div>
       </form>
     </Form>
   )

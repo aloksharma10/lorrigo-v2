@@ -152,6 +152,9 @@ importers:
       '@lorrigo/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@lorrigo/utils':
+        specifier: workspace:*
+        version: link:../../packages/utils
       '@tabler/icons-react':
         specifier: ^3.33.0
         version: 3.33.0(react@19.1.0)
@@ -416,6 +419,9 @@ importers:
       '@lorrigo/db':
         specifier: workspace:*
         version: link:../db
+      next:
+        specifier: ^15.2.3
+        version: 15.3.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       zod:
         specifier: ^3.22.4
         version: 3.25.13

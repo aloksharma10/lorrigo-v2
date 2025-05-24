@@ -7,3 +7,11 @@ export const SHIPMENT_TAB_ROUTES = [
   { name: 'RTO', path: '/seller/orders/forward-shipments/rto' },
   { name: 'All', path: '/seller/orders/forward-shipments/all' },
 ];
+
+
+export const NDR_TAB_ROUTES = [
+  { name: 'Action Required', path: '/seller/orders/ndr/action-required' },
+  { name: 'Action Requested', path: '/seller/orders/ndr/action-requested' },
+  { name: 'Delivered', path: '/seller/orders/ndr/delivered' },
+  { name: 'RTO', path: '/seller/orders/ndr/rto' },
+];

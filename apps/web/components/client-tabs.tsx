@@ -1,15 +1,16 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useRef, useState, useEffect, ForwardRefExoticComponent, RefAttributes } from 'react';
+import { ChevronLeft, ChevronRight, LucideProps } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, Button } from '@lorrigo/ui/components';
 import { useRouter, usePathname } from 'next/navigation';
 
 interface ClientTabsProps {
-  menuItems: { name: string; path: string }[];
+  menuItems: { name: string; path?: string; icon?: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>> }[];
+  onValueChange?: (value: string) => void;
 }
 
-export default function ClientTabs({ menuItems }: ClientTabsProps) {
+export default function ClientTabs({ menuItems, onValueChange }: ClientTabsProps) {
   const router = useRouter();
   const pathname = usePathname();
   const tabsListRef = useRef<HTMLDivElement>(null);
@@ -21,7 +22,11 @@ export default function ClientTabs({ menuItems }: ClientTabsProps) {
     menuItems.find((item) => item.path === pathname)?.path || menuItems[0]?.path || '';
 
   const handleValueChange = (value: string) => {
-    router.push(value);
+    if (value.includes("/")) {
+      router.push(value, { scroll: false });
+    } else {
+      onValueChange?.(value);
+    }
   };
 
   const checkScroll = () => {
@@ -115,10 +120,11 @@ export default function ClientTabs({ menuItems }: ClientTabsProps) {
                 {menuItems.map((item, index) => (
                   <TabsTrigger
                     key={index}
-                    value={item.path}
-                    onClick={() => handleValueChange(item.path)}
-                    className="whitespace-nowrap"
+                    value={item.path || ''}
+                    onClick={() => handleValueChange(item.path?.toLowerCase() || '')}
+                    className={"whitespace-nowrap"}
                   >
+                    {item.icon && <item.icon className="h-4 w-4" />}
                     {item.name}
                   </TabsTrigger>
                 ))}

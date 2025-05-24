@@ -33,9 +33,8 @@ export function NavMain({
   }[];
   group: string;
 }) {
-  const { state } = useSidebar();
-  const isCollapsed = state === 'collapsed';
-
+  const { isMobile, state } = useSidebar();
+  const isCollapsed = !isMobile && state === 'collapsed';
   return (
     <SidebarGroup>
       <SidebarGroupLabel className="capitalize">{group}</SidebarGroupLabel>
@@ -63,7 +62,7 @@ export function NavMain({
                       </div>
                     </CollapsibleTrigger>
                   ) : (
-                    <SidebarMenuButton asChild tooltip={item.title}>
+                    <SidebarMenuButton asChild>
                       <Link href={item.url || '#'}>
                         <item.icon className="size-4" />
                         <span>{item.title}</span>
@@ -120,7 +119,7 @@ export function NavMain({
               ) : (
                 <SidebarMenuButton asChild tooltip={item.title}>
                   <Link href={item.url || '#'}>
-                    <item.icon className="size-4" />
+                    <item.icon className="size-4 " />
                     <span className="sr-only">{item.title}</span>
                   </Link>
                 </SidebarMenuButton>

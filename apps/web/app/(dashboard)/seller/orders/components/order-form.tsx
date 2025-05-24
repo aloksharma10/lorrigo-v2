@@ -72,7 +72,6 @@ export default function OrderForm() {
         pincode: "",
         city: "",
         state: "",
-        alternateMobile: "",
         email: "",
         billingIsSameAsDelivery: true,
         billingMobileNumber: "",
@@ -107,6 +106,9 @@ export default function OrderForm() {
       },
     },
   })
+
+  const { formState: { errors } } = form;
+  console.log(errors);
 
   async function onSubmit(values: OrderFormValues) {
     try {
@@ -166,7 +168,7 @@ export default function OrderForm() {
 
   return (
     <div className="w-full">
-      <div className="sticky top-0 z-10 border-b bg-white shadow-sm">
+      <div className="sticky top-0 z-10 border-b bg-white dark:bg-stone-900 rounded-t-md shadow-sm">
         <div className="container flex max-w-full items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => router.back()}>
             <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -176,7 +178,7 @@ export default function OrderForm() {
           </div>
           <div className="flex gap-4">
             <Button variant="outline" onClick={() => console.log(form.getValues())}>
-              Preview Order
+              Create Order
             </Button>
             <Button type="submit" onClick={form.handleSubmit(onSubmit)} className="bg-indigo-600 hover:bg-indigo-700">
               Ship Now
@@ -373,9 +375,15 @@ export default function OrderForm() {
               </CardContent>
             </Card>
 
-            <Button type="submit" className="w-full">
-              Create Order
-            </Button>
+
+            <div className="flex gap-2">
+              <Button type="submit">
+                Create Order
+              </Button>
+              <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
+                Ship Now
+              </Button>
+            </div>
           </form>
         </Form>
       </div>

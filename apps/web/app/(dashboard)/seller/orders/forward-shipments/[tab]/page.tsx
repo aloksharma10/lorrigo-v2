@@ -59,7 +59,7 @@ export default async function ShipmentsPage({ params, searchParams }: PageProps)
   return (
     <div className="mx-auto w-full space-y-6 p-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold capitalize lg:text-2xl">{tab || 'All'} Orders</h1>
+        <h1 className="text-base font-bold capitalize lg:text-2xl">{tab || 'All'} Orders</h1>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="px-3 py-1">
             Domestic
