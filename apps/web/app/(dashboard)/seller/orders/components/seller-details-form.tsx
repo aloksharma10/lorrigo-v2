@@ -1,6 +1,6 @@
-'use client';
+"use client"
 
-import { useState } from 'react';
+import { useState, useEffect } from "react"
 import {
   Input,
   Label,
@@ -12,43 +12,62 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@lorrigo/ui/components';
-import { useForm } from 'react-hook-form';
+} from "@lorrigo/ui/components"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { type SellerFormValues, sellerDetailsSchema } from "../types"
 
-interface SellerFormValues {
-  sellerName: string;
-  gstNo?: string;
-  address?: string;
-  contactNumber?: string;
-  pincode?: string;
-  city?: string;
-  state?: string;
-  country: string;
+interface SellerDetailsFormProps {
+  onSubmit: (values: SellerFormValues) => void
+  errors?: Record<string, any>
 }
 
-export function SellerDetailsForm() {
-  const [addSellerAddress, setAddSellerAddress] = useState(false);
+export function SellerDetailsForm({ onSubmit, errors }: SellerDetailsFormProps) {
+  const [addSellerAddress, setAddSellerAddress] = useState(false)
 
   const form = useForm<SellerFormValues>({
+    resolver: zodResolver(sellerDetailsSchema),
     defaultValues: {
-      sellerName: '',
-      gstNo: '',
-      address: '',
-      contactNumber: '',
-      pincode: '',
-      city: '',
-      state: '',
-      country: 'India',
+      sellerName: "",
+      gstNo: "",
+      address: "",
+      contactNumber: "",
+      pincode: "",
+      city: "",
+      state: "",
+      country: "India",
     },
-  });
+  })
 
-  function onSubmit(values: SellerFormValues) {
-    console.log(values);
+  // Watch for form changes and update parent
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      onSubmit(value as SellerFormValues)
+    })
+    return () => subscription.unsubscribe()
+  }, [form, onSubmit])
+
+  // Add this effect to handle errors passed from parent
+  useEffect(() => {
+    if (errors) {
+      Object.entries(errors).forEach(([key, value]) => {
+        if (value && typeof value === "object" && "message" in value) {
+          form.setError(key as any, {
+            type: "manual",
+            message: value.message as string,
+          })
+        }
+      })
+    }
+  }, [errors, form])
+
+  function handleSubmit(values: SellerFormValues) {
+    onSubmit(values)
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <FormField
             control={form.control}
@@ -56,7 +75,7 @@ export function SellerDetailsForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="flex items-center text-sm font-medium">
-                  Seller Name <span className="ml-1 text-red-500">*</span>
+                  Seller Name
                 </FormLabel>
                 <FormControl>
                   <Input placeholder="Enter the seller name" {...field} />
@@ -99,7 +118,7 @@ export function SellerDetailsForm() {
               name="address"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-medium">ADDRESS</FormLabel>
+                  <FormLabel className="text-sm font-medium">Address</FormLabel>
                   <FormControl>
                     <Input placeholder="Enter the address" {...field} />
                   </FormControl>
@@ -114,7 +133,7 @@ export function SellerDetailsForm() {
                 name="contactNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium">CONTACT NUMBER</FormLabel>
+                    <FormLabel className="text-sm font-medium">Contact Number</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter the contact number" {...field} />
                     </FormControl>
@@ -128,7 +147,7 @@ export function SellerDetailsForm() {
                 name="pincode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium">PINCODE</FormLabel>
+                    <FormLabel className="text-sm font-medium">Pincode</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter the pincode" {...field} />
                     </FormControl>
@@ -142,7 +161,7 @@ export function SellerDetailsForm() {
                 name="city"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium">CITY</FormLabel>
+                    <FormLabel className="text-sm font-medium">City</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter the city" {...field} />
                     </FormControl>
@@ -156,7 +175,7 @@ export function SellerDetailsForm() {
                 name="state"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium">STATE</FormLabel>
+                    <FormLabel className="text-sm font-medium">State</FormLabel>
                     <FormControl>
                       <Input placeholder="Enter the state" {...field} />
                     </FormControl>
@@ -170,7 +189,7 @@ export function SellerDetailsForm() {
                 name="country"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium">COUNTRY</FormLabel>
+                    <FormLabel className="text-sm font-medium">Country</FormLabel>
                     <FormControl>
                       <Input disabled {...field} value="India" />
                     </FormControl>
@@ -179,18 +198,9 @@ export function SellerDetailsForm() {
                 )}
               />
             </div>
-
-            <div className="flex justify-end gap-4">
-              <Button type="button" variant="outline" onClick={() => form.reset()}>
-                Reset
-              </Button>
-              <Button type="submit" className="bg-red-600 text-white hover:bg-red-700">
-                Add Seller
-              </Button>
-            </div>
           </div>
         )}
       </form>
     </Form>
-  );
+  )
 }

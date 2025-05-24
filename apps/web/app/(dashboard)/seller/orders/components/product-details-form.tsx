@@ -1,7 +1,9 @@
-'use client';
+"use client"
 
-import { useState, useEffect, useRef } from 'react';
-import { Info, Minus, Plus, Trash2 } from 'lucide-react';
+import type React from "react"
+
+import { useState, useEffect, useRef } from "react"
+import { Info, Minus, Plus, Trash2 } from "lucide-react"
 import {
   Button,
   Input,
@@ -11,61 +13,54 @@ import {
   TooltipProvider,
   TooltipTrigger,
   Form,
-} from '@lorrigo/ui/components';
+} from "@lorrigo/ui/components"
 
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { type ProductFormValues, productDetailsSchema } from "../types"
+
+interface ProductDetailsFormProps {
+  onSubmit: (values: ProductFormValues) => void
+  errors?: Record<string, any>
+}
 
 // Product interfaces
 interface Product {
-  id: string;
-  name: string;
-  price: number;
-  hsnCode?: string;
-}
-
-interface ProductItem {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  discount: number;
-  taxRate: number;
-  hsnCode: string;
-}
-
-interface ProductFormValues {
-  products: ProductItem[];
+  id: string
+  name: string
+  price: number
+  hsnCode?: string
 }
 
 // This is a mock API function that would be replaced with a real API call
 async function fetchProducts(query: string): Promise<Product[]> {
   // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 500));
+  await new Promise((resolve) => setTimeout(resolve, 500))
 
   // Mock data
   return [
-    { id: '5J091710752', name: 'Vastu Product', price: 10 },
-    { id: 'test1', name: 'test product // - test product //', price: 15 },
-    { id: 'dummy1', name: 'dummy product - dummy product', price: 20 },
-    { id: 'prod13', name: 'Product 13 - Product 13', price: 25 },
-    { id: 'home25', name: 'Home & Kitchen - Product 25', price: 30 },
+    { id: "5J091710752", name: "Vastu Product", price: 10 },
+    { id: "test1", name: "test product // - test product //", price: 15 },
+    { id: "dummy1", name: "dummy product - dummy product", price: 20 },
+    { id: "prod13", name: "Product 13 - Product 13", price: 25 },
+    { id: "home25", name: "Home & Kitchen - Product 25", price: 30 },
   ].filter(
     (product) =>
       !query ||
       product.name.toLowerCase().includes(query.toLowerCase()) ||
-      product.id.toLowerCase().includes(query.toLowerCase())
-  );
+      product.id.toLowerCase().includes(query.toLowerCase()),
+  )
 }
 
 interface ProductRowProps {
-  index: number;
-  control: any;
-  register: any;
-  setValue: any;
-  getValues: any;
-  errors: any;
-  remove: any;
-  productsLength: number;
+  index: number
+  control: any
+  register: any
+  setValue: any
+  getValues: any
+  errors: any
+  remove: any
+  productsLength: number
 }
 
 function ProductRow({
@@ -78,60 +73,60 @@ function ProductRow({
   remove,
   productsLength,
 }: ProductRowProps) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [productOptions, setProductOptions] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [searchQuery, setSearchQuery] = useState("")
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [productOptions, setProductOptions] = useState<Product[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
+        setIsDropdownOpen(false)
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
 
   useEffect(() => {
     const fetchProductOptions = async () => {
       if (isDropdownOpen && searchQuery) {
-        setIsLoading(true);
+        setIsLoading(true)
         try {
-          const data = await fetchProducts(searchQuery);
-          setProductOptions(data);
+          const data = await fetchProducts(searchQuery)
+          setProductOptions(data)
         } catch (error) {
-          console.error('Error fetching products:', error);
+          console.error("Error fetching products:", error)
         } finally {
-          setIsLoading(false);
+          setIsLoading(false)
         }
       }
-    };
+    }
 
-    fetchProductOptions();
-  }, [searchQuery, isDropdownOpen]);
+    fetchProductOptions()
+  }, [searchQuery, isDropdownOpen])
 
   const handleProductSelect = async (selectedProduct: Product) => {
-    setValue(`products.${index}.name`, selectedProduct.name);
-    setValue(`products.${index}.price`, selectedProduct.price);
-    setValue(`products.${index}.id`, selectedProduct.id);
+    setValue(`products.${index}.name`, selectedProduct.name)
+    setValue(`products.${index}.price`, selectedProduct.price)
+    setValue(`products.${index}.id`, selectedProduct.id)
     if (selectedProduct.hsnCode) {
-      setValue(`products.${index}.hsnCode`, selectedProduct.hsnCode);
+      setValue(`products.${index}.hsnCode`, selectedProduct.hsnCode)
     }
-    setIsDropdownOpen(false);
-  };
+    setIsDropdownOpen(false)
+  }
 
   const handleQuantityChange = (change: number) => {
-    const currentQuantity = getValues(`products.${index}.quantity`) || 1;
-    const newQuantity = Math.max(1, currentQuantity + change);
-    setValue(`products.${index}.quantity`, newQuantity);
-  };
+    const currentQuantity = getValues(`products.${index}.quantity`) || 1
+    const newQuantity = Math.max(1, currentQuantity + change)
+    setValue(`products.${index}.quantity`, newQuantity)
+  }
 
   return (
-    <div className="mb-4 grid gap-4 lg:grid-cols-12">
+    <div className="mb-4 grid gap-4 lg:grid-cols-10">
       <div className="relative col-span-4" ref={dropdownRef}>
         <Label htmlFor={`products.${index}.name`} className="text-sm font-medium text-indigo-600">
           Product Name
@@ -142,9 +137,9 @@ function ProductRow({
             {...register(`products.${index}.name`)}
             value={getValues(`products.${index}.name`) || searchQuery}
             onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setValue(`products.${index}.name`, e.target.value);
-              if (!isDropdownOpen) setIsDropdownOpen(true);
+              setSearchQuery(e.target.value)
+              setValue(`products.${index}.name`, e.target.value)
+              if (!isDropdownOpen) setIsDropdownOpen(true)
             }}
             onClick={() => setIsDropdownOpen(true)}
             placeholder="Enter or search your product name"
@@ -170,9 +165,7 @@ function ProductRow({
                   ))}
                 </ul>
               ) : (
-                <div className="text-muted-foreground p-4 text-center text-sm">
-                  No products found
-                </div>
+                <div className="text-muted-foreground p-4 text-center text-sm">No products found</div>
               )}
             </div>
           )}
@@ -183,10 +176,7 @@ function ProductRow({
 
         {getValues(`products.${index}.name`) && getValues(`products.${index}.name`).length > 0 && (
           <div className="mt-2">
-            <Label
-              htmlFor={`products.${index}.hsnCode`}
-              className="flex items-center gap-1 text-sm font-medium"
-            >
+            <Label htmlFor={`products.${index}.hsnCode`} className="flex items-center gap-1 text-sm font-medium">
               HSN Code
               <span className="text-muted-foreground text-xs">(Optional)</span>
               <TooltipProvider>
@@ -208,8 +198,11 @@ function ProductRow({
               placeholder="Enter product HSN Code"
               className="mt-1"
             />
+            {errors?.products?.[index]?.hsnCode && (
+              <p className="mt-1 text-sm text-red-500">{errors.products[index].hsnCode.message}</p>
+            )}
             <div className="text-muted-foreground mt-1 text-xs">
-              Don&apos;t know your HSN Code?{' '}
+              Don&apos;t know your HSN Code?{" "}
               <Button variant="link" className="h-auto p-0 text-xs text-indigo-600">
                 Know Here
               </Button>
@@ -232,8 +225,8 @@ function ProductRow({
             {...register(`products.${index}.price`, {
               valueAsNumber: true,
               onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-                const value = e.target.value === '' ? 0 : Number.parseFloat(e.target.value);
-                setValue(`products.${index}.price`, value);
+                const value = e.target.value === "" ? 0 : Number.parseFloat(e.target.value)
+                setValue(`products.${index}.price`, value)
               },
             })}
             className="rounded-l-none"
@@ -264,8 +257,8 @@ function ProductRow({
             {...register(`products.${index}.quantity`, {
               valueAsNumber: true,
               onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-                const value = e.target.value === '' ? 1 : Number.parseInt(e.target.value);
-                setValue(`products.${index}.quantity`, Math.max(1, value));
+                const value = e.target.value === "" ? 1 : Number.parseInt(e.target.value)
+                setValue(`products.${index}.quantity`, Math.max(1, value))
               },
             })}
             className="h-10 rounded-none text-center"
@@ -285,41 +278,8 @@ function ProductRow({
         )}
       </div>
 
-      <div className="col-span-2">
-        <Label
-          htmlFor={`products.${index}.discount`}
-          className="flex items-center gap-1 text-sm font-medium"
-        >
-          Product Discount
-          <span className="text-muted-foreground text-xs">(Optional)</span>
-        </Label>
-        <div className="mt-1 flex items-center">
-          <span className="bg-muted text-muted-foreground flex h-9 w-10 items-center justify-center rounded-l-md border border-r-0">
-            ₹
-          </span>
-          <Input
-            id={`products.${index}.discount`}
-            type="text"
-            {...register(`products.${index}.discount`, {
-              valueAsNumber: true,
-              onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-                const value = e.target.value === '' ? 0 : Number.parseFloat(e.target.value);
-                setValue(`products.${index}.discount`, value);
-              },
-            })}
-            className="rounded-l-none rounded-r-lg"
-          />
-        </div>
-        {errors?.products?.[index]?.discount && (
-          <p className="mt-1 text-sm text-red-500">{errors.products[index].discount.message}</p>
-        )}
-      </div>
-
       <div className="col-span-1">
-        <Label
-          htmlFor={`products.${index}.taxRate`}
-          className="flex items-center gap-1 text-sm font-medium"
-        >
+        <Label htmlFor={`products.${index}.taxRate`} className="flex items-center gap-1 text-sm font-medium">
           Tax Rate
           <span className="text-muted-foreground text-xs">(Optional)</span>
         </Label>
@@ -330,8 +290,8 @@ function ProductRow({
             {...register(`products.${index}.taxRate`, {
               valueAsNumber: true,
               onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-                const value = e.target.value === '' ? 0 : Number.parseFloat(e.target.value);
-                setValue(`products.${index}.taxRate`, value);
+                const value = e.target.value === "" ? 0 : Number.parseFloat(e.target.value)
+                setValue(`products.${index}.taxRate`, value)
               },
             })}
             className="rounded-r-none"
@@ -358,38 +318,60 @@ function ProductRow({
         </Button>
       </div>
     </div>
-  );
+  )
 }
 
-export function ProductDetailsForm() {
+export function ProductDetailsForm({ onSubmit, errors }: ProductDetailsFormProps) {
   const form = useForm<ProductFormValues>({
+    resolver: zodResolver(productDetailsSchema),
     defaultValues: {
       products: [
         {
-          id: '',
-          name: '',
+          id: "",
+          name: "",
           price: 0,
           quantity: 1,
-          discount: 0,
           taxRate: 0,
-          hsnCode: '',
+          hsnCode: "",
         },
       ],
     },
-  });
+  })
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: 'products',
-  });
+    name: "products",
+  })
 
-  function onSubmit(values: ProductFormValues) {
-    console.log(values);
+  // Watch for form changes and update parent
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      onSubmit(value as ProductFormValues)
+    })
+    return () => subscription.unsubscribe()
+  }, [form, onSubmit])
+
+  // Add this effect to handle errors passed from parent
+  useEffect(() => {
+    if (errors) {
+      Object.entries(errors).forEach(([key, value]) => {
+        if (value && typeof value === "object" && "message" in value) {
+          form.setError(key as any, {
+            type: "manual",
+            message: value.message as string,
+          })
+        }
+      })
+    }
+  }, [errors, form])
+
+  function handleSubmit(values: ProductFormValues) {
+    onSubmit(values)
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         {fields.map((field, index) => (
           <ProductRow
             key={field.id}
@@ -409,13 +391,12 @@ export function ProductDetailsForm() {
           variant="outline"
           onClick={() =>
             append({
-              id: '',
-              name: '',
+              id: "",
+              name: "",
               price: 0,
               quantity: 1,
-              discount: 0,
               taxRate: 0,
-              hsnCode: '',
+              hsnCode: "",
             })
           }
           className="mt-2 text-indigo-600"
@@ -425,5 +406,5 @@ export function ProductDetailsForm() {
         </Button>
       </form>
     </Form>
-  );
+  )
 }

@@ -6,6 +6,7 @@ import ScrollableTabsProps from '@/components/client-tabs';
 import { Plus, RefreshCw } from 'lucide-react';
 import { SHIPMENT_TAB_ROUTES } from '@/lib/routes/nested-shipments';
 import OpenModalBtn from '@/components/open-modal-btn';
+import Link from 'next/link';
 
 interface PageProps {
   params: Promise<{
@@ -42,13 +43,13 @@ export default async function ShipmentsPage({ params, searchParams }: PageProps)
     dateRange:
       dateFrom && dateTo
         ? {
-            from: new Date(dateFrom),
-            to: new Date(dateTo),
-          }
+          from: new Date(dateFrom),
+          to: new Date(dateTo),
+        }
         : {
-            from: new Date(new Date().setDate(new Date().getDate() - 30)),
-            to: new Date(),
-          },
+          from: new Date(new Date().setDate(new Date().getDate() - 30)),
+          to: new Date(),
+        },
     status: tab,
   };
 
@@ -78,9 +79,11 @@ export default async function ShipmentsPage({ params, searchParams }: PageProps)
 
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <OpenModalBtn modalType="seller:new-order" icon={<Plus />}>
-            Add Order
-          </OpenModalBtn>
+          <Link href="/seller/orders/new" scroll={false}>
+            <OpenModalBtn modalType="seller:new-order" icon={<Plus />}>
+              Add Order
+            </OpenModalBtn>
+          </Link>
           <Button variant="outline" size="sm" className="gap-2">
             <RefreshCw className="h-4 w-4" />
             <span>Sync Orders</span>
