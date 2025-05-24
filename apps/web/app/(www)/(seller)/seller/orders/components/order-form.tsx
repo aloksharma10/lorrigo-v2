@@ -108,7 +108,6 @@ export default function OrderForm() {
   })
 
   const { formState: { errors } } = form;
-  console.log(errors);
 
   async function onSubmit(values: OrderFormValues) {
     try {

@@ -1,16 +1,27 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import { checkAccessAndRedirect } from './lib/routes/check-permission';
+import { Role } from '@lorrigo/db';
+import { getRoleBasedRedirect } from './lib/routes/redirect';
+
+
+interface TokenWithRole {
+  role?: Role;
+  email?: string;
+  [key: string]: any;
+}
 
 export async function middleware(request: NextRequest) {
   const token = await getToken({
     req: request,
     secret: process.env.AUTH_SECRET,
-  });
+  }) as TokenWithRole | null;
 
   const isAuthenticated = !!token;
+  const userRole = token?.role;
 
-  // Check if the path is protected (starts with /seller, /staff, or /admin)
+  // Check if the path is protected
   const isProtectedPath =
     request.nextUrl.pathname.startsWith('/seller') ||
     request.nextUrl.pathname.startsWith('/staff') ||
@@ -21,6 +32,30 @@ export async function middleware(request: NextRequest) {
     const redirectUrl = new URL('/auth/signin', request.url);
     redirectUrl.searchParams.set('callbackUrl', request.nextUrl.pathname);
     return NextResponse.redirect(redirectUrl);
+  }
+
+  // Role-based access control for authenticated users
+  // Helper function to check access and get redirect path
+
+
+  // Handle protected routes access control
+  if (isProtectedPath && isAuthenticated) {
+    const { hasAccess, redirectPath } = checkAccessAndRedirect(
+      request.nextUrl.pathname,
+      userRole
+    );
+
+    if (!hasAccess && redirectPath) {
+      const redirectUrl = new URL(redirectPath, request.url);
+      redirectUrl.searchParams.set('error', 'insufficient_permissions');
+      return NextResponse.redirect(redirectUrl);
+    }
+  }
+
+  // Redirect authenticated users from auth pages to their dashboard
+  if (request.nextUrl.pathname.startsWith('/auth/signin') && isAuthenticated) {
+    const dashboardUrl = getRoleBasedRedirect(userRole);
+    return NextResponse.redirect(new URL(dashboardUrl, request.url));
   }
 
   // Add CORS headers for API routes
@@ -122,6 +157,7 @@ export async function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
+// Helper function to get appropriate redirect path based on user role
 export const config = {
   matcher: [
     // Protected routes
