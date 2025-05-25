@@ -1,6 +1,7 @@
 import { PrismaClient } from '@lorrigo/db';
 import bcrypt from 'bcrypt';
 import { FastifyInstance } from 'fastify';
+import { generateId, getFinancialYear } from '@lorrigo/utils';
 
 interface RegisterData {
   email: string;
@@ -18,7 +19,7 @@ interface AuthResponse {
     name: string;
     role: string;
   };
-  token: string;
+  token?: string;
 }
 
 export class AuthService {
@@ -40,10 +41,17 @@ export class AuthService {
       throw new Error('User with this email already exists');
     }
 
+    const code = generateId({
+      tableName: 'user',
+      entityName: data.name,
+      lastUsedFinancialYear: getFinancialYear(new Date()),
+      lastSequenceNumber: 0,
+    }).id;
+
     // Create user in database
     const user = await this.prisma.user.create({
       data: {
-        code: `US-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
+        code,
         email: data.email,
         password: data.password,
         name: data.name,
@@ -57,18 +65,23 @@ export class AuthService {
     // Create wallet for user
     await this.prisma.wallet.create({
       data: {
-        code: `WL-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
+        code: generateId({
+          tableName: 'wallet',
+          entityName: user.name,
+          lastUsedFinancialYear: getFinancialYear(new Date()),
+          lastSequenceNumber: 0,
+        }).id,
         balance: 0,
         user_id: user.id,
       },
     });
 
     // Generate JWT token
-    const token = this.fastify.jwt.sign({
-      id: user.id,
-      email: user.email,
-      role: user.role,
-    });
+    // const token = this.fastify.jwt.sign({
+    //   id: user.id,
+    //   email: user.email,
+    //   role: user.role,
+    // });
 
     return {
       user: {
@@ -77,11 +90,11 @@ export class AuthService {
         name: user.name,
         role: user.role,
       },
-      token,
+      // token,
     };
   }
 
-  async login(email: string, password: string): Promise<AuthResponse | { error: string }> {
+  async login(email: string, password: string, ipAddress: string): Promise<AuthResponse | { error: string }> {
     // Find user by email
     const user = await this.prisma.user.findUnique({
       where: { email },
@@ -107,10 +120,15 @@ export class AuthService {
     // Create API request log
     await this.prisma.apiRequest.create({
       data: {
-        code: `AR-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
+        code: generateId({
+          tableName: 'api_request',
+          entityName: user.name,
+          lastUsedFinancialYear: getFinancialYear(new Date()),
+          lastSequenceNumber: 0,
+        }).id,
         endpoint: '/login',
         method: 'POST',
-        ip_address: 'unknown', // Will be set by controller
+        ip_address: ipAddress,
         user_id: user.id,
         response_status: 200,
       },
@@ -149,9 +167,22 @@ export class AuthService {
   }
 
   async logout(userId: string, ipAddress: string) {
-    return this.prisma.apiRequest.create({
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    await this.prisma.apiRequest.create({
       data: {
-        code: `AR-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
+        code: generateId({
+          tableName: 'api_request',
+          entityName: user.name,
+          lastUsedFinancialYear: getFinancialYear(new Date()),
+          lastSequenceNumber: 0,
+        }).id,
         endpoint: '/logout',
         method: 'POST',
         ip_address: ipAddress,
@@ -159,5 +190,9 @@ export class AuthService {
         response_status: 200,
       },
     });
+
+    return {
+      message: 'Logged out successfully',
+    };
   }
 }

@@ -20,6 +20,7 @@ initSentry();
 
 // Create Fastify server
 const server = Fastify({
+  trustProxy: true,
   logger: {
     level: APP_CONFIG.LOG_LEVEL,
     transport: {

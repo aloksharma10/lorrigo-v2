@@ -1,14 +1,15 @@
 import { prisma } from '@lorrigo/db';
-import type { Order, OrderStatus } from '@lorrigo/db';
-import { CreateOrderSchema, UpdateOrderSchema } from '../validations';
+import type { Channel, Order, OrderStatus, PaymentMethod } from '@lorrigo/db';
+import { OrderFormValues, UpdateOrderFormValues } from '../validations';
 import type { z } from 'zod';
 import { FastifyInstance } from 'fastify';
+import { generateId, getFinancialYear } from '@lorrigo/utils';
 
 /**
  * Order Service handles business logic related to orders
  */
 export class OrderService {
-  constructor(private fastify: FastifyInstance) {}
+  constructor(private fastify: FastifyInstance) { }
 
   /**
    * Get all orders with pagination and filters
@@ -108,7 +109,7 @@ export class OrderService {
             phone: true,
           },
         },
-        shipping_address: true,
+        billing_address: true,
         shipments: {
           include: {
             courier: {
@@ -127,66 +128,154 @@ export class OrderService {
   /**
    * Create a new order
    */
-  async createOrder(data: z.infer<typeof CreateOrderSchema>, userId: string) {
+  async createOrder(data: OrderFormValues, userId: string) {
     // Generate unique order number (format: ORD-YYYYMMDD-XXXX)
     const today = new Date();
     const date_str = today.toISOString().slice(0, 10).replace(/-/g, '');
     const random_str = Math.floor(1000 + Math.random() * 9000).toString();
     const order_number = `ORD-${date_str}-${random_str}`;
+    const order_code = generateId({
+      tableName: 'order',
+      entityName: order_number,
+      lastUsedFinancialYear: getFinancialYear(new Date()),
+      lastSequenceNumber: 0,
+    }).id;
 
     // Create order transaction to handle both order and invoice creation
     return this.fastify.prisma.$transaction(async (tx) => {
+
+      const customer = await tx.customer.upsert({
+        where: {
+          phone: data.deliveryDetails.mobileNumber,
+        },
+        update: {
+        },
+        create: {
+          code: generateId({
+            tableName: 'customer',
+            entityName: data.deliveryDetails.fullName,
+            lastUsedFinancialYear: getFinancialYear(new Date()),
+            lastSequenceNumber: 0,
+          }).id,
+          name: data.deliveryDetails.fullName,
+          email: data.deliveryDetails.email,
+          phone: data.deliveryDetails.mobileNumber,
+        },
+      });
+
+      const billing_address = await tx.address.create({
+        data: {
+          code: generateId({
+            tableName: 'address',
+            entityName: data.sellerDetails.sellerName,
+            lastUsedFinancialYear: getFinancialYear(new Date()),
+            lastSequenceNumber: 0,
+          }).id,
+          name: data.sellerDetails.sellerName,
+          country: data.sellerDetails.isAddressAvailable ? data.sellerDetails.country : 'India',
+          address: data.sellerDetails.address || '',
+          city: data.sellerDetails.city || '',
+          state: data.sellerDetails.state || '',
+          pincode: data.sellerDetails.pincode || '',
+        },
+      });
+
+      const last_order = await tx.order.findFirst({
+        where: {
+          user_id: userId,
+        },
+        orderBy: {
+          created_at: 'desc',
+        },
+        select: {
+          created_at: true,
+        },
+      });
+
+      const volumetric_weight = Number((Number(data.packageDetails.length) * Number(data.packageDetails.breadth) * Number(data.packageDetails.height)) / 5000);
       // Create the order
       const order = await tx.order.create({
         data: {
-          code: 'ORD-2505-00001',
+          code: order_code,
           order_channel_config: {
             create: {
-              code: 'ORD-2505-00001',
-              channel: 'CUSTOM',
+              code: order_code,
+              channel: data.orderChannel as Channel || 'CUSTOM',
               channel_order_id: order_number,
             },
           },
           order_number: order_number,
           status: 'CREATED',
-          total_amount: data.total_amount,
+          total_amount: data.productDetails.products.reduce((acc, item) => acc + (item.price * item.quantity), 0),
+          amount_to_collect: data.amountToCollect,
+          payment_mode: data.paymentMethod.paymentMethod as PaymentMethod || 'COD',
+          bucket: 0,
+          ewaybill: data.ewaybill,
+          items: {
+            create: data.productDetails.products.map((item) => ({
+              code: generateId({
+                tableName: 'order_item',
+                entityName: item.name,
+                lastUsedFinancialYear: getFinancialYear(last_order?.created_at || new Date()),
+                lastSequenceNumber: 0,
+              }).id,
+              name: item.name,
+              sku: item.sku,
+              units: item.quantity,
+              selling_price: item.price,
+              tax: item.taxRate,
+              hsn: item.hsnCode,
+            })),
+          },
+          package: {
+            create: {
+              code: generateId({
+                tableName: 'package',
+                entityName: order_number,
+                lastUsedFinancialYear: getFinancialYear(last_order?.created_at || new Date()),
+                lastSequenceNumber: 0,
+              }).id,
+              weight: Number(data.packageDetails.deadWeight),
+              dead_weight: Number(data.packageDetails.deadWeight),
+              volumetric_weight: volumetric_weight,
+              length: Number(data.packageDetails.length),
+              breadth: Number(data.packageDetails.breadth),
+              height: Number(data.packageDetails.height),
+            },
+          },
           customer: {
-            connect: { id: data.customer_id },
+            connect: { id: customer.id },
           },
           user: {
             connect: { id: userId },
           },
-          shipping_address: {
-            connect: { id: data.shipping_address_id },
+          billing_address: {
+            connect: { id: billing_address.id },
           },
-          ...(data.return_address_id
-            ? {
-                return_address: {
-                  connect: { id: data.return_address_id },
-                },
-              }
-            : {}),
+          hub: {
+            connect: { id: data.pickupAddressId },
+          },
         },
       });
 
       // Create invoice for the order
-      const invoice_number = `INV-${date_str}-${random_str}`;
+      // const invoice_number = `INV-${date_str}-${random_str}`;
 
-      await tx.invoice.create({
-        data: {
-          code: invoice_number,
-          invoice_number: invoice_number,
-          amount: data.total_amount,
-          is_paid: false,
-          due_date: new Date(today.setDate(today.getDate() + 7)), // Due in 7 days
-          user: {
-            connect: { id: userId },
-          },
-          order: {
-            connect: { id: order.id },
-          },
-        },
-      });
+      // await tx.invoice.create({
+      //   data: {
+      //     code: invoice_number,
+      //     invoice_number: invoice_number,
+      //     amount: data.total_amount,
+      //     is_paid: false,
+      //     due_date: new Date(today.setDate(today.getDate() + 7)), // Due in 7 days
+      //     user: {
+      //       connect: { id: userId },
+      //     },
+      //     order: {
+      //       connect: { id: order.id },
+      //     },
+      //   },
+      // });
 
       return order;
     });
@@ -195,12 +284,11 @@ export class OrderService {
   /**
    * Update an order status
    */
-  async updateOrderStatus(id: string, update_data: z.infer<typeof UpdateOrderSchema>) {
+  async updateOrderStatus(id: string, update_data: UpdateOrderFormValues) {
     return this.fastify.prisma.order.update({
       where: { id },
       data: {
         status: update_data.status as OrderStatus,
-        ...(update_data.notes && { notes: update_data.notes }),
       },
     });
   }

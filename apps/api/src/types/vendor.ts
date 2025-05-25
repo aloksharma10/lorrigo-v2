@@ -1,8 +1,16 @@
-export type VendorRegistrationResult = {
+export interface VendorRegistrationResult {
    success: boolean;
    message: string;
    data: any;
-};
+}
+
+export interface VendorShipmentResult {
+   success: boolean;
+   message: string;
+   awb?: string;
+   routingCode?: string;
+   data: any;
+}
 
 export type VendorRegistrationData = {
    name: string;

@@ -3,7 +3,7 @@ import { BaseVendor } from './base-vendor';
 import { APIs } from '@/config/api';
 import { CACHE_KEYS } from '@/config/cache';
 import { formatAddress, formatPhoneNumber } from '@lorrigo/utils';
-import { VendorRegistrationResult } from '@/types/vendor';
+import { VendorRegistrationResult, VendorShipmentResult } from '@/types/vendor';
 
 /**
  * Shiprocket vendor implementation
@@ -137,6 +137,135 @@ export class ShiprocketVendor extends BaseVendor {
       };
     }
   }
+  
+  /**
+   * Create a shipment with Shiprocket
+   * @param shipmentData Shipment data
+   * @returns Promise resolving to shipment creation result
+   */
+  public async createShipment(shipmentData: any): Promise<VendorShipmentResult> {
+    try {
+      const token = await this.getAuthToken();
+      
+      if (!token) {
+        return {
+          success: false,
+          message: 'Failed to get Shiprocket authentication token',
+          data: null,
+        };
+      }
+      
+      const apiConfig = {
+        Authorization: token,
+      };
+      
+      const { order, hub, orderItems, paymentMethod, dimensions } = shipmentData;
+      
+      // Function to trim address to fit Shiprocket requirements
+      const trimAddress = (address = "") => {
+        const fullAddress = `0-/, ${address}`;
+        return fullAddress.length > 150 ? fullAddress.slice(0, 150) : fullAddress;
+      };
+      
+      // Extract customer name components
+      const nameParts = order.customer.name.split(' ');
+      const firstName = nameParts[0] || 'Customer';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
+      // Prepare order items for payload
+      const shiprocketOrderItems = orderItems.map((item: any) => ({
+        name: item.name,
+        sku: `sku-${item.id || item.code}`,
+        units: item.units || 1,
+        selling_price: item.selling_price || 0,
+        discount: item.discount || 0,
+        tax: item.tax || 0,
+        hsn: item.hsn || '',
+      }));
+      
+      // Determine payment method
+      const isCOD = paymentMethod === 'COD';
+      
+      // Create shipment payload
+      const payload: any = {
+        courier_id: shipmentData.courier_id,
+        order_id: order.order_reference_id || order.code,
+        order_date: new Date().toISOString().slice(0, 16).replace('T', ' '),
+        billing_customer_name: firstName,
+        billing_last_name: lastName,
+        billing_address: trimAddress(order.shipping_address.address),
+        billing_city: order.shipping_address.city,
+        billing_pincode: order.shipping_address.pincode,
+        billing_state: order.shipping_address.state,
+        billing_country: 'India',
+        billing_email: order.customer.email || 'customer@example.com',
+        billing_phone: formatPhoneNumber(order.customer.phone),
+        shipping_is_billing: true,
+        order_items: shiprocketOrderItems,
+        payment_method: isCOD ? 'COD' : 'Prepaid',
+        sub_total: order.total_amount,
+        length: dimensions.length || 10,
+        breadth: dimensions.width || 10,
+        height: dimensions.height || 10,
+        weight: dimensions.weight || 0.5,
+        pickup_location: hub.name?.trim(),
+        vendor_details: {
+          name: hub.contact_person_name || hub.name,
+          email: 'noreply@lorrigo.com',
+          phone: formatPhoneNumber(hub.phone),
+          address: trimAddress(hub.address.address),
+          address_2: hub.address.address_2 || '',
+          city: hub.address.city,
+          state: hub.address.state,
+          country: 'India',
+          pin_code: hub.address.pincode,
+          pickup_location: hub.name?.trim(),
+        },
+      };
+      
+      // Add COD specific fields if applicable
+      if (isCOD) {
+        payload.cod_amount = order.total_amount;
+      }
+      
+      const response = await this.makeRequest(
+        APIs.CREATE_FORWARD_SHIPMENT,
+        'POST',
+        payload,
+        apiConfig
+      );
+      
+      const shiprocketData = response.data?.payload;
+      
+      if (!shiprocketData?.order_id || !shiprocketData?.shipment_id || !shiprocketData?.awb_code) {
+        return {
+          success: false,
+          message: shiprocketData?.awb_assign_error || 'Failed to create shipment with Shiprocket',
+          data: response.data,
+        };
+      }
+      
+      return {
+        success: true,
+        message: 'Shipment created successfully',
+        awb: shiprocketData.awb_code,
+        routingCode: shiprocketData.routing_code || '',
+        data: {
+          shiprocket_order_id: shiprocketData.order_id,
+          shiprocket_shipment_id: shiprocketData.shipment_id,
+          ...response.data,
+        },
+      };
+    } catch (error: any) {
+      console.error('Error creating shipment with Shiprocket:', error);
+      
+      return {
+        success: false,
+        message: error.response?.data || error.message,
+        data: null,
+      };
+    }
+  }
 }
 
 /**
@@ -242,5 +371,20 @@ export class ShiprocketB2BVendor extends BaseVendor {
         data: null,
       };
     }
+  }
+  
+  /**
+   * Create a shipment with Shiprocket B2B
+   * @param shipmentData Shipment data
+   * @returns Promise resolving to shipment creation result
+   */
+  public async createShipment(shipmentData: any): Promise<VendorShipmentResult> {
+    // For B2B shipments, we would implement specific logic here
+    // This is a placeholder implementation for the abstract method
+    return {
+      success: false,
+      message: 'B2B shipment creation not yet implemented',
+      data: null
+    };
   }
 } 

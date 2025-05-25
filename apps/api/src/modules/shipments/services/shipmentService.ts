@@ -1,13 +1,13 @@
 import { ShipmentStatus } from '@lorrigo/db';
-import type { z } from 'zod';
-import { CreateShipmentSchema, UpdateShipmentSchema, AddTrackingEventSchema } from '../validations';
+import { z } from 'zod';
 import { FastifyInstance } from 'fastify';
+import { CreateShipmentSchema, UpdateShipmentSchema, AddTrackingEventSchema } from '../validations';
 
 /**
  * Service for handling shipment-related business logic
  */
 export class ShipmentService {
-  constructor(private fastify: FastifyInstance) {}
+  constructor(private fastify: FastifyInstance) { }
 
   /**
    * Generate a unique tracking number
@@ -37,24 +37,11 @@ export class ShipmentService {
       return { error: 'Order not found' };
     }
 
-    // Check if hub exists and belongs to the user
-    const hub = await this.fastify.prisma.hub.findFirst({
-      where: {
-        id: data.hubId,
-        user_id: userId,
-      },
-    });
-
-    if (!hub) {
-      return { error: 'Hub not found' };
-    }
-
     // Create shipment with tracking number
     const shipment = await this.fastify.prisma.shipment.create({
       data: {
         code: `SHP-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
         awb: this.generateTrackingNumber(),
-        weight: data.weight,
         status: ShipmentStatus.CREATED,
         order: {
           connect: {
@@ -75,7 +62,7 @@ export class ShipmentService {
           create: {
             code: `ST-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
             status: ShipmentStatus.CREATED,
-            location: hub.name,
+            location: "",
             description: 'Shipment created and ready for pickup',
           },
         },
@@ -146,7 +133,6 @@ export class ShipmentService {
         order: {
           include: {
             customer: true,
-            shipping_address: true,
           },
         },
         courier: true,

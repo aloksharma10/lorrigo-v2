@@ -1,8 +1,8 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { captureException } from '@/lib/sentry';
 import {
-  CreateOrderSchema,
-  UpdateOrderSchema,
+  orderFormSchema,
+  updateOrderFormSchema,
   OrderQuerySchema,
   OrderStatsQuerySchema,
 } from '../validations';
@@ -87,18 +87,18 @@ export class OrderController {
       // Check if user is authenticated
       await checkAuth(request, reply);
 
-      const data = CreateOrderSchema.parse(request.body);
+      const data = orderFormSchema.parse(request.body);
       const user_id = request.userPayload!.id;
 
       const order = await this.orderService.createOrder(data, user_id);
 
       // Add job to notification queue for order creation
-      await addJob(QueueNames.NOTIFICATION, 'order-created', {
-        orderId: order.id,
-        orderNumber: order.order_number,
-        userId: user_id,
-        customerId: data.customer_id,
-      });
+      // await addJob(QueueNames.NOTIFICATION, 'order-created', {
+      //   orderId: order.id,
+      //   orderNumber: order.order_number,
+      //   userId: user_id,
+      //   customerId: data.customer_id,
+      // });
 
       // Log API request
       await request.server.prisma.apiRequest.create({
@@ -149,7 +149,7 @@ export class OrderController {
       await checkAuth(request, reply);
 
       const { id } = request.params;
-      const updateData = UpdateOrderSchema.parse(request.body);
+      const updateData = updateOrderFormSchema.parse(request.body);
       const user_id = request.userPayload!.id;
 
       const existingOrder = await this.orderService.getOrderById(id, user_id);
@@ -163,16 +163,16 @@ export class OrderController {
       const order = await this.orderService.updateOrderStatus(id, updateData);
 
       // Add job to notification queue for order status update
-      if (updateData.status && updateData.status !== existingOrder.status) {
-        await addJob(QueueNames.NOTIFICATION, 'order-status-updated', {
-          orderId: order.id,
-          orderNumber: order.order_number,
-          previousStatus: existingOrder.status,
-          newStatus: updateData.status,
-          userId: user_id,
-          customerId: order.customer_id,
-        });
-      }
+      // if (updateData.status && updateData.status !== existingOrder.status) {
+      //   await addJob(QueueNames.NOTIFICATION, 'order-status-updated', {
+      //     orderId: order.id,
+      //     orderNumber: order.order_number,
+      //     previousStatus: existingOrder.status,
+      //     newStatus: updateData.status,
+      //     userId: user_id,
+      //     customerId: order.customer_id,
+      //   });
+      // }
 
       return {
         id: order.id,

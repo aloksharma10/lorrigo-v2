@@ -15,29 +15,6 @@ export const OrderStatusEnum = z.enum([
   'RETURNED',
 ]);
 
-// Schema for order items
-export const OrderItemSchema = z.object({
-  description: z.string(),
-  quantity: z.number().int().positive(),
-  unitPrice: z.number().positive(),
-});
-
-// Schema for creating a new order
-export const CreateOrderSchema = z.object({
-  customer_id: z.string(),
-  shipping_address_id: z.string(),
-  return_address_id: z.string().optional(),
-  total_amount: z.number().positive(),
-  notes: z.string().optional(),
-  items: z.array(OrderItemSchema),
-});
-
-// Schema for updating an order
-export const UpdateOrderSchema = z.object({
-  status: OrderStatusEnum.optional(),
-  notes: z.string().optional(),
-});
-
 // Schema for order query parameters
 export const OrderQuerySchema = z.object({
   page: z.number().optional().default(1),

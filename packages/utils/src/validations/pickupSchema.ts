@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const pickupAddressSchema = z.object({
+export const pickupAddressRegistrationSchema = z.object({
    facilityName: z
       .string()
       .min(1, "Facility name is required")

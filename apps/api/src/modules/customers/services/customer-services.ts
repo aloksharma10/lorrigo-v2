@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { Prisma } from '@lorrigo/db';
+import { generateId, getFinancialYear } from '@lorrigo/utils';
 
 interface CustomerData {
   name: string;
@@ -96,7 +97,12 @@ export class CustomerService {
   async createCustomer(data: CustomerData) {
     const customer = await this.fastify.prisma.customer.create({
       data: {
-        code: `CUST-${Math.random().toString(36).substring(2, 15)}`,
+        code: generateId({
+          tableName: 'customer',
+          entityName: data.name,
+          lastUsedFinancialYear: getFinancialYear(new Date()),
+          lastSequenceNumber: 0,
+        }).id,
         name: data.name,
         email: data.email,
         phone: data.phone,

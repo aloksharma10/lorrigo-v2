@@ -243,7 +243,7 @@ model Customer {
   code  String  @unique // Custom ID - Format: CS-YYMM-XXXXX
   name  String  @db.VarChar(100)
   email String? @db.VarChar(255)
-  phone String  @db.VarChar(15)
+  phone String  @unique @db.VarChar(15)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -259,7 +259,8 @@ model Customer {
 // Address Model
 model Address {
   id         String  @id @default(cuid())
-  // code      String  @unique // Custom ID - Format: AD-YYMM-XXXXX
+  name       String? @db.VarChar(100)
+  code       String  @unique // Custom ID - Format: AD-YYMM-XXXXX
   address    String  @db.VarChar(255)
   address_2  String? @db.VarChar(255)
   city       String  @db.VarChar(100)
@@ -278,7 +279,7 @@ model Address {
   hub_primary Hub? @relation("HubPrimaryAddress")
   hub_rto     Hub? @relation("HubRTOAddress")
 
-  orders Order[] @relation("ShippingAddress")
+  orders Order[] @relation("BillingAddress") // Refers to the seller of the order
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -336,32 +337,60 @@ model OrderChannelConfig {
   @@index([channel_order_id])
 }
 
+model Package {
+  id   String @id @default(cuid())
+  code String @unique // Custom ID - Format: PK-YYMM-XXXXX
+
+  weight            Float // in kg
+  dead_weight       Float
+  volumetric_weight Float
+
+  length  Float
+  breadth Float
+  height  Float
+
+  Order Order[] @relation("OrderPackage")
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
 // Order Model
 model Order {
-  id                      String             @id @default(cuid())
-  code                    String             @unique // Will use your custom ID logic
-  order_number            String             @unique @db.VarChar(50)
-  type                    OrderType          @default(B2C)
-  status                  OrderStatus        @default(CREATED)
-  payment_mode            PaymentMethod      @default(COD)
+  id               String        @id @default(cuid())
+  code             String        @unique // Will use your custom ID logic
+  order_number     String        @unique @db.VarChar(50)
+  type             OrderType     @default(B2C)
+  status           OrderStatus   @default(CREATED)
+  payment_mode     PaymentMethod @default(COD)
+  is_reverse_order Boolean       @default(false)
+
   order_channel_config_id String
   order_channel_config    OrderChannelConfig @relation(fields: [order_channel_config_id], references: [id])
   bucket                  Int                @default(0) // For legacy compatibility
   order_reference_id      String?
   ewaybill                String?            @db.VarChar(12)
   total_amount            Float
+  amount_to_collect       Float?
+
+  order_invoice_date   DateTime? @default(now()) // Seller's invoice date
+  order_invoice_number String?   @db.VarChar(50) // Seller's invoice number
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  user_id             String
-  user                User     @relation("UserOrders", fields: [user_id], references: [id], onDelete: Cascade)
-  customer_id         String
-  customer            Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
-  shipping_address_id String
-  shipping_address    Address  @relation("ShippingAddress", fields: [shipping_address_id], references: [id])
-  hub_id              String?
-  hub                 Hub?     @relation("Hub", fields: [hub_id], references: [id])
+  user_id     String
+  user        User     @relation("UserOrders", fields: [user_id], references: [id], onDelete: Cascade)
+  customer_id String
+  customer    Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  hub_id      String?
+  hub         Hub?     @relation("Hub", fields: [hub_id], references: [id])
+
+  billing_address_id String? // Refers to the seller of the order
+  billing_address    Address? @relation("BillingAddress", fields: [billing_address_id], references: [id])
+
+  package_id String?
+  package    Package? @relation("OrderPackage", fields: [package_id], references: [id])
 
   items     OrderItem[]
   payments  Payment[]
@@ -406,13 +435,11 @@ model OrderItem {
 
 // Shipment Model
 model Shipment {
-  id               String         @id @default(cuid())
-  code             String         @unique // Custom ID - Format: SH-YYMM-XXXXX
-  awb              String         @unique @db.VarChar(50)
-  status           ShipmentStatus @default(CREATED)
-  weight           Float // in kg
-  number_of_boxes  Int            @default(1)
-  is_reverse_order Boolean        @default(false)
+  id              String         @id @default(cuid())
+  code            String         @unique // Custom ID - Format: SH-YYMM-XXXXX
+  awb             String         @unique @db.VarChar(50)
+  status          ShipmentStatus @default(CREATED)
+  number_of_boxes Int            @default(1)
 
   shipping_charge Float   @default(0)
   fw_charge       Float   @default(0)

@@ -1,5 +1,4 @@
 export * from './currency-formatter';
-export * from './create-metadata';
 export * from './urls';
 export * from './datetime';
 export * from './camel-case'
@@ -7,3 +6,5 @@ export * from './capitalize'
 export * from './format'
 export * from './has'
 export * from './sanitize'
+export * from './generate-id'
+export * from './get-financial-year'

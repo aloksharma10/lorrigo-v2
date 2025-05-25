@@ -1,7 +1,7 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { redis } from '@/lib/redis';
 import {  CACHE_TTL } from '@/config/cache';
-import { VendorRegistrationResult } from '@/types/vendor';
+import { VendorRegistrationResult, VendorShipmentResult } from '@/types/vendor';
 
 /**
  * Base class for all vendor implementations
@@ -96,4 +96,6 @@ export abstract class BaseVendor {
    * Must be implemented by each vendor class
    */
   public abstract registerHub(hubData: any): Promise<VendorRegistrationResult>;
+
+  public abstract createShipment(shipmentData: any): Promise<VendorShipmentResult>;
 } 
