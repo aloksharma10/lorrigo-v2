@@ -2,11 +2,14 @@ import { prisma } from '@lorrigo/db';
 import type { Order, OrderStatus } from '@lorrigo/db';
 import { CreateOrderSchema, UpdateOrderSchema } from '../validations';
 import type { z } from 'zod';
+import { FastifyInstance } from 'fastify';
 
 /**
  * Order Service handles business logic related to orders
  */
 export class OrderService {
+  constructor(private fastify: FastifyInstance) {}
+
   /**
    * Get all orders with pagination and filters
    */
@@ -49,7 +52,7 @@ export class OrderService {
 
     // Get orders with pagination
     const [orders, total] = await Promise.all([
-      prisma.order.findMany({
+      this.fastify.prisma.order.findMany({
         where,
         skip,
         take: limit,
@@ -91,7 +94,7 @@ export class OrderService {
    * Get a specific order by ID
    */
   async getOrderById(id: string, userId: string) {
-    return prisma.order.findUnique({
+    return this.fastify.prisma.order.findUnique({
       where: {
         id,
         user_id: userId,
@@ -132,7 +135,7 @@ export class OrderService {
     const order_number = `ORD-${date_str}-${random_str}`;
 
     // Create order transaction to handle both order and invoice creation
-    return prisma.$transaction(async (tx) => {
+    return this.fastify.prisma.$transaction(async (tx) => {
       // Create the order
       const order = await tx.order.create({
         data: {
@@ -193,7 +196,7 @@ export class OrderService {
    * Update an order status
    */
   async updateOrderStatus(id: string, update_data: z.infer<typeof UpdateOrderSchema>) {
-    return prisma.order.update({
+    return this.fastify.prisma.order.update({
       where: { id },
       data: {
         status: update_data.status as OrderStatus,
@@ -207,7 +210,7 @@ export class OrderService {
    */
   async cancelOrder(id: string, user_id: string, reason?: string) {
     // Check if order exists and belongs to the user
-    const existingOrder = await prisma.order.findUnique({
+    const existingOrder = await this.fastify.prisma.order.findUnique({
       where: {
         id,
         user_id: user_id,
@@ -236,7 +239,7 @@ export class OrderService {
     }
 
     // Update order status to CANCELLED and add reason to notes
-    const order = await prisma.order.update({
+    const order = await this.fastify.prisma.order.update({
       where: { id },
       data: {
         status: 'CANCELLED',
@@ -244,7 +247,7 @@ export class OrderService {
     });
 
     // Cancel any existing shipments in CREATED status
-    await prisma.shipment.updateMany({
+    await this.fastify.prisma.shipment.updateMany({
       where: {
         order_id: id,
         status: 'CREATED',
@@ -281,7 +284,7 @@ export class OrderService {
     }
 
     // Get total orders and amount
-    const total_orders_promise = prisma.order.count({
+    const total_orders_promise = this.fastify.prisma.order.count({
       where: {
         user_id: user_id,
         created_at: {
@@ -290,7 +293,7 @@ export class OrderService {
       },
     });
 
-    const total_amount_promise = prisma.order.aggregate({
+    const total_amount_promise = this.fastify.prisma.order.aggregate({
       where: {
         user_id: user_id,
         created_at: {
@@ -303,7 +306,7 @@ export class OrderService {
     });
 
     // Get count of orders by status
-    const status_counts_promise = prisma.order.groupBy({
+    const status_counts_promise = this.fastify.prisma.order.groupBy({
       by: ['status'],
       where: {
         user_id: user_id,

@@ -6,3 +6,4 @@ export * from './form-schemas';
 export * from './orderSchema';
 export * from './shipmentSchema';
 export * from './courierSchema';
+export * from './pickupSchema';

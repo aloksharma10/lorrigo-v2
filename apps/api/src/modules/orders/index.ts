@@ -1,11 +1,13 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { OrderController } from './controllers/orders-controller';
+import { OrderService } from './services/order-service';
 
 /**
  * Orders module routes
  */
 export default async function ordersRoutes(fastify: FastifyInstance) {
-  const orderController = new OrderController();
+  const orderService = new OrderService(fastify);
+  const orderController = new OrderController(orderService);
 
   // All routes require authentication
   fastify.addHook('onRequest', fastify.authenticate);

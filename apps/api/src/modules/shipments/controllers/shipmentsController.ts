@@ -8,11 +8,7 @@ import { checkAuth } from '@/middleware/auth';
  * Controller for shipment-related API endpoints
  */
 export class ShipmentController {
-  private shipmentService: ShipmentService;
-
-  constructor() {
-    this.shipmentService = new ShipmentService();
-  }
+  constructor(private shipmentService: ShipmentService) {}
 
   /**
    * Create a new shipment

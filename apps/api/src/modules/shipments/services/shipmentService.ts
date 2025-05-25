@@ -1,11 +1,14 @@
-import { prisma, ShipmentStatus } from '@lorrigo/db';
+import { ShipmentStatus } from '@lorrigo/db';
 import type { z } from 'zod';
 import { CreateShipmentSchema, UpdateShipmentSchema, AddTrackingEventSchema } from '../validations';
+import { FastifyInstance } from 'fastify';
 
 /**
  * Service for handling shipment-related business logic
  */
 export class ShipmentService {
+  constructor(private fastify: FastifyInstance) {}
+
   /**
    * Generate a unique tracking number
    */
@@ -23,7 +26,7 @@ export class ShipmentService {
    */
   async createShipment(data: z.infer<typeof CreateShipmentSchema>, userId: string) {
     // Check if order exists and belongs to the user
-    const order = await prisma.order.findFirst({
+    const order = await this.fastify.prisma.order.findFirst({
       where: {
         id: data.orderId,
         user_id: userId,
@@ -35,7 +38,7 @@ export class ShipmentService {
     }
 
     // Check if hub exists and belongs to the user
-    const hub = await prisma.hub.findFirst({
+    const hub = await this.fastify.prisma.hub.findFirst({
       where: {
         id: data.hubId,
         user_id: userId,
@@ -47,7 +50,7 @@ export class ShipmentService {
     }
 
     // Create shipment with tracking number
-    const shipment = await prisma.shipment.create({
+    const shipment = await this.fastify.prisma.shipment.create({
       data: {
         code: `SHP-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
         awb: this.generateTrackingNumber(),
@@ -85,12 +88,12 @@ export class ShipmentService {
     });
 
     // Update order status if it's still in CREATED status
-    if (order.status === 'CREATED') {
-      await prisma.order.update({
-        where: { id: data.orderId },
-        data: { status: 'PROCESSING' },
-      });
-    }
+    // if (order.status === 'CREATED') {
+    //   await prisma.order.update({
+    //     where: { id: data.orderId },
+    //     data: { status: 'PROCESSING' },
+    //   });
+    // }
 
     return { shipment };
   }
@@ -99,7 +102,7 @@ export class ShipmentService {
    * Get all shipments for a user
    */
   async getAllShipments(userId: string) {
-    return prisma.shipment.findMany({
+    return this.fastify.prisma.shipment.findMany({
       where: {
         user_id: userId,
       },
@@ -134,7 +137,7 @@ export class ShipmentService {
    * Get shipment by ID
    */
   async getShipmentById(id: string, userId: string) {
-    return prisma.shipment.findFirst({
+    return this.fastify.prisma.shipment.findFirst({
       where: {
         id,
         user_id: userId,
@@ -165,7 +168,7 @@ export class ShipmentService {
     updateData: z.infer<typeof UpdateShipmentSchema>
   ) {
     // Verify shipment exists and belongs to user
-    const existingShipment = await prisma.shipment.findFirst({
+    const existingShipment = await this.fastify.prisma.shipment.findFirst({
       where: {
         id,
         user_id: userId,
@@ -177,7 +180,7 @@ export class ShipmentService {
     }
 
     // Update the shipment
-    const updatedShipment = await prisma.shipment.update({
+    const updatedShipment = await this.fastify.prisma.shipment.update({
       where: { id },
       data: updateData,
       include: {
@@ -188,7 +191,7 @@ export class ShipmentService {
 
     // If status was updated, add a tracking event
     if (updateData.status && updateData.status !== existingShipment.status) {
-      await prisma.trackingEvent.create({
+      await this.fastify.prisma.trackingEvent.create({
         data: {
           code: `ST-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
           shipment_id: id,
@@ -200,12 +203,12 @@ export class ShipmentService {
 
       // Update order status based on shipment status
       if (updateData.status === 'DELIVERED') {
-        await prisma.order.update({
+        await this.fastify.prisma.order.update({
           where: { id: existingShipment.order_id },
           data: { status: 'DELIVERED' },
         });
       } else if (updateData.status === 'IN_TRANSIT') {
-        await prisma.order.update({
+        await this.fastify.prisma.order.update({
           where: { id: existingShipment.order_id },
           data: { status: 'SHIPPED' },
         });
@@ -224,7 +227,7 @@ export class ShipmentService {
     eventData: z.infer<typeof AddTrackingEventSchema>
   ) {
     // Verify shipment exists and belongs to user
-    const shipment = await prisma.shipment.findFirst({
+    const shipment = await this.fastify.prisma.shipment.findFirst({
       where: {
         id,
         user_id: user_id,
@@ -236,7 +239,7 @@ export class ShipmentService {
     }
 
     // Create the tracking event
-    const tracking_event = await prisma.trackingEvent.create({
+    const tracking_event = await this.fastify.prisma.trackingEvent.create({
       data: {
         code: `ST-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
         shipment_id: id,
@@ -247,19 +250,19 @@ export class ShipmentService {
     });
 
     // Update shipment status
-    await prisma.shipment.update({
+    await this.fastify.prisma.shipment.update({
       where: { id },
       data: { status: eventData.status as ShipmentStatus },
     });
 
     // Update order status based on tracking event
     if (eventData.status === 'DELIVERED') {
-      await prisma.order.update({
+      await this.fastify.prisma.order.update({
         where: { id: shipment.order_id },
         data: { status: 'DELIVERED' },
       });
     } else if (eventData.status === 'IN_TRANSIT') {
-      await prisma.order.update({
+      await this.fastify.prisma.order.update({
         where: { id: shipment.order_id },
         data: { status: 'SHIPPED' },
       });
@@ -273,7 +276,7 @@ export class ShipmentService {
    */
   async getTrackingEvents(id: string, user_id: string) {
     // Verify shipment exists and belongs to user
-    const shipment = await prisma.shipment.findFirst({
+    const shipment = await this.fastify.prisma.shipment.findFirst({
       where: {
         id,
         user_id: user_id,
@@ -285,7 +288,7 @@ export class ShipmentService {
     }
 
     // Get tracking events
-    const tracking_events = await prisma.trackingEvent.findMany({
+    const tracking_events = await this.fastify.prisma.trackingEvent.findMany({
       where: {
         shipment_id: id,
       },
@@ -302,7 +305,7 @@ export class ShipmentService {
    */
   async cancelShipment(id: string, user_id: string) {
     // Verify shipment exists and belongs to user
-    const shipment = await prisma.shipment.findFirst({
+    const shipment = await this.fastify.prisma.shipment.findFirst({
       where: {
         id,
         user_id: user_id,
@@ -324,13 +327,13 @@ export class ShipmentService {
     }
 
     // Update shipment status to EXCEPTION
-    const updated_shipment = await prisma.shipment.update({
+    const updated_shipment = await this.fastify.prisma.shipment.update({
       where: { id },
       data: { status: 'EXCEPTION' },
     });
 
     // Add tracking event for cancellation
-    await prisma.trackingEvent.create({
+    await this.fastify.prisma.trackingEvent.create({
       data: {
         code: `ST-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
         shipment_id: id,
@@ -341,7 +344,7 @@ export class ShipmentService {
     });
 
     // If this was the only shipment for the order, update order status
-    const otherShipments = await prisma.shipment.findMany({
+    const otherShipments = await this.fastify.prisma.shipment.findMany({
       where: {
         order_id: shipment.order_id,
         id: { not: id },
@@ -350,7 +353,7 @@ export class ShipmentService {
     });
 
     if (otherShipments.length === 0) {
-      await prisma.order.update({
+      await this.fastify.prisma.order.update({
         where: { id: shipment.order_id },
         data: { status: 'CANCELLED' },
       });
@@ -364,7 +367,7 @@ export class ShipmentService {
    */
   async getShipmentStats(user_id: string) {
     // Get count of shipments by status
-    const status_counts = await prisma.shipment.groupBy({
+    const status_counts = await this.fastify.prisma.shipment.groupBy({
       by: ['status'],
       where: {
         user_id: user_id,
@@ -378,7 +381,7 @@ export class ShipmentService {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const recent_shipments = await prisma.shipment.count({
+    const recent_shipments = await this.fastify.prisma.shipment.count({
       where: {
         user_id: user_id,
         created_at: {

@@ -81,7 +81,7 @@ export default async function courierRoutes(fastify: FastifyInstance) {
 
   // Set courier pricing for a user
   fastify.post('/pricing', {
-    preHandler: [authenticateUser],
+    preHandler: [authorizeRoles([Role.ADMIN])],
     handler: (request, reply) => courierController.setCourierPricing(request, reply),
   });
 

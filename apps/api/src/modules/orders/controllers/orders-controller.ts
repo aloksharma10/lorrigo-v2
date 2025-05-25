@@ -1,6 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { captureException } from '@/lib/sentry';
-import { OrderService } from '../services/order-service';
 import {
   CreateOrderSchema,
   UpdateOrderSchema,
@@ -11,16 +10,14 @@ import { z } from 'zod';
 import { addJob } from '@/lib/queue';
 import { QueueNames } from '@/lib/queue';
 import { checkAuth } from '@/middleware/auth';
+import { OrderService } from '../services/order-service';
 
 /**
  * Order Controller handles HTTP request/response logic
  */
 export class OrderController {
-  private orderService: OrderService;
+  constructor(private orderService: OrderService) {}
 
-  constructor() {
-    this.orderService = new OrderService();
-  }
 
   /**
    * Get all orders with pagination and filters

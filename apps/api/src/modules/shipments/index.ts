@@ -1,14 +1,17 @@
 import { FastifyInstance, FastifyRequest } from 'fastify';
 import { ShipmentController } from './controllers/shipmentsController';
+import { authorizeRoles } from '@/middleware/auth';
+import { Role } from '@lorrigo/db';
+import { ShipmentService } from './services/shipmentService';
 
 /**
  * Shipments module routes
  */
 export default async function shipmentRoutes(fastify: FastifyInstance) {
-  const shipmentController = new ShipmentController();
-
   // All routes require authentication
   fastify.addHook('onRequest', fastify.authenticate);
+  const shipmentService = new ShipmentService(fastify);
+  const shipmentController = new ShipmentController(shipmentService);
 
   // Create a new shipment
   fastify.post('/', {
@@ -27,6 +30,7 @@ export default async function shipmentRoutes(fastify: FastifyInstance) {
         },
       },
     },
+    preHandler: [authorizeRoles([Role.SELLER])],
     handler: (request, reply) => shipmentController.createShipment(request, reply),
   });
 
@@ -37,6 +41,7 @@ export default async function shipmentRoutes(fastify: FastifyInstance) {
       summary: 'Get all shipments',
       security: [{ bearerAuth: [] }],
     },
+    preHandler: [authorizeRoles([Role.SELLER, Role.ADMIN])],
     handler: (request, reply) => shipmentController.getAllShipments(request, reply),
   });
 
@@ -71,6 +76,7 @@ export default async function shipmentRoutes(fastify: FastifyInstance) {
         },
       },
     },
+    preHandler: [authorizeRoles([Role.SELLER])],
     handler: (request: FastifyRequest<{ Params: { id: string } }>, reply) =>
       shipmentController.cancelShipment(request, reply),
   });

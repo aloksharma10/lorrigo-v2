@@ -23,6 +23,7 @@
     "@lorrigo/db": "workspace:*",
     "@lorrigo/utils": "workspace:*",
     "@sentry/node": "^7.100.1",
+    "axios": "^1.9.0",
     "bcrypt": "^6.0.0",
     "bullmq": "^5.1.5",
     "dotenv": "^16.4.5",
