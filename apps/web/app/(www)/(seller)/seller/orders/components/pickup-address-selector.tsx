@@ -13,6 +13,7 @@ import {
   FormMessage,
 } from '@lorrigo/ui/components';
 import { useForm } from 'react-hook-form';
+import { useModal } from '@/modal/modal-provider';
 
 interface Address {
   id: string;
@@ -79,6 +80,7 @@ async function fetchAddresses(query: string): Promise<Address[]> {
 }
 
 export function PickupAddressSelector({ onAddressSelect, error }: PickupAddressSelectorProps) {
+  const { openModal } = useModal();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -134,6 +136,20 @@ export function PickupAddressSelector({ onAddressSelect, error }: PickupAddressS
     console.log(values);
   }
 
+
+
+  // const handleConfirm = () => {
+  //   onConfirm();
+  //   onClose();
+  // };
+
+  const handleOpenFormModal = () => {
+    openModal('seller:add-pickup-location', {
+      title: 'Add Pickup Location',
+      onSubmit: (data: any) => console.log('Form submitted:', data),
+    });
+  };
+
   return (
     <Form {...form}>
       <div className="relative" ref={dropdownRef}>
@@ -180,7 +196,7 @@ export function PickupAddressSelector({ onAddressSelect, error }: PickupAddressS
           <Button type="button" variant="outline" size="icon">
             <Edit className="h-4 w-4" />
           </Button>
-          <Button type="button" variant="outline" size="icon">
+          <Button type="button" variant="outline" size="icon" onClick={handleOpenFormModal}>
             <Plus className="h-4 w-4" />
           </Button>
         </div>

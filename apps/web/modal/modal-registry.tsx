@@ -7,6 +7,7 @@ import { create } from 'zustand';
 import { ConfirmModal } from '@/components/modals/confirm-modal';
 import { ImageModal } from '@/components/modals/image-modal';
 import { useModalStore } from './modal-store';
+import { AddPickupLocationModal } from '@/components/modals/add-pickup-location';
 
 // Store to track registered modals
 interface ModalRegistryState {
@@ -29,6 +30,7 @@ export function ModalRegistry() {
       // Register all your modal components here
       registerModal('confirm', ConfirmModal);
       registerModal('image', ImageModal);
+      registerModal('seller:add-pickup-location', AddPickupLocationModal);
 
       setRegistered(true);
       console.log('Modal components registered successfully');
