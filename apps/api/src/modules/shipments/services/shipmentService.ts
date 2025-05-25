@@ -1,7 +1,7 @@
 import { ShipmentStatus } from '@lorrigo/db';
 import { z } from 'zod';
 import { FastifyInstance } from 'fastify';
-import { CreateShipmentSchema, UpdateShipmentSchema, AddTrackingEventSchema } from '../validations';
+import { CreateShipmentSchema, UpdateShipmentSchema, AddTrackingEventSchema } from '@lorrigo/utils';
 
 /**
  * Service for handling shipment-related business logic

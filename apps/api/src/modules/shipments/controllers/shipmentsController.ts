@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { ShipmentService } from '../services/shipmentService';
-import { CreateShipmentSchema, UpdateShipmentSchema, AddTrackingEventSchema } from '../validations';
+import { CreateShipmentSchema, UpdateShipmentSchema, AddTrackingEventSchema } from '@lorrigo/utils';
 import { checkAuth } from '@/middleware/auth';
 
 /**

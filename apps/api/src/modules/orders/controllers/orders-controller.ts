@@ -5,7 +5,7 @@ import {
   updateOrderFormSchema,
   OrderQuerySchema,
   OrderStatsQuerySchema,
-} from '../validations';
+} from '@lorrigo/utils';
 import { z } from 'zod';
 import { addJob } from '@/lib/queue';
 import { QueueNames } from '@/lib/queue';
