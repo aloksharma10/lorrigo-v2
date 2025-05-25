@@ -2,6 +2,8 @@
 
 import * as React from 'react';
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
+import { AppProgressProvider as ProgressProvider } from '@bprogress/next';
+
 import { SessionProvider } from 'next-auth/react';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -30,27 +32,34 @@ export function Providers({ children }: { children: React.ReactNode }) {
       })
   );
   return (
-    <SessionProvider>
-      <QueryClientProvider client={queryClient}>
-        <NextThemesProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-          enableColorScheme
-        >
-          <ModalProvider>
-            <ModalRegistry />
-            {children}
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                duration: 4000,
-              }}
-            />
-          </ModalProvider>
-        </NextThemesProvider>
-      </QueryClientProvider>
-    </SessionProvider>
+    <ProgressProvider
+      height="4px"
+      color="#5b3c37"
+      options={{ showSpinner: false }}
+      shallowRouting
+    >
+      <SessionProvider>
+        <QueryClientProvider client={queryClient}>
+          <NextThemesProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+            enableColorScheme
+          >
+            <ModalProvider>
+              <ModalRegistry />
+              {children}
+              <Toaster
+                position="top-right"
+                toastOptions={{
+                  duration: 4000,
+                }}
+              />
+            </ModalProvider>
+          </NextThemesProvider>
+        </QueryClientProvider>
+      </SessionProvider>
+    </ProgressProvider>
   );
 }

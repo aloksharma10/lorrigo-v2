@@ -15,7 +15,7 @@ import {
   Button,
   CollapsibleContent,
 } from '@lorrigo/ui/components';
-import { phoneRegex } from '@lorrigo/utils/validations';
+import { phoneRegex } from '@lorrigo/utils';
 import { useState, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useForm } from 'react-hook-form';

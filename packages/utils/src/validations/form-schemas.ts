@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { phoneRegex } from '.';
+import { phoneRegex } from '../constants';
 
 // Pickup Address Schema
 export const pickupAddressSchema = z.object({
@@ -83,15 +83,65 @@ export const deliveryDetailsSchema = z.object({
   state: z.string().min(1, 'State is required'),
   email: z.string().email('Invalid email').optional(),
   billingIsSameAsDelivery: z.boolean(),
-  billingMobileNumber: z.string().regex(phoneRegex, 'Invalid phone number'),
-  billingFullName: z.string().min(1, 'Full name is required'),
-  billingCompleteAddress: z.string().min(1, 'Address is required'),
-  billingLandmark: z.string(),
-  billingPincode: z.string().min(6, 'Invalid pincode').max(6, 'Invalid pincode'),
-  billingCity: z.string().min(1, 'City is required'),
-  billingState: z.string().min(1, 'State is required'),
+  billingMobileNumber: z.string().optional(),
+  billingFullName: z.string().optional(),
+  billingCompleteAddress: z.string().optional(),
+  billingLandmark: z.string().optional(),
+  billingPincode: z.string().optional(),
+  billingCity: z.string().optional(),
+  billingState: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (!data.billingIsSameAsDelivery) {
+    if (!data.billingMobileNumber) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['billingMobileNumber'],
+        message: 'Billing mobile number is required',
+      });
+    } else if (!phoneRegex.test(data.billingMobileNumber)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['billingMobileNumber'],
+        message: 'Invalid billing phone number',
+      });
+    }
+    if (!data.billingFullName) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['billingFullName'],
+        message: 'Billing full name is required',
+      });
+    }
+    if (!data.billingCompleteAddress) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['billingCompleteAddress'],
+        message: 'Billing address is required',
+      });
+    }
+    if (!data.billingPincode || data.billingPincode.length !== 6) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['billingPincode'],
+        message: 'Invalid billing pincode',
+      });
+    }
+    if (!data.billingCity) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['billingCity'],
+        message: 'Billing city is required',
+      });
+    }
+    if (!data.billingState) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['billingState'],
+        message: 'Billing state is required',
+      });
+    }
+  }
 });
-
 // Product Schema
 export const productSchema = z.object({
   id: z.string(),
@@ -169,7 +219,7 @@ export const updateOrderFormSchema = z.object({
   pickupAddressId: z.string().min(1, 'Pickup address is required').optional(),
   status: z.string().optional(),
   sellerDetails: sellerDetailsSchema.optional(),
-  deliveryDetails: deliveryDetailsSchema.partial().optional(),
+  deliveryDetails: deliveryDetailsSchema.optional(),
   productDetails: productDetailsSchema.partial().optional(),
   packageDetails: packageDetailsSchema.partial().optional(),
   amountToCollect: z.coerce.number().optional(),

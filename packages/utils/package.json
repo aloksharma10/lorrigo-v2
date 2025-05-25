@@ -40,21 +40,5 @@
       "require": "./dist/helpers/index.js",
       "types": "./dist/helpers/index.d.ts"
     }
-  },
-  "typesVersions": {
-    "*": {
-      "*": [
-        "./dist/*"
-      ],
-      ".": [
-        "./dist/index.d.ts"
-      ],
-      "validations": [
-        "./dist/validations/index.d.ts"
-      ],
-      "helpers": [
-        "./dist/helpers/index.d.ts"
-      ]
-    }
   }
 }
