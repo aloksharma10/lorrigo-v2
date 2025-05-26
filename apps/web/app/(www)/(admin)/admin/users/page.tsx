@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
-import ShipmentsTable from '@/components/tables/shipmen-table';
-import { getInitialShipments } from '@/app/(www)/(seller)/seller/orders/action';
+import ShipmentsTable from '@/components/tables/order/shipmen-table';
+import { getInitialShipments } from '@/app/(www)/(seller)/seller/orders/order-action';
 import { Badge, Button } from '@lorrigo/ui/components';
 import ScrollableTabsProps from '@/components/client-tabs';
 import { Plus, RefreshCw } from 'lucide-react';

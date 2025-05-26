@@ -1,7 +1,7 @@
 import { RefreshCw } from 'lucide-react';
-import { getInitialShipments } from '@/app/(www)/(seller)/seller/orders/action';
+import { getInitialShipments } from '@/app/(www)/(seller)/seller/orders/order-action';
 
-import NDRTable from '@/components/tables/ndr-table';
+import NDRTable from '@/components/tables/order/ndr-table';
 import ScrollableTabsProps from '@/components/client-tabs';
 
 import { NDR_TAB_ROUTES } from '@/lib/routes/nested-shipments';

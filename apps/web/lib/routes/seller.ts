@@ -120,15 +120,15 @@ export const SELLER_ROUTES = [
     items: [
       {
         title: 'Shipping Charges',
-        url: '/seller/shipping-charges',
+        url: '/seller/billing/shipping-charges',
       },
       {
         title: 'COD Remittances',
-        url: '/seller/cod-remittances',
+        url: '/seller/billing/cod-remittances',
       },
       {
         title: 'Invoices',
-        url: '/seller/invoices',
+        url: '/seller/billing/invoices',
       },
     ],
   },

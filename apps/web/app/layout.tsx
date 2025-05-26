@@ -1,7 +1,7 @@
 import { Geist, Geist_Mono } from 'next/font/google';
 
 import '@lorrigo/ui/globals.css';
-import { Providers } from '@/components/providers';
+import { Providers } from '@/components/providers/providers';
 
 const fontSans = Geist({
   subsets: ['latin'],
@@ -22,7 +22,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`${fontSans.variable} ${fontMono.variable} bg-background theme-scaled theme-blue-scaled overscroll-none font-sans antialiased transition-all duration-300`}
+        className={`${fontSans.variable} ${fontMono.variable} overflow-x-hidden bg-background theme-scaled theme-blue-scaled overscroll-none font-sans antialiased transition-all duration-300`}
       >
         <Providers>{children}</Providers>
       </body>

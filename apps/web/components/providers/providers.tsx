@@ -2,14 +2,14 @@
 
 import * as React from 'react';
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
-import { AppProgressProvider as ProgressProvider } from '@bprogress/next';
+import { AppProgressProvider as ProgressProvider, useProgress } from '@bprogress/next';
 
 import { SessionProvider } from 'next-auth/react';
-
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@lorrigo/ui/components';
-import { ModalRegistry } from '../modal/modal-registry';
+import { ModalRegistry } from '../../modal/modal-registry';
 import { ModalProvider } from '@/modal/modal-provider';
+import { LoadingBar } from './loading-bar';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = React.useState(
@@ -17,11 +17,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 60 * 1000, // 1 minute
-            // retry: 1,
+            staleTime: 60 * 1000,
             refetchOnWindowFocus: false,
             retry: (failureCount, error) => {
-              // Don't retry on 4xx errors
               if (error instanceof Error && error.message.includes('4')) {
                 return false;
               }
@@ -31,6 +29,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         },
       })
   );
+
   return (
     <ProgressProvider
       height="4px"
@@ -49,13 +48,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
           >
             <ModalProvider>
               <ModalRegistry />
+              <LoadingBar />
               {children}
-              <Toaster
-                position="top-right"
-                toastOptions={{
-                  duration: 4000,
-                }}
-              />
+              <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
             </ModalProvider>
           </NextThemesProvider>
         </QueryClientProvider>

@@ -26,7 +26,7 @@ import {
   type Shipment,
   type ApiResponse,
   type ShipmentParams,
-} from '@/app/(www)/(seller)/seller/orders/action';
+} from '@/app/(www)/(seller)/seller/orders/order-action';
 
 interface ShipmentsTableProps {
   initialData: ApiResponse;
@@ -119,6 +119,8 @@ export default function ShipmentsTable({ initialData, initialParams }: Shipments
 
   const cancelOrdersMutation = useMutation({
     mutationFn: async (shipments: Shipment[]) => {
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+
       const shipmentIds = shipments.map((s) => s.id);
       return cancelOrders(shipmentIds);
     },

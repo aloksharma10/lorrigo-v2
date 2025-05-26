@@ -26,7 +26,7 @@ import {
   type Shipment,
   type ApiResponse,
   type ShipmentParams,
-} from '@/app/(www)/(seller)/seller/orders/action';
+} from '@/app/(www)/(seller)/seller/orders/order-action';
 
 interface ShipmentsTableProps {
   initialData: ApiResponse;

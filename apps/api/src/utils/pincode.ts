@@ -1,31 +1,33 @@
-import axios from 'axios';
 import { redis } from '@/lib/redis';
+import { prisma } from '@lorrigo/db';
+import { captureException } from '@/lib/sentry';
 
-export const getPincodeDetails = async (pincode: number) => {
-  const cacheKey = `pincode:${pincode}`;
-  
-  // Try to get from cache first
-  const cachedData = await redis.get(cacheKey);
-  if (cachedData) {
-    return JSON.parse(cachedData);
-  }
-  
+export interface PincodeDetails {
+  city: string;
+  state: string;
+  [key: string]: any;
+}
+
+export async function getPincodeDetails(pincode: number): Promise<PincodeDetails | null> {
   try {
-    // If not in cache, fetch from API
-    const response = await axios.get(`https://api.postalpincode.in/pincode/${pincode}`);
-    
-    if (response.data && response.data[0].Status === 'Success') {
-      const pincodeData = response.data[0].PostOffice[0];
-      
-      // Cache the data for 30 days (pincode data rarely changes)
-      await redis.set(cacheKey, JSON.stringify(pincodeData), 'EX', 30 * 24 * 60 * 60);
-      
-      return pincodeData;
+    // Try to get from cache
+    const cached = await redis.get(`pincode:${pincode}`);
+    if (cached) return JSON.parse(cached);
+
+    // If not in cache, fetch from database
+    const details = await prisma.pincode.findUnique({
+      where: { pincode: pincode },
+    });
+
+    if (details) {
+      // Cache the result for 30 days
+      await redis.setex(`pincode:${pincode}`, 30 * 24 * 60 * 60, JSON.stringify(details));
+      return details;
     }
-    
+
     return null;
   } catch (error) {
-    console.error('Error fetching pincode details:', error);
+    captureException(error as Error);
     return null;
   }
-};
+} 

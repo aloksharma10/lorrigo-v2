@@ -2,14 +2,15 @@ import { Card, CardAction, CardDescription, CardHeader, CardTitle } from '@lorri
 import { IconProps } from '@tabler/icons-react';
 import { Badge } from '@lorrigo/ui/components';
 import ActionTooltip from './action-tooltip';
-import { ComponentType } from 'react';
+import { ComponentType, ForwardRefExoticComponent, RefAttributes } from 'react';
+import { LucideProps } from 'lucide-react';
 
 interface CardItemsProps {
   title: string;
   value: string;
   percentage?: string;
   description: string;
-  icon: ComponentType<IconProps>;
+  icon: ComponentType<IconProps> | ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>;
 }
 
 export function CardItems({ title, value, percentage, description, icon: Icon }: CardItemsProps) {
@@ -21,7 +22,7 @@ export function CardItems({ title, value, percentage, description, icon: Icon }:
             <CardDescription className="flex items-center gap-2">
               <span className="text-sm md:text-base lg:text-base">{title}</span>
               <ActionTooltip label={description}>
-                <Icon className="size-7" />
+                <Icon className="size-6" />
               </ActionTooltip>
             </CardDescription>
             <CardTitle className="@[250px]/card:text-2xl flex items-center gap-2 text-2xl font-semibold tabular-nums">
@@ -32,7 +33,7 @@ export function CardItems({ title, value, percentage, description, icon: Icon }:
         {percentage && (
           <CardAction>
             <Badge variant={'outline'}>
-              <Icon />
+              <Icon className="size-4" />
               {percentage}
             </Badge>
           </CardAction>
