@@ -34,11 +34,11 @@ import { type OrderFormValues, orderFormSchema } from '../types';
 import { z } from 'zod';
 import { ORDER_CHANNELS } from '@/lib/order-channels';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function OrderForm() {
   const router = useRouter();
   const [orderType, setOrderType] = useState<'domestic' | 'international'>('domestic');
-  const [orderMode, setOrderMode] = useState<'single' | 'bulk'>('single');
   const [selectedAddress, setSelectedAddress] = useState<any>(null);
   const [isAddressVerified, setIsAddressVerified] = useState(false);
 
@@ -48,7 +48,6 @@ export default function OrderForm() {
       orderId: '',
       orderChannel: '',
       orderType: 'domestic',
-      orderMode: 'single',
       pickupAddressId: '',
       sellerDetails: {
         sellerName: '',
@@ -212,29 +211,20 @@ export default function OrderForm() {
             </Tabs> */}
 
             <div className="inline-flex items-center gap-1 rounded-lg border p-1">
-              <Button
-                variant={orderMode === 'single' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => {
-                  setOrderMode('single');
-                  form.setValue('orderMode', 'single');
-                }}
+              <Link
+                href="/seller/orders/new"
                 className="rounded-md text-xs"
               >
                 Single Order
-              </Button>
-              <Button
-                variant={orderMode === 'bulk' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => {
-                  setOrderMode('bulk');
-                  form.setValue('orderMode', 'bulk');
-                }}
+              </Link>
+              <Link
+                href="/seller/orders/new/bulk"
                 className="rounded-md text-xs"
               >
                 Bulk Order
-              </Button>
+              </Link>
             </div>
+
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">

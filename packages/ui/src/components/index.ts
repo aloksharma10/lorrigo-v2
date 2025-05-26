@@ -54,3 +54,4 @@ export * from './checkbox';
 export * from './radio-group';
 export * from './alert';
 export * from './form';
+export * from './progress'

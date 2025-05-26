@@ -177,7 +177,6 @@ export const orderFormSchema = z.object({
   orderId: z.string().min(1, 'Order ID is required'),
   orderChannel: z.string().min(1, 'Order Channel is required'),
   orderType: z.enum(['domestic', 'international']),
-  orderMode: z.enum(['single', 'bulk']),
   pickupAddressId: z.string().min(1, 'Pickup address is required'),
   status: z.string().optional(),
   sellerDetails: sellerDetailsSchema,
