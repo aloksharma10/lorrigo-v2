@@ -1,21 +1,23 @@
+// lib/apis/user.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@/components/providers/token-provider';
+import { useAuthToken, apiClient } from '@/components/providers/token-provider';
 import { useSession } from 'next-auth/react';
 
 // Fetch user profile
 export const useUserProfile = () => {
    const { status } = useSession();
+   const { isTokenReady } = useAuthToken();
 
    return useQuery({
-      queryKey: ['user'], // Ensure the query key is stable
+      queryKey: ['user'],
       queryFn: async () => {
          const response = await apiClient.get<{ id: string; name: string; email: string }>('/auth/me');
          return response.data;
       },
-      enabled: status === 'authenticated', // Only run query if authenticated
-      retry: 1,
-      refetchOnWindowFocus: false, // Prevent refetch on window focus (useful in dev)
-      staleTime: 5 * 60 * 1000, // Cache the data for 5 minutes
+      enabled: status === 'authenticated' && isTokenReady, // Only run when authenticated AND token is ready
+      retry: 0, // Disable retries to avoid multiple requests on 401
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000,
    });
 };
 

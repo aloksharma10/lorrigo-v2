@@ -14,6 +14,7 @@ export const apiClient = axios.create({
 interface TokenContextType {
    setAuthToken: (token: string | null) => void;
    clearAuthToken: () => void;
+   isTokenReady: boolean;
 }
 
 const TokenContext = React.createContext<TokenContextType | undefined>(undefined);
@@ -28,8 +29,8 @@ export const useAuthToken = () => {
 
 export function TokenProvider({ children }: { children: React.ReactNode }) {
    const { data: session, status } = useSession();
+   const [isTokenReady, setIsTokenReady] = React.useState(false);
 
-   // Memoize the token to prevent unnecessary updates
    const token = React.useMemo(() => session?.user?.token || null, [session]);
 
    const setAuthToken = React.useCallback((token: string | null) => {
@@ -38,18 +39,21 @@ export function TokenProvider({ children }: { children: React.ReactNode }) {
       } else {
          delete apiClient.defaults.headers.common['Authorization'];
       }
+      setIsTokenReady(true); // Mark token as ready after setting
    }, []);
 
    const clearAuthToken = React.useCallback(() => {
       delete apiClient.defaults.headers.common['Authorization'];
+      setIsTokenReady(false);
    }, []);
 
-   // Set token when session changes
    React.useEffect(() => {
       if (status === 'authenticated' && token) {
          setAuthToken(token);
       } else if (status === 'unauthenticated') {
          clearAuthToken();
+      } else {
+         setIsTokenReady(false); // Ensure token isn't ready while loading
       }
    }, [token, status, setAuthToken, clearAuthToken]);
 
@@ -58,7 +62,7 @@ export function TokenProvider({ children }: { children: React.ReactNode }) {
    }
 
    return (
-      <TokenContext.Provider value={{ setAuthToken, clearAuthToken }}>
+      <TokenContext.Provider value={{ setAuthToken, clearAuthToken, isTokenReady }}>
          {children}
       </TokenContext.Provider>
    );
