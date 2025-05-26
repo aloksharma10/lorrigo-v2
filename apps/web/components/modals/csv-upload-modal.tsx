@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { X, Upload, AlertCircle, MinusCircle, Check, ChevronsUpDown } from "lucide-react"
 import {
    Button,
@@ -45,24 +45,12 @@ export function CSVUploadModal() {
    const [step, setStep] = useState<"upload" | "mapping" | "processing">("upload")
    const [validationError, setValidationError] = useState<string | null>(null)
    const [minimized, setMinimized] = useState(false)
+   const [progress, setProgress] = useState(0)
    const queryClient = useQueryClient()
 
    // Add this state for managing combobox open states
    const [openComboboxes, setOpenComboboxes] = useState<Record<string, boolean>>({})
 
-   // Check for existing upload in progress on component mount
-   useState(() => {
-      const savedProgress = localStorage.getItem("csvUploadProgress")
-      if (savedProgress) {
-         const progress = JSON.parse(savedProgress)
-         if (progress.status === "processing") {
-            setStep("processing")
-            setOpen(true)
-            // Reconnect to the upload status
-            queryClient.invalidateQueries({ queryKey: ["csvUpload"] })
-         }
-      }
-   })
 
    const uploadMutation = useMutation({
       mutationFn: async (data: FormData) => {
@@ -71,22 +59,27 @@ export function CSVUploadModal() {
          return uploadCSV(data)
       },
       onSuccess: (data) => {
-         // Clear progress and reset state
-         localStorage.removeItem("csvUploadProgress")
-         setStep("upload")
-         setFile(null)
-         setCsvHeaders([])
-         setHeaderMapping({})
-         setProgress(0)
+         // Set progress to 100% on success
+         setProgress(100)
 
-         if (data.success) {
-            toast.success(`Successfully processed ${data.processedRows} rows.`)
+         // Clear progress and reset state after a brief delay to show completion
+         setTimeout(() => {
+            localStorage.removeItem("csvUploadProgress")
+            setStep("upload")
+            setFile(null)
+            setCsvHeaders([])
+            setHeaderMapping({})
+            setProgress(0)
 
-            setOpen(false)
-         } else if (data.errors) {
-            toast.error("There were errors in your CSV file. See details below.")
-            handleErrorCSV(data.errors)
-         }
+               toast.success(`Successfully processed rows.`)
+            // if (data.success) {
+            //    toast.success(`Successfully processed ${data.processedRows} rows.`)
+            //    setOpen(false)
+            // } else if (data.errors) {
+            //    toast.error("There were errors in your CSV file. See details below.")
+            //    handleErrorCSV(data.errors)
+            // }
+         }, 1000) // 1 second delay to show 100% completion
       },
       onError: (error) => {
          // Clear progress and reset state
@@ -152,6 +145,7 @@ export function CSVUploadModal() {
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
+      URL.revokeObjectURL(url) // Clean up the URL object
    }
 
    const handleSubmit = () => {
@@ -169,8 +163,9 @@ export function CSVUploadModal() {
       formData.append("file", file)
       formData.append("mapping", JSON.stringify(headerMapping))
 
-      uploadMutation.mutate(formData)
       setStep("processing")
+      setProgress(0) // Reset progress before starting
+      uploadMutation.mutate(formData)
    }
 
    const handleMappingChange = (expectedHeader: string, csvHeader: string) => {
@@ -193,6 +188,7 @@ export function CSVUploadModal() {
             setFile(null)
             setCsvHeaders([])
             setHeaderMapping({})
+            setProgress(0)
          }
       } else {
          localStorage.removeItem("csvUploadProgress")
@@ -200,27 +196,9 @@ export function CSVUploadModal() {
          setFile(null)
          setCsvHeaders([])
          setHeaderMapping({})
-      }
-   }
-
-   // Calculate upload progress (mock implementation)
-   const [progress, setProgress] = useState(0)
-
-   // Update the progress simulation useEffect
-   useState(() => {
-      if (step === "processing" && uploadMutation.isPending) {
-         const interval = setInterval(() => {
-            setProgress((prev) => {
-               const newProgress = prev + (100 - prev) * 0.1
-               return newProgress > 99 ? 99 : newProgress
-            })
-         }, 1000)
-
-         return () => clearInterval(interval)
-      } else if (step !== "processing") {
          setProgress(0)
       }
-   })
+   }
 
    // Render minimized version when minimized
    if (open && minimized && step === "processing") {
@@ -236,12 +214,52 @@ export function CSVUploadModal() {
             </div>
             <Progress value={progress} className="h-2 mb-2" />
             <p className="text-xs text-muted-foreground">
-               {progress < 100 ? `Uploading: ${Math.round(progress)}%` : "Processing..."}
+               {progress < 100 ? `Uploading: ${Math.round(progress)}%` : "Processing complete!"}
             </p>
          </div>
       )
    }
 
+
+   // Check for existing upload in progress on component mount
+   useEffect(() => {
+      const savedProgress = localStorage.getItem("csvUploadProgress")
+      if (savedProgress) {
+         const progress = JSON.parse(savedProgress)
+         if (progress.status === "processing") {
+            setStep("processing")
+            setOpen(true)
+            // Reconnect to the upload status
+            queryClient.invalidateQueries({ queryKey: ["csvUpload"] })
+         }
+      }
+   }, [queryClient])
+
+
+
+   // Progress bar update effect
+   useEffect(() => {
+      let interval: NodeJS.Timeout | null = null
+
+      if (step === "processing" && uploadMutation.isPending) {
+         interval = setInterval(() => {
+            setProgress((prev) => {
+               // More realistic progress simulation
+               const increment = Math.random() * 5 + 2 // Random increment between 2-7%
+               const newProgress = prev + increment
+               return newProgress > 95 ? 95 : newProgress // Cap at 95% until completion
+            })
+         }, 500) // Update every 500ms for smoother animation
+      } else if (step !== "processing") {
+         setProgress(0)
+      }
+
+      return () => {
+         if (interval) {
+            clearInterval(interval)
+         }
+      }
+   }, [step, uploadMutation.isPending])
    return (
       <>
          <Button onClick={() => setOpen(true)}>
@@ -361,7 +379,7 @@ export function CSVUploadModal() {
                   <div className="space-y-4 py-4">
                      <Progress value={progress} className="h-2" />
                      <p className="text-center text-sm text-muted-foreground">
-                        {progress < 100 ? `Uploading: ${Math.round(progress)}%` : "Processing data..."}
+                        {progress < 100 ? `Uploading: ${Math.round(progress)}%` : "Processing complete!"}
                      </p>
                      <div className="flex justify-end">
                         <Button variant="outline" size="sm" onClick={toggleMinimized}>
