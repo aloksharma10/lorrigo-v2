@@ -10,6 +10,7 @@ import { Toaster } from '@lorrigo/ui/components';
 import { ModalRegistry } from '../../modal/modal-registry';
 import { ModalProvider } from '@/modal/modal-provider';
 import { LoadingBar } from './loading-bar';
+import { TokenProvider } from './token-provider';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = React.useState(
@@ -39,20 +40,22 @@ export function Providers({ children }: { children: React.ReactNode }) {
     >
       <SessionProvider>
         <QueryClientProvider client={queryClient}>
-          <NextThemesProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-            enableColorScheme
-          >
-            <ModalProvider>
-              <ModalRegistry />
-              <LoadingBar />
-              {children}
-              <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
-            </ModalProvider>
-          </NextThemesProvider>
+          <TokenProvider>
+            <NextThemesProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+              enableColorScheme
+            >
+              <ModalProvider>
+                <ModalRegistry />
+                <LoadingBar />
+                {children}
+                <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
+              </ModalProvider>
+            </NextThemesProvider>
+          </TokenProvider>
         </QueryClientProvider>
       </SessionProvider>
     </ProgressProvider>

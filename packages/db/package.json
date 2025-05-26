@@ -12,7 +12,7 @@
     "db:deploy": "prisma migrate deploy --schema=./schema/schema.prisma",
     "db:gin-indexes": "node migrations/apply-indexes.js",
     "db:setup": "npm run db:push && npm run db:gin-indexes",
-    "studio": "npx prisma studio --schema=./schema/schema.prisma --browser none",
+    "db:studio": "npx prisma studio --schema=./schema/schema.prisma --browser none",
     "postinstall": "prisma generate --schema=./schema/schema.prisma"
   },
   "author": "<aloksharma.cs1@gmail.com> Alok Sharma",

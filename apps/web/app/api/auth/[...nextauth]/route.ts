@@ -1,7 +1,5 @@
 import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { prisma } from '@lorrigo/db';
-import { compare } from 'bcrypt';
 
 // Declare module augmentation for next-auth
 declare module 'next-auth' {
@@ -12,6 +10,7 @@ declare module 'next-auth' {
       email?: string | null;
       image?: string | null;
       role?: string;
+      token?: string;
     };
   }
 }
@@ -30,33 +29,37 @@ const handler = NextAuth({
           return null;
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            role: true,
-            password: true,
-          },
-        });
+        try {
+          const response = await fetch(`${process.env.FASTIFY_BACKEND_URL}/auth/login`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: credentials.email,
+              password: credentials.password,
+            }),
+          });
 
-        if (!user) {
+          if (!response.ok) {
+            console.error('Login API failed', await response.text());
+            return null;
+          }
+
+          const data = await response.json();
+
+          // Assume API returns: { id, email, name, role, token }
+          return {
+            id: data.user.id,
+            email: data.user.email,
+            name: data.user.name,
+            role: data.user.role,
+            token: data.token,
+          };
+        } catch (err) {
+          console.error('Auth error:', err);
           return null;
         }
-
-        const isPasswordValid = await compare(credentials.password, user.password);
-
-        if (!isPasswordValid) {
-          return null;
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-        };
       },
     }),
   ],
@@ -71,16 +74,18 @@ const handler = NextAuth({
     session: ({ session, token }) => {
       if (token && session.user) {
         session.user.id = token.sub || '';
-        // @ts-ignore - Adding role to session
-        session.user.role = token.role;
+        session.user.role = token.role as string;
+        session.user.token = token.token as string;
       }
       return session;
     },
     jwt: ({ token, user }) => {
       if (user) {
         token.id = user.id;
-        // @ts-ignore - Adding role to token
+        // @ts-ignore
         token.role = user.role;
+        // @ts-ignore
+        token.token = user.token;
       }
       return token;
     },

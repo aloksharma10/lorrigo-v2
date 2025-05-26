@@ -8,13 +8,14 @@ import { Input } from '@lorrigo/ui/components';
 import { getRoleBasedRedirect } from '@/lib/routes/redirect';
 import { Role } from '@lorrigo/db';
 import { checkAccessAndRedirect } from '@/lib/routes/check-permission';
+import { useAuthToken } from '@/components/providers/token-provider';
 
 function SignInForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-
+  const { setAuthToken } = useAuthToken();
   const searchParams = useSearchParams();
   const router = useRouter();
   const callbackUrl = searchParams.get('callbackUrl');
@@ -41,6 +42,10 @@ function SignInForm() {
       // Get the updated session with user role
       const session = await getSession();
       const userRole = (session?.user as any)?.role?.toLowerCase() as Role;
+
+      if (session?.user.token) {
+        setAuthToken(session.user.token as string);
+      }
 
       // Determine redirect URL
       let redirectUrl: string;

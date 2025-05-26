@@ -1,5 +1,6 @@
 'use client';
-import { ModalType, useModal } from '@/modal/modal-provider';
+import { useModal } from '@/modal/modal-provider';
+import { ModalType } from '@/modal/modal-store';
 import { Button } from '@lorrigo/ui/components';
 import { ReactElement } from 'react';
 

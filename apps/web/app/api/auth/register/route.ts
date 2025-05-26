@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@lorrigo/db';
-import { hash } from 'bcrypt';
+import { generateId, getFinancialYear } from '@lorrigo/utils';
 
 export async function POST(req: Request) {
   try {
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     }
 
     // Hash password
-    const hashedPassword = await hash(password, 10);
+    // const hashedPassword = await hash(password, 10);
 
     // Generate user code
     const date = new Date();
@@ -29,27 +29,32 @@ export async function POST(req: Request) {
 
     // Get count of existing users to generate unique code
     const userCount = await prisma.user.count();
-    const userCode = `US-${yearMonth}-${(userCount + 1).toString().padStart(5, '0')}`;
+    const userCode = generateId({
+      entityName: 'user',
+      tableName: 'user',
+      lastUsedFinancialYear: getFinancialYear(new Date()),
+      lastSequenceNumber: userCount,
+    }).id;
 
     // Create user
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        phone,
-        code: userCode,
-        role: 'SELLER',
-      },
-    });
+    // const user = await prisma.user.create({
+    //   data: {
+    //     name,
+    //     email,
+    //     password: hashedPassword,
+    //     phone,
+    //     code: userCode,
+    //     role: 'SELLER',
+    //   },
+    // });
 
     // Remove password from returned user object
-    const { password: _, ...userWithoutPassword } = user;
+    // const { password: _, ...userWithoutPassword } = user;
 
-    return NextResponse.json(
-      { message: 'User registered successfully', user: userWithoutPassword },
-      { status: 201 }
-    );
+    // return NextResponse.json(
+    //   { message: 'User registered successfully', user: userWithoutPassword },
+    //   { status: 201 }
+    // );
   } catch (error: any) {
     console.error('Registration error:', error);
     return NextResponse.json(

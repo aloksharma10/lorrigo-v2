@@ -62,6 +62,15 @@ export class AuthService {
       },
     });
 
+    const lastSequenceNumber = await this.prisma.apiRequest.count({
+      where: {
+        timestamp: {
+          gte: new Date(new Date().getFullYear(), 0, 1),
+          lte: new Date(new Date().getFullYear(), 11, 31),
+        },
+      },
+    });
+
     // Create wallet for user
     await this.prisma.wallet.create({
       data: {
@@ -69,7 +78,7 @@ export class AuthService {
           tableName: 'wallet',
           entityName: user.name,
           lastUsedFinancialYear: getFinancialYear(new Date()),
-          lastSequenceNumber: 0,
+          lastSequenceNumber: lastSequenceNumber + 1,
         }).id,
         balance: 0,
         user_id: user.id,
@@ -117,6 +126,16 @@ export class AuthService {
       return { error: 'Invalid email or password' };
     }
 
+    const lastSequenceNumber = await this.prisma.apiRequest.count({
+      where: {
+        timestamp: {
+          gte: new Date(new Date().getFullYear(), 0, 1),
+          lte: new Date(new Date().getFullYear(), 11, 31),
+        },
+      },
+    });
+    console.log(lastSequenceNumber);
+
     // Create API request log
     await this.prisma.apiRequest.create({
       data: {
@@ -124,7 +143,7 @@ export class AuthService {
           tableName: 'api_request',
           entityName: user.name,
           lastUsedFinancialYear: getFinancialYear(new Date()),
-          lastSequenceNumber: 0,
+          lastSequenceNumber: lastSequenceNumber + 1,
         }).id,
         endpoint: '/login',
         method: 'POST',
