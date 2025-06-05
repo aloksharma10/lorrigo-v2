@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getPincode } from '../actions/pincode';
 
 interface CityStateResponse {
@@ -9,29 +9,43 @@ interface CityStateResponse {
 }
 
 const useFetchCityState = (pincode?: string) => {
-  const { data: session, status } = useSession(); // NextAuth session
   const [isTyping, setIsTyping] = useState(false);
+  const cacheRef = useRef<Map<string, CityStateResponse>>(new Map());
+  const [cachedData, setCachedData] = useState<CityStateResponse | null>(null);
 
-  // React Query to fetch city/state    
   const { data, error, isLoading, refetch } = useQuery<CityStateResponse, Error>({
     queryKey: ['cityState', pincode],
     queryFn: async () => {
       if (!pincode || pincode.length !== 6) throw new Error('Invalid pincode');
 
-      const pincode_data = await getPincode(Number(pincode));
-      if (!pincode_data) throw new Error('No data found for pincode');
-      return pincode_data;
+      // If cache exists, return from it
+      if (cacheRef.current.has(pincode)) {
+        return cacheRef.current.get(pincode)!;
+      }
+
+      const response = await getPincode(Number(pincode));
+      if (!response) throw new Error('No data found for pincode');
+      cacheRef.current.set(pincode, response);
+      return response;
     },
-    enabled: false, // Disable auto-fetch (we'll trigger manually)
-    retry: 2, // Retry twice on failure
+    enabled: false, // manual trigger only
+    retry: 2,
   });
 
-  // Debounce and trigger fetch
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const timer = setTimeout(async () => {
       if (pincode?.length === 6) {
-        refetch();
         setIsTyping(false);
+
+        // Use cached value if present
+        if (cacheRef.current.has(pincode)) {
+          setCachedData(cacheRef.current.get(pincode)!);
+        } else {
+          const res = await refetch();
+          if (res.data) {
+            setCachedData(res.data);
+          }
+        }
       }
     }, 1500);
 
@@ -39,7 +53,7 @@ const useFetchCityState = (pincode?: string) => {
   }, [pincode, refetch]);
 
   return {
-    cityState: data || { city: '', state: '' },
+    cityState: cachedData || { city: '', state: '' },
     loading: isLoading,
     error: error?.message || null,
     isTyping,

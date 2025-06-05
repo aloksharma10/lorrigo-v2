@@ -797,10 +797,12 @@ model VerificationToken {
 }
 
 model Pincode {
-  id      String @id @default(cuid())
-  pincode Int    @unique
-  city    String
-  state   String
+  id       String @id @default(cuid())
+  pincode  Int    @unique
+  city     String
+  state    String
+  district String
+  country  String @default("India")
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt

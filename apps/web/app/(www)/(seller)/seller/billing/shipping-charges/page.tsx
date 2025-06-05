@@ -1,13 +1,4 @@
-import Link from 'next/link';
-import { getInitialShipments } from '@/app/(www)/(seller)/seller/orders/order-action';
-import { Plus, RefreshCw } from 'lucide-react';
-import { SHIPMENT_TAB_ROUTES } from '@/lib/routes/nested-shipments';
-
-import ScrollableTabsProps from '@/components/client-tabs';
 import ShippingChargesTab from "@/components/tables/billing/shipping-charges-tab";
-import OpenModalBtn from '@/components/open-modal-btn';
-
-import { Badge, Button } from '@lorrigo/ui/components';
 
 interface PageProps {
    params: Promise<{

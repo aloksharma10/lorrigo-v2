@@ -55,3 +55,5 @@ export * from './radio-group';
 export * from './alert';
 export * from './form';
 export * from './progress'
+
+export * from './loading-input';
