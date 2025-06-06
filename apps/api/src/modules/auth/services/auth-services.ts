@@ -41,11 +41,20 @@ export class AuthService {
       throw new Error('User with this email already exists');
     }
 
+    const lastUserSequenceNumber = await this.prisma.user.count({
+      where: {
+        created_at: {
+          gte: new Date(new Date().getFullYear(), 0, 1),
+          lte: new Date(new Date().getFullYear(), 11, 31),
+        },
+      },
+    });
+
     const code = generateId({
       tableName: 'user',
       entityName: data.name,
       lastUsedFinancialYear: getFinancialYear(new Date()),
-      lastSequenceNumber: 0,
+      lastSequenceNumber: lastUserSequenceNumber + 1,
     }).id;
 
     // Create user in database
@@ -62,9 +71,9 @@ export class AuthService {
       },
     });
 
-    const lastSequenceNumber = await this.prisma.apiRequest.count({
+    const lastWalletSequenceNumber = await this.prisma.wallet.count({
       where: {
-        timestamp: {
+        created_at: {
           gte: new Date(new Date().getFullYear(), 0, 1),
           lte: new Date(new Date().getFullYear(), 11, 31),
         },
@@ -78,7 +87,7 @@ export class AuthService {
           tableName: 'wallet',
           entityName: user.name,
           lastUsedFinancialYear: getFinancialYear(new Date()),
-          lastSequenceNumber: lastSequenceNumber + 1,
+          lastSequenceNumber: lastWalletSequenceNumber + 1,
         }).id,
         balance: 0,
         user_id: user.id,
@@ -134,7 +143,6 @@ export class AuthService {
         },
       },
     });
-    console.log(lastSequenceNumber);
 
     // Create API request log
     await this.prisma.apiRequest.create({

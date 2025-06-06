@@ -35,6 +35,7 @@ import { z } from 'zod';
 import { ORDER_CHANNELS } from '@/lib/order-channels';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { BackButton } from '@/components/back-btn';
 
 export default function OrderForm() {
   const router = useRouter();
@@ -163,10 +164,8 @@ export default function OrderForm() {
     <div className="w-full">
       <div className="sticky top-0 z-10 rounded-t-md border-b bg-white shadow-sm dark:bg-stone-900">
         <div className="container flex max-w-full items-center justify-between px-4 py-3">
-          <div className="flex cursor-pointer items-center gap-2" onClick={() => router.back()}>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
+          <div className="flex items-center gap-2">
+            <BackButton showLabel={false} />
             <h1 className="text-sm font-semibold lg:text-xl">Add Order</h1>
           </div>
           <div className="flex gap-4">

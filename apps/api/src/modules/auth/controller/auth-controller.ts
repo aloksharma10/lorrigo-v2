@@ -4,6 +4,7 @@ import bcrypt from 'bcrypt';
 import { captureException } from '@/lib/sentry';
 
 import { AuthService } from '../services/auth-services';
+import { generateId } from '@lorrigo/utils';
 
 // Add type augmentation for Fastify
 // declare module 'fastify' {
@@ -34,12 +35,17 @@ const registerSchema = z.object({
   password: z.string().min(6),
   name: z.string().min(2),
   business_name: z.string().min(2),
-  phone: z.string().min(10).max(10),
-  gstin: z.string().min(15).max(15).optional(),
+  phone: z.string().length(10),
+  gstin: z
+    .union([z.string(), z.null()])
+    .optional()
+    .refine((val) => val === null || val === undefined || val.length === 15, {
+      message: 'GSTIN must be exactly 15 characters long',
+    }),
 });
 
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) { }
 
   async register(request: FastifyRequest, reply: FastifyReply) {
     try {
@@ -52,6 +58,7 @@ export class AuthController {
       // Register user using service
       const result = await this.authService.register({
         ...data,
+        gstin: data.gstin ?? undefined,
         password: hashedPassword,
       });
 
@@ -72,7 +79,7 @@ export class AuthController {
 
       captureException(error as Error);
       return reply.code(500).send({
-        message: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Internal server error',
       });
     }
   }

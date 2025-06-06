@@ -17,7 +17,7 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
+  CardTitle,
 } from "@lorrigo/ui/components"
 
 interface FormData {
@@ -48,6 +48,7 @@ export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false)
   const [success, setSuccess] = useState("")
   const [currentStep, setCurrentStep] = useState(1)
+  const [showSuccess, setShowSuccess] = useState(false)
 
   const router = useRouter()
 
@@ -155,11 +156,18 @@ export default function SignUp() {
       }
 
       setSuccess("Account created successfully! Redirecting to login...")
-      setCurrentStep(3)
+      setShowSuccess(true)
 
+      // Show success state for 1.5 seconds, then show redirecting state
+      setTimeout(() => {
+        setShowSuccess(false)
+        setSuccess("Redirecting to login...")
+      }, 1500)
+
+      // Redirect after total of 3 seconds
       setTimeout(() => {
         router.push("/auth/signin")
-      }, 2000)
+      }, 3000)
     } catch (error: any) {
       setErrors({ submit: error.message || "An error occurred during registration" })
     } finally {
@@ -169,11 +177,11 @@ export default function SignUp() {
 
   const passwordStrength = getPasswordStrength(formData.password)
   const completedFields = Object.values(formData).filter((value) => value.length > 0).length
-  const totalRequiredFields = 6 // name, email, password, business_name, phone, gstin
+  const totalRequiredFields = 6 // name, email, password, business_name
   const progress = (completedFields / totalRequiredFields) * 100
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+    <div className="flex items-center justify-center ">
       <Card className="w-full max-w-lg">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Create your account</CardTitle>
@@ -338,11 +346,25 @@ export default function SignUp() {
               </div>
             </div>
 
-            <Button type="submit" disabled={isLoading} className="w-full h-11 text-base font-medium">
+            <Button
+              type="submit"
+              disabled={isLoading || showSuccess}
+              className={`w-full h-11 text-base font-medium transition-all duration-300 ${showSuccess ? "bg-green-600 hover:bg-green-600 border-green-600" : ""}`}
+            >
               {isLoading ? (
                 <div className="flex items-center gap-2">
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                   Creating account...
+                </div>
+              ) : showSuccess ? (
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4" />
+                  Account Created!
+                </div>
+              ) : success && success.includes("Redirecting") ? (
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  Redirecting...
                 </div>
               ) : (
                 "Create Account"

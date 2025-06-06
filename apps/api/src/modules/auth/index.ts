@@ -20,7 +20,7 @@ export default async function auth(fastify: FastifyInstance) {
           name: { type: 'string', minLength: 2 },
           business_name: { type: 'string', minLength: 2 },
           phone: { type: 'string', minLength: 10, maxLength: 10 },
-          gstin: { type: 'string', minLength: 15, maxLength: 15 },
+          gstin: { type: 'string', nullable: true },
         },
       },
       response: {

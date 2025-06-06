@@ -14,6 +14,8 @@ import shipmentRoutes from '@/modules/shipments';
 import authRoutes from '@/modules/auth';
 import customerRoutes from '@/modules/customers';
 import courierRoutes from '@/modules/couriers';
+import shopifyRoutes from '@/modules/shopify/shopify.routes';
+import hubRoutes from '@/modules/pickup-address';
 
 // Initialize Sentry
 initSentry();
@@ -66,6 +68,9 @@ const registerPlugins = async () => {
         fastify.register(authRoutes, { prefix: '/auth' });
         fastify.register(customerRoutes, { prefix: '/customers' });
         fastify.register(courierRoutes, { prefix: '/couriers' });
+        fastify.register(hubRoutes, { prefix: '/hubs' });
+        // Register Shopify routes
+        fastify.register(shopifyRoutes, { prefix: '/shopify' });
 
         // Health check route
         fastify.get('/health', async () => {

@@ -8,6 +8,7 @@ export const useHubOperations = () => {
    const getHubsQuery = useQuery({
       queryKey: ['hubs'],
       queryFn: () => api.get('/hubs').then((res: any) => res.data),
+      enabled: false, // manual trigger only
    });
 
    // Create Hub
