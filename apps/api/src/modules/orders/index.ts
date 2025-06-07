@@ -157,7 +157,7 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
           deliveryDetails: { type: 'object' },
           sellerDetails: { type: 'object' },
           packageDetails: { type: 'object' },
-          productDetails: { type: 'array' },
+          productDetails: { type: 'object' },
         },
       },
       response: {

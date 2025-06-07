@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Form,
   Button,
@@ -35,12 +35,16 @@ import { BackButton } from '@/components/back-btn';
 import { InvoiceDetailsForm } from './invoice-details-form';
 import { useCreateOrder } from '@/lib/apis/order';
 import { SubmitBtn } from '@/components/submit-btn';
+import { useRouter } from 'next/navigation';
 
 export default function OrderForm() {
   const [orderType, setOrderType] = useState<'domestic' | 'international'>('domestic');
+  const [redirectPath, setRedirectPath] = useState<string | null>(null);
+
+  const router = useRouter();
   // const [selectedAddress, setSelectedAddress] = useState<any>(null);
   // const [isAddressVerified, setIsAddressVerified] = useState(false);
-  const { createOrder: { isPending: isCreatingOrder, mutateAsync: createOrder } } = useCreateOrder();
+  const { createOrder: { data: order, isPending: isCreatingOrder, mutateAsync: createOrder, isSuccess: isOrderCreated } } = useCreateOrder();
 
   const form = useForm<OrderFormValues>({
     resolver: zodResolver(orderFormSchema),
@@ -112,8 +116,7 @@ export default function OrderForm() {
   async function onSubmit(values: OrderFormValues) {
     try {
       const validatedData = orderFormSchema.parse(values);
-      const order = await createOrder(validatedData);
-      console.log('Order:', order);
+      await createOrder(validatedData);
       toast.success('Order created successfully');
     } catch (error: any) {
       toast.error(error.response.data.message || 'Failed to create order, Please Report to Support at support@lorrigo.in');
@@ -147,6 +150,37 @@ export default function OrderForm() {
     form.setValue('pickupAddressId', address.id);
   };
 
+  const OrderSubmitBtn = () => {
+  
+    return (
+      <div className="flex gap-4">
+        <SubmitBtn
+          isLoading={isCreatingOrder}
+          onClick={() => {
+            setRedirectPath('/seller/orders/forward-shipments/new');
+            form.handleSubmit(onSubmit)();
+          }}
+          text="Create Order"
+          variant="secondary"
+        />
+        <SubmitBtn
+          isLoading={isCreatingOrder}
+          onClick={() => {
+            setRedirectPath(`/seller/orders/${(order as any)?.id}`);
+            form.handleSubmit(onSubmit)();
+          }}
+          text="Ship Now"
+        />
+      </div>
+    );
+  };
+
+  useEffect(() => {
+    if (isOrderCreated && (order as any)?.id && redirectPath) {
+      router.push(redirectPath);
+    }
+  }, [isOrderCreated, order, redirectPath, router]);
+
   return (
     <div className="w-full">
       <div className="sticky top-0 z-10 rounded-t-md border-b bg-white shadow-sm dark:bg-stone-900">
@@ -155,19 +189,7 @@ export default function OrderForm() {
             <BackButton showLabel={false} />
             <h1 className="text-sm font-semibold lg:text-xl">Add Order</h1>
           </div>
-          <div className="flex gap-4">
-            <SubmitBtn
-              isLoading={isCreatingOrder}
-              onClick={form.handleSubmit(onSubmit)}
-              text="Create Order"
-              variant="secondary"
-            />
-            <SubmitBtn
-              isLoading={isCreatingOrder}
-              onClick={form.handleSubmit(onSubmit)}
-              text="Ship Now"
-            />
-          </div>
+          <OrderSubmitBtn />
         </div>
       </div>
 
@@ -374,19 +396,7 @@ export default function OrderForm() {
               </CardContent>
             </Card>
 
-            <div className="flex gap-2">
-              <SubmitBtn
-                isLoading={isCreatingOrder}
-                onClick={form.handleSubmit(onSubmit)}
-                text="Create Order"
-                variant="secondary"
-              />
-              <SubmitBtn
-                isLoading={isCreatingOrder}
-                onClick={form.handleSubmit(onSubmit)}
-                text="Ship Now"
-              />
-            </div>
+            <OrderSubmitBtn />
           </form>
         </Form>
       </div>
