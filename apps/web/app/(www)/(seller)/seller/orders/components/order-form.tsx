@@ -317,8 +317,8 @@ export default function OrderForm() {
               </CardHeader>
               <CardContent>
                 <DeliveryDetailsForm
-                  onSubmit={handleDeliveryDetailsSubmit}
-                  errors={form.formState.errors.deliveryDetails}
+                  control={form.control}
+                  watch={form.watch}
                 />
               </CardContent>
             </Card>
@@ -329,8 +329,8 @@ export default function OrderForm() {
               </CardHeader>
               <CardContent>
                 <ProductDetailsForm
-                  onSubmit={handleProductDetailsSubmit}
-                  errors={form.formState.errors.productDetails}
+                  control={form.control}
+                  watch={form.watch}
                 />
               </CardContent>
             </Card>
@@ -344,8 +344,8 @@ export default function OrderForm() {
               </CardHeader>
               <CardContent>
                 <PaymentMethodSelector
-                  onSubmit={handlePaymentMethodSubmit}
-                  error={form.formState.errors.paymentMethod?.message}
+                  control={form.control}
+                  watch={form.watch}
                 />
               </CardContent>
             </Card>
@@ -360,8 +360,8 @@ export default function OrderForm() {
               </CardHeader>
               <CardContent>
                 <PackageDetailsForm
-                  onSubmit={handlePackageDetailsSubmit}
-                  errors={form.formState.errors.packageDetails}
+                  control={form.control}
+                  watch={form.watch}
                 />
               </CardContent>
             </Card>

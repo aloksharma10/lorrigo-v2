@@ -6,6 +6,7 @@ import { prisma } from '@lorrigo/db';
 // Define our custom user type
 interface UserPayload {
   id: string;
+  name: string;
   email: string;
   role: string;
   permissions?: object;
@@ -107,6 +108,7 @@ const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (fastify, _optio
         },
         select: {
           id: true,
+          name: true,
           email: true,
           role: true,
           is_active: true,
@@ -122,6 +124,7 @@ const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (fastify, _optio
       // Update request.userPayload with the latest user data
       request.userPayload = {
         id: user.id,
+        name: user.name,
         email: user.email,
         role: user.role,
         permissions: user.permissions as object,

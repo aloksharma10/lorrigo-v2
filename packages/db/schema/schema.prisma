@@ -291,9 +291,7 @@ model Address {
 
 // Hub Config Model
 model HubConfig {
-  id     String @id @default(cuid())
-  hub_id String
-  hub    Hub    @relation(fields: [hub_id], references: [id])
+  id String @id @default(cuid())
 
   is_pickup_enabled           Boolean @default(true)
   is_rto_enabled              Boolean @default(true)
@@ -303,6 +301,8 @@ model HubConfig {
   // delivery_type       DeliveryType @default(SURFACE)
   smart_ship_hub_code_surface String  @unique @db.VarChar(50)
   smart_ship_hub_code_express String  @unique @db.VarChar(50)
+
+  hub Hub? @relation("HubConfigHub") // inverse side, optional
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -327,8 +327,10 @@ model Hub {
   rto_address_id String?  @unique
   rto_address    Address? @relation("HubRTOAddress", fields: [rto_address_id], references: [id])
 
-  orders     Order[]     @relation("OrderHub")
-  hub_config HubConfig[]
+  orders Order[] @relation("OrderHub")
+
+  hub_config_id String    @unique // 🔐 Enforces 1-1
+  hub_config    HubConfig @relation("HubConfigHub", fields: [hub_config_id], references: [id])
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt

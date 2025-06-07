@@ -131,10 +131,8 @@ export class SmartShipVendor extends BaseVendor {
 
       // Extract hub_id from the response
       let hubId = "";
-      if (smartShipData.status && smartShipData.data.hub_id) {
-        hubId = smartShipData.data.hub_id;
-      } else if (smartShipData.data.message?.registered_hub_id) {
-        hubId = smartShipData.data.message.registered_hub_id;
+      if (smartShipData.data.hub_id || smartShipData.data.message?.registered_hub_id) {
+        hubId = smartShipData.data.hub_id || smartShipData.data.message?.registered_hub_id || "";
       }
 
       return {

@@ -73,7 +73,7 @@ export const deliveryDetailsSchema = z.object({
   pincode: z.string().min(6, 'Invalid pincode').max(6, 'Invalid pincode'),
   city: z.string().min(1, 'City is required'),
   state: z.string().min(1, 'State is required'),
-  email: z.string().email('Invalid email').optional(),
+  email: z.string().optional(),
   billingIsSameAsDelivery: z.boolean(),
   billingMobileNumber: z.string().optional(),
   billingFullName: z.string().optional(),

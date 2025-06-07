@@ -18,7 +18,7 @@ export class PickupService {
    * @param sellerId Seller ID
    * @returns Promise resolving to hub creation result
    */
-  async createPickup(pickupData: PickupAddress, sellerId: string) {
+  async createPickup(pickupData: PickupAddress, sellerId: string, sellerName: string) {
     try {
       const { facilityName, contactPersonName, address: addressLine, isRTOAddressSame, rtoAddress, rtoCity, rtoState, rtoPincode } = pickupData;
       const pincode = Number(pickupData.pincode);
@@ -68,14 +68,14 @@ export class PickupService {
 
       console.log(lastSequenceNumberHub, "lastSequenceNumberHub")
       const lorrigoPickupId = generateId({
-        entityName: 'HUB',
+        entityName: sellerName.toUpperCase(),
         tableName: 'hub',
         lastUsedFinancialYear: currentFinancialYear,
         lastSequenceNumber: lastSequenceNumberHub + 1,
       }).id;
 
       const lorrigoAddressId = generateId({
-        entityName: 'ADDRESS',
+        entityName: sellerName.toUpperCase(),
         tableName: 'address',
         lastUsedFinancialYear: currentFinancialYear,
         lastSequenceNumber: lastSequenceNumberAddress + 1,
@@ -96,7 +96,7 @@ export class PickupService {
 
       const [smartShipResult, shiprocketResult, delhiveryResults, shiprocketB2BResult] = await Promise.all([
         smartShipVendor.registerHubWithBothDeliveryTypes(vendorPayload),
-        shiprocketVendor.registerHub(vendorPayload, lorrigoPickupId),
+        shiprocketVendor.registerHub(vendorPayload, `${lorrigoPickupId}-${vendorPayload.facilityName}`),
         Promise.all(delhiveryVendors.map(vendor => vendor.registerHub(vendorPayload))),
         null
         // (b2bConfig?.token && b2bConfig?.clientId)
@@ -149,17 +149,34 @@ export class PickupService {
                 create: {
                   smart_ship_hub_code_surface: smartShipResult.data?.surfaceHubId?.toString(),
                   smart_ship_hub_code_express: smartShipResult.data?.expressHubId?.toString(),
-                }
+                },
               },
-              user_id: sellerId,
+              user: {
+                connect: {
+                  id: sellerId,
+                },
+              },
               name: facilityName,
               contact_person_name: contactPersonName,
               phone,
               is_rto_address_same: isRTOAddressSame ?? true,
-              address_id: primaryAddress.id,
-              ...(rtoAddressRecord ? { rto_address_id: rtoAddressRecord.id } : {})
-            }
+              address: {
+                connect: {
+                  id: primaryAddress.id,
+                },
+              },
+              ...(rtoAddressRecord
+                ? {
+                  rto_address: {
+                    connect: {
+                      id: rtoAddressRecord.id,
+                    },
+                  },
+                }
+                : {}),
+            },
           });
+
         }).catch(error => {
           console.log(error, "error")
           throw error;

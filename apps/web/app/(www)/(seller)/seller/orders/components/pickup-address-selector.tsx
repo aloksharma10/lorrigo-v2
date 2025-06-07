@@ -66,7 +66,7 @@ export function PickupAddressSelector({ onAddressSelect, error }: PickupAddressS
 
   useEffect(() => {
     const fetchHubs = async () => {
-      if (isOpen && !data) {
+      if (isOpen && (!data || data.length === 0)) {
         setIsLoading(true);
         try {
           const response = await refetch(); // fetch only once when opened
@@ -156,9 +156,9 @@ export function PickupAddressSelector({ onAddressSelect, error }: PickupAddressS
               </FormItem>
             )}
           />
-          <Button type="button" variant="outline" size="icon">
+          {/* <Button type="button" variant="outline" size="icon">
             <Edit className="h-4 w-4" />
-          </Button>
+          </Button> */}
           <Button type="button" variant="outline" size="icon" onClick={handleOpenFormModal}>
             <Plus className="h-4 w-4" />
           </Button>

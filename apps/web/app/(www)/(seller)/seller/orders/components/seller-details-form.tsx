@@ -43,7 +43,7 @@ export function SellerDetailsForm({ control, watch }: SellerDetailsFormProps) {
             <FormItem>
               <FormLabel className="text-sm font-medium">GST NO.</FormLabel>
               <FormControl>
-                <Input placeholder="Enter the GST No." {...field} />
+                <Input placeholder="Enter the GST No." maxLength={15} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
