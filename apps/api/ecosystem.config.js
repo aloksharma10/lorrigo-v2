@@ -6,7 +6,9 @@ module.exports = {
       instances: 'max',
       exec_mode: 'cluster',
       autorestart: true,
-      watch: false,
+      watch: process.env.NODE_ENV !== 'production',
+      watch_delay: 1000,
+      ignore_watch: ['node_modules', 'dist', 'logs'],
       max_memory_restart: '1G',
       env: {
         NODE_ENV: 'development',

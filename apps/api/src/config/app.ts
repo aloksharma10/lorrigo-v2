@@ -53,10 +53,14 @@ export const APP_CONFIG = {
   // Vendor settings
   VENDOR: {
     SMART_SHIP: {
+      AUTH_URL: process.env.SMART_SHIP_AUTH_URL || '',
       API_KEY: process.env.SMART_SHIP_API_KEY || '',
       API_BASEURL: process.env.SMART_SHIP_API_BASEURL,
       EMAIL: process.env.SMART_SHIP_EMAIL,
       PASSWORD: process.env.SMART_SHIP_PASSWORD,
+      CLIENT_ID: process.env.SMART_SHIP_CLIENT_ID,
+      CLIENT_SECRET: process.env.SMART_SHIP_CLIENT_SECRET,
+      GRANT_TYPE: process.env.SMART_SHIP_GRANT_TYPE,
     },
     SHIPROCKET: {
       API_KEY: process.env.SHIPROCKET_API_KEY || '',
@@ -66,10 +70,9 @@ export const APP_CONFIG = {
     },
     DELHIVERY: {
       API_BASEURL: process.env.DELHIVERY_API_BASEURL,
-
-      API_KEY_0_5: process.env.API_KEY_0_5 || '',
-      API_KEY_5: process.env.DELHIVERY_API_KEY_5,
-      API_KEY_10: process.env.DELHIVERY_API_KEY_10,
+      API_KEY_0_5: process.env.DELHIVERY_API_KEY_0_5 || '',
+      API_KEY_5: process.env.DELHIVERY_API_KEY_5 || '',
+      API_KEY_10: process.env.DELHIVERY_API_KEY_10 || '',
     },
 
     // Zoho settings
@@ -80,6 +83,16 @@ export const APP_CONFIG = {
       CLIENT_SECRET: process.env.ZOHO_CLIENT_SECRET || '',
       GRANT_TYPE: process.env.ZOHO_GRANT_TYPE || '',
       REFRESH_TOKEN: process.env.ZOHO_REFRESH_TOKEN || '',
+    },
+    
+    // Shopify settings
+    SHOPIFY: {
+      API_KEY: process.env.SHOPIFY_API_KEY || '',
+      API_SECRET: process.env.SHOPIFY_API_SECRET || '',
+      API_VERSION: process.env.SHOPIFY_API_VERSION || '2023-10',
+      SCOPES: process.env.SHOPIFY_SCOPES || 'read_orders,read_products,read_customers',
+      HOST: process.env.SHOPIFY_HOST || '',
+      REDIRECT_URI: process.env.SHOPIFY_REDIRECT_URI || '',
     },
   },
 };

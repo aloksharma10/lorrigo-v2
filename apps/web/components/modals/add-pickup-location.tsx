@@ -1,15 +1,13 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
 import {
-    Dialog,
-    DialogContent,
     DialogFooter,
-    DialogHeader,
-    DialogTitle,
     Form,
     FormControl,
     FormDescription,
@@ -21,20 +19,22 @@ import {
     Button,
     toast,
     Checkbox,
+    LoadingInput,
 } from "@lorrigo/ui/components";
 
-import { useRouter } from "next/navigation";
-import { useEffect } from 'react';
 import { useModalStore } from '@/modal/modal-store';
 import { pickupAddressRegistrationSchema } from '@lorrigo/utils/validations';
 import useFetchCityState from '@/lib/hooks/use-fetch-city-state';
 import { Loader2, X } from 'lucide-react';
+import { useHubOperations } from '@/lib/apis/hub';
+import { SubmitBtn } from '@/components/submit-btn';
 
 export const AddPickupLocationModal = () => {
     const router = useRouter();
     const { modals, closeModal } = useModalStore();
     const modal_props = modals.filter((modal) => modal.type === 'seller:add-pickup-location')[0]
     const modal_id = modal_props!.id
+    const { createHub: { mutateAsync } } = useHubOperations()
 
     const form = useForm({
         resolver: zodResolver(pickupAddressRegistrationSchema),
@@ -57,8 +57,13 @@ export const AddPickupLocationModal = () => {
     });
 
 
-    const { cityState: cityStateRes, isTyping: isPinloading } = useFetchCityState(form.watch("pincode"));
-    const { cityState: rtoCityStateRes, isTyping: isRTOPinloading } = useFetchCityState(form.watch("rtoPincode"));
+    const pincode = form.watch("pincode");
+    const rtoPincode = form.watch("rtoPincode");
+    const { cityState: cityStateRes, isTyping: isPinloading, loading: isPinLoading } = useFetchCityState(pincode);
+    const { cityState: rtoCityStateRes, isTyping: isRTOPinloading, loading: isRTOPinLoading } = useFetchCityState(rtoPincode);
+
+    const isFwPincodeLoading = isPinLoading || isPinloading;
+    const isRwPincodeLoading = isRTOPinLoading || isRTOPinloading;
 
     useEffect(() => {
         if (cityStateRes) {
@@ -75,38 +80,47 @@ export const AddPickupLocationModal = () => {
 
     const onSubmit = async (values: z.infer<typeof pickupAddressRegistrationSchema>) => {
         try {
-
             if (!values.isRTOAddressSame && ((values.rtoAddress?.length ?? 0) < 5 || (values.rtoPincode?.length !== 6))) {
                 toast.error("RTO Address must be at least 5 characters long and RTO Pincode must be 6 characters long.");
                 return;
             }
 
-            // await handleCreateHub({
-            //     name: values.facilityName,
-            //     email: values.email,
-            //     pincode: values.pincode,
-            //     address1: values.address,
-            //     address2: values.address,
-            //     phone: values.phone,
-            //     city: values.city,
-            //     state: values.state,
-            //     contactPersonName: values.contactPersonName,
-            //     isRTOAddressSame: values.isRTOAddressSame || false,
-            //     rtoAddress: values.rtoAddress,
-            //     rtoCity: values.rtoCity,
-            //     rtoState: values.rtoState,
-            //     rtoPincode: values.rtoPincode,
-            // });
-
-            // cityState({ city: "", state: "" })
-            // rtoCityState({ city: "", state: "" })
+            await mutateAsync({
+                facilityName: values.facilityName.trim(),
+                email: values.email,
+                pincode: values.pincode,
+                address: values.address,
+                address2: values.address,
+                phone: values.phone,
+                city: values.city,
+                state: values.state,
+                country: "India",
+                contactPersonName: values.contactPersonName,
+                isRTOAddressSame: values.isRTOAddressSame || false,
+                rtoAddress: values.rtoAddress,
+                rtoCity: values.rtoCity,
+                rtoState: values.rtoState,
+                rtoPincode: values.rtoPincode,
+            });
 
 
+            toast.success("Pickup Location added successfully");
             form.reset();
             router.refresh();
-            // onClose();
-        } catch (error) {
-            console.error(error);
+            handleClose();
+        } catch (error: any) {
+            console.error("Error adding pickup location:", error);
+
+            // Extract error message from the error response
+            let errorMessage = "Failed to add pickup location";
+
+            if (error?.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error?.message) {
+                errorMessage = error.message;
+            }
+
+            toast.error(errorMessage);
         }
     }
 
@@ -125,14 +139,12 @@ export const AddPickupLocationModal = () => {
             </div>
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)}>
-                    <AddPickupLocationForm isLoading={isLoading} form={form} isPinLoading={isPinloading} isRTOPinLoading={isRTOPinloading} />
+                    <AddPickupLocationForm isLoading={isLoading} form={form} isPinLoading={isFwPincodeLoading} isRTOPinLoading={isRwPincodeLoading} />
                     <DialogFooter className="px-6 py-4">
                         <Button onClick={() => form.reset()} disabled={isLoading} variant={'secondary'} type='button'>
                             Reset
                         </Button>
-                        <Button disabled={isLoading} variant={'default'} type='submit'>
-                            Add Pickup Location
-                        </Button>
+                        <SubmitBtn isLoading={isLoading} text="Add Pickup Location" />
                     </DialogFooter>
                 </form>
             </Form>
@@ -257,10 +269,12 @@ export const AddPickupLocationForm = ({ isLoading, form, isPinLoading, isRTOPinL
                             Pincode
                         </FormLabel>
                         <FormControl>
-                            <Input
+                            <LoadingInput
+                                isLoading={isPinLoading}
                                 disabled={isLoading}
                                 placeholder="Enter the pincode"
                                 {...field}
+                                maxLength={6}
                             />
                         </FormControl>
                         <FormMessage />
@@ -276,15 +290,11 @@ export const AddPickupLocationForm = ({ isLoading, form, isPinLoading, isRTOPinL
                             City
                         </FormLabel>
                         <FormControl>
-                            <div className='flex items-center bg-zinc-300/50 rounded-md pr-3'>
-                                <Input
-                                    disabled={isLoading || isPinLoading}
-                                    className="bg-transparent border-0 dark:bg-zinc-700 dark:text-white focus-visible:ring-0 text-black focus-visible:ring-offset-0"
-                                    placeholder="Enter the city"
-                                    {...field}
-                                />
-                                {isPinLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                            </div>
+                            <LoadingInput
+                                isLoading={isPinLoading}
+                                placeholder="Enter the city"
+                                {...field}
+                            />
                         </FormControl>
                         <FormMessage />
                     </FormItem>
@@ -299,15 +309,11 @@ export const AddPickupLocationForm = ({ isLoading, form, isPinLoading, isRTOPinL
                             State
                         </FormLabel>
                         <FormControl>
-                            <div className='flex items-center bg-zinc-300/50 rounded-md pr-3'>
-                                <Input
-                                    disabled={isLoading || isPinLoading}
-                                    className="bg-transparent border-0 dark:bg-zinc-700 dark:text-white focus-visible:ring-0 text-black focus-visible:ring-offset-0"
-                                    placeholder="Enter the state"
-                                    {...field}
-                                />
-                                {isPinLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                            </div>
+                            <LoadingInput
+                                isLoading={isPinLoading}
+                                placeholder="Enter the state"
+                                {...field}
+                            />
                         </FormControl>
                         <FormMessage />
                     </FormItem>

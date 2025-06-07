@@ -3,18 +3,59 @@
  */
 export const APIs = {
   // SmartShip API endpoints
-  HUB_REGISTRATION: '/integration/user/hub/register',
-  SMARTSHIP_AUTH: '/user/login',
-  CREATE_SHIPMENT: '/integration/order',
-  
+  SMART_SHIP: {
+    SMARTSHIP_AUTH: '/user/login',
+    HUB_REGISTRATION: "/hubRegistration",
+    HUB_UPDATE: "/updateHubDetails",
+    HUB_DELETE: "/deleteHub",
+    HUB_SERVICEABILITY: "/ServiceabilityHubWise",
+    RATE_CALCULATION: "/rateCalculator",
+    CREATE_SHIPMENT: "/orderRegistrationOneStep",
+    CANCEL_SHIPMENT: "/orderCancellation",
+    ORDER_REATTEMPT: "/orderReattempt",
+    ORDER_MANIFEST: "/createManifest",
+    TRACK_SHIPMENT: "/v1/Trackorder?order_reference_ids", // url => TRACK_SHIPMENT+"=order_reference_id"
+    PIN_CODE: "https://uat.smartr.in/api/v1/pincode/",
+  },
+
   // Shiprocket API endpoints
-  CREATE_PICKUP_LOCATION: '/settings/company/addpickup',
-  CREATE_HUB_B2B_SHIPROCKET: '/warehouse',
-  SHIPROCKET_AUTH: '/auth/login',
-  CREATE_FORWARD_SHIPMENT: '/shipments/create/forward-shipment',
-  
+  SHIPROCKET: {
+    AUTH: '/auth/login',
+    CREATE_PICKUP_LOCATION: "/settings/company/addpickup",
+    ORDER_COURIER: "/courier/serviceability",
+    LIST_COURIER: "/courier/courierListWithCounts",
+    CREATE_SHIPROCKET_ORDER: "/orders/create/adhoc",
+    UPDATE_ORDER: "/orders/update/adhoc",
+    UPDATE_CUSTOMER: "/orders/address/update",
+    CREATE_RETURN_ORDER: "/orders/create/return",
+    GENRATE_AWB: "/courier/assign/awb",
+    CANCEL_SHIPMENT: "/orders/cancel/shipment/awbs",
+    CANCEL_ORDER: "/orders/cancel",
+    GET_MANIFEST: "/courier/generate/pickup",
+    ORDER_TRACKING: "/courier/track/awb",
+    ORDER_NDR: "/ndr",
+  },
+
+  // Shiprocket B2B API endpoints
+  SHIPROCKET_B2B: {
+    CREATE_HUB: "/settings/company/addpickup",
+  },
+
   // Delhivery API endpoints
-  DELHIVERY_PICKUP_LOCATION: '/cmu/create.json',
-  DELHIVERY_AUTH: '/auth/token',
-  DELHIVERY_CREATE_ORDER: '/api/cmu/create.json',
+  DELHIVERY: {
+    PINCODE_SERVICEABILITY: "/c/api/pin-codes/json/?filter_codes=",
+    PICKUP_LOCATION: "/api/backend/clientwarehouse/create/",
+    CREATE_ORDER: "/api/cmu/create.json",
+    CANCEL_ORDER: "/api/p/edit",
+    TRACK_ORDER: "/api/v1/packages/json/?waybill=",
+    MANIFEST_ORDER: "/fm/request/new",
+  },
+
+  // Shopify API endpoints
+  SHOPIFY_OAUTH: '/admin/oauth/authorize',
+  SHOPIFY_TOKEN: '/admin/oauth/access_token',
+  SHOPIFY_ORDERS: '/admin/api/{version}/orders.json',
+  SHOPIFY_ORDER: '/admin/api/{version}/orders/{id}.json',
+  SHOPIFY_CUSTOMERS: '/admin/api/{version}/customers.json',
+  SHOPIFY_CUSTOMER: '/admin/api/{version}/customers/{id}.json',
 };

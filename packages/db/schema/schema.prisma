@@ -289,20 +289,34 @@ model Address {
   @@index([pincode, city])
 }
 
+// Hub Config Model
+model HubConfig {
+  id     String @id @default(cuid())
+  hub_id String
+  hub    Hub    @relation(fields: [hub_id], references: [id])
+
+  is_pickup_enabled           Boolean @default(true)
+  is_rto_enabled              Boolean @default(true)
+  is_cod_enabled              Boolean @default(true)
+  is_prepaid_enabled          Boolean @default(true)
+  is_primary                  Boolean @default(false)
+  // delivery_type       DeliveryType @default(SURFACE)
+  smart_ship_hub_code_surface String  @unique @db.VarChar(50)
+  smart_ship_hub_code_express String  @unique @db.VarChar(50)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
 // Hub Model
 model Hub {
-  id                  String       @id @default(cuid())
-  code                String       @unique // Custom ID - Format: HB-YYMM-XXXXX
-  name                String       @db.VarChar(100)
-  hub_code            String       @unique @db.VarChar(50)
-  is_active           Boolean      @default(true)
-  is_primary          Boolean      @default(false)
-  contact_person_name String       @db.VarChar(100)
-  phone               Int
-  delivery_type       DeliveryType @default(SURFACE)
-  is_rto_address_same Boolean      @default(true)
-
-  is_pickup_address_same_as_rto Boolean @default(true)
+  id                  String  @id @default(cuid())
+  code                String  @unique // Custom ID - Format: HB-YYMM-XXXXX
+  name                String  @db.VarChar(100)
+  contact_person_name String  @db.VarChar(100)
+  is_active           Boolean @default(true)
+  phone               String
+  is_rto_address_same Boolean @default(true)
 
   user_id String
   user    User   @relation("UserHubs", fields: [user_id], references: [id], onDelete: Cascade)
@@ -313,12 +327,13 @@ model Hub {
   rto_address_id String?  @unique
   rto_address    Address? @relation("HubRTOAddress", fields: [rto_address_id], references: [id])
 
-  orders Order[] @relation("Hub")
+  orders     Order[]     @relation("OrderHub")
+  hub_config HubConfig[]
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  @@index([user_id, hub_code, is_active])
+  @@index([user_id, is_active])
   @@index([code])
 }
 
@@ -384,7 +399,7 @@ model Order {
   customer_id String
   customer    Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
   hub_id      String?
-  hub         Hub?     @relation("Hub", fields: [hub_id], references: [id])
+  hub         Hub?     @relation("OrderHub", fields: [hub_id], references: [id])
 
   billing_address_id String? // Refers to the seller of the order
   billing_address    Address? @relation("BillingAddress", fields: [billing_address_id], references: [id])

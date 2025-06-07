@@ -5,7 +5,7 @@ import { PickupService } from './services/pickup-service';
 import { PickupController } from './controller/pickup-controller';
 
 
-export default async function routes(
+export default async function hubRoutes(
   fastify: FastifyInstance,
 ) {
 
@@ -14,7 +14,7 @@ export default async function routes(
 
   fastify.addHook('onRequest', fastify.authenticate);
 
-  fastify.post('/hub', {
+  fastify.post('/', {
     preHandler: [authorizeRoles([Role.SELLER])],
     handler: async (request, reply) => {
       return pickupController.createHub(request, reply);
@@ -26,7 +26,7 @@ export default async function routes(
    * @desc    Get all hubs for authenticated seller
    * @access  Private (Seller only)
    */
-  fastify.get('/hub', {
+  fastify.get('/', {
     preHandler: [authorizeRoles([Role.SELLER])],
     handler: async (request, reply) => {
       return pickupController.getHubs(request, reply);
@@ -38,7 +38,7 @@ export default async function routes(
    * @desc    Get hub by ID
    * @access  Private (Seller only)
    */
-  fastify.get('/hub/:id', {
+  fastify.get('/:id', {
     preHandler: [authorizeRoles([Role.SELLER])],
     handler: async (request, reply) => {
       return pickupController.getHubById(request, reply);

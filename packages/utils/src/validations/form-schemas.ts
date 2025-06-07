@@ -1,14 +1,6 @@
 import { z } from 'zod';
 import { phoneRegex } from '../constants';
 
-// Pickup Address Schema
-export const pickupAddressSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  address: z.string(),
-  verified: z.boolean(),
-});
-
 // Seller Details Schema
 export const sellerDetailsSchema = z
   .object({
@@ -234,7 +226,6 @@ export const updateOrderFormSchema = z.object({
 });
 
 // Types
-export type PickupAddress = z.infer<typeof pickupAddressSchema>;
 export type SellerFormValues = z.infer<typeof sellerDetailsSchema>;
 export type DeliveryFormValues = z.infer<typeof deliveryDetailsSchema>;
 export type ProductItem = z.infer<typeof productSchema>;

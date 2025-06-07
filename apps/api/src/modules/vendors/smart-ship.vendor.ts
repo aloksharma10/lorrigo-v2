@@ -3,6 +3,8 @@ import { BaseVendor } from './base-vendor';
 import { APIs } from '@/config/api';
 import { CACHE_KEYS } from '@/config/cache';
 import { VendorRegistrationResult, VendorShipmentResult } from '@/types/vendor';
+import { PickupAddress } from '@lorrigo/utils';
+import { getPincodeDetails } from '@/utils/pincode';
 
 /**
  * SmartShip vendor implementation
@@ -36,16 +38,21 @@ export class SmartShipVendor extends BaseVendor {
       }
 
       const response = await this.makeRequest(
-        APIs.SMARTSHIP_AUTH,
+        "",
         'POST',
         {
-          email: this.email,
-          password: this.password,
-        }
+          username: APP_CONFIG.VENDOR.SMART_SHIP.EMAIL,
+          password: APP_CONFIG.VENDOR.SMART_SHIP.PASSWORD,
+          client_id: APP_CONFIG.VENDOR.SMART_SHIP.CLIENT_ID,
+          client_secret: APP_CONFIG.VENDOR.SMART_SHIP.CLIENT_SECRET,
+          grant_type: APP_CONFIG.VENDOR.SMART_SHIP.GRANT_TYPE,
+        },
+        undefined,
+        APP_CONFIG.VENDOR.SMART_SHIP.AUTH_URL
       );
 
-      if (response.data && response.data.token) {
-        return response.data.token;
+      if (response.data && response.data.access_token) {
+        return response.data.access_token;
       }
 
       console.error('SmartShip token generation failed:', response.data);
@@ -63,7 +70,7 @@ export class SmartShipVendor extends BaseVendor {
    * @returns Promise resolving to registration result
    */
   public async registerHub(
-    hubData: any,
+    hubData: PickupAddress,
     deliveryTypeId: number = 2
   ): Promise<VendorRegistrationResult> {
     try {
@@ -78,24 +85,35 @@ export class SmartShipVendor extends BaseVendor {
       }
 
       const apiConfig = {
-        Authorization: token,
+        Authorization: `Bearer ${token}`,
       };
+
+      const pincodeConfig = await getPincodeDetails(Number(hubData.pincode));
+      if (!pincodeConfig) {
+        return {
+          success: false,
+          message: 'Invalid pincode',
+          data: null,
+        };
+      }
+
+      const address2 = hubData.address.length > 150 ? hubData.address.slice(150) : "";
 
       const payload = {
         hub_details: {
-          hub_name: hubData.name,
-          pincode: hubData.pincode,
-          city: hubData.city,
-          state: hubData.state,
-          address1: hubData.address1,
-          address2: hubData.address2 || '',
+          hub_name: hubData.facilityName,
+          pincode: pincodeConfig.pincode,
+          city: pincodeConfig.city,
+          state: pincodeConfig.state,
+          address1: hubData.address,
+          address2: address2 || '',
           hub_phone: hubData.phone,
           delivery_type_id: deliveryTypeId, // 1 for express, 2 for surface
         },
       };
 
       const response = await this.makeRequest(
-        APIs.HUB_REGISTRATION,
+        APIs.SMART_SHIP.HUB_REGISTRATION,
         'POST',
         payload,
         apiConfig
@@ -104,7 +122,7 @@ export class SmartShipVendor extends BaseVendor {
       const smartShipData = response.data as {
         status: boolean;
         data: {
-          hub_id?: number;
+          hub_id?: string;
           message?: {
             registered_hub_id?: string;
           };
@@ -112,11 +130,11 @@ export class SmartShipVendor extends BaseVendor {
       };
 
       // Extract hub_id from the response
-      let hubId = 0;
+      let hubId = "";
       if (smartShipData.status && smartShipData.data.hub_id) {
         hubId = smartShipData.data.hub_id;
       } else if (smartShipData.data.message?.registered_hub_id) {
-        hubId = Number(smartShipData.data.message.registered_hub_id);
+        hubId = smartShipData.data.message.registered_hub_id;
       }
 
       return {
@@ -144,7 +162,7 @@ export class SmartShipVendor extends BaseVendor {
    * @param hubData Hub data for registration
    * @returns Promise resolving to registration result
    */
-  public async registerHubWithBothDeliveryTypes(hubData: any): Promise<VendorRegistrationResult> {
+  public async registerHubWithBothDeliveryTypes(hubData: PickupAddress): Promise<VendorRegistrationResult> {
     try {
       // Register with surface delivery type (2)
       const surfaceResult = await this.registerHub(hubData, 2);
@@ -154,15 +172,19 @@ export class SmartShipVendor extends BaseVendor {
 
       // If either registration was successful, consider it a success
       const success = surfaceResult.success || expressResult.success;
-      const hubId = surfaceResult.success && surfaceResult.data?.hubId ?
+      const surfaceHubId = surfaceResult.success && surfaceResult.data?.hubId ?
         surfaceResult.data.hubId :
-        (expressResult.success && expressResult.data?.hubId ? expressResult.data.hubId : 0);
+        "0";
+      const expressHubId = expressResult.success && expressResult.data?.hubId ?
+        expressResult.data.hubId :
+        "0";
 
       return {
         success,
         message: `Hub registered with SmartShip`,
         data: {
-          hubId,
+          surfaceHubId,
+          expressHubId,
           surfaceResult: surfaceResult.data,
           expressResult: expressResult.data,
         },
@@ -177,7 +199,7 @@ export class SmartShipVendor extends BaseVendor {
       };
     }
   }
-  
+
   /**
    * Create a shipment with SmartShip
    * @param shipmentData Shipment data
@@ -186,7 +208,7 @@ export class SmartShipVendor extends BaseVendor {
   public async createShipment(shipmentData: any): Promise<VendorShipmentResult> {
     try {
       const token = await this.getAuthToken();
-      
+
       if (!token) {
         return {
           success: false,
@@ -194,40 +216,40 @@ export class SmartShipVendor extends BaseVendor {
           data: null,
         };
       }
-      
+
       const apiConfig = {
         Authorization: token,
       };
-      
+
       const { order, hub, orderItems, paymentMethod, dimensions, courier } = shipmentData;
-      
+
       // Extract first order item for product details
       const firstOrderItem = orderItems[0];
-      
+
       // Calculate product value with tax
       const productValueWithTax =
         Number(firstOrderItem.selling_price || 0) +
         (Number(firstOrderItem.tax_rate || 0) / 100) * Number(firstOrderItem.selling_price || 0);
-      
+
       // Calculate total order value
       const totalOrderValue = productValueWithTax * Number(firstOrderItem.units || 1);
-      
+
       // Determine payment type (0 for prepaid, 1 for COD)
       const paymentType = paymentMethod === 'COD' ? 1 : 0;
-      
+
       // Determine collectable amount for COD orders
       const collectableAmount = paymentType ? order.total_amount : 0;
-      
+
       // Generate client order reference ID
       let clientOrderReferenceId = order.order_reference_id || order.code;
-      
+
       // If it's a reshipped order, modify the reference ID
       if (shipmentData.is_reshipped) {
         const lastNumber = clientOrderReferenceId.match(/\d+$/)?.[0] || '';
         const incrementedNumber = lastNumber ? (parseInt(lastNumber) + 1).toString() : '1';
         clientOrderReferenceId = `${clientOrderReferenceId.replace(/\d+$/, '')}_R${incrementedNumber}`;
       }
-      
+
       // Create shipment payload
       const payload = {
         request_info: {
@@ -274,16 +296,16 @@ export class SmartShipVendor extends BaseVendor {
           },
         ],
       };
-      
+
       const response = await this.makeRequest(
-        APIs.CREATE_SHIPMENT,
+        APIs.SMART_SHIP.CREATE_SHIPMENT,
         'POST',
         payload,
         apiConfig
       );
-      
+
       const smartShipResponse = response.data;
-      
+
       // Check for errors in the response
       if (smartShipResponse?.status === '403') {
         return {
@@ -292,7 +314,7 @@ export class SmartShipVendor extends BaseVendor {
           data: response.data,
         };
       }
-      
+
       if (!smartShipResponse?.data?.total_success_orders) {
         return {
           success: false,
@@ -300,10 +322,10 @@ export class SmartShipVendor extends BaseVendor {
           data: response.data,
         };
       }
-      
+
       // Extract AWB number from the response
       const awb = smartShipResponse?.data?.success_order_details?.orders[0]?.awb_number;
-      
+
       if (!awb) {
         return {
           success: false,
@@ -311,7 +333,7 @@ export class SmartShipVendor extends BaseVendor {
           data: response.data,
         };
       }
-      
+
       return {
         success: true,
         message: 'Shipment created successfully',
@@ -320,7 +342,7 @@ export class SmartShipVendor extends BaseVendor {
       };
     } catch (error: any) {
       console.error('Error creating shipment with SmartShip:', error);
-      
+
       return {
         success: false,
         message: error.response?.data || error.message,

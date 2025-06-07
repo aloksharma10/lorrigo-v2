@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { PickupService } from '../services/pickup-service';
-import { pickupAddressSchema } from '@lorrigo/utils';
+import { pickupAddressRegistrationSchema } from '@lorrigo/utils';
 
 /**
  * Controller for pickup address operations
@@ -18,7 +18,7 @@ export class PickupController {
       const body = request.body as any;
 
       // Validate request payload
-      const validationResult = pickupAddressSchema.safeParse(body);
+      const validationResult = pickupAddressRegistrationSchema.safeParse(body);
       if (!validationResult.success) {
         return reply.code(400).send(validationResult.error);
       }

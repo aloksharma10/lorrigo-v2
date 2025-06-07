@@ -56,3 +56,9 @@ export function generateId({
       sequenceNumber,
    };
 }
+
+export function getFinancialYearStartDate(financialYear: string): Date {
+   const [startYear] = financialYear.split('-').map(Number);
+   return new Date(`${startYear}-04-01T00:00:00.000Z`);
+ }
+ 

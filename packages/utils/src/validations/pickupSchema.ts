@@ -4,7 +4,7 @@ export const pickupAddressRegistrationSchema = z.object({
    facilityName: z
       .string()
       .min(1, "Facility name is required")
-      .regex(/^[A-Za-z0-9_-]+$/, "Only A-Z, 0-9,- and _ are allowed"),
+      .regex(/^[A-Za-z0-9 _-]+$/, "Only A-Z, 0-9, spaces, - and _ are allowed"),
    contactPersonName: z.string().min(1, "Contact person name is required").refine((value) => typeof value === "string" && !/\d/.test(value), {
       message: "Contact person name cannot contain numbers",
    }),
@@ -39,3 +39,5 @@ export const pickupAddressRegistrationSchema = z.object({
    message: "RTO Pincode must be 6 characters long",
    path: ["rtoPincode"]
 });
+
+export type PickupAddress = z.infer<typeof pickupAddressRegistrationSchema>;

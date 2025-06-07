@@ -2,8 +2,9 @@ import { APP_CONFIG } from '@/config/app';
 import { BaseVendor } from './base-vendor';
 import { APIs } from '@/config/api';
 import { CACHE_KEYS } from '@/config/cache';
-import { formatAddress, formatPhoneNumber } from '@lorrigo/utils';
+import { formatAddress, formatPhoneNumber, PickupAddress } from '@lorrigo/utils';
 import { VendorRegistrationResult, VendorShipmentResult } from '@/types/vendor';
+import { getPincodeDetails } from '@/utils/pincode';
 
 /**
  * Shiprocket vendor implementation
@@ -37,7 +38,7 @@ export class ShiprocketVendor extends BaseVendor {
       }
       
       const response = await this.makeRequest(
-        APIs.SHIPROCKET_AUTH,
+        APIs.SHIPROCKET.AUTH,
         'POST',
         {
           email: this.email,
@@ -62,7 +63,7 @@ export class ShiprocketVendor extends BaseVendor {
    * @param hubData Hub data for registration
    * @returns Promise resolving to registration result
    */
-  public async registerHub(hubData: any): Promise<VendorRegistrationResult> {
+  public async registerHub(hubData: PickupAddress, lorrigoPickupId?: string): Promise<VendorRegistrationResult> {
     try {
       const token = await this.getAuthToken();
       
@@ -78,24 +79,35 @@ export class ShiprocketVendor extends BaseVendor {
         Authorization: token,
       };
       
+      const pincodeConfig = await getPincodeDetails(Number(hubData.pincode));
+      if (!pincodeConfig) {
+        return {
+          success: false,
+          message: 'Invalid pincode',
+          data: null,
+        };
+      }
       // Format address according to Shiprocket requirements
-      const modifiedAddress = formatAddress(hubData.address1);
+      const modifiedAddress = formatAddress(hubData.address);
+
+      // Create address2 from address if it exists if address line 1 is greater than 150 characters
+      const address2 = modifiedAddress.length > 150 ? modifiedAddress.slice(150) : "";
       
       const payload = {
-        pickup_location: hubData.name,
-        name: hubData.name,
+        pickup_location: `${lorrigoPickupId}`,
+        name: hubData.facilityName,
         email: "noreply@lorrigo.com",
-        phone: formatPhoneNumber(hubData.phone),
+        phone: hubData.phone,
         address: modifiedAddress,
-        address_2: hubData.address2 || "",
-        city: hubData.city,
-        state: hubData.state,
+        address_2: address2,
+        city: pincodeConfig.city,
+        state: pincodeConfig.state,
         country: "India",
-        pin_code: hubData.pincode,
+        pin_code: pincodeConfig.pincode,
       };
-      
+
       const response = await this.makeRequest(
-        APIs.CREATE_PICKUP_LOCATION,
+        APIs.SHIPROCKET.CREATE_PICKUP_LOCATION,
         'POST',
         payload,
         apiConfig
@@ -107,7 +119,7 @@ export class ShiprocketVendor extends BaseVendor {
         data: response.data,
       };
     } catch (error: any) {
-      console.error('Error registering hub with Shiprocket:', error);
+      // console.error('Error registering hub with Shiprocket:', error);
       
       // Check if error is due to existing hub but inactive
       const isExistingHub = error?.response?.data?.errors?.pickup_location?.[0]?.includes("Address nick name already in use");
@@ -229,7 +241,7 @@ export class ShiprocketVendor extends BaseVendor {
       }
       
       const response = await this.makeRequest(
-        APIs.CREATE_FORWARD_SHIPMENT,
+        APIs.SHIPROCKET.GENRATE_AWB,
         'POST',
         payload,
         apiConfig
@@ -311,7 +323,7 @@ export class ShiprocketB2BVendor extends BaseVendor {
    * @param token Pre-generated Shiprocket B2B token
    * @returns Promise resolving to registration result
    */
-  public async registerHub(hubData: any, token?: string): Promise<VendorRegistrationResult> {
+  public async registerHub(hubData: PickupAddress, lorrigoPickupId?: string, token?: string): Promise<VendorRegistrationResult> {
     try {
       if (!token) {
         return {
@@ -333,25 +345,38 @@ export class ShiprocketB2BVendor extends BaseVendor {
         Authorization: token,
       };
       
+      const pincodeConfig = await getPincodeDetails(Number(hubData.pincode));
+      if (!pincodeConfig) {
+        return {
+          success: false,
+          message: 'Invalid pincode',
+          data: null,
+        };
+      }
+      const modifiedAddress = formatAddress(hubData.address);
+
+      // Create address2 from address if it exists if address line 1 is greater than 150 characters
+      const address2 = modifiedAddress.length > 150 ? modifiedAddress.slice(0, 150) : "";
+      
       const payload = {
-        name: hubData.name,
+        name: hubData.facilityName,
         client_id: this.clientId,
         address: {
-          address_line_1: hubData.address1,
-          address_line_2: hubData.address2 || '',
-          pincode: hubData.pincode.toString(),
-          city: hubData.city,
-          state: hubData.state,
+          address_line_1: modifiedAddress,
+          address_line_2: address2,
+          pincode: pincodeConfig.pincode.toString(),
+          city: pincodeConfig.city,
+          state: pincodeConfig.state,
           country: 'India',
         },
-        warehouse_code: `wh_${hubData.pincode}`,
+        warehouse_code: `wh_${pincodeConfig.pincode}`,
         contact_person_name: hubData.contactPersonName,
         contact_person_email: 'noreply@lorrigo.com',
-        contact_person_contact_no: formatPhoneNumber(hubData.phone),
+        contact_person_contact_no: formatPhoneNumber(Number(hubData.phone)),
       };
       
       const response = await this.makeRequest(
-        APIs.CREATE_HUB_B2B_SHIPROCKET,
+        APIs.SHIPROCKET_B2B.CREATE_HUB,
         'POST',
         payload,
         apiConfig

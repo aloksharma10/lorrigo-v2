@@ -71,18 +71,18 @@ export class DelhiveryVendor extends BaseVendor {
       }
       
       const apiConfig = {
-        Authorization: token,
+        Authorization: `Token ${token}`,
       };
       
       const payload = {
-        name: hubData.name,
+        name: hubData.facilityName,
         email: "noreply@lorrigo.com",
         phone: formatPhoneNumber(hubData.phone),
-        address: hubData.address1,
+        address: hubData.address,
         city: hubData.city,
         country: "India",
         pin: hubData.pincode.toString(),
-        return_address: hubData.isRTOAddressSame ? hubData.address1 : hubData.rtoAddress,
+        return_address: hubData.isRTOAddressSame ? hubData.address : hubData.rtoAddress,
         return_pin: hubData.isRTOAddressSame ? hubData.pincode.toString() : hubData.rtoPincode?.toString(),
         return_city: hubData.isRTOAddressSame ? hubData.city : hubData.rtoCity,
         return_state: hubData.isRTOAddressSame ? hubData.state : hubData.rtoState,
@@ -90,7 +90,7 @@ export class DelhiveryVendor extends BaseVendor {
       };
       
       const response = await this.makeRequest(
-        APIs.DELHIVERY_PICKUP_LOCATION,
+        APIs.DELHIVERY.PICKUP_LOCATION,
         'POST',
         payload,
         apiConfig
@@ -102,7 +102,7 @@ export class DelhiveryVendor extends BaseVendor {
         data: response.data,
       };
     } catch (error: any) {
-      console.error(`Error registering hub with Delhivery ${this.weightCategory}:`, error);
+      console.error(`Error registering hub with Delhivery ${this.weightCategory}:`, JSON.stringify(error.response?.data));
       
       return {
         success: false,
@@ -195,7 +195,7 @@ export class DelhiveryVendor extends BaseVendor {
       const urlEncodedPayload = `format=json&data=${encodeURIComponent(JSON.stringify(delhiveryShipmentPayload.data))}`;
       
       const response = await this.makeRequest(
-        APIs.DELHIVERY_CREATE_ORDER,
+        APIs.DELHIVERY.CREATE_ORDER,
         'POST',
         urlEncodedPayload,
         { Authorization: token, 'Content-Type': 'application/x-www-form-urlencoded' }
