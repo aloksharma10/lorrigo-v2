@@ -147,7 +147,7 @@ export const productSchema = z.object({
 
 export const productDetailsSchema = z.object({
   products: z.array(productSchema).min(1, 'At least one product is required'),
-  taxableValue: z.number().min(0, 'Taxable value must be greater than or equal to 0').optional(),
+  taxableValue: z.number().min(1, 'Taxable value must be greater than or equal to 0'),
 });
 
 // Payment Method Schema
@@ -171,6 +171,8 @@ export const orderFormSchema = z.object({
   orderType: z.enum(['domestic', 'international']),
   pickupAddressId: z.string().min(1, 'Pickup address is required'),
   status: z.string().optional(),
+  order_invoice_number: z.string().optional(),
+  order_invoice_date: z.any().optional(),
   sellerDetails: sellerDetailsSchema,
   deliveryDetails: deliveryDetailsSchema,
   productDetails: productDetailsSchema,

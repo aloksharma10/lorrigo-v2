@@ -4,7 +4,7 @@ import { api } from './axios';
 export const useCreateOrder = () => {
    const queryClient = useQueryClient();
 
-   return useMutation({
+   const createOrder = useMutation({
       mutationFn: (orderData: any) => api.post('/orders', orderData),
       onSuccess: () => {
          // Invalidate orders list and dashboard data
@@ -12,4 +12,6 @@ export const useCreateOrder = () => {
          queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       },
    });
+
+   return { createOrder };
 };

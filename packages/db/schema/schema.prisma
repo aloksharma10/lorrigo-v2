@@ -96,6 +96,11 @@ enum DeliveryType {
 
 enum Channel {
   CUSTOM
+  WEBSITE
+  WHATSAPP
+  INSTAGRAM
+  FACEBOOK
+  EMAIL
   SHOPIFY
 }
 

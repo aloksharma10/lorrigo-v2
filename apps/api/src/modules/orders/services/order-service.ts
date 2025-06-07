@@ -198,7 +198,7 @@ export class OrderService {
           order_channel_config: {
             create: {
               code: order_code,
-              channel: data.orderChannel as Channel || 'CUSTOM',
+              channel: data.orderChannel?.toUpperCase() as Channel || 'CUSTOM',
               channel_order_id: order_number,
             },
           },
@@ -206,7 +206,7 @@ export class OrderService {
           status: 'CREATED',
           total_amount: data.productDetails.products.reduce((acc, item) => acc + (item.price * item.quantity), 0),
           amount_to_collect: data.amountToCollect,
-          payment_mode: data.paymentMethod.paymentMethod as PaymentMethod || 'COD',
+          payment_mode: data.paymentMethod.paymentMethod?.toUpperCase() as PaymentMethod || 'COD',
           bucket: 0,
           ewaybill: data.ewaybill,
           items: {

@@ -1,34 +1,35 @@
+import { Channel } from '@lorrigo/db';
 import { IconBrandFacebook, IconBrandInstagram } from '@tabler/icons-react';
 import { Globe2Icon, Mail, MessageSquare, ShoppingCartIcon } from 'lucide-react';
 
-export const ORDER_CHANNELS = [
+export const ORDER_CHANNELS: { name: Channel; description: string; icon: React.ReactNode }[] = [
   {
-    name: 'Custom',
+    name: 'CUSTOM',
     description: 'Custom Order',
     icon: <ShoppingCartIcon />,
   },
   {
-    name: 'Website',
+    name: 'WEBSITE',
     description: 'Your website',
     icon: <Globe2Icon />,
   },
   {
-    name: 'Whatsapp',
+    name: 'WHATSAPP',
     description: 'Your whatsapp',
     icon: <MessageSquare />,
   },
   {
-    name: 'Instagram',
+    name: 'INSTAGRAM',
     description: 'Your instagram',
     icon: <IconBrandInstagram />,
   },
   {
-    name: 'Facebook',
+    name: 'FACEBOOK',
     description: 'Your facebook',
     icon: <IconBrandFacebook />,
   },
   {
-    name: 'Email',
+    name: 'EMAIL',
     description: 'Your email',
     icon: <Mail />,
   },

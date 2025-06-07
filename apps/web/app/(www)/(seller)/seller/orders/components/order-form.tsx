@@ -32,11 +32,14 @@ import { z } from 'zod';
 import { ORDER_CHANNELS } from '@/lib/order-channels';
 import Link from 'next/link';
 import { BackButton } from '@/components/back-btn';
+import { InvoiceDetailsForm } from './invoice-details-form';
+import { useCreateOrder } from '@/lib/apis/order';
 
 export default function OrderForm() {
   const [orderType, setOrderType] = useState<'domestic' | 'international'>('domestic');
   // const [selectedAddress, setSelectedAddress] = useState<any>(null);
   // const [isAddressVerified, setIsAddressVerified] = useState(false);
+  const { createOrder } = useCreateOrder();
 
   const form = useForm<OrderFormValues>({
     resolver: zodResolver(orderFormSchema),
@@ -54,6 +57,7 @@ export default function OrderForm() {
         city: '',
         state: '',
         country: 'India',
+        isAddressAvailable: false,
       },
       deliveryDetails: {
         isBusiness: false,
@@ -85,10 +89,15 @@ export default function OrderForm() {
             hsnCode: '',
           },
         ],
+        taxableValue: 0
       },
       paymentMethod: {
         paymentMethod: 'prepaid',
       },
+      amountToCollect: 0,
+      order_invoice_date: new Date(),
+      order_invoice_number: '',
+      ewaybill: '',
       packageDetails: {
         deadWeight: '0.00',
         length: '',
@@ -103,6 +112,7 @@ export default function OrderForm() {
     try {
       const validatedData = orderFormSchema.parse(values);
       console.log('Complete Form Values:', validatedData);
+      createOrder.mutate(validatedData);
       toast.success('Order created successfully');
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -239,12 +249,12 @@ export default function OrderForm() {
                           <div
                             key={channel.name}
                             onClick={() => field.onChange(channel.name)}
-                            className="flex cursor-pointer items-center gap-2"
+                            className="flex cursor-pointer items-center gap-2 capitalize"
                           >
                             <Badge
                               variant={field.value === channel.name ? 'default' : 'outline'}
                             >
-                              {channel.icon} {channel.name}
+                              {channel.icon} {channel.name.toLocaleLowerCase()}
                             </Badge>
                           </div>
                         ))}
@@ -337,13 +347,28 @@ export default function OrderForm() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Payment Method</CardTitle>
+                <CardTitle>Payment Details</CardTitle>
                 <p className="text-muted-foreground text-sm">
-                  Select the payment mode, chosen by the buyer for this order.
+                  Select and enter the payment details, chosen by the buyer for this order.
                 </p>
               </CardHeader>
               <CardContent>
                 <PaymentMethodSelector
+                  control={form.control}
+                  watch={form.watch}
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Invoice Details</CardTitle>
+                <p className="text-muted-foreground text-sm">
+                  Provide the details of the invoice that includes all the ordered items
+                </p>
+              </CardHeader>
+              <CardContent>
+                <InvoiceDetailsForm
                   control={form.control}
                   watch={form.watch}
                 />

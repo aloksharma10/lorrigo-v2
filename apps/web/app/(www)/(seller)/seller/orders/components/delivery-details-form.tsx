@@ -15,12 +15,10 @@ import {
   Button,
   CollapsibleContent,
 } from '@lorrigo/ui/components';
-import { OrderFormValues, phoneRegex } from '@lorrigo/utils';
+import { OrderFormValues } from '@lorrigo/utils';
 import { useState, useEffect } from 'react';
-import { ChevronDown } from 'lucide-react';
-import { Control, useForm, UseFormWatch } from 'react-hook-form';
-import { type DeliveryFormValues, deliveryDetailsSchema } from '../types';
-import { ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import { Control, UseFormWatch } from 'react-hook-form';
 
 interface DeliveryDetailsFormProps {
   control: Control<OrderFormValues>;
@@ -31,34 +29,29 @@ export function DeliveryDetailsForm({ control, watch }: DeliveryDetailsFormProps
   const [billingIsSameAsDelivery, setBillingIsSameAsDelivery] = useState(true);
   const [billingOpen, setBillingOpen] = useState(false);
 
+  // Only sync billing details when checkbox is toggled, not on every field change
+  const syncBillingWithDelivery = () => {
+    const deliveryDetails = control._formValues.deliveryDetails;
+
+    control._formValues.deliveryDetails.billingMobileNumber = deliveryDetails.mobileNumber || '';
+    control._formValues.deliveryDetails.billingFullName = deliveryDetails.fullName || '';
+    control._formValues.deliveryDetails.billingCompleteAddress = deliveryDetails.completeAddress || '';
+    control._formValues.deliveryDetails.billingLandmark = deliveryDetails.landmark || '';
+    control._formValues.deliveryDetails.billingPincode = deliveryDetails.pincode || '';
+    control._formValues.deliveryDetails.billingCity = deliveryDetails.city || '';
+    control._formValues.deliveryDetails.billingState = deliveryDetails.state || '';
+  };
+
   useEffect(() => {
     control._formValues.billingIsSameAsDelivery = billingIsSameAsDelivery;
-    if (!billingIsSameAsDelivery) {
+
+    if (billingIsSameAsDelivery) {
+      // Only sync when checkbox is checked, not continuously
+      syncBillingWithDelivery();
+    } else {
       setBillingOpen(true);
     }
   }, [billingIsSameAsDelivery, control]);
-
-  const watchedFields = watch([
-    'deliveryDetails.mobileNumber',
-    'deliveryDetails.fullName',
-    'deliveryDetails.completeAddress',
-    'deliveryDetails.landmark',
-    'deliveryDetails.pincode',
-    'deliveryDetails.city',
-    'deliveryDetails.state',
-  ]);
-
-  useEffect(() => {
-    if (billingIsSameAsDelivery) {
-      control._formValues.deliveryDetails.billingMobileNumber = control._formValues.deliveryDetails.mobileNumber;
-      control._formValues.deliveryDetails.billingFullName = control._formValues.deliveryDetails.fullName;
-      control._formValues.deliveryDetails.billingCompleteAddress = control._formValues.deliveryDetails.completeAddress;
-      control._formValues.deliveryDetails.billingLandmark = control._formValues.deliveryDetails.landmark || '';
-      control._formValues.deliveryDetails.billingPincode = control._formValues.deliveryDetails.pincode;
-      control._formValues.deliveryDetails.billingCity = control._formValues.deliveryDetails.city;
-      control._formValues.deliveryDetails.billingState = control._formValues.deliveryDetails.state;
-    }
-  }, [billingIsSameAsDelivery, watchedFields, control]);
 
   return (
     <div className="space-y-3">
@@ -89,7 +82,19 @@ export function DeliveryDetailsForm({ control, watch }: DeliveryDetailsFormProps
                   +91
                 </div>
                 <FormControl>
-                  <Input {...field} placeholder="Mobile" maxLength={10} className="h-8 rounded-l-none text-sm" />
+                  <Input
+                    {...field}
+                    placeholder="Mobile"
+                    maxLength={10}
+                    className="h-8 rounded-l-none text-sm"
+                    onChange={(e) => {
+                      field.onChange(e);
+                      // Sync immediately if billing is same as delivery
+                      if (billingIsSameAsDelivery) {
+                        control._formValues.deliveryDetails.billingMobileNumber = e.target.value;
+                      }
+                    }}
+                  />
                 </FormControl>
               </div>
               <FormMessage />
@@ -103,7 +108,17 @@ export function DeliveryDetailsForm({ control, watch }: DeliveryDetailsFormProps
             <FormItem>
               <FormLabel>Full Name</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Full Name" className="h-8" />
+                <Input
+                  {...field}
+                  placeholder="Full Name"
+                  className="h-8"
+                  onChange={(e) => {
+                    field.onChange(e);
+                    if (billingIsSameAsDelivery) {
+                      control._formValues.deliveryDetails.billingFullName = e.target.value;
+                    }
+                  }}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -117,7 +132,17 @@ export function DeliveryDetailsForm({ control, watch }: DeliveryDetailsFormProps
           <FormItem>
             <FormLabel>Complete Address</FormLabel>
             <FormControl>
-              <Input {...field} placeholder="Full address" className="h-8" />
+              <Input
+                {...field}
+                placeholder="Full address"
+                className="h-8"
+                onChange={(e) => {
+                  field.onChange(e);
+                  if (billingIsSameAsDelivery) {
+                    control._formValues.deliveryDetails.billingCompleteAddress = e.target.value;
+                  }
+                }}
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -133,7 +158,17 @@ export function DeliveryDetailsForm({ control, watch }: DeliveryDetailsFormProps
                 <span className="text-black">Landmark</span>(Optional)
               </FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Landmark" className="h-8" />
+                <Input
+                  {...field}
+                  placeholder="Landmark"
+                  className="h-8"
+                  onChange={(e) => {
+                    field.onChange(e);
+                    if (billingIsSameAsDelivery) {
+                      control._formValues.deliveryDetails.billingLandmark = e.target.value;
+                    }
+                  }}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -146,7 +181,17 @@ export function DeliveryDetailsForm({ control, watch }: DeliveryDetailsFormProps
             <FormItem>
               <FormLabel>Pincode</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Pincode" className="h-8" />
+                <Input
+                  {...field}
+                  placeholder="Pincode"
+                  className="h-8"
+                  onChange={(e) => {
+                    field.onChange(e);
+                    if (billingIsSameAsDelivery) {
+                      control._formValues.deliveryDetails.billingPincode = e.target.value;
+                    }
+                  }}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -159,7 +204,17 @@ export function DeliveryDetailsForm({ control, watch }: DeliveryDetailsFormProps
             <FormItem>
               <FormLabel>City</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="City" className="h-8" />
+                <Input
+                  {...field}
+                  placeholder="City"
+                  className="h-8"
+                  onChange={(e) => {
+                    field.onChange(e);
+                    if (billingIsSameAsDelivery) {
+                      control._formValues.deliveryDetails.billingCity = e.target.value;
+                    }
+                  }}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -174,7 +229,17 @@ export function DeliveryDetailsForm({ control, watch }: DeliveryDetailsFormProps
             <FormItem>
               <FormLabel>State</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="State" className="h-8" />
+                <Input
+                  {...field}
+                  placeholder="State"
+                  className="h-8"
+                  onChange={(e) => {
+                    field.onChange(e);
+                    if (billingIsSameAsDelivery) {
+                      control._formValues.deliveryDetails.billingState = e.target.value;
+                    }
+                  }}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

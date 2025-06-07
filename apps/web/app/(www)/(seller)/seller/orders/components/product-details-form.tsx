@@ -18,6 +18,9 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
+  Alert,
+  AlertTitle,
+  AlertDescription,
 } from '@lorrigo/ui/components';
 
 import { useFieldArray, Control, UseFormWatch, useFormContext } from 'react-hook-form';
@@ -347,6 +350,21 @@ export function ProductDetailsForm({ control, watch }: ProductDetailsFormProps) 
     control,
     name: 'productDetails.products',
   });
+  const { setValue } = useFormContext<OrderFormValues>(); // Get setValue from form context
+
+  const totalAmount = watch('productDetails.products')?.reduce((acc, item) => {
+    const itemPrice = Number(item.price) || 0;
+    const itemUnits = Number(item.quantity) || 0;
+    return acc + (itemPrice * itemUnits);
+  }, 0) || 0;
+
+  // Update taxableValue whenever totalAmount changes
+  useEffect(() => {
+    setValue('productDetails.taxableValue', totalAmount, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+  }, [totalAmount, setValue]);
 
   return (
     <div className="space-y-6">
@@ -378,6 +396,12 @@ export function ProductDetailsForm({ control, watch }: ProductDetailsFormProps) 
         <Plus className="mr-2 h-4 w-4" />
         Add Another Product
       </Button>
+      <Alert className='bg-gray-200'>
+        <AlertTitle>Total Order Value: ₹{totalAmount}</AlertTitle>
+        <AlertDescription>
+          The total order value is the sum of the prices of all the products in the order.
+        </AlertDescription>
+      </Alert>
     </div>
   );
 }
