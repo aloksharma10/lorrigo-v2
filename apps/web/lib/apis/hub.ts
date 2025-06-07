@@ -7,8 +7,10 @@ export const useHubOperations = () => {
    // Fetch all hubs
    const getHubsQuery = useQuery({
       queryKey: ['hubs'],
-      queryFn: () => api.get('/hubs').then((res: any) => res.data),
+      queryFn: () => api.get('/hubs').then((res: any) => res.hubs || []),
       enabled: false, // manual trigger only
+      staleTime: 1000 * 60 * 5,     // 5 minutes: data is considered fresh
+      gcTime: 1000 * 60 * 10,
    });
 
    // Create Hub

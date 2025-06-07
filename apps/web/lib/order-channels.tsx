@@ -1,7 +1,12 @@
 import { IconBrandFacebook, IconBrandInstagram } from '@tabler/icons-react';
-import { Globe2Icon, Mail, MessageSquare } from 'lucide-react';
+import { Globe2Icon, Mail, MessageSquare, ShoppingCartIcon } from 'lucide-react';
 
 export const ORDER_CHANNELS = [
+  {
+    name: 'Custom',
+    description: 'Custom Order',
+    icon: <ShoppingCartIcon />,
+  },
   {
     name: 'Website',
     description: 'Your website',

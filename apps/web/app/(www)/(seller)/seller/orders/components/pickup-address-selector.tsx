@@ -14,12 +14,16 @@ import {
 } from '@lorrigo/ui/components';
 import { useForm } from 'react-hook-form';
 import { useModal } from '@/modal/modal-provider';
+import { useHubOperations } from '@/lib/apis/hub';
+import { filterHubs } from '@/lib/filter-hubs';
 
 interface Address {
   id: string;
   name: string;
-  address: string;
-  verified: boolean;
+  address: {
+    address: string;
+  };
+  // verified: boolean;
 }
 
 interface PickupAddressSelectorProps {
@@ -32,53 +36,6 @@ interface AddressFormValues {
   address: string;
 }
 
-// This is a mock API function that would be replaced with a real API call
-async function fetchAddresses(query: string): Promise<Address[]> {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 500));
-
-  // Mock data
-  return [
-    {
-      id: 'longo',
-      name: 'Longo',
-      address: 'E-18, Sector-3, Rohini, Delhi E-18, Sector-3, Rohini, Delhi Delhi-110085',
-      verified: true,
-    },
-    {
-      id: 'parcelx170',
-      name: 'ParcelX170',
-      address: '110081 A-4 4th FLOOR NAND RAM PARK PARJAPAT COLONY UTTAM NAGAR Delhi Delhi-110059',
-      verified: false,
-    },
-    {
-      id: 'parcelx168',
-      name: 'ParcelX168',
-      address:
-        'ShopNo.4 Unit 13 2nd Floor Block F Sayona BIPL City Centre Palanpur 385001 Banaskantha Gujarat INDI BANASKANTHA Gujarat-385001',
-      verified: false,
-    },
-    {
-      id: 'parcelx167',
-      name: 'ParcelX167',
-      address:
-        'Sharda Castle C-Wing 4 4th floor Behind Punjab National Bank O.T.Section Ulhasnagar 4. THANE Maharashtra-421004',
-      verified: false,
-    },
-    {
-      id: 'parcelx162',
-      name: 'ParcelX162',
-      address: 'O/Opposite Yajonda Residency Alkapuri GWALIOR Madhya Pradesh-474004',
-      verified: false,
-    },
-  ].filter(
-    (addr) =>
-      !query ||
-      addr.name.toLowerCase().includes(query.toLowerCase()) ||
-      addr.address.toLowerCase().includes(query.toLowerCase())
-  );
-}
-
 export function PickupAddressSelector({ onAddressSelect, error }: PickupAddressSelectorProps) {
   const { openModal } = useModal();
   const [isOpen, setIsOpen] = useState(false);
@@ -87,6 +44,7 @@ export function PickupAddressSelector({ onAddressSelect, error }: PickupAddressS
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { getHubsQuery: { data, refetch } } = useHubOperations();
 
   const form = useForm<AddressFormValues>({
     defaultValues: {
@@ -106,28 +64,33 @@ export function PickupAddressSelector({ onAddressSelect, error }: PickupAddressS
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch addresses when search query changes
   useEffect(() => {
-    const fetchData = async () => {
-      if (isOpen) {
+    const fetchHubs = async () => {
+      if (isOpen && !data) {
         setIsLoading(true);
         try {
-          const data = await fetchAddresses(searchQuery);
-          setAddresses(data);
+          const response = await refetch(); // fetch only once when opened
+          setAddresses(filterHubs(response.data ?? [], searchQuery));
         } catch (error) {
-          console.error('Error fetching addresses:', error);
+          console.error('Error fetching hubs:', error);
         } finally {
           setIsLoading(false);
         }
       }
     };
 
-    fetchData();
-  }, [searchQuery, isOpen]);
+    fetchHubs();
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (data) {
+      setAddresses(filterHubs(data, searchQuery));
+    }
+  }, [searchQuery, data]);
 
   const handleAddressSelect = (address: Address) => {
     setSelectedAddress(address);
-    form.setValue('address', address.address);
+    form.setValue('address', address.id);
     setIsOpen(false);
     onAddressSelect(address);
   };
@@ -163,7 +126,7 @@ export function PickupAddressSelector({ onAddressSelect, error }: PickupAddressS
                   <div className="relative">
                     <Input
                       placeholder="Search by pickup location"
-                      value={selectedAddress ? selectedAddress.address : searchQuery}
+                      value={selectedAddress ? ` ${selectedAddress.name} | ${selectedAddress.address.address}` : searchQuery}
                       onChange={(e) => {
                         setSearchQuery(e.target.value);
                         field.onChange(e.target.value);
@@ -210,21 +173,23 @@ export function PickupAddressSelector({ onAddressSelect, error }: PickupAddressS
                 {addresses.map((address) => (
                   <li
                     key={address.id}
-                    className="hover:bg-muted cursor-pointer px-4 py-2"
+                    className="hover:bg-muted cursor-pointer px-4 py-3 border-b"
                     onClick={() => handleAddressSelect(address)}
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <span className="font-medium">{address.name}</span>
+                        <span className="font-semibold text-base ">{address.name}</span>
                         <span className="text-muted-foreground"> | </span>
-                        <span className="text-sm">{address.address}</span>
+                        <span className="text-xs">{address.address.address}</span>
                       </div>
-                      <Badge
-                        variant={address.verified ? 'success' : 'destructive'}
-                        className="ml-2"
-                      >
-                        {address.verified ? 'Verified' : 'Unverified'}
-                      </Badge>
+                      {/* {address.verified && (
+                          <Badge
+                            variant={address.verified ? 'success' : 'destructive'}
+                            className="ml-2"
+                          >
+                            {address.verified ? 'Verified' : 'Unverified'}
+                          </Badge>
+                      )} */}
                     </div>
                   </li>
                 ))}

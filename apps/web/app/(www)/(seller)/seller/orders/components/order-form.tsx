@@ -1,11 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowLeft, ChevronDown, Info } from 'lucide-react';
 import {
   Form,
-  Alert,
-  AlertDescription,
   Button,
   Card,
   CardContent,
@@ -33,21 +30,19 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { type OrderFormValues, orderFormSchema } from '../types';
 import { z } from 'zod';
 import { ORDER_CHANNELS } from '@/lib/order-channels';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { BackButton } from '@/components/back-btn';
 
 export default function OrderForm() {
-  const router = useRouter();
   const [orderType, setOrderType] = useState<'domestic' | 'international'>('domestic');
-  const [selectedAddress, setSelectedAddress] = useState<any>(null);
-  const [isAddressVerified, setIsAddressVerified] = useState(false);
+  // const [selectedAddress, setSelectedAddress] = useState<any>(null);
+  // const [isAddressVerified, setIsAddressVerified] = useState(false);
 
   const form = useForm<OrderFormValues>({
     resolver: zodResolver(orderFormSchema),
     defaultValues: {
       orderId: '',
-      orderChannel: '',
+      orderChannel: ORDER_CHANNELS[0]?.name ?? 'Custom',
       orderType: 'domestic',
       pickupAddressId: '',
       sellerDetails: {
@@ -135,8 +130,8 @@ export default function OrderForm() {
   // };
 
   const handlePickupAddressSelect = (address: any) => {
-    setSelectedAddress(address);
-    setIsAddressVerified(address?.verified || false);
+    // setSelectedAddress(address);
+    // setIsAddressVerified(address?.verified || false);
     form.setValue('pickupAddressId', address.id);
   };
 
@@ -230,29 +225,34 @@ export default function OrderForm() {
                 <CardTitle>Order Details</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
-                <div className="flex flex-row items-center gap-2 text-sm">
-                  <span> Order Channel</span>
-                  <span className="text-muted-foreground text-xs">(Your order source)</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {ORDER_CHANNELS.map((channel) => (
-                    <div
-                      key={channel.name}
-                      onClick={() => {
-                        form.setValue('orderChannel', channel.name);
-                      }}
-                      className="flex cursor-pointer items-center gap-2"
-                    >
-                      <Badge
-                        variant={
-                          form.watch('orderChannel') === channel.name ? 'default' : 'outline'
-                        }
-                      >
-                        {channel.icon} {channel.name}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
+                <FormField
+                  control={form.control}
+                  name="orderChannel"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <span className="text-black">Order Channel</span>
+                        <span className="text-muted-foreground text-xs">(Your order source)</span>
+                      </FormLabel>
+                      <div className="flex flex-wrap gap-2">
+                        {ORDER_CHANNELS.map((channel) => (
+                          <div
+                            key={channel.name}
+                            onClick={() => field.onChange(channel.name)}
+                            className="flex cursor-pointer items-center gap-2"
+                          >
+                            <Badge
+                              variant={field.value === channel.name ? 'default' : 'outline'}
+                            >
+                              {channel.icon} {channel.name}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <FormField
                   control={form.control}
@@ -282,7 +282,7 @@ export default function OrderForm() {
                   error={form.formState.errors.pickupAddressId?.message}
                 />
 
-                {selectedAddress && !isAddressVerified && (
+                {/* {selectedAddress && !isAddressVerified && (
                   <Alert variant="destructive" className="mt-4">
                     <AlertDescription className="flex items-center gap-2">
                       To ship an order, you will need to verify the unverified address with the
@@ -292,7 +292,7 @@ export default function OrderForm() {
                       </Button>
                     </AlertDescription>
                   </Alert>
-                )}
+                )} */}
               </CardContent>
             </Card>
 
@@ -302,8 +302,8 @@ export default function OrderForm() {
               </CardHeader>
               <CardContent>
                 <SellerDetailsForm
-                  onSubmit={handleSellerDetailsSubmit}
-                  errors={form.formState.errors.sellerDetails}
+                  control={form.control}
+                  watch={form.watch}
                 />
               </CardContent>
             </Card>

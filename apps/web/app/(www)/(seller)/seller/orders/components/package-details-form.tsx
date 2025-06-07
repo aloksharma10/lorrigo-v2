@@ -112,19 +112,19 @@ export function PackageDetailsForm({ onSubmit, errors }: PackageDetailsFormProps
             name="deadWeight"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs font-medium">
+                <FormLabel>
                   Dead Weight (kg)
                   <p className="text-muted-foreground text-[10px]">Min: 0.5 kg</p>
                 </FormLabel>
                 <div className="flex">
                   <FormControl>
-                    <Input {...field} className="h-8 rounded-r-none text-sm" />
+                    <Input {...field} className="h-8 rounded-r-none" />
                   </FormControl>
                   <div className="bg-muted flex items-center justify-center rounded-r-md border border-l-0 px-2 text-xs">
                     kg
                   </div>
                 </div>
-                <FormMessage className="text-xs" />
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -140,13 +140,13 @@ export function PackageDetailsForm({ onSubmit, errors }: PackageDetailsFormProps
                 </FormLabel>
                 <div className="flex">
                   <FormControl>
-                    <Input {...field} readOnly className="bg-muted h-8 rounded-r-none text-sm" />
+                    <Input {...field} readOnly className="bg-muted h-8 rounded-r-none" />
                   </FormControl>
                   <div className="bg-muted flex items-center justify-center rounded-r-md border border-l-0 px-2 text-xs">
                     kg
                   </div>
                 </div>
-                <FormMessage className="text-xs" />
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -162,13 +162,13 @@ export function PackageDetailsForm({ onSubmit, errors }: PackageDetailsFormProps
                 <FormItem>
                   <div className="flex">
                     <FormControl>
-                      <Input placeholder="L" {...field} className="h-8 rounded-r-none text-sm" />
+                      <Input placeholder="L" {...field} className="h-8 rounded-r-none" />
                     </FormControl>
                     <div className="bg-muted flex items-center justify-center rounded-r-md border border-l-0 px-1 text-xs">
                       cm
                     </div>
                   </div>
-                  <FormMessage className="text-xs" />
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -179,13 +179,13 @@ export function PackageDetailsForm({ onSubmit, errors }: PackageDetailsFormProps
                 <FormItem>
                   <div className="flex">
                     <FormControl>
-                      <Input placeholder="B" {...field} className="h-8 rounded-r-none text-sm" />
+                      <Input placeholder="B" {...field} className="h-8 rounded-r-none" />
                     </FormControl>
                     <div className="bg-muted flex items-center justify-center rounded-r-md border border-l-0 px-1 text-xs">
                       cm
                     </div>
                   </div>
-                  <FormMessage className="text-xs" />
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -196,13 +196,13 @@ export function PackageDetailsForm({ onSubmit, errors }: PackageDetailsFormProps
                 <FormItem>
                   <div className="flex">
                     <FormControl>
-                      <Input placeholder="H" {...field} className="h-8 rounded-r-none text-sm" />
+                      <Input placeholder="H" {...field} className="h-8 rounded-r-none" />
                     </FormControl>
                     <div className="bg-muted flex items-center justify-center rounded-r-md border border-l-0 px-1 text-xs">
                       cm
                     </div>
                   </div>
-                  <FormMessage className="text-xs" />
+                  <FormMessage />
                 </FormItem>
               )}
             />

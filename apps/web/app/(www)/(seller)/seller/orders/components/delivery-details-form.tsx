@@ -210,16 +210,16 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
             name="mobileNumber"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs font-medium">Mobile Number</FormLabel>
+                <FormLabel>Mobile Number</FormLabel>
                 <div className="flex">
                   <div className="bg-muted flex items-center justify-center rounded-l-md border px-2 text-xs">
                     +91
                   </div>
                   <FormControl>
-                    <Input {...field} placeholder="Mobile" className="h-8 rounded-l-none text-sm" />
+                    <Input {...field} placeholder="Mobile" maxLength={10} className="h-8 rounded-l-none text-sm" />
                   </FormControl>
                 </div>
-                <FormMessage className="text-xs" />
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -229,11 +229,11 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
             name="fullName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs font-medium">Full Name</FormLabel>
+                <FormLabel>Full Name</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="Full Name" className="h-8 text-sm" />
+                  <Input {...field} placeholder="Full Name" className="h-8" />
                 </FormControl>
-                <FormMessage className="text-xs" />
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -244,11 +244,11 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
           name="completeAddress"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-xs font-medium">Complete Address</FormLabel>
+              <FormLabel>Complete Address</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Full address" className="h-8 text-sm" />
+                <Input {...field} placeholder="Full address" className="h-8" />
               </FormControl>
-              <FormMessage className="text-xs" />
+              <FormMessage />
             </FormItem>
           )}
         />
@@ -259,13 +259,13 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
             name="landmark"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-muted-foreground text-xs font-medium">
-                  Landmark (Optional)
+                <FormLabel className="text-muted-foreground">
+                  <span className="text-black">Landmark</span>(Optional)
                 </FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="Landmark" className="h-8 text-sm" />
+                  <Input {...field} placeholder="Landmark" className="h-8" />
                 </FormControl>
-                <FormMessage className="text-xs" />
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -275,11 +275,11 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
             name="pincode"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs font-medium">Pincode</FormLabel>
+                <FormLabel>Pincode</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="Pincode" className="h-8 text-sm" />
+                  <Input {...field} placeholder="Pincode" className="h-8" />
                 </FormControl>
-                <FormMessage className="text-xs" />
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -289,11 +289,11 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
             name="city"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs font-medium">City</FormLabel>
+                <FormLabel>City</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="City" className="h-8 text-sm" />
+                  <Input {...field} placeholder="City" className="h-8" />
                 </FormControl>
-                <FormMessage className="text-xs" />
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -305,11 +305,11 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
             name="state"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs font-medium">State</FormLabel>
+                <FormLabel>State</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="State" className="h-8 text-sm" />
+                  <Input {...field} placeholder="State" className="h-8" />
                 </FormControl>
-                <FormMessage className="text-xs" />
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -318,13 +318,13 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-muted-foreground text-xs font-medium">
-                  Email (Optional)
+                <FormLabel className="text-muted-foreground">
+                  <span className="text-black">Email</span> (Optional)
                 </FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="Email" className="h-8 text-sm" />
+                  <Input {...field} placeholder="Email" className="h-8" />
                 </FormControl>
-                <FormMessage className="text-xs" />
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -360,7 +360,7 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
                   name="billingMobileNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs font-medium">Mobile Number</FormLabel>
+                      <FormLabel>Mobile Number</FormLabel>
                       <div className="flex">
                         <div className="bg-muted flex items-center justify-center rounded-l-md border px-2 text-xs">
                           +91
@@ -373,7 +373,7 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
                           />
                         </FormControl>
                       </div>
-                      <FormMessage className="text-xs" />
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -383,11 +383,11 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
                   name="billingFullName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs font-medium">Full Name</FormLabel>
+                      <FormLabel>Full Name</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="Full Name" className="h-8 text-sm" />
+                        <Input {...field} placeholder="Full Name" className="h-8" />
                       </FormControl>
-                      <FormMessage className="text-xs" />
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -398,11 +398,11 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
                 name="billingCompleteAddress"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs font-medium">Complete Address</FormLabel>
+                    <FormLabel>Complete Address</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Full address" className="h-8 text-sm" />
+                      <Input {...field} placeholder="Full address" className="h-8" />
                     </FormControl>
-                    <FormMessage className="text-xs" />
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -417,9 +417,9 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
                         Landmark (Optional)
                       </FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="Landmark" className="h-8 text-sm" />
+                        <Input {...field} placeholder="Landmark" className="h-8" />
                       </FormControl>
-                      <FormMessage className="text-xs" />
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -429,11 +429,11 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
                   name="billingPincode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs font-medium">Pincode</FormLabel>
+                      <FormLabel>Pincode</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="Pincode" className="h-8 text-sm" />
+                        <Input {...field} placeholder="Pincode" className="h-8" />
                       </FormControl>
-                      <FormMessage className="text-xs" />
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -443,11 +443,11 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
                   name="billingCity"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs font-medium">City</FormLabel>
+                      <FormLabel>City</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="City" className="h-8 text-sm" />
+                        <Input {...field} placeholder="City" className="h-8" />
                       </FormControl>
-                      <FormMessage className="text-xs" />
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -458,11 +458,11 @@ export function DeliveryDetailsForm({ onSubmit, errors }: DeliveryDetailsFormPro
                 name="billingState"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs font-medium">State</FormLabel>
+                    <FormLabel>State</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="State" className="h-8 text-sm" />
+                      <Input {...field} placeholder="State" className="h-8" />
                     </FormControl>
-                    <FormMessage className="text-xs" />
+                    <FormMessage />
                   </FormItem>
                 )}
               />

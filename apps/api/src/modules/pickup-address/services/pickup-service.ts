@@ -201,6 +201,9 @@ export class PickupService {
         where: {
           user_id: sellerId,
         },
+        include: {
+          address: true,
+        },
       });
     } catch (error) {
       this.fastify.log.error('Error fetching hubs:', error);
