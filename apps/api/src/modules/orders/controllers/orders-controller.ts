@@ -84,13 +84,10 @@ export class OrderController {
    */
   async createOrder(request: FastifyRequest, reply: FastifyReply) {
     try {
-      // Check if user is authenticated
-      await checkAuth(request, reply);
-
       const data = orderFormSchema.parse(request.body);
       const user_id = request.userPayload!.id;
-
-      const order = await this.orderService.createOrder(data, user_id);
+      const userName = request.userPayload!.name;
+      const order = await this.orderService.createOrder(data, user_id, userName);
 
       // Add job to notification queue for order creation
       // await addJob(QueueNames.NOTIFICATION, 'order-created', {
@@ -103,7 +100,6 @@ export class OrderController {
       // Log API request
       await request.server.prisma.apiRequest.create({
         data: {
-          code: 'BO-2505-00001',
           endpoint: '/orders',
           method: 'POST',
           ip_address: request.ip,

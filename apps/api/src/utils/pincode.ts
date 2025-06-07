@@ -20,9 +20,14 @@ export async function getPincodeDetails(pincode: number): Promise<PincodeDetails
     });
 
     if (details) {
+      const data = {
+        city: details.city,
+        state: details.state,
+        pincode: details.pincode.toString(),
+      };
       // Cache the result for 30 days
-      await redis.setex(`pincode:${pincode}`, 30 * 24 * 60 * 60, JSON.stringify(details));
-      return details;
+      await redis.setex(`pincode:${pincode}`, 30 * 24 * 60 * 60, JSON.stringify(data));
+      return data;
     }
 
     return null;

@@ -71,14 +71,14 @@ export class PickupService {
         entityName: sellerName.toUpperCase(),
         tableName: 'hub',
         lastUsedFinancialYear: currentFinancialYear,
-        lastSequenceNumber: lastSequenceNumberHub + 1,
+        lastSequenceNumber: lastSequenceNumberHub,
       }).id;
 
       const lorrigoAddressId = generateId({
         entityName: sellerName.toUpperCase(),
         tableName: 'address',
         lastUsedFinancialYear: currentFinancialYear,
-        lastSequenceNumber: lastSequenceNumberAddress + 1,
+        lastSequenceNumber: lastSequenceNumberAddress,
       }).id;
 
       const vendorPayload = {
@@ -125,7 +125,6 @@ export class PickupService {
               city,
               state,
               pincode: pincode.toString(),
-              code: lorrigoAddressId,
             }
           });
 
@@ -137,7 +136,6 @@ export class PickupService {
                 city: rtoCity,
                 state: rtoState,
                 pincode: rtoPincode,
-                code: `${lorrigoAddressId}-RTO`,
               }
             });
           }

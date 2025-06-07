@@ -48,6 +48,7 @@ enum ShipmentStatus {
 }
 
 enum PaymentMethod {
+  PREPAID
   WALLET
   CARD
   BANK_TRANSFER
@@ -188,7 +189,6 @@ model NotificationSettings {
 // KycDetails Model
 model KycDetails {
   id            String   @id @default(cuid())
-  code          String   @unique // Custom ID - Format: KYC-YYMM-XXXXX
   user_id       String   @unique
   user          User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
   business_type String?  @db.VarChar(50)
@@ -200,13 +200,11 @@ model KycDetails {
   updated_at    DateTime @updatedAt
 
   @@index([user_id, verified])
-  @@index([code])
 }
 
 // BankDetails Model
 model BankDetails {
   id              String   @id @default(cuid())
-  code            String   @unique // Custom ID - Format: BK-YYMM-XXXXX
   user_id         String   @unique
   user            User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
   acc_holder_name String?  @db.VarChar(100)
@@ -217,13 +215,11 @@ model BankDetails {
   updated_at      DateTime @updatedAt
 
   @@index([user_id])
-  @@index([code])
 }
 
 // SellerConfig Model
 model SellerConfig {
   id      String @id @default(cuid())
-  code    String @unique // Custom ID - Format: SC-YYMM-XXXXX
   user_id String @unique
   user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
@@ -239,13 +235,11 @@ model SellerConfig {
   updated_at DateTime @updatedAt
 
   @@index([user_id])
-  @@index([code])
 }
 
 // Customer Model
 model Customer {
   id    String  @id @default(cuid())
-  code  String  @unique // Custom ID - Format: CS-YYMM-XXXXX
   name  String  @db.VarChar(100)
   email String? @db.VarChar(255)
   phone String  @unique @db.VarChar(15)
@@ -254,10 +248,9 @@ model Customer {
   updated_at DateTime @updatedAt
 
   addresses Address[] @relation("CustomerAddresses")
-  orders    Order[]
+  orders    Order[]   @relation("CustomerOrders")
 
   @@index([phone, email])
-  @@index([code])
   @@index([name])
 }
 
@@ -265,7 +258,6 @@ model Customer {
 model Address {
   id         String  @id @default(cuid())
   name       String? @db.VarChar(100)
-  code       String  @unique // Custom ID - Format: AD-YYMM-XXXXX
   address    String  @db.VarChar(255)
   address_2  String? @db.VarChar(255)
   city       String  @db.VarChar(100)
@@ -288,7 +280,6 @@ model Address {
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
-  // @@index([code])
 
   @@index([customer_id, is_default])
   @@index([pincode, city])
@@ -346,7 +337,6 @@ model Hub {
 
 model OrderChannelConfig {
   id               String  @id @default(cuid())
-  code             String  @unique // Custom ID - Format: OCC-YYMM-XXXXX
   channel          Channel @default(CUSTOM)
   channel_order_id String? @db.VarChar(50)
 
@@ -355,13 +345,11 @@ model OrderChannelConfig {
 
   orders Order[]
 
-  @@index([code])
   @@index([channel_order_id])
 }
 
 model Package {
-  id   String @id @default(cuid())
-  code String @unique // Custom ID - Format: PK-YYMM-XXXXX
+  id String @id @default(cuid())
 
   weight            Float // in kg
   dead_weight       Float
@@ -371,7 +359,7 @@ model Package {
   breadth Float
   height  Float
 
-  Order Order[] @relation("OrderPackage")
+  order Order? @relation("OrderPackage")
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -394,6 +382,7 @@ model Order {
   ewaybill                String?            @db.VarChar(12)
   total_amount            Float
   amount_to_collect       Float?
+  applicable_weight       Float
 
   order_invoice_date   DateTime? @default(now()) // Seller's invoice date
   order_invoice_number String?   @db.VarChar(50) // Seller's invoice number
@@ -404,15 +393,15 @@ model Order {
   user_id     String
   user        User     @relation("UserOrders", fields: [user_id], references: [id], onDelete: Cascade)
   customer_id String
-  customer    Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  customer    Customer @relation("CustomerOrders", fields: [customer_id], references: [id], onDelete: Cascade)
   hub_id      String?
   hub         Hub?     @relation("OrderHub", fields: [hub_id], references: [id])
 
   billing_address_id String? // Refers to the seller of the order
   billing_address    Address? @relation("BillingAddress", fields: [billing_address_id], references: [id])
 
-  package_id String?
-  package    Package? @relation("OrderPackage", fields: [package_id], references: [id])
+  package_id String  @unique
+  package    Package @relation("OrderPackage", fields: [package_id], references: [id])
 
   items     OrderItem[]
   payments  Payment[]
@@ -747,7 +736,6 @@ model Notification {
 // ApiRequest Model
 model ApiRequest {
   id              String   @id @default(cuid())
-  code            String   @unique // Custom ID - Format: API-YYMM-XXXXX
   endpoint        String   @db.VarChar(255)
   method          String   @db.VarChar(10)
   ip_address      String   @db.VarChar(45)
@@ -758,7 +746,6 @@ model ApiRequest {
   timestamp       DateTime @default(now())
 
   @@index([user_id, endpoint, timestamp])
-  @@index([code])
 }
 
 // BulkOperation Model
