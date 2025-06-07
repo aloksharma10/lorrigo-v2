@@ -110,11 +110,10 @@ export class OrderController {
 
       return reply.code(201).send({
         id: order.id,
+        code: order.code,
         orderNumber: order.order_number,
         status: order.status,
-        customerId: order.customer_id,
-        totalAmount: order.total_amount,
-        createdAt: order.created_at,
+        createdAt: order.created_at.toISOString(),
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -128,7 +127,7 @@ export class OrderController {
       captureException(error as Error);
 
       return reply.code(500).send({
-        message: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Internal server error',
       });
     }
   }

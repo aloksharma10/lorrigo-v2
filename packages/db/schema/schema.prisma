@@ -88,6 +88,7 @@ enum RemittanceCycle {
   WEEKLY
   BIWEEKLY
   MONTHLY
+  CUSTOM
 }
 
 enum DeliveryType {
@@ -130,20 +131,20 @@ model User {
   margin        Float   @default(20)
 
   // Relations
-  kyc_details     KycDetails?
-  bank_details    BankDetails?
-  wallet          Wallet?
-  invoices        Invoice[]        @relation("UserInvoices")
-  remittances     Remittance[]     @relation("UserRemittances")
-  transactions    Transaction[]    @relation("UserTransactions")
-  orders          Order[]          @relation("UserOrders")
-  shipments       Shipment[]       @relation("UserShipments")
-  hubs            Hub[]            @relation("UserHubs")
-  courier_pricing CourierPricing[] @relation("UserCourierPricing")
-  disputes        Dispute[]        @relation("UserDisputes")
-  api_requests    ApiRequest[]
-  config          SellerConfig?
-  address         Address?
+  kyc_details      KycDetails?
+  bank_details     BankDetails?
+  wallet           Wallet?
+  invoices         Invoice[]        @relation("UserInvoices")
+  remittances      Remittance[]     @relation("UserRemittances")
+  transactions     Transaction[]    @relation("UserTransactions")
+  orders           Order[]          @relation("UserOrders")
+  shipments        Shipment[]       @relation("UserShipments")
+  hubs             Hub[]            @relation("UserHubs")
+  courier_pricings CourierPricing[] @relation("UserCourierPricing")
+  disputes         Dispute[]        @relation("UserDisputes")
+  api_requests     ApiRequest[]
+  config           SellerConfig?
+  address          Address?
 
   // Auth.js relations
   accounts Account[]
@@ -325,7 +326,7 @@ model Hub {
 
   orders Order[] @relation("OrderHub")
 
-  hub_config_id String    @unique // 🔐 Enforces 1-1
+  hub_config_id String    @unique // Enforces 1-1
   hub_config    HubConfig @relation("HubConfigHub", fields: [hub_config_id], references: [id])
 
   created_at DateTime @default(now())
@@ -403,20 +404,20 @@ model Order {
   package_id String  @unique
   package    Package @relation("OrderPackage", fields: [package_id], references: [id])
 
-  items     OrderItem[]
-  payments  Payment[]
-  invoices  Invoice[]
-  shipments Shipment[]
-  disputes  Dispute[]
-
+  items          OrderItem[]
+  payments       Payment[]
+  invoice        Invoice?    @relation("OrderInvoice")
+  shipment       Shipment?   @relation("OrderShipment")
+  dispute        Dispute?    @relation("OrderDispute")
+  remittance     Remittance? @relation("OrderRemittances")
   // B2B Specific
-  freight_type   Int?      @default(0)
-  pickup_type    Int?      @default(0)
-  insurance_type Int?      @default(0)
+  freight_type   Int?        @default(0)
+  pickup_type    Int?        @default(0)
+  insurance_type Int?        @default(0)
   billing        Billing[]
 
-  @@index([user_id, customer_id, status, created_at])
-  @@index([order_number, order_reference_id])
+  @@unique([order_number, user_id])
+  @@index([user_id, customer_id, status])
   @@index([created_at(sort: Desc)]) // For partitioning
   @@index([code])
   // Full text search across multiple fields
@@ -461,8 +462,9 @@ model Shipment {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  order_id        String
-  order           Order           @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  order_id String @unique
+  order    Order  @relation("OrderShipment", fields: [order_id], references: [id], onDelete: Cascade)
+
   user_id         String
   user            User            @relation("UserShipments", fields: [user_id], references: [id], onDelete: Cascade)
   courier_id      String
@@ -521,8 +523,8 @@ model Courier {
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
 
-  shipments       Shipment[]
-  courier_pricing CourierPricing[]
+  shipments        Shipment[]
+  courier_pricings CourierPricing[]
 
   @@index([courier_code, is_active])
   @@index([code])
@@ -616,8 +618,8 @@ model Payment {
 // Invoice Model
 model Invoice {
   id             String    @id @default(cuid())
-  code           String    @unique // Custom ID - Format: INV-YYMM-XXXXX
-  invoice_number String    @unique @db.VarChar(50)
+  code           String // Custom ID - Format: INV-YYMM-XXXXX
+  invoice_number String    @db.VarChar(50)
   amount         Float
   tax_amount     Float?    @default(0)
   due_date       DateTime?
@@ -626,18 +628,19 @@ model Invoice {
   updated_at     DateTime  @updatedAt
 
   user_id  String
-  user     User    @relation("UserInvoices", fields: [user_id], references: [id], onDelete: Cascade)
-  order_id String?
-  order    Order?  @relation(fields: [order_id], references: [id])
+  user     User   @relation("UserInvoices", fields: [user_id], references: [id], onDelete: Cascade)
+  order_id String @unique
+  order    Order  @relation("OrderInvoice", fields: [order_id], references: [id], onDelete: Cascade)
 
+  @@unique([order_id, invoice_number])
+  @@unique([code, invoice_number])
   @@index([user_id, invoice_number, created_at])
-  @@index([code])
   @@index([created_at(sort: Desc)]) // For partitioning
 }
 
 model Billing {
   id       String @id @default(cuid())
-  code     String @unique // Custom ID - Format: BL-YYMM-XXXXX
+  code     String // Custom ID - Format: BL-YYMM-XXXXX
   order_id String
   order    Order  @relation(fields: [order_id], references: [id], onDelete: Cascade)
 
@@ -660,14 +663,13 @@ model Billing {
 
   dispute Dispute[]
 
-  @@index([order_id])
-  @@index([code])
+  @@unique([code, order_id])
 }
 
 // Dispute Model
 model Dispute {
   id          String        @id @default(cuid())
-  code        String        @unique // Custom ID - Format: DS-YYMM-XXXXX
+  code        String // Custom ID - Format: DS-YYMM-XXXXX
   reason      String        @db.VarChar(255)
   description String        @db.Text
   status      DisputeStatus @default(OPENED)
@@ -690,11 +692,11 @@ model Dispute {
 
   user_id  String
   user     User   @relation("UserDisputes", fields: [user_id], references: [id], onDelete: Cascade)
-  order_id String
-  order    Order  @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  order_id String @unique
+  order    Order  @relation("OrderDispute", fields: [order_id], references: [id], onDelete: Cascade)
 
+  @@unique([code, order_id])
   @@index([user_id, order_id, status])
-  @@index([code])
 }
 
 // Remittance Model
@@ -711,6 +713,9 @@ model Remittance {
 
   user_id String
   user    User   @relation("UserRemittances", fields: [user_id], references: [id], onDelete: Cascade)
+
+  order_id String @unique
+  order    Order  @relation("OrderRemittances", fields: [order_id], references: [id], onDelete: Cascade)
 
   @@index([user_id, status, remittance_date])
   @@index([remittance_id])

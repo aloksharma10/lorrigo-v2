@@ -1,6 +1,8 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { OrderController } from './controllers/orders-controller';
 import { OrderService } from './services/order-service';
+import { authorizeRoles } from '@/middleware/auth';
+import { Role } from '@lorrigo/db';
 
 /**
  * Orders module routes
@@ -134,6 +136,7 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
 
   // Create a new order
   fastify.post('/', {
+    preHandler: [authorizeRoles([Role.SELLER])],
     schema: {
       tags: ['Orders'],
       summary: 'Create a new order',
@@ -141,33 +144,20 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
       body: {
         type: 'object',
         required: [
-          'pickup_id',
-          'payment_method',
-          'customerId',
-          'shippingAddressId',
-          'totalAmount',
-          'items',
+          'pickupAddressId',
+          'paymentMethod',
+          'deliveryDetails',
+          'sellerDetails',
+          'packageDetails',
+          'productDetails'
         ],
         properties: {
-          pickup_id: { type: 'string' },
-          payment_method: { type: 'string' },
-          customerId: { type: 'string' },
-          shippingAddressId: { type: 'string' },
-          returnAddressId: { type: 'string' },
-          totalAmount: { type: 'number' },
-          notes: { type: 'string' },
-          items: {
-            type: 'array',
-            items: {
-              type: 'object',
-              required: ['description', 'quantity', 'unitPrice'],
-              properties: {
-                description: { type: 'string' },
-                quantity: { type: 'integer' },
-                unitPrice: { type: 'number' },
-              },
-            },
-          },
+          pickupAddressId: { type: 'string' },
+          paymentMethod: { type: 'object' },
+          deliveryDetails: { type: 'object' },
+          sellerDetails: { type: 'object' },
+          packageDetails: { type: 'object' },
+          productDetails: { type: 'array' },
         },
       },
       response: {
@@ -175,10 +165,9 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
           type: 'object',
           properties: {
             id: { type: 'string' },
+            code: { type: 'string' },
             orderNumber: { type: 'string' },
             status: { type: 'string' },
-            customerId: { type: 'string' },
-            totalAmount: { type: 'number' },
             createdAt: { type: 'string', format: 'date-time' },
           },
         },

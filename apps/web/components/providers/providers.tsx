@@ -55,7 +55,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 <CSVUploadProvider>
                   {children}
                 </CSVUploadProvider>
-                <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
+                <Toaster position="top-right" toastOptions={{ duration: 4000 }} richColors />
               </ModalProvider>
             </NextThemesProvider>
           </TokenProvider>

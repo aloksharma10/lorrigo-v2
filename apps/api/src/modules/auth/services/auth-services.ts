@@ -54,7 +54,7 @@ export class AuthService {
       tableName: 'user',
       entityName: data.name,
       lastUsedFinancialYear: getFinancialYear(new Date()),
-      lastSequenceNumber: lastUserSequenceNumber + 1,
+      lastSequenceNumber: lastUserSequenceNumber,
     }).id;
 
     // Create user in database
@@ -87,7 +87,7 @@ export class AuthService {
           tableName: 'wallet',
           entityName: user.name,
           lastUsedFinancialYear: getFinancialYear(new Date()),
-          lastSequenceNumber: lastWalletSequenceNumber + 1,
+          lastSequenceNumber: lastWalletSequenceNumber,
         }).id,
         balance: 0,
         user_id: user.id,
@@ -147,12 +147,6 @@ export class AuthService {
     // Create API request log
     await this.prisma.apiRequest.create({
       data: {
-        code: generateId({
-          tableName: 'api_request',
-          entityName: user.name,
-          lastUsedFinancialYear: getFinancialYear(new Date()),
-          lastSequenceNumber: lastSequenceNumber + 1,
-        }).id,
         endpoint: '/login',
         method: 'POST',
         ip_address: ipAddress,
@@ -204,12 +198,6 @@ export class AuthService {
 
     await this.prisma.apiRequest.create({
       data: {
-        code: generateId({
-          tableName: 'api_request',
-          entityName: user.name,
-          lastUsedFinancialYear: getFinancialYear(new Date()),
-          lastSequenceNumber: 0,
-        }).id,
         endpoint: '/logout',
         method: 'POST',
         ip_address: ipAddress,

@@ -34,12 +34,13 @@ import Link from 'next/link';
 import { BackButton } from '@/components/back-btn';
 import { InvoiceDetailsForm } from './invoice-details-form';
 import { useCreateOrder } from '@/lib/apis/order';
+import { SubmitBtn } from '@/components/submit-btn';
 
 export default function OrderForm() {
   const [orderType, setOrderType] = useState<'domestic' | 'international'>('domestic');
   // const [selectedAddress, setSelectedAddress] = useState<any>(null);
   // const [isAddressVerified, setIsAddressVerified] = useState(false);
-  const { createOrder } = useCreateOrder();
+  const { createOrder: { isPending: isCreatingOrder, mutateAsync: createOrder } } = useCreateOrder();
 
   const form = useForm<OrderFormValues>({
     resolver: zodResolver(orderFormSchema),
@@ -111,10 +112,11 @@ export default function OrderForm() {
   async function onSubmit(values: OrderFormValues) {
     try {
       const validatedData = orderFormSchema.parse(values);
-      console.log('Complete Form Values:', validatedData);
-      createOrder.mutate(validatedData);
+      const order = await createOrder(validatedData);
+      console.log('Order:', order);
       toast.success('Order created successfully');
-    } catch (error) {
+    } catch (error: any) {
+      toast.error(error.response.data.message || 'Failed to create order, Please Report to Support at support@lorrigo.in');
       if (error instanceof z.ZodError) {
         // Set form errors
         error.errors.forEach((err) => {
@@ -145,26 +147,6 @@ export default function OrderForm() {
     form.setValue('pickupAddressId', address.id);
   };
 
-  const handleSellerDetailsSubmit = (values: OrderFormValues['sellerDetails']) => {
-    form.setValue('sellerDetails', values);
-  };
-
-  const handleDeliveryDetailsSubmit = (values: OrderFormValues['deliveryDetails']) => {
-    form.setValue('deliveryDetails', values);
-  };
-
-  const handleProductDetailsSubmit = (values: OrderFormValues['productDetails']) => {
-    form.setValue('productDetails', values);
-  };
-
-  const handlePaymentMethodSubmit = (values: OrderFormValues['paymentMethod']) => {
-    form.setValue('paymentMethod', values);
-  };
-
-  const handlePackageDetailsSubmit = (values: OrderFormValues['packageDetails']) => {
-    form.setValue('packageDetails', values);
-  };
-
   return (
     <div className="w-full">
       <div className="sticky top-0 z-10 rounded-t-md border-b bg-white shadow-sm dark:bg-stone-900">
@@ -174,16 +156,17 @@ export default function OrderForm() {
             <h1 className="text-sm font-semibold lg:text-xl">Add Order</h1>
           </div>
           <div className="flex gap-4">
-            <Button variant="outline" onClick={() => console.log(form.getValues())}>
-              Create Order
-            </Button>
-            <Button
-              type="submit"
+            <SubmitBtn
+              isLoading={isCreatingOrder}
               onClick={form.handleSubmit(onSubmit)}
-              className="bg-indigo-600 hover:bg-indigo-700"
-            >
-              Ship Now
-            </Button>
+              text="Create Order"
+              variant="secondary"
+            />
+            <SubmitBtn
+              isLoading={isCreatingOrder}
+              onClick={form.handleSubmit(onSubmit)}
+              text="Ship Now"
+            />
           </div>
         </div>
       </div>
@@ -392,10 +375,17 @@ export default function OrderForm() {
             </Card>
 
             <div className="flex gap-2">
-              <Button type="submit">Create Order</Button>
-              <Button type="submit" onClick={form.handleSubmit(onSubmit)}>
-                Ship Now
-              </Button>
+              <SubmitBtn
+                isLoading={isCreatingOrder}
+                onClick={form.handleSubmit(onSubmit)}
+                text="Create Order"
+                variant="secondary"
+              />
+              <SubmitBtn
+                isLoading={isCreatingOrder}
+                onClick={form.handleSubmit(onSubmit)}
+                text="Ship Now"
+              />
             </div>
           </form>
         </Form>
