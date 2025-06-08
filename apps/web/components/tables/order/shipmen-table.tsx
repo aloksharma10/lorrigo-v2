@@ -22,12 +22,14 @@ import ActionTooltip from '@/components/action-tooltip';
 import HoverCardToolTip from '@/components/hover-card-tooltip';
 import { currencyFormatter, formatDateTimeSmart } from '@lorrigo/utils';
 import { Shipment, ShipmentParams } from '@/lib/type/response-types';
+import { useRouter } from 'next/navigation';
 
 interface ShipmentsTableProps {
   initialParams: ShipmentParams;
 }
 
 export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = React.useState(initialParams.status || 'all');
   const [pagination, setPagination] = React.useState({
     pageIndex: initialParams.page || 0,
@@ -298,11 +300,11 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
             <Button
               className="w-fit bg-indigo-600 hover:bg-indigo-700"
               onClick={() => {
-                console.log('Download manifest for:', row.original);
-                toast.success('Preparing manifest download...');
+                toast.success('Redirecting to ship now page...');
+                router.push(`/seller/orders/ship/${row.original.id}`);
               }}
             >
-              Download Manifest
+              Ship Now
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

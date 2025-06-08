@@ -1,7 +1,7 @@
 import type React from 'react';
 import { create } from 'zustand';
 
-export type ModalType = 'confirm' | 'image' | 'seller:new-order' | 'seller:add-pickup-location' | 'create-plan' | 'assign-plan' | 'create-courier' | 'create-channel';
+export type ModalType = 'confirm' | 'image' | 'seller:new-order' | 'seller:add-pickup-location' | 'assign-plan' | 'create-courier' | 'create-channel';
 export type ModalProps = Record<string, unknown>;
 
 // export type ModalType = "wallet" | "addPickupLocation" | "payForInvoice" | "addSeller" | "addCustomer" | "schedulePickup" | "cancelOrder" | "cloneOrder" | "trackModal" | "editOrder" | "downloadLabel" | "downloadManifest" | "ndrOrder" | "ndrRTOrder" | "BulkHubUpload" | "BulkPincodeUpload" | 'downloadLabels'  | "BulkPickupUpdate" | 'cancelBulkOrder' | "downloadManifests" | "updateShopifyOrders" | "ViewUserDocsAdmin" | "ClientBillingUpload" | "adminRemittanceManage" | "cloneB2BOrder" | "editB2BOrder" | "addB2BCustomer" | "completeKyc" | 'downloadB2BLabel' | 'alert-kyc' | 'alert-payment' | "downloadB2BManifest" | "BulkShipNow" | "B2BClientBillingUpload" | "B2BShipNow" | "raiseDisputeManage" | "disputeDetails" | "DisputeUpload" | "bulkPickupSchedule" | "sellerRemittanceConfig";
@@ -39,7 +39,6 @@ export const useModalStore = create<ModalState>((set, get) => ({
     image: undefined as unknown as ModalComponent,
     'seller:new-order': undefined as unknown as ModalComponent,
     'seller:add-pickup-location': undefined as unknown as ModalComponent,
-    'create-plan': undefined as unknown as ModalComponent,
     'assign-plan': undefined as unknown as ModalComponent,
     'create-courier': undefined as unknown as ModalComponent,
     'create-channel': undefined as unknown as ModalComponent,

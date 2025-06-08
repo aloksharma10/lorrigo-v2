@@ -4,23 +4,24 @@ import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Tabs
 import { Plus, Package, Users, TrendingUp, Truck, RefreshCw } from "lucide-react"
 import { useModal } from "@/modal/modal-provider"
 import PlansTable from "@/components/tables/plans-table"
-import { CreatePlanModal } from "@/components/modals/create-plan-modal"
 import { AssignPlanModal } from "@/components/modals/assign-plan-modal"
 import { CreateCourierModal } from "@/components/modals/create-courier-modal"
 import { CreateChannelModal } from "@/components/modals/create-channel-modal"
 import { usePlanOperations } from "@/lib/apis/plans"
 import { useCourierOperations } from "@/lib/apis/couriers"
 import { useChannelOperations } from "@/lib/apis/channels"
+import { useRouter } from "next/navigation"
 
 export default function ManagePlansPage() {
   const { openModal, closeAllModals } = useModal()
   const { getPlansQuery } = usePlanOperations()
   const { getCouriersQuery } = useCourierOperations()
   const { getChannelsQuery } = useChannelOperations()
+  const router = useRouter()
 
   // Data will be fetched automatically by React Query
   // No need to manually refetch on every render
-  
+
   // Refresh function for manual data refresh
   const refreshAllData = useCallback(() => {
     Promise.all([
@@ -31,14 +32,7 @@ export default function ManagePlansPage() {
   }, [getPlansQuery, getCouriersQuery, getChannelsQuery])
 
   const handleCreatePlan = () => {
-    openModal("create-plan", {
-      title: "Create New Plan",
-      component: CreatePlanModal,
-      className: "max-w-2xl",
-      props: {
-        onClose: closeAllModals,
-      },
-    })
+    router.push("/admin/plan/new", { scroll: false })
   }
 
   const handleAssignPlan = (planId?: string) => {
@@ -78,7 +72,7 @@ export default function ManagePlansPage() {
 
   // Check if any queries are loading
   const isLoading = getPlansQuery.isLoading || getCouriersQuery.isLoading || getChannelsQuery.isLoading
-  
+
   // Check if any queries have errors
   const hasError = getPlansQuery.error || getCouriersQuery.error || getChannelsQuery.error
 
@@ -106,7 +100,7 @@ export default function ManagePlansPage() {
             <p className="text-muted-foreground">
               {getPlansQuery.error?.message || getCouriersQuery.error?.message || getChannelsQuery.error?.message}
             </p>
-            <Button 
+            <Button
               onClick={refreshAllData}
               variant="outline"
             >
@@ -129,9 +123,9 @@ export default function ManagePlansPage() {
           </p>
         </div>
         <div className="flex overflow-x-auto lg:overflow-x-hidden mt-2 lg:mt-0 items-center gap-2">
-          <Button 
-            onClick={refreshAllData} 
-            variant="ghost" 
+          <Button
+            onClick={refreshAllData}
+            variant="ghost"
             size="sm"
             disabled={isLoading}
           >
