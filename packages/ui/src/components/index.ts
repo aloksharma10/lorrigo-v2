@@ -57,3 +57,4 @@ export * from './form';
 export * from './progress'
 
 export * from './loading-input';
+export * from './accordion';

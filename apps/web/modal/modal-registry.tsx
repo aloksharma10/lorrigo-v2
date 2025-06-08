@@ -8,6 +8,10 @@ import { ConfirmModal } from '@/components/modals/confirm-modal';
 import { ImageModal } from '@/components/modals/image-modal';
 import { useModalStore } from './modal-store';
 import { AddPickupLocationModal } from '@/components/modals/add-pickup-location';
+import { CreatePlanModal } from '@/components/modals/create-plan-modal';
+import { AssignPlanModal } from '@/components/modals/assign-plan-modal';
+import { CreateCourierModal } from '@/components/modals/create-courier-modal';
+import { CreateChannelModal } from '@/components/modals/create-channel-modal';
 
 // Store to track registered modals
 interface ModalRegistryState {
@@ -31,6 +35,10 @@ export function ModalRegistry() {
       registerModal('confirm', ConfirmModal);
       registerModal('image', ImageModal);
       registerModal('seller:add-pickup-location', AddPickupLocationModal);
+      registerModal('create-plan', CreatePlanModal);
+      registerModal('assign-plan', AssignPlanModal);
+      registerModal('create-courier', CreateCourierModal);
+      registerModal('create-channel', CreateChannelModal);
 
       setRegistered(true);
       console.log('Modal components registered successfully');

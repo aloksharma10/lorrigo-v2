@@ -428,9 +428,18 @@ export class PlanService {
       return this.fastify.prisma.user.update({
          where: { id: userId },
          data: { plan_id: planId },
-         include: {
-            plan: true
-         }
+         select: {
+            id: true,
+            name: true,
+            email: true,
+            plan: {
+               select: {
+                  id: true,
+                  name: true,
+                  code: true,
+               },
+            },
+         },
       });
    }
    async getDefaultPlan() {

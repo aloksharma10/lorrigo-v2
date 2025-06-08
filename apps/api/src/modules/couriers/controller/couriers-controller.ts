@@ -23,15 +23,15 @@ const createCourierSchema = z.object({
   increment_weight: z.number().optional(),
   type: z.enum(['EXPRESS', 'SURFACE']).default('SURFACE'),
   pickup_time: z.string().optional(),
-  api_credentials: z
-    .object({
-      api_key: z.string().optional(),
-      api_url: z.string().url().optional(),
-      username: z.string().optional(),
-      password: z.string().optional(),
-      account_number: z.string().optional(),
-    })
-    .optional(),
+  // api_credentials: z
+  //   .object({
+  //     api_key: z.string().optional(),
+  //     api_url: z.string().url().optional(),
+  //     username: z.string().optional(),
+  //     password: z.string().optional(),
+  //     account_number: z.string().optional(),
+  //   })
+  //   .optional(),
 });
 
 const updateCourierSchema = createCourierSchema.partial();
@@ -46,13 +46,13 @@ const courierPricingSchema = z.object({
 });
 
 export class CourierController {
-  constructor(private courierService: CourierService) {}
+  constructor(private courierService: CourierService) { }
 
   async createCourier(request: FastifyRequest, reply: FastifyReply) {
     try {
       const courierData = createCourierSchema.parse(request.body);
       const courier = await this.courierService.createCourier(request.body as any);
-      return reply.code(201).send(courier);
+      return reply.code(201).send({ courier });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return reply.code(400).send({ error: error.errors });
@@ -70,7 +70,7 @@ export class CourierController {
       const userId = request.userPayload!.id;
       const userRole = request.userPayload!.role as Role;
       const couriers = await this.courierService.getAllCouriers(userId, userRole);
-      return reply.send(couriers);
+      return reply.send({ couriers });
     } catch (error) {
       request.log.error(error);
       return reply.code(500).send({ error: 'Internal Server Error' });
@@ -92,7 +92,7 @@ export class CourierController {
         return reply.code(courier.status).send({ error: courier.error });
       }
 
-      return reply.send(courier);
+      return reply.send({ courier });
     } catch (error) {
       request.log.error(error);
       return reply.code(500).send({ error: 'Internal Server Error' });
@@ -110,7 +110,7 @@ export class CourierController {
         return reply.code(result.status).send({ error: result.error });
       }
 
-      return reply.send(result);
+      return reply.send({ result });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return reply.code(400).send({ error: error.errors });
@@ -135,7 +135,7 @@ export class CourierController {
         return reply.code(result.status).send({ error: result.error });
       }
 
-      return reply.code(201).send(result);
+      return reply.code(201).send({ result });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return reply.code(400).send({ error: error.errors });
@@ -159,7 +159,7 @@ export class CourierController {
         return reply.code(result.status).send({ error: result.error });
       }
 
-      return reply.send(result);
+      return reply.send({ result });
     } catch (error) {
       request.log.error(error);
       return reply.code(500).send({ error: 'Internal Server Error' });
