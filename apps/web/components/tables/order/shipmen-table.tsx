@@ -7,7 +7,7 @@ import { DataTable } from '@lorrigo/ui/components';
 import { DataTableColumnHeader } from '@lorrigo/ui/components';
 import { Badge } from '@lorrigo/ui/components';
 import { Button } from '@lorrigo/ui/components';
-import { MoreHorizontal, Package, AlertTriangle, Info, TruckIcon } from 'lucide-react';
+import { MoreHorizontal, Package, TruckIcon } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,10 +17,11 @@ import {
 import { toast } from '@lorrigo/ui/components';
 import type { ColumnDef } from '@lorrigo/ui/components';
 import { useDebounce } from '@/lib/hooks/use-debounce';
-import { fetchShipments, Shipment, ShipmentParams } from '@/lib/apis/order';
+import { fetchShipments } from '@/lib/apis/order';
 import ActionTooltip from '@/components/action-tooltip';
 import HoverCardToolTip from '@/components/hover-card-tooltip';
 import { currencyFormatter, formatDateTimeSmart } from '@lorrigo/utils';
+import { Shipment, ShipmentParams } from '@/lib/type/response-types';
 
 interface ShipmentsTableProps {
   initialParams: ShipmentParams;
@@ -163,7 +164,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
         return (
           <div className="flex flex-col mt-1 text-xs">
             <span>{shipment.packageDetails.length} x {shipment.packageDetails.breadth} x {shipment.packageDetails.height} cm</span>
-            <span>Dead Weight: {shipment.packageDetails.deadWeight} kg</span> 
+            <span>Dead Weight: {shipment.packageDetails.deadWeight} kg</span>
             <span>Volumetric Weight: {shipment.packageDetails.volumetricWeight} kg</span>
           </div>
         );
@@ -273,7 +274,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
             </Badge>
 
             <div className="text-xs mt-1">
-             {formatDateTimeSmart(shipment.trackingEvents[0]?.timestamp || shipment.updatedAt)}
+              {formatDateTimeSmart(shipment.trackingEvents[0]?.timestamp || shipment.updatedAt)}
             </div>
 
             {shipment.pickupDate && <div className="mt-1 text-xs">For {shipment.pickupDate.split(' ')[1]}, {shipment.pickupDate.split(' ')[2]}</div>}
