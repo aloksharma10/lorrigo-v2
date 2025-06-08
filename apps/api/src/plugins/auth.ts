@@ -10,6 +10,7 @@ interface UserPayload {
   email: string;
   role: string;
   permissions?: object;
+  plan?: any;
   [key: string]: any;
 }
 
@@ -113,6 +114,16 @@ const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (fastify, _optio
           role: true,
           is_active: true,
           permissions: true,
+          plan: {
+            include: {
+               plan_courier_pricings: {
+                  include: {
+                     courier: true,
+                     zone_pricing: true
+                  }
+               }
+            }
+         }
         },
       });
 
@@ -128,6 +139,7 @@ const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (fastify, _optio
         email: user.email,
         role: user.role,
         permissions: user.permissions as object,
+        plan: user.plan,
       };
     } catch (err) {
       reply.code(401).send({

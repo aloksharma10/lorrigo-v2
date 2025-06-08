@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { generatePlanId } from '../utils/id-generator';
 import { getPincodeDetails } from '@/utils/pincode';
 import { Zone } from '@lorrigo/db';
+import { calculatePrice, calculatePricesForCouriers, CourierWithPricing, PriceCalculationParams, validateCalculationParams } from '@/utils/calculate-order-price';
 
 // Types
 interface ZonePricingItem {
@@ -487,26 +488,29 @@ export class PlanService {
       }
    }
 
+
    async calculateRates(params: RateCalculationParams, userId: string): Promise<RateCalculationResult[] | { message: string }[]> {
       try {
-         // Input validation
-         if (!(params.paymentType === 0 || params.paymentType === 1)) {
-            throw new Error('Invalid paymentType');
+         // Convert to utility params format
+         const utilityParams: PriceCalculationParams = {
+            weight: params.weight,
+            weightUnit: params.weightUnit,
+            boxLength: params.boxLength,
+            boxWidth: params.boxWidth,
+            boxHeight: params.boxHeight,
+            sizeUnit: "cm",
+            paymentType: params.paymentType as 0 | 1,
+            collectableAmount: params.collectableAmount,
+            pickupPincode: params.pickupPincode,
+            deliveryPincode: params.deliveryPincode,
+            isReversedOrder: params.isReversedOrder
+         };
+
+         // Validate input using utility
+         const validationErrors = validateCalculationParams(utilityParams);
+         if (validationErrors.length > 0) {
+            return [{ message: validationErrors.join(', ') }];
          }
-         if (params.paymentType === 1 && !params.collectableAmount) {
-            throw new Error('Collectable amount is required for COD');
-         }
-
-         // Weight calculations
-         let weight = params.weight;
-         if (params.weightUnit === 'g') weight /= 1000;
-
-         const volume = params.sizeUnit === 'cm'
-            ? (params.boxLength * params.boxWidth * params.boxHeight) / 5000
-            : (params.boxLength * params.boxWidth * params.boxHeight) / 5;
-
-         const volumetricWeight = Math.round(volume);
-         const finalWeight = Math.max(volumetricWeight, Number(weight)); // Fixed incomplete line
 
          // Get pincode details
          const [pickupDetails, deliveryDetails] = await Promise.all([
@@ -515,7 +519,7 @@ export class PlanService {
          ]);
 
          if (!pickupDetails || !deliveryDetails) {
-            throw new Error('Invalid pincode');
+            return [{ message: 'Invalid pincode' }];
          }
 
          // Get user's plan with courier pricing
@@ -530,116 +534,60 @@ export class PlanService {
             return [{ message: 'No couriers available in plan' }];
          }
 
-         // Calculate rates for each courier
-         const rates: RateCalculationResult[] = [];
-
-         for (const courierPricing of courierPricings) {
-            const courier = courierPricing.courier;
-
-            // Skip inactive couriers
-            if (!courier.is_active) continue;
-
-            // Skip couriers that don't match the reversed order flag
-            if (courier.is_reversed_courier !== Boolean(params.isReversedOrder)) continue;
-
-            // Determine zone and get zone pricing
-            let order_zone = '';
-            let zonePricingEntry = null;
-
-            if (pickupDetails.city === deliveryDetails.city) {
-               zonePricingEntry = courierPricing.zone_pricing.find(z => z.zone === 'WITHIN_CITY');
-               order_zone = 'Zone A';
-            } else if (pickupDetails.state === deliveryDetails.state) {
-               zonePricingEntry = courierPricing.zone_pricing.find(z => z.zone === 'WITHIN_STATE');
-               order_zone = 'Zone B';
-            } else if (
-               MetroCities.includes(pickupDetails.city) &&
-               MetroCities.includes(deliveryDetails.city)
-            ) {
-               zonePricingEntry = courierPricing.zone_pricing.find(z => z.zone === 'WITHIN_METRO');
-               order_zone = 'Zone C';
-            } else if (
-               NorthEastStates.includes(pickupDetails.state) ||
-               NorthEastStates.includes(deliveryDetails.state)
-            ) {
-               zonePricingEntry = courierPricing.zone_pricing.find(z => z.zone === 'NORTH_EAST');
-               order_zone = 'Zone E';
-            } else {
-               zonePricingEntry = courierPricing.zone_pricing.find(z => z.zone === 'WITHIN_ROI');
-               order_zone = 'Zone D';
+         // Convert to utility format
+         const couriersWithPricing: CourierWithPricing[] = courierPricings.map(courierPricing => ({
+            courier: {
+               id: courierPricing.courier.id,
+               name: courierPricing.courier.name,
+               courier_code: courierPricing.courier.courier_code ?? '',
+               type: courierPricing.courier.type,
+               is_active: courierPricing.courier.is_active,
+               is_reversed_courier: courierPricing.courier.is_reversed_courier,
+               pickup_time: courierPricing.courier.pickup_time ?? '',
+               weight_slab: courierPricing.weight_slab
+            },
+            pricing: {
+               weight_slab: courierPricing.weight_slab,
+               increment_weight: courierPricing.increment_weight,
+               cod_charge_hard: courierPricing.cod_charge_hard ?? 0,
+               cod_charge_percent: courierPricing.cod_charge_percent ?? 0,
+               is_cod_applicable: courierPricing.is_cod_applicable,
+               is_rto_applicable: courierPricing.is_rto_applicable,
+               is_fw_applicable: courierPricing.is_fw_applicable,
+               zone_pricing: courierPricing.zone_pricing
             }
+         }));
 
-            if (!zonePricingEntry) {
-               continue;
+         // Calculate prices using utility
+         const utilityResults = calculatePricesForCouriers(
+            utilityParams,
+            couriersWithPricing,
+            pickupDetails,
+            deliveryDetails
+         );
+
+         // Convert utility results back to original format
+         const rates: RateCalculationResult[] = utilityResults.map(result => ({
+            nickName: result.courier.name,
+            name: result.courier.name,
+            minWeight: result.pricing.weight_slab,
+            cod: result.codCharges,
+            isReversedCourier: result.courier.is_reversed_courier,
+            rtoCharges: result.rtoCharges,
+            charge: result.totalPrice,
+            type: result.courier.type,
+            expectedPickup: result.expectedPickup,
+            carrierId: result.courier.id,
+            order_zone: result.zoneName,
+            courier: {
+               id: result.courier.id,
+               name: result.courier.name,
+               courier_code: result.courier.courier_code,
+               is_cod_applicable: result.pricing.is_cod_applicable,
+               is_fw_applicable: result.pricing.is_fw_applicable,
+               is_rto_applicable: result.pricing.is_rto_applicable
             }
-
-            // Parse pickup time - Fixed potential null/undefined issues
-            const pickupTimeStr = courier.pickup_time || '12:00:00';
-            const [hour, minute, second] = pickupTimeStr.split(':').map(Number);
-            const now = new Date();
-            const pickupTime = new Date().setHours(hour || 12, minute || 0, second || 0, 0);
-            const expectedPickup = pickupTime < now.getTime() ? 'Tomorrow' : 'Today';
-
-            // Adjust weight based on minimum weight - Fixed null handling
-            let orderWeight = finalWeight;
-            const minWeight = courierPricing.weight_slab || 0.5; // Default fallback
-            if (orderWeight < minWeight) {
-               orderWeight = minWeight;
-            }
-
-            // Calculate base charges - Fixed null handling
-            let totalCharge = zonePricingEntry.base_price || 0;
-            const incrementWeight = courierPricing.increment_weight || 0.5; // Default fallback
-            const weightIncrementRatio = Math.ceil((orderWeight - minWeight) / incrementWeight);
-            totalCharge += (zonePricingEntry.increment_price || 0) * Math.max(0, weightIncrementRatio);
-
-            // COD calculation - Use courierPricing values instead of courier
-            const codPrice = courierPricing.cod_charge_hard || 0;
-            const codAfterPercent = ((courierPricing.cod_charge_percent || 0) / 100) * (params.collectableAmount || 0);
-            const isCodDeduct = courierPricing.is_cod_applicable;
-            const cod = params.paymentType === 1 && isCodDeduct ? Math.max(codPrice, codAfterPercent) : 0;
-
-            totalCharge += cod;
-
-            // RTO charges - Fixed logic
-            const isRtoDeduct = courierPricing.is_rto_applicable;
-            const isRTOSameAsFW = zonePricingEntry.is_rto_same_as_fw;
-
-            let rtoCharges = 0;
-            if (isRtoDeduct) {
-               rtoCharges = isRTOSameAsFW
-                  ? totalCharge - cod
-                  : (zonePricingEntry.rto_base_price || 0) +
-                  ((zonePricingEntry.rto_increment_price || 0) * Math.max(0, weightIncrementRatio));
-            }
-
-            const isFwdDeduct = courierPricing.is_fw_applicable;
-
-            // Prepare result
-            const result: RateCalculationResult = {
-               nickName: courier.name,
-               name: courier.name,
-               minWeight,
-               cod,
-               isReversedCourier: courier.is_reversed_courier,
-               rtoCharges,
-               charge: isFwdDeduct ? totalCharge : 0,
-               type: courier.type,
-               expectedPickup,
-               carrierId: courier.id,
-               order_zone,
-               courier: {
-                  id: courier.id,
-                  name: courier.name,
-                  courier_code: courier.courier_code,
-                  is_cod_applicable: courierPricing.is_cod_applicable, // Use courierPricing
-                  is_fw_applicable: courierPricing.is_fw_applicable,   // Use courierPricing
-                  is_rto_applicable: courierPricing.is_rto_applicable  // Use courierPricing
-               }
-            };
-
-            rates.push(result);
-         }
+         }));
 
          return rates.length ? rates : [{ message: 'No serviceable couriers' }];
       } catch (error) {
