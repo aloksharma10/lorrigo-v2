@@ -63,7 +63,7 @@ export function DataTableDateRangePicker({
             onSelect={(range) => {
               if (range) {
                 setDateRange(range);
-                setOpen(false);
+                // setOpen(false);
               }
             }}
             numberOfMonths={2}

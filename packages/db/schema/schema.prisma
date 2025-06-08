@@ -24,18 +24,8 @@ enum OrderType {
   B2B
 }
 
-enum OrderStatus {
-  CREATED
-  CONFIRMED
-  PROCESSING
-  SHIPPED
-  DELIVERED
-  CANCELLED
-  RETURNED
-}
-
 enum ShipmentStatus {
-  CREATED
+  NEW
   PICKUP_SCHEDULED
   PICKED_UP
   IN_TRANSIT
@@ -368,13 +358,13 @@ model Package {
 
 // Order Model
 model Order {
-  id               String        @id @default(cuid())
-  code             String        @unique // Will use your custom ID logic
-  order_number     String        @unique @db.VarChar(50)
-  type             OrderType     @default(B2C)
-  status           OrderStatus   @default(CREATED)
-  payment_mode     PaymentMethod @default(COD)
-  is_reverse_order Boolean       @default(false)
+  id               String         @id @default(cuid())
+  code             String         @unique // Will use your custom ID logic
+  order_number     String         @unique @db.VarChar(50)
+  type             OrderType      @default(B2C)
+  status           ShipmentStatus @default(NEW)
+  payment_mode     PaymentMethod  @default(COD)
+  is_reverse_order Boolean        @default(false)
 
   order_channel_config_id String
   order_channel_config    OrderChannelConfig @relation(fields: [order_channel_config_id], references: [id])
@@ -447,17 +437,19 @@ model OrderItem {
 
 // Shipment Model
 model Shipment {
-  id              String         @id @default(cuid())
-  code            String         @unique // Custom ID - Format: SH-YYMM-XXXXX
-  awb             String         @unique @db.VarChar(50)
-  status          ShipmentStatus @default(CREATED)
-  number_of_boxes Int            @default(1)
+  id     String         @id @default(cuid())
+  code   String         @unique // Custom ID - Format: SH-YYMM-XXXXX
+  awb    String?        @unique @db.VarChar(50)
+  status ShipmentStatus @default(NEW)
 
-  shipping_charge Float   @default(0)
-  fw_charge       Float   @default(0)
-  cod_amount      Float?  @default(0)
-  rto_charge      Float   @default(0)
-  order_zone      String? @db.VarChar(50)
+  shipping_charge Float     @default(0)
+  fw_charge       Float     @default(0)
+  cod_amount      Float?    @default(0)
+  rto_charge      Float     @default(0)
+  order_zone      String?   @db.VarChar(50)
+  edd             DateTime?
+  pickup_date     DateTime?
+  pickup_id       String?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -467,8 +459,8 @@ model Shipment {
 
   user_id         String
   user            User            @relation("UserShipments", fields: [user_id], references: [id], onDelete: Cascade)
-  courier_id      String
-  courier         Courier         @relation(fields: [courier_id], references: [id], onDelete: Cascade)
+  courier_id      String?
+  courier         Courier?        @relation(fields: [courier_id], references: [id], onDelete: Cascade)
   tracking_events TrackingEvent[]
 
   @@index([order_id, user_id, courier_id, status, created_at])

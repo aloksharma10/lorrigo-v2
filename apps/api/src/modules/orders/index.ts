@@ -16,6 +16,7 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
 
   // Get all orders
   fastify.get('/', {
+    preHandler: [authorizeRoles([Role.SELLER])],
     schema: {
       tags: ['Orders'],
       summary: 'Get all orders',
@@ -40,8 +41,8 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
             ],
           },
           search: { type: 'string' },
-          fromDate: { type: 'string', format: 'date-time' },
-          toDate: { type: 'string', format: 'date-time' },
+          from_date: { type: 'string', format: 'date' },
+          to_date: { type: 'string', format: 'date' },
         },
       },
       response: {
@@ -55,11 +56,54 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
                 properties: {
                   id: { type: 'string' },
                   orderNumber: { type: 'string' },
+                  awb: { type: 'string' },
+                  trackingEvents: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        description: { type: 'string' },
+                        code: { type: 'string' },
+                        status: { type: 'string' },
+                        timestamp: { type: 'string', format: 'date-time' },
+                      },
+                    },
+                  },
                   status: { type: 'string' },
                   totalAmount: { type: 'number' },
-                  customerId: { type: 'string' },
-                  customerName: { type: 'string' },
+                  packageDetails: {
+                    type: 'object',
+                    properties: {
+                      length: { type: 'number' },
+                      breadth: { type: 'number' },
+                      height: { type: 'number' },
+                      deadWeight: { type: 'number' },
+                      volumetricWeight: { type: 'number' },
+                    },
+                  },
+                  customer: {
+                    type: 'object',
+                    properties: {
+                      name: { type: 'string' },
+                      email: { type: 'string' },
+                      phone: { type: 'string' },
+                    },
+                  },
+                  hub: {
+                    type: 'object',
+                    properties: {
+                      lorrigoPickupId: { type: 'string' },
+                      name: { type: 'string' },
+                      address: { type: 'string' },
+                    },
+                  },
+                  paymentType: { type: 'string' },
+                  amountToCollect: { type: 'number' },
+                  pickupDate: { type: 'string', format: 'date-time' },
+                  edd: { type: 'string' },
+                  pickupId: { type: 'string' },
                   createdAt: { type: 'string', format: 'date-time' },
+                  updatedAt: { type: 'string', format: 'date-time' },
                 },
               },
             },

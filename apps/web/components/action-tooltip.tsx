@@ -1,3 +1,4 @@
+import { cn } from "@lorrigo/ui/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@lorrigo/ui/components';
 
 interface ActionTooltipProps {
@@ -5,15 +6,16 @@ interface ActionTooltipProps {
   align?: 'start' | 'center' | 'end';
   label: string;
   children: React.ReactNode;
+  className?: string;
 }
-const ActionTooltip = ({ side, align, label, children }: ActionTooltipProps) => {
+const ActionTooltip = ({ side, align, label, children, className }: ActionTooltipProps) => {
   return (
     <TooltipProvider>
       <Tooltip delayDuration={50}>
-        <TooltipTrigger asChild className="cursor-pointer p-1 hover:rounded-md">
+        <TooltipTrigger asChild className={cn("cursor-pointer p-1 hover:rounded-md", className)}>
           {children}
         </TooltipTrigger>
-        <TooltipContent side={side} align={align} className="text-secondary-foreground">
+        <TooltipContent side={side} align={align} className="text-secondary-foreground border px-2 py-1">
           <p className="text-sm font-semibold capitalize">{label.toLowerCase()}</p>
         </TooltipContent>
       </Tooltip>

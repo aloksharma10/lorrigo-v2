@@ -1,6 +1,6 @@
 import { getPincodeDetails } from '@/utils/pincode';
-import { Prisma, prisma } from '@lorrigo/db';
-import type { Channel, OrderStatus, PaymentMethod } from '@lorrigo/db';
+import { Prisma, prisma, ShipmentStatus } from '@lorrigo/db';
+import { Channel, PaymentMethod } from '@lorrigo/db';
 import { generateId, getFinancialYear, OrderFormValues, UpdateOrderFormValues } from '@lorrigo/utils';
 import { FastifyInstance } from 'fastify';
 
@@ -58,9 +58,45 @@ export class OrderService {
         take: limit,
         orderBy: { created_at: 'desc' },
         include: {
+          hub: {
+            select: {
+              code: true,
+              name: true,
+              address: true,
+            },
+          },
+          package: {
+            select: {
+              length: true,
+              breadth: true,
+              height: true,
+              dead_weight: true,
+              volumetric_weight: true,
+            },
+          },
+          shipment: {
+            select: {
+              awb: true,
+              pickup_date: true,
+              edd: true,
+              pickup_id: true,
+              tracking_events: {
+                take: 1,
+                orderBy: {
+                  timestamp: 'desc',
+                },
+                select: {
+                  status: true,
+                  timestamp: true,
+                },
+              },
+            },
+          },
           customer: {
             select: {
               name: true,
+              email: true,
+              phone: true,
             },
           },
         },
@@ -71,12 +107,35 @@ export class OrderService {
     // Format orders for response
     const formatted_orders = orders.map((order) => ({
       id: order.id,
-      order_number: order.order_number,
+      orderNumber: order.order_number,
       status: order.status,
-      total_amount: order.total_amount,
+      customer: {
+        name: order.customer.name,
+        email: order.customer.email || '',
+        phone: order.customer.phone || '',
+      },
+      hub: {
+        name: order.hub?.name || '',
+        lorrigoPickupId: order.hub?.code || '',
+        address: order.hub?.address.address || '',
+      },
+      packageDetails: {
+        length: order.package.length,
+        breadth: order.package.breadth,
+        height: order.package.height,
+        deadWeight: order.package.dead_weight,
+      },
+      awb: order.shipment?.awb || '',
+      trackingEvents: order.shipment?.tracking_events || [],
+      totalAmount: order.total_amount,
       customer_id: order.customer_id,
-      customer_name: order.customer.name,
-      created_at: order.created_at,
+      paymentType: order.payment_mode,
+      amountToCollect: order.amount_to_collect,
+      pickupDate: order.shipment?.pickup_date,
+      edd: order.shipment?.edd || '',
+      pickupId: order.shipment?.pickup_id || '',
+      createdAt: order.created_at,
+      updatedAt: order.updated_at,
     }));
 
     const totalPages = Math.ceil(total / limit);
@@ -272,7 +331,21 @@ export class OrderService {
             code: orderCode,
             order_number: orderNumber,
             type: 'B2C', // Default from schema
-            status: 'CREATED',
+            status: 'NEW',
+            shipment: {
+              create: {
+                code: orderCode,
+                user_id: userId,
+                tracking_events: {
+                  create: [{
+                    description: 'Order Created',
+                    status: 'NEW',
+                    timestamp: new Date(),
+                    code: 'NEW',
+                  }]
+                }
+              }
+            },
             payment_mode: (data.paymentMethod.paymentMethod?.toUpperCase() as PaymentMethod) || 'COD',
             order_channel_config_id: orderChannelConfig.id,
             total_amount: data.productDetails.taxableValue,
@@ -360,7 +433,7 @@ export class OrderService {
     }
   }
 
-  // OPTIMIZATION 10: Add method with caching for frequently called operations
+  // OPTIMIZATION 10: Add method with caching for frequently called operations 
   async createOrderOptimized(data: OrderFormValues, userId: string, userName: string) {
     // Pre-validation to fail fast
     if (!data.orderId || !userId || !data.pickupAddressId) {
@@ -385,7 +458,7 @@ export class OrderService {
     return this.fastify.prisma.order.update({
       where: { id },
       data: {
-        status: update_data.status as OrderStatus,
+        status: update_data.status as ShipmentStatus,
       },
     });
   }
@@ -433,7 +506,7 @@ export class OrderService {
     await this.fastify.prisma.shipment.updateMany({
       where: {
         order_id: id,
-        status: 'CREATED',
+        status: 'NEW',
       },
       data: {
         status: 'CANCELLED',

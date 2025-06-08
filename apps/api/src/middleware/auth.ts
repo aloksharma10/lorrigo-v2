@@ -50,13 +50,11 @@ export async function authenticateUser(request: FastifyRequest, reply: FastifyRe
 export function authorizeRoles(roles: Role[]) {
   return async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      // First authenticate the user
       await authenticateUser(request, reply);
 
-      // Check if user's role is in the allowed roles
       const userRole = request.userPayload?.role as Role;
 
-      if (!userRole || !roles.includes(userRole)) {
+      if (userRole !== 'ADMIN' && !roles.includes(userRole)) {
         return reply.code(403).send({
           statusCode: 403,
           error: 'Forbidden',
@@ -64,7 +62,7 @@ export function authorizeRoles(roles: Role[]) {
         });
       }
     } catch (err) {
-      // Authentication already handles its own errors
+      // Optional: Log the error or handle custom auth errors
     }
   };
 }

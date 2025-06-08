@@ -21,8 +21,8 @@ export const OrderQuerySchema = z.object({
   limit: z.number().optional().default(10),
   status: OrderStatusEnum.optional(),
   search: z.string().optional(),
-  fromDate: z.string().optional(),
-  toDate: z.string().optional(),
+  from_date: z.string().optional(),
+  to_date: z.string().optional(),
 });
 
 // Schema for order statistics query parameters

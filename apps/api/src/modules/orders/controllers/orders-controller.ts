@@ -16,7 +16,7 @@ import { OrderService } from '../services/order-service';
  * Order Controller handles HTTP request/response logic
  */
 export class OrderController {
-  constructor(private orderService: OrderService) {}
+  constructor(private orderService: OrderService) { }
 
 
   /**
@@ -24,9 +24,6 @@ export class OrderController {
    */
   async getAllOrders(request: FastifyRequest, reply: FastifyReply) {
     try {
-      // Check if user is authenticated
-      await checkAuth(request, reply);
-
       const queryParams = OrderQuerySchema.parse(request.query);
       const userId = request.userPayload!.id;
 
@@ -54,9 +51,6 @@ export class OrderController {
    */
   async getOrderById(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
     try {
-      // Check if user is authenticated
-      await checkAuth(request, reply);
-
       const { id } = request.params;
       const user_id = request.userPayload!.id;
 
