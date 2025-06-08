@@ -41,7 +41,7 @@ export default async function ShippingChargesPage({ searchParams }: PageProps) {
                from: new Date(new Date().setDate(new Date().getDate() - 30)),
                to: new Date(),
             },
-      //  status: "",
+      status: 'all',
    };
 
    return (

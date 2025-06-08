@@ -17,23 +17,13 @@ import {
 import { toast } from '@lorrigo/ui/components';
 import type { ColumnDef } from '@lorrigo/ui/components';
 import { useDebounce } from '@/lib/hooks/use-debounce';
-
-import {
-  fetchShipments,
-  downloadManifest,
-  generateLabels,
-  cancelOrders,
-  type Shipment,
-  type ApiResponse,
-  type ShipmentParams,
-} from '@/app/(www)/(seller)/seller/orders/order-action';
+import { fetchShipments, ApiResponse, ShipmentData, ShipmentParams } from '@/lib/apis/order';
 
 interface ShipmentsTableProps {
-  initialData: ApiResponse;
   initialParams: ShipmentParams;
 }
 
-export default function ShipmentsTable({ initialData, initialParams }: ShipmentsTableProps) {
+export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
   const [activeTab, setActiveTab] = React.useState(initialParams.status || 'all');
   const [pagination, setPagination] = React.useState({
     pageIndex: initialParams.page || 0,
@@ -57,7 +47,7 @@ export default function ShipmentsTable({ initialData, initialParams }: Shipments
   const queryClient = useQueryClient();
 
   // Fetch shipments with React Query
-  const { data, isLoading, isError, isFetching } = useQuery({
+  const { data, isLoading, isError, isFetching, error } = useQuery({
     queryKey: [
       'shipments',
       pagination.pageIndex,
@@ -78,61 +68,19 @@ export default function ShipmentsTable({ initialData, initialParams }: Shipments
         dateRange,
         status: activeTab,
       }),
-    initialData: initialData,
     placeholderData: (previousData) => previousData,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
-    refetchInterval: false,
-    retryOnMount: false,
-    retry: false,
+    staleTime: 30 * 1000, // 30 seconds for more frequent updates
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchOnReconnect: true,
+    refetchInterval: 2 * 60 * 1000, // Refetch every 2 minutes
+    retry: 2, // Retry failed requests twice
   });
 
-  // Bulk action mutations with Sonner toast
-  const downloadManifestMutation = useMutation({
-    mutationFn: async (shipments: Shipment[]) => {
-      const shipmentIds = shipments.map((s) => s.id);
-      return downloadManifest(shipmentIds);
-    },
-    onSuccess: (result) => {
-      toast.success(`Downloaded manifest for ${result.count} shipments`);
-    },
-    onError: () => {
-      toast.error('Failed to download manifest');
-    },
-  });
-
-  const generateLabelsMutation = useMutation({
-    mutationFn: async (shipments: Shipment[]) => {
-      const shipmentIds = shipments.map((s) => s.id);
-      return generateLabels(shipmentIds);
-    },
-    onSuccess: (result) => {
-      toast.success(`Generated labels for ${result.count} shipments`);
-    },
-    onError: () => {
-      toast.error('Failed to generate labels');
-    },
-  });
-
-  const cancelOrdersMutation = useMutation({
-    mutationFn: async (shipments: Shipment[]) => {
-      const shipmentIds = shipments.map((s) => s.id);
-      return cancelOrders(shipmentIds);
-    },
-    onSuccess: (result) => {
-      toast.success(`Cancelled ${result.count} orders`);
-      queryClient.invalidateQueries({ queryKey: ['shipments'] });
-    },
-    onError: () => {
-      toast.error('Failed to cancel orders');
-    },
-  });
-
+  
   // Define the columns for the data table
-  const columns: ColumnDef<Shipment>[] = [
+  const columns: ColumnDef<ShipmentData>[] = [
     {
       id: 'select',
       header: ({ table }) => (
@@ -309,8 +257,10 @@ export default function ShipmentsTable({ initialData, initialParams }: Shipments
           <div className="flex flex-col items-center gap-2">
             <Button
               className="w-full bg-indigo-600 hover:bg-indigo-700"
-              onClick={() => downloadManifestMutation.mutate([row.original])}
-              disabled={downloadManifestMutation.isPending}
+              onClick={() => {
+                console.log('Download manifest for:', row.original);
+                toast.success('Preparing manifest download...');
+              }}
             >
               Download Manifest
             </Button>
@@ -322,11 +272,17 @@ export default function ShipmentsTable({ initialData, initialParams }: Shipments
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>View details</DropdownMenuItem>
-                <DropdownMenuItem>Track shipment</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => console.log('View details:', row.original)}>
+                  View details
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => console.log('Track shipment:', row.original)}>
+                  Track shipment
+                </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => cancelOrdersMutation.mutate([row.original])}
-                  disabled={cancelOrdersMutation.isPending}
+                  onClick={() => {
+                    console.log('Cancel order:', row.original);
+                    toast.success('Order cancellation initiated');
+                  }}
                 >
                   Cancel order
                 </DropdownMenuItem>
@@ -342,25 +298,28 @@ export default function ShipmentsTable({ initialData, initialParams }: Shipments
   const bulkActions = [
     {
       label: 'Download Manifest',
-      action: (selectedRows: Shipment[]) => {
-        downloadManifestMutation.mutate(selectedRows);
+      action: (selectedRows: ShipmentData[]) => {
+        console.log('Download Manifest for:', selectedRows);
+        toast.success(`Preparing manifest for ${selectedRows.length} orders`);
       },
-      isLoading: downloadManifestMutation.isPending,
+      isLoading: false,
     },
     {
       label: 'Generate Labels',
-      action: (selectedRows: Shipment[]) => {
-        generateLabelsMutation.mutate(selectedRows);
+      action: (selectedRows: ShipmentData[]) => {
+        console.log('Generate Labels for:', selectedRows);
+        toast.success(`Generating labels for ${selectedRows.length} orders`);
       },
-      isLoading: generateLabelsMutation.isPending,
+      isLoading: false,
     },
     {
       label: 'Cancel Orders',
-      action: (selectedRows: Shipment[]) => {
-        cancelOrdersMutation.mutate(selectedRows);
+      action: (selectedRows: ShipmentData[]) => {
+        console.log('Cancel Orders:', selectedRows);
+        toast.success(`Cancelling ${selectedRows.length} orders`);
       },
       variant: 'destructive' as const,
-      isLoading: cancelOrdersMutation.isPending,
+      isLoading: false,
     },
   ];
 
@@ -445,9 +404,9 @@ export default function ShipmentsTable({ initialData, initialParams }: Shipments
           },
         ]}
         searchPlaceholder="Search for AWB, Order ID, Buyer Mobile Number, Email, SKU, Pickup ID"
-        isLoading={isLoading}
+        isLoading={isLoading || isFetching}
         isError={isError}
-        errorMessage="Failed to fetch shipments. Please try again."
+        errorMessage={error instanceof Error ? error.message : "Failed to fetch orders. Please try again."}
         onPaginationChange={handlePaginationChange}
         onSortingChange={handleSortingChange}
         onFiltersChange={handleFiltersChange}

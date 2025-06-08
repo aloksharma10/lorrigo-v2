@@ -12,7 +12,7 @@ import {
   useSidebar
 } from "@lorrigo/ui/components";
 import { CardItems } from "@/components/card-items";
-import { ShipmentParams } from "@/app/(www)/(seller)/seller/orders/order-action";
+import { ShipmentParams } from "@/lib/apis/order";
 import React from "react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useQueryClient } from "@tanstack/react-query";

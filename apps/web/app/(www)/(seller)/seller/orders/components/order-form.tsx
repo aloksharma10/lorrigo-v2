@@ -33,7 +33,7 @@ import { ORDER_CHANNELS } from '@/lib/order-channels';
 import Link from 'next/link';
 import { BackButton } from '@/components/back-btn';
 import { InvoiceDetailsForm } from './invoice-details-form';
-import { useCreateOrder } from '@/lib/apis/order';
+import { useOrderOperations } from '@/lib/apis/order';
 import { SubmitBtn } from '@/components/submit-btn';
 import { useRouter } from 'next/navigation';
 
@@ -44,7 +44,7 @@ export default function OrderForm() {
   const router = useRouter();
   // const [selectedAddress, setSelectedAddress] = useState<any>(null);
   // const [isAddressVerified, setIsAddressVerified] = useState(false);
-  const { createOrder: { data: order, isPending: isCreatingOrder, mutateAsync: createOrder, isSuccess: isOrderCreated } } = useCreateOrder();
+  const { createOrder: { data: order, isPending: isCreatingOrder, mutateAsync: createOrder, isSuccess: isOrderCreated } } = useOrderOperations();
 
   const form = useForm<OrderFormValues>({
     resolver: zodResolver(orderFormSchema),

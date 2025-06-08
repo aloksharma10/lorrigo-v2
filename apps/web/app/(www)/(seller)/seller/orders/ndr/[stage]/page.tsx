@@ -1,5 +1,7 @@
+'use client';
+
 import { RefreshCw } from 'lucide-react';
-import { getInitialShipments } from '@/app/(www)/(seller)/seller/orders/order-action';
+import { useSearchParams } from 'next/navigation';
 
 import NDRTable from '@/components/tables/order/ndr-table';
 import ScrollableTabsProps from '@/components/client-tabs';
@@ -8,31 +10,24 @@ import { NDR_TAB_ROUTES } from '@/lib/routes/nested-shipments';
 import { Badge, Button } from '@lorrigo/ui/components';
 
 interface PageProps {
-  params: Promise<{
+  params: {
     stage: string;
-  }>;
-  searchParams: Promise<{
-    page?: string;
-    pageSize?: string;
-    sort?: string;
-    filters?: string;
-    search?: string;
-    dateFrom?: string;
-    dateTo?: string;
-  }>;
+  };
 }
 
-// Force dynamic rendering with no caching
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export default function NDRPage({ params }: PageProps) {
+  const { stage } = params;
+  const searchParams = useSearchParams();
 
-export default async function NDRPage({ params, searchParams }: PageProps) {
-  const { stage } = await params;
-  const queryParams = await searchParams;
+  const page = searchParams.get('page') || '0';
+  const pageSize = searchParams.get('pageSize') || '15';
+  const sort = searchParams.get('sort');
+  const filters = searchParams.get('filters');
+  const search = searchParams.get('search');
+  const dateFrom = searchParams.get('dateFrom');
+  const dateTo = searchParams.get('dateTo');
 
-  const { page = '0', pageSize = '15', sort, filters, search, dateFrom, dateTo } = queryParams;
-
-  // Parse parameters
+  // Parse parameters for React Query
   const parsedParams = {
     page: Number.parseInt(page),
     pageSize: Number.parseInt(pageSize),
@@ -51,9 +46,6 @@ export default async function NDRPage({ params, searchParams }: PageProps) {
           },
     status: stage,
   };
-
-  // Get initial data on server - only for first load
-  const initialData = await getInitialShipments(parsedParams);
 
   return (
     <div className="mx-auto w-full space-y-4 p-4">
@@ -77,7 +69,7 @@ export default async function NDRPage({ params, searchParams }: PageProps) {
       <ScrollableTabsProps menuItems={NDR_TAB_ROUTES} />
 
       {/* Table */}
-      <NDRTable initialData={initialData} initialParams={parsedParams} />
+      <NDRTable initialParams={parsedParams} />
     </div>
   );
 }

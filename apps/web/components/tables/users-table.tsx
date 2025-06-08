@@ -26,14 +26,13 @@ import {
   type Shipment,
   type ApiResponse,
   type ShipmentParams,
-} from '@/app/(www)/(seller)/seller/orders/order-action';
+} from '@/lib/apis/order';
 
 interface UsersTableProps {
-  initialData: ApiResponse;
   initialParams: ShipmentParams;
 }
 
-export default function UsersTable({ initialData, initialParams }: UsersTableProps) {
+export default function UsersTable({ initialParams }: UsersTableProps) {
   const [activeTab, setActiveTab] = React.useState(initialParams.status || 'all');
   const [pagination, setPagination] = React.useState({
     pageIndex: initialParams.page || 0,
@@ -78,7 +77,7 @@ export default function UsersTable({ initialData, initialParams }: UsersTablePro
         dateRange,
         status: activeTab,
       }),
-    initialData: initialData,
+
     placeholderData: (previousData) => previousData,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes

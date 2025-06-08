@@ -23,6 +23,8 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
       querystring: {
         type: 'object',
         properties: {
+          sort: { type: 'string', default: 'createdAt' },
+          order: { type: 'string', default: 'desc' },
           page: { type: 'integer', default: 1 },
           limit: { type: 'integer', default: 10 },
           status: {

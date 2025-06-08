@@ -26,14 +26,13 @@ import {
   type Shipment,
   type ApiResponse,
   type ShipmentParams,
-} from '@/app/(www)/(seller)/seller/orders/order-action';
+} from '@/lib/apis/order';
 
 interface ShipmentsTableProps {
-  initialData: ApiResponse;
   initialParams: ShipmentParams;
 }
 
-export default function ShipmentsTable({ initialData, initialParams }: ShipmentsTableProps) {
+export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
   const [activeTab, setActiveTab] = React.useState(initialParams.status || 'all');
   const [pagination, setPagination] = React.useState({
     pageIndex: initialParams.page || 0,
@@ -78,7 +77,7 @@ export default function ShipmentsTable({ initialData, initialParams }: Shipments
         dateRange,
         status: activeTab,
       }),
-    initialData: initialData,
+
     placeholderData: (previousData) => previousData,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
