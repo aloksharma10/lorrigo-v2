@@ -4,12 +4,12 @@ import { CreatePlanInput, UpdatePlanInput, RateCalculationParams } from '../serv
 
 // Define proper input types based on schema
 export class PlanController {
-  constructor(private planService: PlanService) {}
+  constructor(private planService: PlanService) { }
 
   async getAllPlans(request: FastifyRequest, reply: FastifyReply) {
     try {
       const plans = await this.planService.getAllPlans();
-      return reply.code(200).send(plans);
+      return reply.code(200).send({ plans });
     } catch (error) {
       request.log.error(error);
       return reply.code(500).send({ error: 'Failed to fetch plans' });
@@ -25,7 +25,7 @@ export class PlanController {
         return reply.code(404).send({ error: 'Plan not found' });
       }
 
-      return reply.code(200).send(plan);
+      return reply.code(200).send({ plan });
     } catch (error) {
       request.log.error(error);
       return reply.code(500).send({ error: 'Failed to fetch plan' });
@@ -36,7 +36,7 @@ export class PlanController {
     try {
       const data = request.body as CreatePlanInput;
       const plan = await this.planService.createPlan(data);
-      return reply.code(201).send(plan);
+      return reply.code(201).send({ plan });
     } catch (error) {
       request.log.error(error);
       return reply.code(500).send({ error: 'Failed to create plan' });
@@ -63,14 +63,14 @@ export class PlanController {
   async deletePlan(request: FastifyRequest, reply: FastifyReply) {
     try {
       const { id } = request.params as { id: string };
-      
+
       try {
         const plan = await this.planService.deletePlan(id);
-        
+
         if (!plan) {
           return reply.code(404).send({ error: 'Plan not found' });
         }
-  
+
         return reply.code(200).send({ message: 'Plan deleted successfully' });
       } catch (error) {
         if ((error as Error).message === 'Cannot delete plan that is assigned to users') {
@@ -86,16 +86,16 @@ export class PlanController {
 
   async assignPlanToUser(request: FastifyRequest, reply: FastifyReply) {
     try {
-      const { id } = request.params as { id: string };
+      const { planId } = request.params as { planId: string };
       const { userId } = request.body as { userId: string };
-      
-      const user = await this.planService.assignPlanToUser(id, userId);
-      
+
+      const user = await this.planService.assignPlanToUser(planId, userId);
+
       if (!user) {
         return reply.code(404).send({ error: 'Plan or user not found' });
       }
-      
-      return reply.code(200).send(user);
+
+      return reply.code(200).send({ user });
     } catch (error) {
       request.log.error(error);
       return reply.code(500).send({ error: 'Failed to assign plan to user' });
@@ -105,12 +105,12 @@ export class PlanController {
   async getDefaultPlan(request: FastifyRequest, reply: FastifyReply) {
     try {
       const plan = await this.planService.getDefaultPlan();
-      
+
       if (!plan) {
         return reply.code(404).send({ error: 'No default plan found' });
       }
-      
-      return reply.code(200).send(plan);
+
+      return reply.code(200).send({ plan });
     } catch (error) {
       request.log.error(error);
       return reply.code(500).send({ error: 'Failed to fetch default plan' });
@@ -121,12 +121,12 @@ export class PlanController {
     try {
       const { userId } = request.params as { userId: string };
       const plan = await this.planService.getUserPlan(userId);
-      
+
       if (!plan) {
         return reply.code(404).send({ error: 'No plan found for user' });
       }
-      
-      return reply.code(200).send(plan);
+
+      return reply.code(200).send({ plan });
     } catch (error) {
       request.log.error(error);
       return reply.code(500).send({ error: 'Failed to fetch user plan' });
@@ -138,13 +138,13 @@ export class PlanController {
       const params = request.body as RateCalculationParams;
       // Get user ID from authenticated user in request
       const userPayload = request.userPayload;
-      
+
       if (!userPayload || !userPayload.id) {
         return reply.code(401).send({ error: 'User not authenticated' });
       }
-      
+
       const rates = await this.planService.calculateRates(params, userPayload.id);
-      return reply.code(200).send(rates);
+      return reply.code(200).send({ rates });
     } catch (error) {
       request.log.error(error);
       return reply.code(500).send({ error: `Failed to calculate rates: ${(error as Error).message}` });

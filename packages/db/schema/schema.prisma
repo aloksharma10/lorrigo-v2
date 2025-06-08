@@ -86,6 +86,14 @@ enum DeliveryType {
   SURFACE
 }
 
+enum Zone {
+  WITHIN_CITY
+  WITHIN_STATE
+  WITHIN_METRO
+  WITHIN_ROI
+  NORTH_EAST
+}
+
 enum Channel {
   CUSTOM
   WEBSITE
@@ -490,23 +498,30 @@ model TrackingEvent {
   @@index([code])
 }
 
+model ChannelConfig {
+  id        String  @id @default(cuid())
+  name      String  @unique @db.VarChar(100) // SMARTSHIP, SHIPROCKET, DELHIVERY, SHOPIFY
+  nickname  String  @unique @db.VarChar(10) // SS, SR, DL, SF
+  is_active Boolean @default(true)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  couriers Courier[]
+}
+
 // Courier Model
 model Courier {
-  id           String @id @default(cuid())
-  code         String @unique // Custom ID - Format: CR-YYMM-XXXXX
-  name         String @db.VarChar(100)
-  courier_code String @unique @db.VarChar(50)
+  id           String  @id @default(cuid())
+  code         String // Custom ID - Format: CR-YYMM-XXXXX
+  name         String  @db.VarChar(100)
+  courier_code String? @db.VarChar(50)
 
   cod_charge_hard    Float? @default(40)
   cod_charge_percent Float? @default(1.5)
 
   is_active           Boolean @default(true)
   is_reversed_courier Boolean @default(false)
-
-  is_fw_applicable           Boolean @default(true)
-  is_rto_applicable          Boolean @default(true)
-  is_cod_applicable          Boolean @default(true)
-  is_cod_reversal_applicable Boolean @default(true)
 
   weight_slab      Float?
   weight_unit      String? @db.VarChar(10)
@@ -522,6 +537,10 @@ model Courier {
   shipments     Shipment[]
   plan_pricings PlanCourierPricing[]
 
+  channel_config_id String?
+  channel_config    ChannelConfig? @relation(fields: [channel_config_id], references: [id])
+
+  @@unique([code, name, weight_slab])
   @@index([courier_code, is_active])
   @@index([code])
 }
@@ -803,12 +822,15 @@ model Pincode {
 model Plan {
   id          String   @id @default(cuid())
   code        String   @unique // Custom ID - Format: PL-YYMM-XXXXX
-  name        String
-  description String?  @db.Text
+  name        String   @unique @db.VarChar(100)
+  description String?  @db.VarChar(255)
   isDefault   Boolean  @default(false)
   features    String[] @default([])
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+
+  is_active Boolean @default(true)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   // Relations
   plan_courier_pricings PlanCourierPricing[]
@@ -820,11 +842,19 @@ model Plan {
 
 // PlanCourierPricing Model
 model PlanCourierPricing {
-  id               String @id @default(cuid())
-  base_price       Float
-  weight_slab      Float  @default(0.5)
-  increment_weight Float  @default(0.5)
-  increment_price  Float  @default(0)
+  id String @id @default(cuid())
+
+  cod_charge_hard    Float? @default(40)
+  cod_charge_percent Float? @default(1.5)
+
+  is_fw_applicable           Boolean @default(true)
+  is_rto_applicable          Boolean @default(true)
+  is_cod_applicable          Boolean @default(true)
+  is_cod_reversal_applicable Boolean @default(true)
+
+  weight_slab      Float @default(0.5)
+  increment_weight Float @default(0.5)
+  increment_price  Float @default(0)
 
   zone_pricing ZonePricing[]
 
@@ -843,7 +873,7 @@ model PlanCourierPricing {
 
 model ZonePricing {
   id                  String  @id @default(cuid())
-  zone                String
+  zone                Zone
   base_price          Float
   increment_price     Float
   is_rto_same_as_fw   Boolean
@@ -857,7 +887,7 @@ model ZonePricing {
   plan_courier_pricing_id String
   plan_courier_pricing    PlanCourierPricing @relation(fields: [plan_courier_pricing_id], references: [id])
 
+  @@unique([plan_courier_pricing_id, zone])
   @@index([zone])
   @@index([plan_courier_pricing_id])
-  @@unique([plan_courier_pricing_id, zone])
 }

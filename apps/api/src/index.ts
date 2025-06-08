@@ -14,6 +14,7 @@ import shipmentRoutes from '@/modules/shipments';
 import authRoutes from '@/modules/auth';
 import customerRoutes from '@/modules/customers';
 import courierRoutes from '@/modules/couriers';
+import channelRoutes from '@/modules/channels';
 import shopifyRoutes from '@/modules/shopify/shopify.routes';
 import hubRoutes from '@/modules/pickup-address';
 import planRoutes from '@/modules/plan/routes';
@@ -69,6 +70,7 @@ const registerPlugins = async () => {
         fastify.register(authRoutes, { prefix: '/auth' });
         fastify.register(customerRoutes, { prefix: '/customers' });
         fastify.register(courierRoutes, { prefix: '/couriers' });
+        fastify.register(channelRoutes, { prefix: '/channels' });
         fastify.register(hubRoutes, { prefix: '/hubs' });
         fastify.register(planRoutes, { prefix: '/plans' });
 

@@ -51,7 +51,7 @@ export class CourierController {
   async createCourier(request: FastifyRequest, reply: FastifyReply) {
     try {
       const courierData = createCourierSchema.parse(request.body);
-      const courier = await this.courierService.createCourier(courierData);
+      const courier = await this.courierService.createCourier(request.body as any);
       return reply.code(201).send(courier);
     } catch (error) {
       if (error instanceof z.ZodError) {

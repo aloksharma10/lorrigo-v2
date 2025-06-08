@@ -6,13 +6,8 @@ interface CourierData {
   name: string;
   code: string;
   courier_code: string;
-  website?: string;
   is_active: boolean;
   is_reversed_courier: boolean;
-  is_fw_applicable: boolean;
-  is_rto_applicable: boolean;
-  is_cod_applicable: boolean;
-  is_cod_reversal_applicable: boolean;
   cod_charge_hard?: number;
   cod_charge_percent?: number;
   weight_slab?: number;
@@ -27,6 +22,7 @@ interface CourierData {
     password?: string;
     account_number?: string;
   };
+  channel_config_id?: string;
 }
 
 interface CourierPricingData {
@@ -47,14 +43,29 @@ interface ErrorResponse {
 const ADMIN_ROLES = ['ADMIN', 'SUBADMIN'] as const;
 
 export class CourierService {
-  constructor(private fastify: FastifyInstance) {}
+  constructor(private fastify: FastifyInstance) { }
 
   async createCourier(data: CourierData) {
-    // Check if courier code already exists
-    const existingCourier = await this.fastify.prisma.courier.findUnique({
-      where: { code: data.code },
-    });
+    const [existingCourier, channelConfig] = await Promise.all([
+      this.fastify.prisma.courier.findUnique({
+        where: {
+          code_name_weight_slab: {
+            code: data.code,
+            name: data.name,
+            weight_slab: data.weight_slab || 0,
+          },
+        },
+        select: { id: true },
+      }),
+      data.channel_config_id
+        ? this.fastify.prisma.channelConfig.findUnique({
+          where: { id: data.channel_config_id },
+          select: { id: true },
+        })
+        : null,
+    ]);
 
+    // Check for existing courier
     if (existingCourier) {
       return {
         error: 'Courier with this code already exists',
@@ -62,9 +73,20 @@ export class CourierService {
       };
     }
 
+    // Check for vendor config ID and its existence
+    if (!data.channel_config_id || !channelConfig) {
+      return {
+        error: data.channel_config_id ? 'Vendor config not found' : 'Vendor config ID is required',
+        status: data.channel_config_id ? 404 : 400,
+      };
+    }
+
     // Create the courier
     return await this.fastify.prisma.courier.create({
-      data,
+      data: {
+        ...data,
+        channel_config_id: data.channel_config_id,
+      },
     });
   }
 
@@ -165,7 +187,13 @@ export class CourierService {
     // If code is being updated, check if it conflicts with another courier
     if (data.code && data.code !== existingCourier.code) {
       const codeConflict = await this.fastify.prisma.courier.findUnique({
-        where: { code: data.code },
+        where: {
+          code_name_weight_slab: {
+            code: data.code,
+            name: data.name || '',
+            weight_slab: data.weight_slab || 0,
+          },
+        },
       });
 
       if (codeConflict) {
