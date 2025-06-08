@@ -1,65 +1,58 @@
 import { z } from 'zod';
 
-// Zone pricing schema
-const ZonePricingSchema = z.object({
-  basePrice: z.number().min(0),
-  incrementPrice: z.number().min(0),
-  isRTOSameAsFW: z.boolean().default(true),
-  rtoBasePrice: z.number().min(0).optional(),
-  rtoIncrementPrice: z.number().min(0).optional()
+// Define a schema for zone pricing that matches the MongoDB schema
+export const ZonePricingItemSchema = z.object({
+  base_price: z.number().min(0),
+  increment_price: z.number().min(0),
+  isRTOSameAsFW: z.boolean().optional().default(true),
+  rto_base_price: z.number().min(0).optional().default(0),
+  rto_increment_price: z.number().min(0).optional().default(0),
+  flat_rto_charge: z.number().min(0).optional().default(0),
 });
 
-// Courier pricing schema
-const CourierPricingSchema = z.object({
-  courierId: z.string().uuid(),
+export const ZonePricingSchema = z.object({
+  withinCity: ZonePricingItemSchema,
+  withinZone: ZonePricingItemSchema,
+  withinMetro: ZonePricingItemSchema,
+  withinRoi: ZonePricingItemSchema,
+  northEast: ZonePricingItemSchema,
+});
+
+export const CourierPricingSchema = z.object({
+  courierId: z.string().min(1),
   basePrice: z.number().min(0),
   weightSlab: z.number().min(0),
-  incrementWeight: z.number().min(0.1),
+  incrementWeight: z.number().min(0),
   incrementPrice: z.number().min(0),
-  zonePricing: z.object({
-    withinCity: ZonePricingSchema,
-    withinZone: ZonePricingSchema,
-    withinMetro: ZonePricingSchema,
-    withinRoi: ZonePricingSchema,
-    northEast: ZonePricingSchema
-  })
+  zonePricing: ZonePricingSchema,
 });
 
-// Create plan schema
-export const CreatePlanSchema = {
-  body: z.object({
-    name: z.string().min(3).max(100),
-    description: z.string().max(500),
-    isDefault: z.boolean().default(false),
-    features: z.array(z.string()).default([]),
-    courierPricing: z.array(CourierPricingSchema)
-  })
-};
+export const CreatePlanSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().optional(),
+  isDefault: z.boolean().default(false),
+  features: z.array(z.string()).default([]),
+  courierPricing: z.array(CourierPricingSchema),
+});
 
-// Update plan schema
-export const UpdatePlanSchema = {
-  body: z.object({
-    name: z.string().min(3).max(100).optional(),
-    description: z.string().max(500).optional(),
-    isDefault: z.boolean().optional(),
-    features: z.array(z.string()).optional(),
-    courierPricing: z.array(CourierPricingSchema).optional()
-  })
-};
+export const UpdatePlanSchema = z.object({
+  name: z.string().min(1).optional(),
+  description: z.string().optional(),
+  isDefault: z.boolean().optional(),
+  features: z.array(z.string()).optional(),
+  courierPricing: z.array(CourierPricingSchema).optional(),
+});
 
-// Calculate rates schema
-export const CalculateRatesSchema = {
-  body: z.object({
-    pickupPincode: z.string().length(6).regex(/^\d+$/),
-    deliveryPincode: z.string().length(6).regex(/^\d+$/),
-    weight: z.number().positive(),
-    weightUnit: z.enum(['kg', 'g']),
-    boxLength: z.number().positive(),
-    boxWidth: z.number().positive(),
-    boxHeight: z.number().positive(),
-    sizeUnit: z.enum(['cm', 'in']),
-    paymentType: z.number().min(0).max(1),
-    collectableAmount: z.number().min(0).optional(),
-    isReversedOrder: z.boolean().default(false)
-  })
-}; 
+export const CalculateRatesSchema = z.object({
+  pickupPincode: z.string().min(6).max(6),
+  deliveryPincode: z.string().min(6).max(6),
+  weight: z.number().min(0),
+  weightUnit: z.enum(['kg', 'g']),
+  boxLength: z.number().min(0),
+  boxWidth: z.number().min(0),
+  boxHeight: z.number().min(0),
+  sizeUnit: z.enum(['cm', 'in']),
+  paymentType: z.number().min(0).max(1), // 0 for prepaid, 1 for COD
+  collectableAmount: z.number().min(0).optional(),
+  isReversedOrder: z.boolean().optional().default(false),
+});

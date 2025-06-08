@@ -3,49 +3,30 @@ import { generatePlanId } from '../utils/id-generator';
 import { getPincodeDetails } from '@/utils/pincode';
 
 // Types
-interface PlanCourierPricing {
+interface ZonePricingItem {
+  base_price: number;
+  increment_price: number;
+  is_rto_same_as_fw: boolean;
+  rto_base_price: number;
+  rto_increment_price: number;
+  flat_rto_charge: number;
+}
+
+interface ZonePricingData {
+  withinCity: ZonePricingItem;
+  withinZone: ZonePricingItem;
+  withinMetro: ZonePricingItem;
+  withinRoi: ZonePricingItem;
+  northEast: ZonePricingItem;
+}
+
+interface PlanCourierPricingInput {
   courierId: string;
   basePrice: number;
   weightSlab: number;
   incrementWeight: number;
   incrementPrice: number;
-  zonePricing: {
-    withinCity: {
-      basePrice: number;
-      incrementPrice: number;
-      isRTOSameAsFW: boolean;
-      rtoBasePrice?: number;
-      rtoIncrementPrice?: number;
-    };
-    withinZone: {
-      basePrice: number;
-      incrementPrice: number;
-      isRTOSameAsFW: boolean;
-      rtoBasePrice?: number;
-      rtoIncrementPrice?: number;
-    };
-    withinMetro: {
-      basePrice: number;
-      incrementPrice: number;
-      isRTOSameAsFW: boolean;
-      rtoBasePrice?: number;
-      rtoIncrementPrice?: number;
-    };
-    withinRoi: {
-      basePrice: number;
-      incrementPrice: number;
-      isRTOSameAsFW: boolean;
-      rtoBasePrice?: number;
-      rtoIncrementPrice?: number;
-    };
-    northEast: {
-      basePrice: number;
-      incrementPrice: number;
-      isRTOSameAsFW: boolean;
-      rtoBasePrice?: number;
-      rtoIncrementPrice?: number;
-    };
-  };
+  zonePricing: ZonePricingData;
 }
 
 export interface CreatePlanInput {
@@ -53,7 +34,7 @@ export interface CreatePlanInput {
   description: string;
   isDefault: boolean;
   features: string[];
-  courierPricing: PlanCourierPricing[];
+  courierPricing: PlanCourierPricingInput[];
 }
 
 export interface UpdatePlanInput {
@@ -61,7 +42,7 @@ export interface UpdatePlanInput {
   description?: string;
   isDefault?: boolean;
   features?: string[];
-  courierPricing?: PlanCourierPricing[];
+  courierPricing?: PlanCourierPricingInput[];
 }
 
 export interface RateCalculationParams {
@@ -106,7 +87,8 @@ export class PlanService {
       include: {
         plan_courier_pricings: {
           include: {
-            courier: true
+            courier: true,
+            zone_pricing: true
           }
         },
         users: {
@@ -126,7 +108,8 @@ export class PlanService {
       include: {
         plan_courier_pricings: {
           include: {
-            courier: true
+            courier: true,
+            zone_pricing: true
           }
         },
         users: {
@@ -158,20 +141,78 @@ export class PlanService {
         isDefault: data.isDefault,
         features: data.features,
         plan_courier_pricings: {
-          create: data.courierPricing.map(pricing => ({
-            courier_id: pricing.courierId,
-            base_price: pricing.basePrice,
-            weight_slab: pricing.weightSlab,
-            increment_weight: pricing.incrementWeight,
-            incrementPrice: pricing.incrementPrice,
-            zonePricing: pricing.zonePricing
-          }))
+          create: data.courierPricing.map(pricing => {
+            // Process the zonePricing data to match the DB schema
+            const zonePricingData = [
+              { 
+                zone: "withinCity",
+                base_price: pricing.zonePricing.withinCity.base_price,
+                increment_price: pricing.zonePricing.withinCity.increment_price,
+                is_rto_same_as_fw: pricing.zonePricing.withinCity.is_rto_same_as_fw,
+                rto_base_price: pricing.zonePricing.withinCity.rto_base_price,
+                rto_increment_price: pricing.zonePricing.withinCity.rto_increment_price,
+                flat_rto_charge: pricing.zonePricing.withinCity.flat_rto_charge
+              },
+              { 
+                zone: "withinZone",
+                base_price: pricing.zonePricing.withinZone.base_price,
+                increment_price: pricing.zonePricing.withinZone.increment_price,
+                is_rto_same_as_fw: pricing.zonePricing.withinZone.is_rto_same_as_fw,
+                rto_base_price: pricing.zonePricing.withinZone.rto_base_price,
+                rto_increment_price: pricing.zonePricing.withinZone.rto_increment_price,
+                flat_rto_charge: pricing.zonePricing.withinZone.flat_rto_charge
+              },
+              { 
+                zone: "withinMetro",
+                base_price: pricing.zonePricing.withinMetro.base_price,
+                increment_price: pricing.zonePricing.withinMetro.increment_price,
+                is_rto_same_as_fw: pricing.zonePricing.withinMetro.is_rto_same_as_fw,
+                rto_base_price: pricing.zonePricing.withinMetro.rto_base_price,
+                rto_increment_price: pricing.zonePricing.withinMetro.rto_increment_price,
+                flat_rto_charge: pricing.zonePricing.withinMetro.flat_rto_charge
+              },
+              { 
+                zone: "withinRoi",
+                base_price: pricing.zonePricing.withinRoi.base_price,
+                increment_price: pricing.zonePricing.withinRoi.increment_price,
+                is_rto_same_as_fw: pricing.zonePricing.withinRoi.is_rto_same_as_fw,
+                rto_base_price: pricing.zonePricing.withinRoi.rto_base_price,
+                rto_increment_price: pricing.zonePricing.withinRoi.rto_increment_price,
+                flat_rto_charge: pricing.zonePricing.withinRoi.flat_rto_charge
+              },
+              { 
+                zone: "northEast",
+                base_price: pricing.zonePricing.northEast.base_price,
+                increment_price: pricing.zonePricing.northEast.increment_price,
+                is_rto_same_as_fw: pricing.zonePricing.northEast.is_rto_same_as_fw,
+                rto_base_price: pricing.zonePricing.northEast.rto_base_price,
+                rto_increment_price: pricing.zonePricing.northEast.rto_increment_price,
+                flat_rto_charge: pricing.zonePricing.northEast.flat_rto_charge
+              }
+            ];
+
+            return {
+              courier: {
+                connect: {
+                  id: pricing.courierId
+                }
+              },
+              base_price: pricing.basePrice,
+              weight_slab: pricing.weightSlab,
+              increment_weight: pricing.incrementWeight,
+              increment_price: pricing.incrementPrice,
+              zone_pricing: {
+                create: zonePricingData
+              }
+            };
+          })
         }
       },
       include: {
         plan_courier_pricings: {
           include: {
-            courier: true
+            courier: true,
+            zone_pricing: true
           }
         }
       }
@@ -195,14 +236,30 @@ export class PlanService {
 
     // Update courier pricing if provided
     if (data.courierPricing && data.courierPricing.length > 0) {
-      // Delete existing pricing
+      // Delete existing pricing and zone pricing
+      const existingPricings = await this.fastify.prisma.planCourierPricing.findMany({
+        where: { plan_id: id },
+        include: { zone_pricing: true }
+      });
+      
+      // Delete zone pricing first (due to foreign key constraints)
+      for (const pricing of existingPricings) {
+        if (pricing.zone_pricing.length > 0) {
+          await this.fastify.prisma.zonePricing.deleteMany({
+            where: { plan_courier_pricing_id: pricing.id }
+          });
+        }
+      }
+      
+      // Then delete plan courier pricing
       await this.fastify.prisma.planCourierPricing.deleteMany({
         where: { plan_id: id }
       });
 
       // Create new pricing
       for (const pricing of data.courierPricing) {
-        await this.fastify.prisma.planCourierPricing.create({
+        // Create PlanCourierPricing first
+        const newPricing = await this.fastify.prisma.planCourierPricing.create({
           data: {
             plan_id: id,
             courier_id: pricing.courierId,
@@ -210,8 +267,63 @@ export class PlanService {
             weight_slab: pricing.weightSlab,
             increment_weight: pricing.incrementWeight,
             increment_price: pricing.incrementPrice,
-            zonePricing: pricing.zonePricing
           }
+        });
+
+        // Then create the zone pricing
+        await this.fastify.prisma.zonePricing.createMany({
+          data: [
+            {
+              zone: "withinCity",
+              base_price: pricing.zonePricing.withinCity.base_price,
+              increment_price: pricing.zonePricing.withinCity.increment_price,
+              is_rto_same_as_fw: pricing.zonePricing.withinCity.is_rto_same_as_fw,
+              rto_base_price: pricing.zonePricing.withinCity.rto_base_price,
+              rto_increment_price: pricing.zonePricing.withinCity.rto_increment_price,
+              flat_rto_charge: pricing.zonePricing.withinCity.flat_rto_charge,
+              plan_courier_pricing_id: newPricing.id
+            },
+            {
+              zone: "withinZone",
+              base_price: pricing.zonePricing.withinZone.base_price,
+              increment_price: pricing.zonePricing.withinZone.increment_price,
+              is_rto_same_as_fw: pricing.zonePricing.withinZone.is_rto_same_as_fw,
+              rto_base_price: pricing.zonePricing.withinZone.rto_base_price,
+              rto_increment_price: pricing.zonePricing.withinZone.rto_increment_price,
+              flat_rto_charge: pricing.zonePricing.withinZone.flat_rto_charge,
+              plan_courier_pricing_id: newPricing.id
+            },
+            {
+              zone: "withinMetro",
+              base_price: pricing.zonePricing.withinMetro.base_price,
+              increment_price: pricing.zonePricing.withinMetro.increment_price,
+              is_rto_same_as_fw: pricing.zonePricing.withinMetro.is_rto_same_as_fw,
+              rto_base_price: pricing.zonePricing.withinMetro.rto_base_price,
+              rto_increment_price: pricing.zonePricing.withinMetro.rto_increment_price,
+              flat_rto_charge: pricing.zonePricing.withinMetro.flat_rto_charge,
+              plan_courier_pricing_id: newPricing.id
+            },
+            {
+              zone: "withinRoi",
+              base_price: pricing.zonePricing.withinRoi.base_price,
+              increment_price: pricing.zonePricing.withinRoi.increment_price,
+              is_rto_same_as_fw: pricing.zonePricing.withinRoi.is_rto_same_as_fw,
+              rto_base_price: pricing.zonePricing.withinRoi.rto_base_price,
+              rto_increment_price: pricing.zonePricing.withinRoi.rto_increment_price,
+              flat_rto_charge: pricing.zonePricing.withinRoi.flat_rto_charge,
+              plan_courier_pricing_id: newPricing.id
+            },
+            {
+              zone: "northEast",
+              base_price: pricing.zonePricing.northEast.base_price,
+              increment_price: pricing.zonePricing.northEast.increment_price,
+              is_rto_same_as_fw: pricing.zonePricing.northEast.is_rto_same_as_fw,
+              rto_base_price: pricing.zonePricing.northEast.rto_base_price,
+              rto_increment_price: pricing.zonePricing.northEast.rto_increment_price,
+              flat_rto_charge: pricing.zonePricing.northEast.flat_rto_charge,
+              plan_courier_pricing_id: newPricing.id
+            }
+          ]
         });
       }
     }
@@ -228,7 +340,8 @@ export class PlanService {
       include: {
         plan_courier_pricings: {
           include: {
-            courier: true
+            courier: true,
+            zone_pricing: true
           }
         },
         users: {
@@ -256,6 +369,19 @@ export class PlanService {
 
     if (usersWithPlan > 0) {
       throw new Error('Cannot delete plan that is assigned to users');
+    }
+
+    // Get plan courier pricings to delete zone pricing first
+    const planCourierPricings = await this.fastify.prisma.planCourierPricing.findMany({
+      where: { plan_id: id },
+      select: { id: true }
+    });
+
+    // Delete zone pricing entries first due to foreign key constraints
+    for (const pricing of planCourierPricings) {
+      await this.fastify.prisma.zonePricing.deleteMany({
+        where: { plan_courier_pricing_id: pricing.id }
+      });
     }
 
     // Delete plan courier pricing
@@ -298,7 +424,8 @@ export class PlanService {
       include: {
         plan_courier_pricings: {
           include: {
-            courier: true
+            courier: true,
+            zone_pricing: true
           }
         }
       }
@@ -314,7 +441,8 @@ export class PlanService {
             include: {
               plan_courier_pricings: {
                 include: {
-                  courier: true
+                  courier: true,
+                  zone_pricing: true
                 }
               }
             }
@@ -334,7 +462,6 @@ export class PlanService {
       return this.getDefaultPlan();
     }
   }
-
 
   async calculateRates(params: RateCalculationParams, userId: string): Promise<RateCalculationResult[] | { message: string }[]> {
     try {
@@ -391,40 +518,40 @@ export class PlanService {
         // Skip couriers that don't match the reversed order flag
         if (courier.is_reversed_courier !== Boolean(params.isReversedOrder)) continue;
 
-        // Determine zone
+        // Determine zone and get zone pricing
         let order_zone = '';
-        let zonePricing: any = null;
+        let zonePricingEntry = null;
 
-        if (pickupDetails.district === deliveryDetails.district) {
-          zonePricing = courierPricing?.zonePricing?.withinCity;
+        if (pickupDetails.city === deliveryDetails.city) {
+          zonePricingEntry = courierPricing.zone_pricing.find(z => z.zone === 'withinCity');
           order_zone = 'Zone A';
         } else if (pickupDetails.state === deliveryDetails.state) {
-          zonePricing = courierPricing.zonePricing.withinZone;
+          zonePricingEntry = courierPricing.zone_pricing.find(z => z.zone === 'withinZone');
           order_zone = 'Zone B';
         } else if (
           MetroCities.includes(pickupDetails.city) && 
           MetroCities.includes(deliveryDetails.city)
         ) {
-          zonePricing = courierPricing.zonePricing.withinMetro;
+          zonePricingEntry = courierPricing.zone_pricing.find(z => z.zone === 'withinMetro');
           order_zone = 'Zone C';
         } else if (
           NorthEastStates.includes(pickupDetails.state) ||
           NorthEastStates.includes(deliveryDetails.state)
         ) {
-          zonePricing = courierPricing.zonePricing.northEast;
+          zonePricingEntry = courierPricing.zone_pricing.find(z => z.zone === 'northEast');
           order_zone = 'Zone E';
         } else {
-          zonePricing = courierPricing.zonePricing.withinRoi;
+          zonePricingEntry = courierPricing.zone_pricing.find(z => z.zone === 'withinRoi');
           order_zone = 'Zone D';
         }
 
-        if (!zonePricing) {
+        if (!zonePricingEntry) {
           continue;
         }
 
         // Parse pickup time
         const [hour, minute, second] = courier.pickup_time?.split(':').map(Number) || [12, 0, 0];
-        const pickupTime = new Date().setHours(hour, minute, second, 0);
+        const pickupTime = new Date().setHours(hour || 12, minute || 0, second || 0, 0);
         const expectedPickup = pickupTime < Date.now() ? 'Tomorrow' : 'Today';
 
         // Adjust weight based on minimum weight
@@ -435,9 +562,9 @@ export class PlanService {
         }
 
         // Calculate base charges
-        let totalCharge = zonePricing.base_price || 0;
+        let totalCharge = zonePricingEntry.base_price || 0;
         const weightIncrementRatio = Math.ceil((orderWeight - minWeight) / (courierPricing.increment_weight || 1));
-        totalCharge += (zonePricing.increment_price || 0) * weightIncrementRatio;
+        totalCharge += (zonePricingEntry.increment_price || 0) * weightIncrementRatio;
 
         // COD calculation
         const codPrice = courier.cod_charge_hard || 0;
@@ -449,13 +576,14 @@ export class PlanService {
 
         // RTO charges
         const isRtoDeduct = courier.is_rto_applicable;
-        const isRTOSameAsFW = zonePricing.isRTOSameAsFW === undefined ? true : Boolean(zonePricing.isRTOSameAsFW);
+        const isRTOSameAsFW = zonePricingEntry.is_rto_same_as_fw;
         
         let rtoCharges = 0;
         if (isRtoDeduct) {
           rtoCharges = isRTOSameAsFW
             ? totalCharge - cod
-            : (zonePricing.rto_base_price || 0) + ((zonePricing.rto_increment_price || 0) * weightIncrementRatio);
+            : (zonePricingEntry.rto_base_price || 0) + 
+              ((zonePricingEntry.rto_increment_price || 0) * weightIncrementRatio);
         }
 
         const isFwdDeduct = courier.is_fw_applicable;

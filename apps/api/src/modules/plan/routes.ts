@@ -3,7 +3,6 @@ import { PlanController } from './controllers/plan.controller';
 import { authorizeRoles } from '@/middleware/auth';
 import { Role } from '@lorrigo/db';
 import { PlanService } from './services/plan.service';
-import { CreatePlanSchema, UpdatePlanSchema, CalculateRatesSchema } from './schemas';
 
 export default async function planRoutes(fastify: FastifyInstance) {
    const planService = new PlanService(fastify);

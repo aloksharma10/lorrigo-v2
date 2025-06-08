@@ -1,8 +1,47 @@
 import { FastifyInstance } from 'fastify';
 import { generatePlanId } from '../utils/id-generator';
 
+// Default zone pricing template
+const defaultZonePricing = {
+  withinCity: {
+    base_price: 40,
+    increment_price: 10,
+    isRTOSameAsFW: true,
+    rto_base_price: 0,
+    rto_increment_price: 0
+  },
+  withinZone: {
+    base_price: 50,
+    increment_price: 15,
+    isRTOSameAsFW: true,
+    rto_base_price: 0,
+    rto_increment_price: 0
+  },
+  withinMetro: {
+    base_price: 60,
+    increment_price: 18,
+    isRTOSameAsFW: true,
+    rto_base_price: 0,
+    rto_increment_price: 0
+  },
+  withinRoi: {
+    base_price: 70,
+    increment_price: 20,
+    isRTOSameAsFW: true,
+    rto_base_price: 0,
+    rto_increment_price: 0
+  },
+  northEast: {
+    base_price: 100,
+    increment_price: 30,
+    isRTOSameAsFW: true,
+    rto_base_price: 0,
+    rto_increment_price: 0
+  }
+};
+
 /**
- * Ensures a default plan exists in the system
+ * Ensures that a default plan exists in the database
  * This should be called during application startup
  */
 export async function ensureDefaultPlan(fastify: FastifyInstance) {
@@ -13,7 +52,7 @@ export async function ensureDefaultPlan(fastify: FastifyInstance) {
     });
 
     if (existingDefaultPlan) {
-      console.log('Default plan already exists:', existingDefaultPlan.name);
+      console.log('Default plan already exists:', existingDefaultPlan.id);
       return existingDefaultPlan;
     }
 
@@ -22,7 +61,7 @@ export async function ensureDefaultPlan(fastify: FastifyInstance) {
       data: {
         name: 'Free Plan',
         code: generatePlanId('PL'),
-        description: 'Default plan for new users with basic features',
+        description: 'Default plan for all users',
         isDefault: true,
         features: [
           'Limited courier selection',
@@ -32,61 +71,36 @@ export async function ensureDefaultPlan(fastify: FastifyInstance) {
       }
     });
 
-    console.log('Created default plan:', defaultPlan.name);
+    console.log('Created default plan:', defaultPlan.id);
 
     // Get default couriers for the free plan
     const defaultCouriers = await fastify.prisma.courier.findMany({
       where: {
         is_active: true
       },
-      take: 2 // Limit to 2 couriers for free plan
+      take: 3 // Limit to 3 couriers for the free plan
     });
 
     // Create pricing for each courier
     for (const courier of defaultCouriers) {
       await fastify.prisma.planCourierPricing.create({
         data: {
-          planId: defaultPlan.id,
-          courierId: courier.id,
-          basePrice: 50, // Default base price
-          weightSlab: 0.5,
-          incrementWeight: 0.5,
-          incrementPrice: 10,
-          zonePricing: {
-            withinCity: {
-              basePrice: 40,
-              incrementPrice: 8,
-              isRTOSameAsFW: true
-            },
-            withinZone: {
-              basePrice: 50,
-              incrementPrice: 10,
-              isRTOSameAsFW: true
-            },
-            withinMetro: {
-              basePrice: 60,
-              incrementPrice: 12,
-              isRTOSameAsFW: true
-            },
-            withinRoi: {
-              basePrice: 80,
-              incrementPrice: 15,
-              isRTOSameAsFW: true
-            },
-            northEast: {
-              basePrice: 100,
-              incrementPrice: 20,
-              isRTOSameAsFW: true
-            }
-          }
+          plan_id: defaultPlan.id,
+          courier_id: courier.id,
+          base_price: 0, // This is just a placeholder, actual pricing is in zonePricing
+          weight_slab: 0.5,
+          increment_weight: 0.5,
+          increment_price: 0,
+          zonePricing: defaultZonePricing
         }
       });
     }
 
     console.log(`Added ${defaultCouriers.length} couriers to default plan`);
+
     return defaultPlan;
   } catch (error) {
-    console.error('Error creating default plan:', error);
+    console.error('Error ensuring default plan:', error);
     throw error;
   }
 } 

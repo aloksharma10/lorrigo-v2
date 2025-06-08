@@ -110,8 +110,8 @@ model User {
   is_verified Boolean @default(false)
 
   // Plan relation
-  plan_id      String?
-  plan        Plan?   @relation(fields: [plan_id], references: [id])
+  plan_id String?
+  plan    Plan?   @relation(fields: [plan_id], references: [id])
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -125,20 +125,19 @@ model User {
   margin        Float   @default(20)
 
   // Relations
-  kyc_details      KycDetails?
-  bank_details     BankDetails?
-  wallet           Wallet?
-  invoices         Invoice[]        @relation("UserInvoices")
-  remittances      Remittance[]     @relation("UserRemittances")
-  transactions     Transaction[]    @relation("UserTransactions")
-  orders           Order[]          @relation("UserOrders")
-  shipments        Shipment[]       @relation("UserShipments")
-  hubs             Hub[]            @relation("UserHubs")
-  courier_pricings CourierPricing[] @relation("UserCourierPricing")
-  disputes         Dispute[]        @relation("UserDisputes")
-  api_requests     ApiRequest[]
-  config           SellerConfig?
-  address          Address?
+  kyc_details  KycDetails?
+  bank_details BankDetails?
+  wallet       Wallet?
+  invoices     Invoice[]     @relation("UserInvoices")
+  remittances  Remittance[]  @relation("UserRemittances")
+  transactions Transaction[] @relation("UserTransactions")
+  orders       Order[]       @relation("UserOrders")
+  shipments    Shipment[]    @relation("UserShipments")
+  hubs         Hub[]         @relation("UserHubs")
+  disputes     Dispute[]     @relation("UserDisputes")
+  api_requests ApiRequest[]
+  config       SellerConfig?
+  address      Address?
 
   // Auth.js relations
   accounts Account[]
@@ -520,32 +519,10 @@ model Courier {
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
 
-  shipments        Shipment[]
-  courier_pricings CourierPricing[]
-  plan_pricings     PlanCourierPricing[]
+  shipments     Shipment[]
+  plan_pricings PlanCourierPricing[]
 
   @@index([courier_code, is_active])
-  @@index([code])
-}
-
-// CourierPricing Model
-model CourierPricing {
-  id         String  @id @default(cuid())
-  code       String  @unique // Custom ID - Format: CP-YYMM-XXXXX
-  courier_id String
-  courier    Courier @relation(fields: [courier_id], references: [id], onDelete: Cascade)
-  user_id    String
-  user       User    @relation("UserCourierPricing", fields: [user_id], references: [id], onDelete: Cascade)
-
-  base_price   Float
-  weight_slab  Json? // Cached in app layer
-  zone_pricing Json? // Cached in app layer
-
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-
-  @@unique([courier_id, user_id])
-  @@index([courier_id, user_id])
   @@index([code])
 }
 
@@ -835,7 +812,7 @@ model Plan {
 
   // Relations
   plan_courier_pricings PlanCourierPricing[]
-  users              User[]
+  users                 User[]
 
   @@index([isDefault])
   @@index([code])
@@ -843,19 +820,18 @@ model Plan {
 
 // PlanCourierPricing Model
 model PlanCourierPricing {
-  id              String @id @default(cuid())
+  id               String @id @default(cuid())
   base_price       Float
   weight_slab      Float  @default(0.5)
   increment_weight Float  @default(0.5)
   increment_price  Float  @default(0)
-  
-  // Zone pricing stored as JSON
-  zone_pricing     Json
+
+  zone_pricing ZonePricing[]
 
   // Relations
-  plan_id     String
+  plan_id    String
   plan       Plan    @relation(fields: [plan_id], references: [id], onDelete: Cascade)
-  courier_id  String
+  courier_id String
   courier    Courier @relation(fields: [courier_id], references: [id], onDelete: Cascade)
 
   created_at DateTime @default(now())
@@ -863,4 +839,25 @@ model PlanCourierPricing {
 
   @@unique([plan_id, courier_id])
   @@index([courier_id])
+}
+
+model ZonePricing {
+  id                  String  @id @default(cuid())
+  zone                String
+  base_price          Float
+  increment_price     Float
+  is_rto_same_as_fw   Boolean
+  rto_base_price      Float
+  rto_increment_price Float
+  flat_rto_charge     Float
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  plan_courier_pricing_id String
+  plan_courier_pricing    PlanCourierPricing @relation(fields: [plan_courier_pricing_id], references: [id])
+
+  @@index([zone])
+  @@index([plan_courier_pricing_id])
+  @@unique([plan_courier_pricing_id, zone])
 }

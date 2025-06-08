@@ -72,9 +72,15 @@ export class CourierService {
     // If not an admin, only show couriers available to the specific seller
     if (!ADMIN_ROLES.includes(userRole as any)) {
       // Get all courier pricings for this user
-      const courierPricings = await this.fastify.prisma.courierPricing.findMany({
+      const courierPricings = await this.fastify.prisma.planCourierPricing.findMany({
         where: {
-          user_id: userId,
+          plan: {
+            users: {
+              some: {
+                id: userId,
+              },
+            },
+          },
         },
         select: {
           courier_id: true,
@@ -119,9 +125,15 @@ export class CourierService {
 
     // If not an admin, check if this courier is available to the user
     if (!ADMIN_ROLES.includes(userRole as any)) {
-      const pricing = await this.fastify.prisma.courierPricing.findFirst({
+      const pricing = await this.fastify.prisma.planCourierPricing.findFirst({
         where: {
-          user_id: userId,
+          plan: {
+            users: {
+              some: {
+                id: userId,
+              },
+            },
+          },
           courier_id: id,
         },
       });
@@ -197,36 +209,42 @@ export class CourierService {
     }
 
     // Check if pricing already exists for this user and courier
-    const existingPricing = await this.fastify.prisma.courierPricing.findFirst({
+    const existingPricing = await this.fastify.prisma.planCourierPricing.findFirst({
       where: {
-        user_id: userId,
+        plan: {
+          users: {
+            some: {
+              id: userId,
+            },
+          },
+        },
         courier_id: data.courier_id,
       },
     });
 
     if (existingPricing) {
       // Update existing pricing
-      return await this.fastify.prisma.courierPricing.update({
-        where: { id: existingPricing.id },
-        data: {
-          base_price: data.base_price,
-          weight_slab: data.weight_slab,
-          zone_pricing: data.zone_pricing,
-        },
-      });
+      // return await this.fastify.prisma.planCourierPricing.update({
+      //   where: { id: existingPricing.id },
+      //   data: {
+      //     base_price: data.base_price,
+      //     weight_slab: data.weight_slab,
+      //     zone_pricing: data.zone_pricing,
+      //   },
+      // });
     }
 
     // Create new pricing
-    return await this.fastify.prisma.courierPricing.create({
-      data: {
-        code: `CP-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
-        user_id: userId,
-        courier_id: data.courier_id,
-        base_price: data.base_price,
-        weight_slab: data.weight_slab,
-        zone_pricing: data.zone_pricing,
-      },
-    });
+    // return await this.fastify.prisma.planCourierPricing.create({
+    //   data: {
+    //     code: `CP-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
+    //     user_id: userId,
+    //     courier_id: data.courier_id,
+    //     base_price: data.base_price,
+    //     weight_slab: data.weight_slab,
+    //     zone_pricing: data.zone_pricing,
+    //   },
+    // });
   }
 
   async getCourierPricing(courierId: string, userId: string): Promise<any | ErrorResponse> {
@@ -243,9 +261,15 @@ export class CourierService {
     }
 
     // Get pricing for this user and courier
-    const pricing = await this.fastify.prisma.courierPricing.findFirst({
+    const pricing = await this.fastify.prisma.planCourierPricing.findFirst({
       where: {
-        user_id: userId,
+        plan: {
+          users: {
+            some: {
+              id: userId,
+            },
+          },
+        },
         courier_id: courierId,
       },
     });

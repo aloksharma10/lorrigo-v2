@@ -55,6 +55,9 @@ export default async function courierRoutes(fastify: FastifyInstance) {
   const courierService = new CourierService(fastify);
   const courierController = new CourierController(courierService);
 
+  // All routes require authentication
+  fastify.addHook('onRequest', fastify.authenticate);
+
   // Create a new courier (Admin only)
   fastify.post('/', {
     preHandler: [authorizeRoles(ADMIN_ROLES)],
