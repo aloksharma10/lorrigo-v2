@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "./axios"
+import { useAuthToken } from "@/components/providers/token-provider"
 
 export interface CourierRate {
   nickName: string
@@ -29,14 +30,15 @@ export interface ShippingRatesResponse {
 }
 
 export const useShippingOperations = () => {
+  const { isTokenReady } = useAuthToken()
   const queryClient = useQueryClient()
 
   // Fetch shipping rates for an order
   const getShippingRates = (orderId: string) => {
     return useQuery({
       queryKey: ["shipping-rates", orderId],
-      queryFn: () => api.get(`/orders/${orderId}/rates`).then((res: any) => res.data as ShippingRatesResponse),
-      enabled: !!orderId,
+      queryFn: () => api.get(`/orders/${orderId}/rates`).then((res: any) => res as ShippingRatesResponse),
+      enabled: !!orderId && isTokenReady,
       staleTime: 1000 * 60 * 5,
       gcTime: 1000 * 60 * 10,
     })

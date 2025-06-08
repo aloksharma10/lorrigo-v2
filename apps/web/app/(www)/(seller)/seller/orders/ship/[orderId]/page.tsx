@@ -4,7 +4,8 @@ import { useState } from "react"
 import { useParams } from "next/navigation"
 import { X, MapPin, Package, CreditCard, Weight, AlertTriangle, Clock, Calendar, Truck, Info } from "lucide-react"
 import { toast, Button, Separator, Alert, AlertDescription, Badge, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Tabs, TabsList, TabsTrigger, Card, CardContent, CardHeader, CardTitle } from "@lorrigo/ui/components"
-// import { CourierLogo } from "@/components/courier-logo"
+import { CourierLogo } from "@/components/courier-logo"
+import { RatingBadge } from "@/components/rating-badge"
 import { useShippingOperations, type CourierRate } from "@/lib/apis/shipment"
 
 export default function ShipOrderPage() {
@@ -262,7 +263,7 @@ export default function ShipOrderPage() {
                                                    Recommended
                                                 </Badge>
                                              )}
-                                             {/* <CourierLogo courierName={rate.name} /> */}
+                                             <CourierLogo courierName={rate.name} />
                                              <div>
                                                 <div className="font-medium">{rate.name}</div>
                                                 <div className="text-sm text-muted-foreground">
@@ -273,7 +274,7 @@ export default function ShipOrderPage() {
                                           </div>
                                        </td>
                                        <td className="p-4">
-                                          {/* <RatingBadge rating={4.0 + Math.random() * 0.8} /> */}
+                                          <RatingBadge rating={4.0 + Math.random() * 0.8} />
                                        </td>
                                        <td className="p-4">
                                           <div className="flex items-center gap-2">

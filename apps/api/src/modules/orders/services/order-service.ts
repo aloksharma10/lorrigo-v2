@@ -1,3 +1,4 @@
+import { PlanService } from '@/modules/plan/services/plan.service';
 import { getPincodeDetails } from '@/utils/pincode';
 import { Prisma, prisma, ShipmentStatus } from '@lorrigo/db';
 import { Channel, PaymentMethod } from '@lorrigo/db';
@@ -8,7 +9,7 @@ import { FastifyInstance } from 'fastify';
  * Order Service handles business logic related to orders
  */
 export class OrderService {
-  constructor(private fastify: FastifyInstance) { }
+  constructor(private fastify: FastifyInstance, private planService: PlanService) { }
 
   /**
    * Get all orders with pagination and filters
@@ -159,12 +160,27 @@ export class OrderService {
         user_id: userId,
       },
       include: {
+        hub: {
+          select: {
+            address: {
+              select: {
+                pincode: true,
+              },
+            },
+          },
+        },
+        package: true,
         customer: {
           select: {
             id: true,
             name: true,
             email: true,
             phone: true,
+            addresses: {
+              select: {
+                pincode: true,
+              },
+            },
           },
         },
         billing_address: true,
@@ -181,6 +197,24 @@ export class OrderService {
         payments: true,
       },
     });
+  }
+
+  async getRates(id: string, userId: string) {
+    const order = await this.getOrderById(id, userId);
+    const rates = await this.planService.calculateRates({
+      pickupPincode: order?.hub?.address?.pincode || '',
+      deliveryPincode: order?.customer?.addresses[0]?.pincode || '',
+      weight: order?.package?.dead_weight || 0,
+      weightUnit: 'kg',
+      boxLength: order?.package?.length || 0,
+      boxWidth: order?.package?.breadth || 0,
+      boxHeight: order?.package?.height || 0,
+      sizeUnit: 'cm',
+      paymentType: 0,
+      collectableAmount: order?.amount_to_collect || 0,
+      isReversedOrder: false,
+    }, userId);
+    return { rates, order };
   }
 
   /**

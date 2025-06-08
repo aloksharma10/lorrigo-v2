@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { generatePlanId } from '../utils/id-generator';
 import { getPincodeDetails } from '@/utils/pincode';
 import { Zone } from '@lorrigo/db';
-import { calculatePrice, calculatePricesForCouriers, CourierWithPricing, PriceCalculationParams, validateCalculationParams } from '@/utils/calculate-order-price';
+import { calculatePricesForCouriers, CourierWithPricing, PriceCalculationParams, validateCalculationParams } from '@/utils/calculate-order-price';
 
 // Types
 interface ZonePricingItem {
@@ -80,10 +80,6 @@ export interface RateCalculationResult {
    order_zone: string;
    courier?: any;
 }
-
-// Constants
-const MetroCities = ['Mumbai', 'Delhi', 'Kolkata', 'Chennai', 'Bengaluru', 'Hyderabad'];
-const NorthEastStates = ['Assam', 'Arunachal Pradesh', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Sikkim', 'Tripura'];
 
 export class PlanService {
 
