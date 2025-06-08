@@ -5,7 +5,6 @@ import { captureException } from '@/lib/sentry';
 export interface PincodeDetails {
   city: string;
   state: string;
-  [key: string]: any;
 }
 
 export async function getPincodeDetails(pincode: number): Promise<PincodeDetails | null> {

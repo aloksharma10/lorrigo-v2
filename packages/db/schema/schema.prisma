@@ -109,6 +109,10 @@ model User {
   is_active   Boolean @default(true)
   is_verified Boolean @default(false)
 
+  // Plan relation
+  plan_id      String?
+  plan        Plan?   @relation(fields: [plan_id], references: [id])
+
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
@@ -143,6 +147,7 @@ model User {
   @@index([email])
   @@index([code])
   @@index([phone, role, is_active])
+  @@index([plan_id])
 }
 
 model Permissions {
@@ -517,6 +522,7 @@ model Courier {
 
   shipments        Shipment[]
   courier_pricings CourierPricing[]
+  plan_pricings     PlanCourierPricing[]
 
   @@index([courier_code, is_active])
   @@index([code])
@@ -814,4 +820,47 @@ model Pincode {
   updated_at DateTime @updatedAt
 
   @@index([pincode])
+}
+
+// Plan Model
+model Plan {
+  id          String   @id @default(cuid())
+  code        String   @unique // Custom ID - Format: PL-YYMM-XXXXX
+  name        String
+  description String?  @db.Text
+  isDefault   Boolean  @default(false)
+  features    String[] @default([])
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  plan_courier_pricings PlanCourierPricing[]
+  users              User[]
+
+  @@index([isDefault])
+  @@index([code])
+}
+
+// PlanCourierPricing Model
+model PlanCourierPricing {
+  id              String @id @default(cuid())
+  base_price       Float
+  weight_slab      Float  @default(0.5)
+  increment_weight Float  @default(0.5)
+  increment_price  Float  @default(0)
+  
+  // Zone pricing stored as JSON
+  zone_pricing     Json
+
+  // Relations
+  plan_id     String
+  plan       Plan    @relation(fields: [plan_id], references: [id], onDelete: Cascade)
+  courier_id  String
+  courier    Courier @relation(fields: [courier_id], references: [id], onDelete: Cascade)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@unique([plan_id, courier_id])
+  @@index([courier_id])
 }

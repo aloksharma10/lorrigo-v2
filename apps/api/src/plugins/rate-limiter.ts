@@ -15,16 +15,13 @@ export const registerRateLimiter = async (fastify: FastifyInstance) => {
       Redis: redis,
       nameSpace: APP_CONFIG.REDIS.PREFIX + 'rate-limit:',
       skipOnError: true, // Do not block requests when Redis is down
-      // @ts-ignore - Request type mismatch
       keyGenerator: (request) => {
         // Use IP address as the key by default
         const ipAddress = request.ip;
 
         // If authenticated, use user ID as part of the key for more targeted rate limiting
-        // @ts-ignore - User property type mismatch
-        if (request.user && request.user.id) {
-          // @ts-ignore - User property type mismatch
-          return `${ipAddress}:${request.user.id}`;
+        if (request.userPayload?.id) {
+          return `${ipAddress}:${request.userPayload.id}`;
         }
 
         return ipAddress;
@@ -42,43 +39,34 @@ export const registerRateLimiter = async (fastify: FastifyInstance) => {
         'retry-after': true,
       },
       // Log rate limit hits
-      // @ts-ignore - Request type mismatch
       onExceeding: (request) => {
         request.log.warn(
           {
-            // @ts-ignore - Route options property access
-            route: request.routeOptions.url,
+            endpoint: request.routeOptions.url || "",
             method: request.method,
-            ip: request.ip,
-            // @ts-ignore - User property type mismatch
-            userId: request.user?.id || 'unauthenticated',
+            ip_address: request.ip,
+            user_id: request.userPayload?.id || 'unauthenticated',
           },
           'Rate limit exceeded'
         );
       },
       // Track API request attempts in database on overuse
-      // @ts-ignore - Request type and callback signature mismatch
       onExceeded: (request, key) => {
         try {
           // Use void to handle the promise without waiting
-          // @ts-ignore - Server property type mismatch
           void request.server.prisma.apiRequest.create({
             data: {
-              // @ts-ignore - Route options property access
-              endpoint: request.routeOptions.url,
+              endpoint: request.routeOptions.url || "",
               method: request.method,
-              ipAddress: request.ip,
-              // @ts-ignore - User property type mismatch
-              userId: request.user?.id,
-              userAgent: request.headers['user-agent'],
-              responseStatus: 429, // Too Many Requests
+              ip_address: request.ip,
+              user_id: request.userPayload?.id,
+              response_status: 429, // Too Many Requests
             },
           });
         } catch (error) {
           captureException(error as Error, {
-            ip: request.ip,
-            // @ts-ignore - Route options property access
-            route: request.routeOptions.url,
+            ip_address: request.ip,
+            endpoint: request.routeOptions.url || "",
           });
         }
       },

@@ -10,8 +10,8 @@ const __dirname = dirname(__filename);
 const nextConfig = {
   // transpilePackages: ["@lorrigo/auth", "@lorrigo/db", "@lorrigo/ui"],
   // serverExternalPackages: ["@prisma/client", "@prisma/client/runtime/library", "bcrypt", "@auth/prisma-adapter"],
-  output: 'standalone',
-  outputFileTracingRoot: path.join(__dirname, '../../'),
+  // output: 'standalone',
+  // outputFileTracingRoot: path.join(__dirname, '../../'),
 };
 
 export default nextConfig;
