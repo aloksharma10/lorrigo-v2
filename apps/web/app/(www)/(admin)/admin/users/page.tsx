@@ -1,6 +1,8 @@
+'use client';
+
 import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import ShipmentsTable from '@/components/tables/order/shipmen-table';
-import { getInitialShipments } from '@/app/(www)/(seller)/seller/orders/order-action';
 import { Badge, Button } from '@lorrigo/ui/components';
 import ScrollableTabsProps from '@/components/client-tabs';
 import { Plus, RefreshCw } from 'lucide-react';
@@ -12,28 +14,21 @@ interface PageProps {
   params: Promise<{
     tab: string;
   }>;
-  searchParams: Promise<{
-    page?: string;
-    pageSize?: string;
-    sort?: string;
-    filters?: string;
-    search?: string;
-    dateFrom?: string;
-    dateTo?: string;
-  }>;
 }
 
-// Force dynamic rendering with no caching
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-
-export default async function UsersPage({ params, searchParams }: PageProps) {
+export default async function UsersPage({ params }: PageProps) {
   const { tab } = await params;
-  const queryParams = await searchParams;
+  const searchParams = useSearchParams();
 
-  const { page = '0', pageSize = '15', sort, filters, search, dateFrom, dateTo } = queryParams;
+  const page = searchParams.get('page') || '0';
+  const pageSize = searchParams.get('pageSize') || '15';
+  const sort = searchParams.get('sort');
+  const filters = searchParams.get('filters');
+  const search = searchParams.get('search');
+  const dateFrom = searchParams.get('dateFrom');
+  const dateTo = searchParams.get('dateTo');
 
-  // Parse parameters
+  // Parse parameters for React Query
   const parsedParams = {
     page: parseInt(page),
     pageSize: parseInt(pageSize),
@@ -43,18 +38,15 @@ export default async function UsersPage({ params, searchParams }: PageProps) {
     dateRange:
       dateFrom && dateTo
         ? {
-            from: new Date(dateFrom),
-            to: new Date(dateTo),
-          }
+          from: new Date(dateFrom),
+          to: new Date(dateTo),
+        }
         : {
-            from: new Date(new Date().setDate(new Date().getDate() - 30)),
-            to: new Date(),
-          },
+          from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+          to: new Date(),
+        },
     status: tab,
   };
-
-  // Get initial data on server - only for first load
-  const initialData = await getInitialShipments(parsedParams);
 
   return (
     <div className="mx-auto w-full space-y-6 p-4">
@@ -91,7 +83,7 @@ export default async function UsersPage({ params, searchParams }: PageProps) {
         </div>
       </div>
 
-      <ShipmentsTable initialData={initialData} initialParams={parsedParams} />
+      <ShipmentsTable initialParams={parsedParams} />
     </div>
   );
 }

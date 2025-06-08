@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Checkbox } from '@lorrigo/ui/components';
 import { DataTable } from '@lorrigo/ui/components';
 import { DataTableColumnHeader } from '@lorrigo/ui/components';
@@ -17,7 +17,7 @@ import {
 import { toast } from '@lorrigo/ui/components';
 import type { ColumnDef } from '@lorrigo/ui/components';
 import { useDebounce } from '@/lib/hooks/use-debounce';
-import { fetchShipments, ApiResponse, ShipmentData, ShipmentParams } from '@/lib/apis/order';
+import { fetchShipments, ShipmentData, ShipmentParams } from '@/lib/apis/order';
 
 interface ShipmentsTableProps {
   initialParams: ShipmentParams;
@@ -39,12 +39,10 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
   const debouncedGlobalFilter = useDebounce(globalFilter, 500);
   const [dateRange, setDateRange] = React.useState<{ from: Date; to: Date }>(
     initialParams.dateRange || {
-      from: new Date(new Date().setDate(new Date().getDate() - 30)),
-      to: new Date(),
+      from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+      to: new Date() ,
     }
   );
-
-  const queryClient = useQueryClient();
 
   // Fetch shipments with React Query
   const { data, isLoading, isError, isFetching, error } = useQuery({
@@ -78,7 +76,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
     retry: 2, // Retry failed requests twice
   });
 
-  
+
   // Define the columns for the data table
   const columns: ColumnDef<ShipmentData>[] = [
     {
@@ -412,6 +410,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
         onFiltersChange={handleFiltersChange}
         onGlobalFilterChange={handleGlobalFilterChange}
         onDateRangeChange={handleDateRangeChange}
+        defaultDateRange={dateRange}
         manualPagination={true}
         manualSorting={true}
         manualFiltering={true}
