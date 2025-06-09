@@ -23,7 +23,7 @@ import {
 } from '@lorrigo/ui/components';
 
 import { useModalStore } from '@/modal/modal-store';
-import { pickupAddressRegistrationSchema } from '@lorrigo/utils/validations';
+import { pickupAddressRegistrationSchema } from '@lorrigo/utils';
 import useFetchCityState from '@/lib/hooks/use-fetch-city-state';
 import { Loader2, X } from 'lucide-react';
 import { useHubOperations } from '@/lib/apis/hub';
