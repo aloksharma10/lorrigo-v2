@@ -32,7 +32,7 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
           status: {
             type: 'string',
             enum: [
-              'CREATED',
+              'NEW',
               'CONFIRMED',
               'PROCESSING',
               'SHIPPED',

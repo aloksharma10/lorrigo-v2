@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 // Order status enum used across the application
 export const OrderStatusEnum = z.enum([
-  'CREATED',
+  'NEW',
   'CONFIRMED',
   'PROCESSING',
   'SHIPPED',

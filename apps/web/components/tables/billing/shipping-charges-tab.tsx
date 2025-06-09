@@ -6,18 +6,16 @@ import {
   DataTable,
   Badge,
   DataTableColumnHeader,
-  Card,
-  CardContent,
   type ColumnDef,
   useSidebar
 } from "@lorrigo/ui/components";
 import { CardItems } from "@/components/card-items";
-import { ShipmentParams } from "@/lib/apis/order";
 import React from "react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useQueryClient } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { fetchShippingChargesReport, ShippingCharge } from "@/app/(www)/(seller)/seller/billing/billing-action";
+import { ShipmentParams } from "@/lib/type/response-types";
 
 
 export default function ShippingChargesTab({ initialParams }: { initialParams: ShipmentParams }) {

@@ -7,6 +7,7 @@ import { toast, Button, Separator, Alert, AlertDescription, Badge, Select, Selec
 import { CourierLogo } from "@/components/courier-logo"
 import { RatingBadge } from "@/components/rating-badge"
 import { useShippingOperations, type CourierRate } from "@/lib/apis/shipment"
+import { currencyFormatter } from "@lorrigo/utils"
 
 export default function ShipOrderPage() {
    const params = useParams()
@@ -79,12 +80,7 @@ export default function ShipOrderPage() {
          <div className="flex">
             {/* Left Panel - Order Details */}
             <div className="w-80 bg-white border-r border-gray-200 p-6 space-y-6">
-               <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold">Order Details</h2>
-                  <Button variant="ghost" size="sm">
-                     <X className="h-4 w-4" />
-                  </Button>
-               </div>
+               <h2 className="text-lg font-semibold">Order Details</h2>
 
                <div className="space-y-4">
                   {/* Pickup Location */}
@@ -93,7 +89,7 @@ export default function ShipOrderPage() {
                         <MapPin className="h-4 w-4" />
                         Pickup From
                      </div>
-                     <div className="font-medium">110080, Delhi</div>
+                     <div className="font-medium">{order?.hub?.address?.pincode}, {order?.hub?.address?.city}</div>
                      <div className="text-sm text-muted-foreground">India</div>
                   </div>
 
@@ -105,7 +101,7 @@ export default function ShipOrderPage() {
                         <MapPin className="h-4 w-4" />
                         Deliver To
                      </div>
-                     <div className="font-medium">203205, Uttar Pradesh</div>
+                     <div className="font-medium">{order?.customer?.addresses[0]?.pincode}, {order?.customer?.addresses[0]?.city}</div>
                      <div className="text-sm text-muted-foreground">India</div>
                   </div>
 
@@ -117,15 +113,28 @@ export default function ShipOrderPage() {
                         <CreditCard className="h-4 w-4" />
                         Order Value
                      </div>
-                     <div className="font-medium text-lg">₹40.00</div>
+                     <div className="font-medium text-lg">{currencyFormatter(order?.total_amount || 0)}</div>
                   </div>
 
                   <Separator />
 
+                  {/* Amount to collect */}
+                  {order?.amount_to_collect > 0 && order?.payment_mode === "COD" && <>
+                     <div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                           <CreditCard className="h-4 w-4" />
+                           Amount to Collect
+                        </div>
+                        <div className="font-medium text-lg">{currencyFormatter(order?.amount_to_collect || 0)}</div>
+                     </div>
+
+                     <Separator />
+                  </>}
+
                   {/* Payment Mode */}
                   <div>
                      <div className="text-sm text-muted-foreground mb-1">Payment Mode</div>
-                     <Badge variant="secondary">Prepaid</Badge>
+                     <Badge variant="secondary">{order?.payment_mode}</Badge>
                   </div>
 
                   <Separator />
@@ -136,7 +145,7 @@ export default function ShipOrderPage() {
                         <Weight className="h-4 w-4" />
                         Applicable Weight (in Kg)
                      </div>
-                     <div className="font-medium">0.5 Kg</div>
+                     <div className="font-medium">{order?.applicable_weight} Kg</div>
                   </div>
                </div>
 
@@ -163,7 +172,7 @@ export default function ShipOrderPage() {
                                  <Truck className="h-3 w-3 text-orange-600" />
                               </div>
                               <div>
-                                 <div className="font-medium text-sm">On Shiprocket</div>
+                                 <div className="font-medium text-sm">On Lorrigo</div>
                                  <div className="text-xs text-muted-foreground">No orders yet</div>
                               </div>
                            </div>

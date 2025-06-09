@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Plus, RefreshCw } from 'lucide-react';
 import { SHIPMENT_TAB_ROUTES } from '@/lib/routes/nested-shipments';
-import { useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 
 import ScrollableTabsProps from '@/components/client-tabs';
 import ShipmentsTable from '@/components/tables/order/shipmen-table';
@@ -17,8 +17,8 @@ interface PageProps {
   };
 }
 
-export default function ShipmentsPage({ params }: PageProps) {
-  const { tab } = params;
+export default function ShipmentsPage() {
+  const { tab } = useParams<{ tab: string }>();
   const searchParams = useSearchParams();
 
   const page = searchParams.get('page') || '0';

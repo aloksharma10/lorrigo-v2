@@ -23,10 +23,8 @@ import {
   downloadManifest,
   generateLabels,
   cancelOrders,
-  type Shipment,
-  type ApiResponse,
-  type ShipmentParams,
 } from '@/lib/apis/order';
+import { Shipment, ShipmentParams } from '@/lib/type/response-types';
 
 interface UsersTableProps {
   initialParams: ShipmentParams;
@@ -197,8 +195,8 @@ export default function UsersTable({ initialParams }: UsersTableProps) {
         return (
           <div className="flex flex-col">
             <div className="font-medium">{shipment.customerName}</div>
-            <div className="text-muted-foreground text-sm">{shipment.customerEmail}</div>
-            <div className="text-muted-foreground text-sm">{shipment.customerPhone}</div>
+            <div className="text-muted-foreground text-sm">{shipment.customer?.email}</div>
+            <div className="text-muted-foreground text-sm">{shipment.customer?.phone}</div>
           </div>
         );
       },
@@ -214,7 +212,7 @@ export default function UsersTable({ initialParams }: UsersTableProps) {
           style: 'currency',
           currency: 'INR',
           minimumFractionDigits: 2,
-        }).format(shipment.amount);
+        }).format(shipment.totalAmount);
         return (
           <div className="flex flex-col">
             <div className="font-medium">{amount}</div>
@@ -237,14 +235,8 @@ export default function UsersTable({ initialParams }: UsersTableProps) {
         return (
           <div className="flex flex-col">
             <div className="text-muted-foreground mb-1 border-b border-dashed pb-1 font-medium">
-              {shipment.pickupAddress}
+              {shipment.hub?.address}
             </div>
-            {!shipment.addressVerified && (
-              <div className="flex items-center text-xs text-red-500">
-                <AlertTriangle className="mr-1 h-3 w-3" />
-                <span>Unverified</span>
-              </div>
-            )}
           </div>
         );
       },
@@ -258,9 +250,9 @@ export default function UsersTable({ initialParams }: UsersTableProps) {
         const shipment = row.original;
         return (
           <div className="flex flex-col">
-            <div className="font-medium">{shipment.shippingService}</div>
+            {/* <div className="font-medium">{shipment.shippingAddress?.address}</div> */}
             <div className="text-sm">
-              AWB # <span className="text-blue-600">{shipment.awbNumber}</span>
+              AWB # <span className="text-blue-600">{shipment.awb}</span>
             </div>
           </div>
         );

@@ -1,7 +1,7 @@
 'use client';
 
 import { RefreshCw } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 
 import NDRTable from '@/components/tables/order/ndr-table';
 import ScrollableTabsProps from '@/components/client-tabs';
@@ -15,8 +15,8 @@ interface PageProps {
   };
 }
 
-export default function NDRPage({ params }: PageProps) {
-  const { stage } = params;
+export default function NDRPage() {
+  const { stage } = useParams<{ stage: string }>();
   const searchParams = useSearchParams();
 
   const page = searchParams.get('page') || '0';

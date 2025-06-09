@@ -13,6 +13,7 @@
     "db:gin-indexes": "node migrations/apply-indexes.js",
     "db:setup": "npm run db:push && npm run db:gin-indexes",
     "db:studio": "npx prisma studio --schema=./schema/schema.prisma --browser none",
+    "db:seed": "ts-node seeds/seed.ts",
     "postinstall": "prisma generate --schema=./schema/schema.prisma"
   },
   "author": "<aloksharma.cs1@gmail.com> Alok Sharma",
@@ -23,7 +24,8 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "@prisma/client": "6.7.0"
+    "@prisma/client": "6.7.0",
+    "ts-node": "^10.9.2"
   },
   "exports": {
     ".": "./dist/index.js",

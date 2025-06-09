@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { Checkbox } from '@lorrigo/ui/components';
 import { DataTable } from '@lorrigo/ui/components';
 import { DataTableColumnHeader } from '@lorrigo/ui/components';
@@ -23,10 +23,8 @@ import {
   downloadManifest,
   generateLabels,
   cancelOrders,
-  type Shipment,
-  type ApiResponse,
-  type ShipmentParams,
 } from '@/lib/apis/order';
+import { Shipment, ShipmentParams } from '@/lib/type/response-types';
 
 interface ShipmentsTableProps {
   initialParams: ShipmentParams;
@@ -52,8 +50,6 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
       to: new Date(),
     }
   );
-
-  const queryClient = useQueryClient();
 
   // Fetch shipments with React Query
   const { data, isLoading, isError, isFetching } = useQuery({
@@ -125,7 +121,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
     },
     onSuccess: (result) => {
       toast.success(`Cancelled ${result.count} orders`);
-      queryClient.invalidateQueries({ queryKey: ['shipments'] });
+      // queryClient.invalidateQueries({ queryKey: ['shipments'] });
     },
     onError: () => {
       toast.error('Failed to cancel orders');

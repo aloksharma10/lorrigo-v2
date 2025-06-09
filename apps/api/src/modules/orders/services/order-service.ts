@@ -165,6 +165,8 @@ export class OrderService {
             address: {
               select: {
                 pincode: true,
+                city: true,
+                state: true,
               },
             },
           },
@@ -179,6 +181,8 @@ export class OrderService {
             addresses: {
               select: {
                 pincode: true,
+                city: true,
+                state: true,
               },
             },
           },

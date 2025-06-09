@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import { prisma } from '@lorrigo/db';
+import redis from '@/lib/redis';
 import { APP_CONFIG } from '@/config/app';
 import { registerSwagger } from '@/plugins/swagger';
 import { registerRateLimiter } from '@/plugins/rate-limiter';
@@ -39,6 +40,7 @@ const server = Fastify({
 
 // Attach prisma client to fastify instance
 server.decorate('prisma', prisma);
+server.decorate('redis', redis);
 
 // Register plugins
 const registerPlugins = async () => {
