@@ -114,4 +114,4 @@ export interface ChannelConfigData {
 //   data?: T;
 //   error?: string;
 //   timestamp: Date;
-// } 
+// }

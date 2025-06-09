@@ -4,11 +4,7 @@ import { Role } from '@lorrigo/db';
 import { PickupService } from './services/pickup-service';
 import { PickupController } from './controller/pickup-controller';
 
-
-export default async function hubRoutes(
-  fastify: FastifyInstance,
-) {
-
+export default async function hubRoutes(fastify: FastifyInstance) {
   const pickupService = new PickupService(fastify);
   const pickupController = new PickupController(pickupService);
 
@@ -18,7 +14,7 @@ export default async function hubRoutes(
     preHandler: [authorizeRoles([Role.SELLER])],
     handler: async (request, reply) => {
       return pickupController.createHub(request, reply);
-    }
+    },
   });
 
   /**
@@ -30,7 +26,7 @@ export default async function hubRoutes(
     preHandler: [authorizeRoles([Role.SELLER])],
     handler: async (request, reply) => {
       return pickupController.getHubs(request, reply);
-    }
+    },
   });
 
   /**
@@ -42,6 +38,6 @@ export default async function hubRoutes(
     preHandler: [authorizeRoles([Role.SELLER])],
     handler: async (request, reply) => {
       return pickupController.getHubById(request, reply);
-    }
+    },
   });
 }

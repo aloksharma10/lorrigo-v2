@@ -35,4 +35,4 @@ export async function getPincodeDetails(pincode: number): Promise<PincodeDetails
     captureException(error as Error);
     return null;
   }
-} 
+}

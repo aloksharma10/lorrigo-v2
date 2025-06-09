@@ -46,7 +46,7 @@ const courierPricingSchema = z.object({
 });
 
 export class CourierController {
-  constructor(private courierService: CourierService) { }
+  constructor(private courierService: CourierService) {}
 
   async createCourier(request: FastifyRequest, reply: FastifyReply) {
     try {

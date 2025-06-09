@@ -5,11 +5,13 @@ import { ChannelConfigService } from '../services/channel-config-service';
 
 // Validation schemas
 const createChannelConfigSchema = z.object({
-  name: z.string()
+  name: z
+    .string()
     .min(2, 'Name must be at least 2 characters')
     .max(100, 'Name must not exceed 100 characters')
     .regex(/^[a-zA-Z\s]+$/, 'Name must contain only letters and spaces'),
-  nickname: z.string()
+  nickname: z
+    .string()
     .min(2, 'Nickname must be at least 2 characters')
     .max(10, 'Nickname must not exceed 10 characters')
     .regex(/^[A-Z]+$/, 'Nickname must contain only uppercase letters'),
@@ -37,9 +39,9 @@ export class ChannelConfigController {
       const { page, limit, search, is_active } = query;
 
       const result = await this.channelConfigService.getAllChannelConfigs(
-        page, 
-        limit, 
-        search, 
+        page,
+        limit,
+        search,
         is_active
       );
 
@@ -63,7 +65,7 @@ export class ChannelConfigController {
   async getChannelConfigById(request: FastifyRequest, reply: FastifyReply) {
     try {
       const { id } = request.params as { id: string };
-      
+
       if (!id || typeof id !== 'string') {
         return reply.code(400).send({ message: 'Invalid channel configuration ID' });
       }
@@ -88,12 +90,13 @@ export class ChannelConfigController {
   async getChannelConfigByIdentifier(request: FastifyRequest, reply: FastifyReply) {
     try {
       const { identifier } = request.params as { identifier: string };
-      
+
       if (!identifier || typeof identifier !== 'string') {
         return reply.code(400).send({ message: 'Invalid identifier' });
       }
 
-      const channelConfig = await this.channelConfigService.getChannelConfigByIdentifier(identifier);
+      const channelConfig =
+        await this.channelConfigService.getChannelConfigByIdentifier(identifier);
 
       if ('error' in channelConfig) {
         return reply.code(channelConfig.status).send({ message: channelConfig.error });
@@ -139,7 +142,7 @@ export class ChannelConfigController {
   async updateChannelConfig(request: FastifyRequest, reply: FastifyReply) {
     try {
       const { id } = request.params as { id: string };
-      
+
       if (!id || typeof id !== 'string') {
         return reply.code(400).send({ message: 'Invalid channel configuration ID' });
       }
@@ -177,7 +180,7 @@ export class ChannelConfigController {
   async deleteChannelConfig(request: FastifyRequest, reply: FastifyReply) {
     try {
       const { id } = request.params as { id: string };
-      
+
       if (!id || typeof id !== 'string') {
         return reply.code(400).send({ message: 'Invalid channel configuration ID' });
       }
@@ -202,7 +205,7 @@ export class ChannelConfigController {
   async toggleChannelConfigStatus(request: FastifyRequest, reply: FastifyReply) {
     try {
       const { id } = request.params as { id: string };
-      
+
       if (!id || typeof id !== 'string') {
         return reply.code(400).send({ message: 'Invalid channel configuration ID' });
       }
@@ -234,4 +237,4 @@ export class ChannelConfigController {
       return reply.code(500).send({ message: 'Internal server error' });
     }
   }
-} 
+}

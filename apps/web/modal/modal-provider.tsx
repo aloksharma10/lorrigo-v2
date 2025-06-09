@@ -5,7 +5,6 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { ModalProps, ModalType, useModalStore } from './modal-store';
 import { Modal } from '@lorrigo/ui/components';
 
-
 // Create context for modal provider
 const ModalContext = createContext<{
   openModal: (type: ModalType, props?: ModalProps) => string;

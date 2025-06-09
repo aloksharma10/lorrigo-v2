@@ -42,7 +42,7 @@ export const registerRateLimiter = async (fastify: FastifyInstance) => {
       onExceeding: (request) => {
         request.log.warn(
           {
-            endpoint: request.routeOptions.url || "",
+            endpoint: request.routeOptions.url || '',
             method: request.method,
             ip_address: request.ip,
             user_id: request.userPayload?.id || 'unauthenticated',
@@ -56,7 +56,7 @@ export const registerRateLimiter = async (fastify: FastifyInstance) => {
           // Use void to handle the promise without waiting
           void request.server.prisma.apiRequest.create({
             data: {
-              endpoint: request.routeOptions.url || "",
+              endpoint: request.routeOptions.url || '',
               method: request.method,
               ip_address: request.ip,
               user_id: request.userPayload?.id,
@@ -66,7 +66,7 @@ export const registerRateLimiter = async (fastify: FastifyInstance) => {
         } catch (error) {
           captureException(error as Error, {
             ip_address: request.ip,
-            endpoint: request.routeOptions.url || "",
+            endpoint: request.routeOptions.url || '',
           });
         }
       },

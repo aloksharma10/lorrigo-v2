@@ -16,8 +16,7 @@ import { OrderService } from '../services/order-service';
  * Order Controller handles HTTP request/response logic
  */
 export class OrderController {
-  constructor(private orderService: OrderService) { }
-
+  constructor(private orderService: OrderService) {}
 
   /**
    * Get all orders with pagination and filters

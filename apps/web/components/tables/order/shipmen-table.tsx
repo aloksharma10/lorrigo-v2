@@ -82,7 +82,6 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
     retry: 2, // Retry failed requests twice
   });
 
-
   // Define the columns for the data table
   const columns: ColumnDef<Shipment>[] = [
     {
@@ -164,8 +163,11 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
       cell: ({ row }) => {
         const shipment = row.original;
         return (
-          <div className="flex flex-col mt-1 text-xs">
-            <span>{shipment.packageDetails.length} x {shipment.packageDetails.breadth} x {shipment.packageDetails.height} cm</span>
+          <div className="mt-1 flex flex-col text-xs">
+            <span>
+              {shipment.packageDetails.length} x {shipment.packageDetails.breadth} x{' '}
+              {shipment.packageDetails.height} cm
+            </span>
             <span>Dead Weight: {shipment.packageDetails.deadWeight} kg</span>
             <span>Volumetric Weight: {shipment.packageDetails.volumetricWeight} kg</span>
           </div>
@@ -188,10 +190,8 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
             {shipment.paymentType === 'COD' && (
               <Badge variant="outline" className="mt-1 w-fit">
                 <span className="sr-only">To collect</span>
-                <ActionTooltip label="To collect" side="left" className="p-0 m-0 w-fit">
-                  <span>
-                    {currencyFormatter(shipment.amountToCollect)}
-                  </span>
+                <ActionTooltip label="To collect" side="left" className="m-0 w-fit p-0">
+                  <span>{currencyFormatter(shipment.amountToCollect)}</span>
                 </ActionTooltip>
               </Badge>
             )}
@@ -210,7 +210,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
         const shipment = row.original;
         return (
           <div className="flex flex-col">
-            <HoverCardToolTip className='w-80' label={shipment?.hub?.name}>
+            <HoverCardToolTip className="w-80" label={shipment?.hub?.name}>
               <div className="flex items-center justify-between text-xs font-medium">
                 <div className="flex items-center gap-1">
                   <TruckIcon className="mr-1 h-3 w-3" />
@@ -221,9 +221,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
                   {shipment?.hub?.lorrigoPickupId}
                 </div>
               </div>
-              <div className="text-muted-foreground text-xs mt-1">
-                {shipment?.hub?.address}
-              </div>
+              <div className="text-muted-foreground mt-1 text-xs">{shipment?.hub?.address}</div>
             </HoverCardToolTip>
             {/* {!shipment.addressVerified && (
               <div className="flex items-center text-xs text-red-500">
@@ -275,13 +273,19 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
               {shipment.status.toUpperCase()}
             </Badge>
 
-            <div className="text-xs mt-1">
+            <div className="mt-1 text-xs">
               {formatDateTimeSmart(shipment.trackingEvents[0]?.timestamp || shipment.updatedAt)}
             </div>
 
-            {shipment.pickupDate && <div className="mt-1 text-xs">For {shipment.pickupDate.split(' ')[1]}, {shipment.pickupDate.split(' ')[2]}</div>}
+            {shipment.pickupDate && (
+              <div className="mt-1 text-xs">
+                For {shipment.pickupDate.split(' ')[1]}, {shipment.pickupDate.split(' ')[2]}
+              </div>
+            )}
             {shipment.edd && <div className="mt-1 text-xs">EDD: {shipment.edd}</div>}
-            {shipment.pickupId && <div className="mt-1 text-xs">Pickup ID: {shipment.pickupId}</div>}
+            {shipment.pickupId && (
+              <div className="mt-1 text-xs">Pickup ID: {shipment.pickupId}</div>
+            )}
           </div>
         );
       },
@@ -448,7 +452,9 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
         searchPlaceholder="Search for AWB, Order ID, Buyer Mobile Number, Email, SKU, Pickup ID"
         isLoading={isLoading || isFetching}
         isError={isError}
-        errorMessage={error instanceof Error ? error.message : "Failed to fetch orders. Please try again."}
+        errorMessage={
+          error instanceof Error ? error.message : 'Failed to fetch orders. Please try again.'
+        }
         onPaginationChange={handlePaginationChange}
         onSortingChange={handleSortingChange}
         onFiltersChange={handleFiltersChange}

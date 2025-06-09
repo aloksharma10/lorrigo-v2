@@ -44,7 +44,14 @@ export default function OrderForm() {
   const router = useRouter();
   // const [selectedAddress, setSelectedAddress] = useState<any>(null);
   // const [isAddressVerified, setIsAddressVerified] = useState(false);
-  const { createOrder: { data: order, isPending: isCreatingOrder, mutateAsync: createOrder, isSuccess: isOrderCreated } } = useOrderOperations();
+  const {
+    createOrder: {
+      data: order,
+      isPending: isCreatingOrder,
+      mutateAsync: createOrder,
+      isSuccess: isOrderCreated,
+    },
+  } = useOrderOperations();
 
   const form = useForm<OrderFormValues>({
     resolver: zodResolver(orderFormSchema),
@@ -94,7 +101,7 @@ export default function OrderForm() {
             hsnCode: '',
           },
         ],
-        taxableValue: 0
+        taxableValue: 0,
       },
       paymentMethod: {
         paymentMethod: 'prepaid',
@@ -119,7 +126,10 @@ export default function OrderForm() {
       await createOrder(validatedData);
       toast.success('Order created successfully');
     } catch (error: any) {
-      toast.error(error.response.data.message || 'Failed to create order, Please Report to Support at support@lorrigo.in');
+      toast.error(
+        error.response.data.message ||
+          'Failed to create order, Please Report to Support at support@lorrigo.in'
+      );
       if (error instanceof z.ZodError) {
         // Set form errors
         error.errors.forEach((err) => {
@@ -151,7 +161,6 @@ export default function OrderForm() {
   };
 
   const OrderSubmitBtn = () => {
-  
     return (
       <div className="flex gap-4">
         <SubmitBtn
@@ -220,20 +229,13 @@ export default function OrderForm() {
             </Tabs> */}
 
             <div className="inline-flex items-center gap-1 rounded-lg border p-1">
-              <Link
-                href="/seller/orders/new"
-                className="rounded-md text-xs"
-              >
+              <Link href="/seller/orders/new" className="rounded-md text-xs">
                 Single Order
               </Link>
-              <Link
-                href="/seller/orders/new/bulk"
-                className="rounded-md text-xs"
-              >
+              <Link href="/seller/orders/new/bulk" className="rounded-md text-xs">
                 Bulk Order
               </Link>
             </div>
-
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
@@ -256,9 +258,7 @@ export default function OrderForm() {
                             onClick={() => field.onChange(channel.name)}
                             className="flex cursor-pointer items-center gap-2 capitalize"
                           >
-                            <Badge
-                              variant={field.value === channel.name ? 'default' : 'outline'}
-                            >
+                            <Badge variant={field.value === channel.name ? 'default' : 'outline'}>
                               {channel.icon} {channel.name.toLocaleLowerCase()}
                             </Badge>
                           </div>
@@ -316,10 +316,7 @@ export default function OrderForm() {
                 <CardTitle>Seller Details</CardTitle>
               </CardHeader>
               <CardContent>
-                <SellerDetailsForm
-                  control={form.control}
-                  watch={form.watch}
-                />
+                <SellerDetailsForm control={form.control} watch={form.watch} />
               </CardContent>
             </Card>
 
@@ -331,10 +328,7 @@ export default function OrderForm() {
                 </p>
               </CardHeader>
               <CardContent>
-                <DeliveryDetailsForm
-                  control={form.control}
-                  watch={form.watch}
-                />
+                <DeliveryDetailsForm control={form.control} watch={form.watch} />
               </CardContent>
             </Card>
 
@@ -343,10 +337,7 @@ export default function OrderForm() {
                 <CardTitle>Product Details</CardTitle>
               </CardHeader>
               <CardContent>
-                <ProductDetailsForm
-                  control={form.control}
-                  watch={form.watch}
-                />
+                <ProductDetailsForm control={form.control} watch={form.watch} />
               </CardContent>
             </Card>
 
@@ -358,10 +349,7 @@ export default function OrderForm() {
                 </p>
               </CardHeader>
               <CardContent>
-                <PaymentMethodSelector
-                  control={form.control}
-                  watch={form.watch}
-                />
+                <PaymentMethodSelector control={form.control} watch={form.watch} />
               </CardContent>
             </Card>
 
@@ -373,10 +361,7 @@ export default function OrderForm() {
                 </p>
               </CardHeader>
               <CardContent>
-                <InvoiceDetailsForm
-                  control={form.control}
-                  watch={form.watch}
-                />
+                <InvoiceDetailsForm control={form.control} watch={form.watch} />
               </CardContent>
             </Card>
 
@@ -389,10 +374,7 @@ export default function OrderForm() {
                 </p>
               </CardHeader>
               <CardContent>
-                <PackageDetailsForm
-                  control={form.control}
-                  watch={form.watch}
-                />
+                <PackageDetailsForm control={form.control} watch={form.watch} />
               </CardContent>
             </Card>
 

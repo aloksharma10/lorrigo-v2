@@ -7,19 +7,21 @@ async function assignDefaultPlanToUsers() {
   try {
     // Find the default plan
     const defaultPlan = await prisma.plan.findFirst({
-      where: { isDefault: true }
+      where: { isDefault: true },
     });
 
     if (!defaultPlan) {
-      console.error('No default plan found. Please ensure a default plan exists before running this script.');
+      console.error(
+        'No default plan found. Please ensure a default plan exists before running this script.'
+      );
       return;
     }
 
     // Find all users without a plan
     const usersWithoutPlan = await prisma.user.findMany({
       where: {
-        plan_id: null
-      }
+        plan_id: null,
+      },
     });
 
     if (usersWithoutPlan.length === 0) {
@@ -32,11 +34,11 @@ async function assignDefaultPlanToUsers() {
     // Update all users to use the default plan
     const result = await prisma.user.updateMany({
       where: {
-        plan_id: null
+        plan_id: null,
       },
       data: {
-        plan_id: defaultPlan.id
-      }
+        plan_id: defaultPlan.id,
+      },
     });
 
     console.log(`Successfully assigned default plan to ${result.count} users.`);
@@ -49,7 +51,7 @@ async function assignDefaultPlanToUsers() {
 if (require.main === module) {
   assignDefaultPlanToUsers()
     .then(() => console.log('Script completed'))
-    .catch(error => console.error('Script failed:', error));
+    .catch((error) => console.error('Script failed:', error));
 }
 
-export default assignDefaultPlanToUsers; 
+export default assignDefaultPlanToUsers;

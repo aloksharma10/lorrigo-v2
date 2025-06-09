@@ -60,7 +60,7 @@ export function Modal({
         {...drawerRootProps}
       >
         <Drawer.Portal>
-          <Drawer.Overlay className="fixed inset-0 z-50 bg-neutral-50/15  bg-opacity-10 backdrop-blur" />
+          <Drawer.Overlay className="fixed inset-0 z-50 bg-neutral-50/15 bg-opacity-10 backdrop-blur" />
           <Drawer.Content
             onPointerDownOutside={(e) => {
               // Prevent dismissal when clicking inside a toast
@@ -70,7 +70,7 @@ export function Modal({
             }}
             className={cn(
               'fixed bottom-0 left-0 right-0 z-50 flex flex-col',
-              'rounded-t-[10px] border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-stone-900',
+              'rounded-t-[10px] border-t border-neutral-200 bg-white dark:border-neutral-800 dark:bg-stone-900',
               className
             )}
           >
@@ -115,7 +115,7 @@ export function Modal({
           }}
           className={cn(
             'fixed inset-0 z-40 m-auto h-fit w-full max-w-md',
-            'border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-stone-900 p-0 shadow-xl sm:rounded-2xl',
+            'border border-neutral-200 bg-white p-0 shadow-xl sm:rounded-2xl dark:border-neutral-800 dark:bg-stone-900',
             'scrollbar-hide animate-scale-in overflow-y-auto',
             className
           )}

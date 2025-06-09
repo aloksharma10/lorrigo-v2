@@ -4,20 +4,20 @@ import { cache } from 'react';
 
 // Define the shipment data type
 export interface ShippingCharge {
-  id: string
-  orderId: string
-  awbNumber: string
-  courier: string
-  shipmentStatus: string
-  awbAssignedDate: string
-  appliedWeight: number
-  excessWeight: number
-  onHoldAmount: number
-  totalFreightCharges: number
-  enteredWeight: string
-  enteredDimensions: string
-  chargedWeight: string
-  chargedDimensions: string
+  id: string;
+  orderId: string;
+  awbNumber: string;
+  courier: string;
+  shipmentStatus: string;
+  awbAssignedDate: string;
+  appliedWeight: number;
+  excessWeight: number;
+  onHoldAmount: number;
+  totalFreightCharges: number;
+  enteredWeight: string;
+  enteredDimensions: string;
+  chargedWeight: string;
+  chargedDimensions: string;
 }
 
 // API response type
@@ -42,86 +42,86 @@ export interface ShipmentParams {
 // Sample data - in real app, this would come from database
 const shipmentData: ShippingCharge[] = [
   {
-    id: "1",
-    orderId: "12473894-16",
-    awbNumber: "7786334579",
-    courier: "Bluedart brands 500 g Surface",
-    shipmentStatus: "Pickup Generated",
-    awbAssignedDate: "25 May, 2025",
+    id: '1',
+    orderId: '12473894-16',
+    awbNumber: '7786334579',
+    courier: 'Bluedart brands 500 g Surface',
+    shipmentStatus: 'Pickup Generated',
+    awbAssignedDate: '25 May, 2025',
     appliedWeight: 53.31,
     excessWeight: 0,
     onHoldAmount: 0.0,
     totalFreightCharges: 53.31,
-    enteredWeight: "0.5 kg",
-    enteredDimensions: "1x1x1 cm",
-    chargedWeight: "0.5 kg",
-    chargedDimensions: "1x1x1 cm",
+    enteredWeight: '0.5 kg',
+    enteredDimensions: '1x1x1 cm',
+    chargedWeight: '0.5 kg',
+    chargedDimensions: '1x1x1 cm',
   },
   {
-    id: "2",
-    orderId: "12473876-16",
-    awbNumber: "7786334644",
-    courier: "Bluedart brands 500 g Surface",
-    shipmentStatus: "Pickup Generated",
-    awbAssignedDate: "25 May, 2025",
+    id: '2',
+    orderId: '12473876-16',
+    awbNumber: '7786334644',
+    courier: 'Bluedart brands 500 g Surface',
+    shipmentStatus: 'Pickup Generated',
+    awbAssignedDate: '25 May, 2025',
     appliedWeight: 67.71,
     excessWeight: 0,
     onHoldAmount: 0.0,
     totalFreightCharges: 67.71,
-    enteredWeight: "0.5 kg",
-    enteredDimensions: "1x1x1 cm",
-    chargedWeight: "0.5 kg",
-    chargedDimensions: "1x1x1 cm",
+    enteredWeight: '0.5 kg',
+    enteredDimensions: '1x1x1 cm',
+    chargedWeight: '0.5 kg',
+    chargedDimensions: '1x1x1 cm',
   },
   {
-    id: "3",
-    orderId: "12473875-12",
-    awbNumber: "7786334811",
-    courier: "Bluedart brands 500 g Surface",
-    shipmentStatus: "Pickup Generated",
-    awbAssignedDate: "25 May, 2025",
+    id: '3',
+    orderId: '12473875-12',
+    awbNumber: '7786334811',
+    courier: 'Bluedart brands 500 g Surface',
+    shipmentStatus: 'Pickup Generated',
+    awbAssignedDate: '25 May, 2025',
     appliedWeight: 67.71,
     excessWeight: 0,
     onHoldAmount: 0.0,
     totalFreightCharges: 67.71,
-    enteredWeight: "0.5 kg",
-    enteredDimensions: "1x1x1 cm",
-    chargedWeight: "0.5 kg",
-    chargedDimensions: "1x1x1 cm",
+    enteredWeight: '0.5 kg',
+    enteredDimensions: '1x1x1 cm',
+    chargedWeight: '0.5 kg',
+    chargedDimensions: '1x1x1 cm',
   },
   {
-    id: "4",
-    orderId: "12473719-12",
-    awbNumber: "7786334910",
-    courier: "Bluedart brands 500 g Surface",
-    shipmentStatus: "Pickup Generated",
-    awbAssignedDate: "25 May, 2025",
+    id: '4',
+    orderId: '12473719-12',
+    awbNumber: '7786334910',
+    courier: 'Bluedart brands 500 g Surface',
+    shipmentStatus: 'Pickup Generated',
+    awbAssignedDate: '25 May, 2025',
     appliedWeight: 68.51,
     excessWeight: 0,
     onHoldAmount: 0.0,
     totalFreightCharges: 68.51,
-    enteredWeight: "0.5 kg",
-    enteredDimensions: "1x1x1 cm",
-    chargedWeight: "0.5 kg",
-    chargedDimensions: "1x1x1 cm",
+    enteredWeight: '0.5 kg',
+    enteredDimensions: '1x1x1 cm',
+    chargedWeight: '0.5 kg',
+    chargedDimensions: '1x1x1 cm',
   },
   {
-    id: "5",
-    orderId: "12473717-10",
-    awbNumber: "7786333952",
-    courier: "Bluedart brands 500 g Surface",
-    shipmentStatus: "Pickup Generated",
-    awbAssignedDate: "25 May, 2025",
+    id: '5',
+    orderId: '12473717-10',
+    awbNumber: '7786333952',
+    courier: 'Bluedart brands 500 g Surface',
+    shipmentStatus: 'Pickup Generated',
+    awbAssignedDate: '25 May, 2025',
     appliedWeight: 114.37,
     excessWeight: 0,
     onHoldAmount: 0.0,
     totalFreightCharges: 114.37,
-    enteredWeight: "0.5 kg",
-    enteredDimensions: "1x1x1 cm",
-    chargedWeight: "0.5 kg",
-    chargedDimensions: "1x1x1 cm",
+    enteredWeight: '0.5 kg',
+    enteredDimensions: '1x1x1 cm',
+    chargedWeight: '0.5 kg',
+    chargedDimensions: '1x1x1 cm',
   },
-]
+];
 
 // Get initial shipments - no caching, pure SSR
 export async function getInitialShipments(params: ShipmentParams): Promise<ApiResponse> {

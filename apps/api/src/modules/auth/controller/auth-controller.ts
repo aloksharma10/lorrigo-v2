@@ -45,7 +45,7 @@ const registerSchema = z.object({
 });
 
 export class AuthController {
-  constructor(private authService: AuthService) { }
+  constructor(private authService: AuthService) {}
 
   async register(request: FastifyRequest, reply: FastifyReply) {
     try {

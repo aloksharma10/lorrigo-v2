@@ -6,7 +6,5 @@ export const toCamelCase = (str: string) => {
   }
 
   // Convert snake_case to camelCase
-  return str
-    .toLowerCase()
-    .replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+  return str.toLowerCase().replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
 };

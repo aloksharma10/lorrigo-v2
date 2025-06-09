@@ -43,7 +43,7 @@ interface ErrorResponse {
 const ADMIN_ROLES = ['ADMIN', 'SUBADMIN'] as const;
 
 export class CourierService {
-  constructor(private fastify: FastifyInstance) { }
+  constructor(private fastify: FastifyInstance) {}
 
   async createCourier(data: CourierData) {
     const [existingCourier, channelConfig] = await Promise.all([
@@ -59,9 +59,9 @@ export class CourierService {
       }),
       data.channel_config_id
         ? this.fastify.prisma.channelConfig.findUnique({
-          where: { id: data.channel_config_id },
-          select: { id: true },
-        })
+            where: { id: data.channel_config_id },
+            select: { id: true },
+          })
         : null,
     ]);
 

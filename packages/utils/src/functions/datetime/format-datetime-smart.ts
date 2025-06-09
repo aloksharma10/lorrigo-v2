@@ -7,5 +7,5 @@ export const formatDateTimeSmart = (datetime: string | number | Date): string =>
     minute: '2-digit',
   }); // e.g., 02:23 PM
 
-  return `${formattedDate} | ${formattedTime}`
+  return `${formattedDate} | ${formattedTime}`;
 };

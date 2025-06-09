@@ -11,12 +11,12 @@ import { VendorRegistrationResult, VendorShipmentResult } from '@/types/vendor';
  */
 export class DelhiveryVendor extends BaseVendor {
   private weightCategory: '0.5' | '5' | '10';
-  
+
   constructor(weightCategory: '0.5' | '5' | '10' = '5') {
     const vendorConfig = APP_CONFIG.VENDOR.DELHIVERY;
     let apiKey = '';
     let tokenCacheKey = '';
-    
+
     // Set API key and cache key based on weight category
     switch (weightCategory) {
       case '0.5':
@@ -32,17 +32,12 @@ export class DelhiveryVendor extends BaseVendor {
         tokenCacheKey = CACHE_KEYS.DELHIVERY_TOKEN_10;
         break;
     }
-    
-    super(
-      `Delhivery-${weightCategory}`,
-      vendorConfig.API_BASEURL || '',
-      apiKey,
-      tokenCacheKey
-    );
-    
+
+    super(`Delhivery-${weightCategory}`, vendorConfig.API_BASEURL || '', apiKey, tokenCacheKey);
+
     this.weightCategory = weightCategory;
   }
-  
+
   /**
    * Generate Delhivery authentication token
    * Note: Delhivery uses direct API key for authentication
@@ -52,7 +47,7 @@ export class DelhiveryVendor extends BaseVendor {
     // Delhivery uses direct API key, so we'll just return it
     return this.apiKey || null;
   }
-  
+
   /**
    * Register a hub with Delhivery
    * @param hubData Hub data for registration
@@ -61,7 +56,7 @@ export class DelhiveryVendor extends BaseVendor {
   public async registerHub(hubData: any): Promise<VendorRegistrationResult> {
     try {
       const token = await this.getAuthToken();
-      
+
       if (!token) {
         return {
           success: false,
@@ -69,41 +64,46 @@ export class DelhiveryVendor extends BaseVendor {
           data: null,
         };
       }
-      
+
       const apiConfig = {
         Authorization: `Token ${token}`,
       };
-      
+
       const payload = {
         name: hubData.facilityName,
-        email: "noreply@lorrigo.com",
+        email: 'noreply@lorrigo.com',
         phone: formatPhoneNumber(hubData.phone),
         address: hubData.address,
         city: hubData.city,
-        country: "India",
+        country: 'India',
         pin: hubData.pincode.toString(),
         return_address: hubData.isRTOAddressSame ? hubData.address : hubData.rtoAddress,
-        return_pin: hubData.isRTOAddressSame ? hubData.pincode.toString() : hubData.rtoPincode?.toString(),
+        return_pin: hubData.isRTOAddressSame
+          ? hubData.pincode.toString()
+          : hubData.rtoPincode?.toString(),
         return_city: hubData.isRTOAddressSame ? hubData.city : hubData.rtoCity,
         return_state: hubData.isRTOAddressSame ? hubData.state : hubData.rtoState,
-        return_country: "India"
+        return_country: 'India',
       };
-      
+
       const response = await this.makeRequest(
         APIs.DELHIVERY.PICKUP_LOCATION,
         'POST',
         payload,
         apiConfig
       );
-      
+
       return {
         success: true,
         message: `Hub registered with Delhivery ${this.weightCategory} kg`,
         data: response.data,
       };
     } catch (error: any) {
-      console.error(`Error registering hub with Delhivery ${this.weightCategory}:`, JSON.stringify(error.response?.data));
-      
+      console.error(
+        `Error registering hub with Delhivery ${this.weightCategory}:`,
+        JSON.stringify(error.response?.data)
+      );
+
       return {
         success: false,
         message: error.response?.data || error.message,
@@ -114,13 +114,13 @@ export class DelhiveryVendor extends BaseVendor {
 
   /**
    * Create a shipment with Delhivery
-   * @param shipmentData Shipment data 
+   * @param shipmentData Shipment data
    * @returns Promise resolving to shipment creation result
    */
   public async createShipment(shipmentData: any): Promise<VendorShipmentResult> {
     try {
       const token = await this.getAuthToken();
-      
+
       if (!token) {
         return {
           success: false,
@@ -130,16 +130,16 @@ export class DelhiveryVendor extends BaseVendor {
       }
 
       const { order, hub, orderItems, paymentMethod, dimensions } = shipmentData;
-      
+
       // Extract the first order item for product details
       const firstOrderItem = orderItems[0];
-      
+
       const isReversed = order.type === 'RETURNED';
       const isCOD = paymentMethod === 'COD';
-      
+
       // Calculate COD amount if applicable
       const codAmount = isCOD ? order.total_amount : 0;
-      
+
       // Prepare the shipment payload
       const delhiveryShipmentPayload = {
         format: 'json',
@@ -193,16 +193,16 @@ export class DelhiveryVendor extends BaseVendor {
 
       // URL encode the payload for Delhivery API
       const urlEncodedPayload = `format=json&data=${encodeURIComponent(JSON.stringify(delhiveryShipmentPayload.data))}`;
-      
+
       const response = await this.makeRequest(
         APIs.DELHIVERY.CREATE_ORDER,
         'POST',
         urlEncodedPayload,
         { Authorization: token, 'Content-Type': 'application/x-www-form-urlencoded' }
       );
-      
+
       const delhiveryResponse = response.data?.packages?.[0];
-      
+
       if (!delhiveryResponse?.status) {
         return {
           success: false,
@@ -210,9 +210,9 @@ export class DelhiveryVendor extends BaseVendor {
           data: response.data,
         };
       }
-      
+
       const awb = delhiveryResponse?.waybill;
-      
+
       if (!awb) {
         return {
           success: false,
@@ -220,7 +220,7 @@ export class DelhiveryVendor extends BaseVendor {
           data: response.data,
         };
       }
-      
+
       return {
         success: true,
         message: `Shipment created with Delhivery ${this.weightCategory} kg`,
@@ -229,7 +229,7 @@ export class DelhiveryVendor extends BaseVendor {
       };
     } catch (error: any) {
       console.error(`Error creating shipment with Delhivery ${this.weightCategory}:`, error);
-      
+
       return {
         success: false,
         message: error.response?.data || error.message,
@@ -248,13 +248,9 @@ export class DelhiveryVendorFactory {
    * @returns Array of Delhivery vendor instances
    */
   public static getAllVendors(): DelhiveryVendor[] {
-    return [
-      new DelhiveryVendor('0.5'),
-      new DelhiveryVendor('5'),
-      new DelhiveryVendor('10'),
-    ];
+    return [new DelhiveryVendor('0.5'), new DelhiveryVendor('5'), new DelhiveryVendor('10')];
   }
-  
+
   /**
    * Get Delhivery vendor instance for a specific weight category
    * @param weightCategory Weight category
@@ -263,4 +259,4 @@ export class DelhiveryVendorFactory {
   public static getVendor(weightCategory: '0.5' | '5' | '10'): DelhiveryVendor {
     return new DelhiveryVendor(weightCategory);
   }
-} 
+}

@@ -41,13 +41,7 @@ interface ProductRowProps {
   productsLength: number;
 }
 
-function ProductRow({
-  index,
-  control,
-  watch,
-  remove,
-  productsLength,
-}: ProductRowProps) {
+function ProductRow({ index, control, watch, remove, productsLength }: ProductRowProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [productOptions, setProductOptions] = useState<Product[]>([]);
@@ -122,7 +116,10 @@ function ProductRow({
   return (
     <div className="mb-4 grid gap-4 lg:grid-cols-10">
       <div className="relative col-span-4" ref={dropdownRef}>
-        <Label htmlFor={`productDetails.products.${index}.name`} className="text-sm font-medium text-indigo-600">
+        <Label
+          htmlFor={`productDetails.products.${index}.name`}
+          className="text-sm font-medium text-indigo-600"
+        >
           Product Name
         </Label>
         <div className="relative">
@@ -175,49 +172,50 @@ function ProductRow({
             </div>
           )}
         </div>
-        {watch(`productDetails.products.${index}.name`) && watch(`productDetails.products.${index}.name`).length > 0 && (
-          <div className="mt-2">
-            <FormField
-              control={control}
-              name={`productDetails.products.${index}.hsnCode`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-1 text-sm font-medium">
-                    HSN Code
-                    <span className="text-muted-foreground text-xs">(Optional)</span>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
-                            <Info className="h-3 w-3" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Why is it important?</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      id={`productDetails.products.${index}.hsnCode`}
-                      placeholder="Enter product HSN Code"
-                      {...field}
-                      className="mt-1"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="text-muted-foreground mt-1 text-xs">
-              Don't know your HSN Code?{' '}
-              <Button variant="link" className="h-auto p-0 text-xs text-indigo-600">
-                Know Here
-              </Button>
+        {watch(`productDetails.products.${index}.name`) &&
+          watch(`productDetails.products.${index}.name`).length > 0 && (
+            <div className="mt-2">
+              <FormField
+                control={control}
+                name={`productDetails.products.${index}.hsnCode`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-1 text-sm font-medium">
+                      HSN Code
+                      <span className="text-muted-foreground text-xs">(Optional)</span>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
+                              <Info className="h-3 w-3" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Why is it important?</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        id={`productDetails.products.${index}.hsnCode`}
+                        placeholder="Enter product HSN Code"
+                        {...field}
+                        className="mt-1"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="text-muted-foreground mt-1 text-xs">
+                Don't know your HSN Code?{' '}
+                <Button variant="link" className="h-auto p-0 text-xs text-indigo-600">
+                  Know Here
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
       </div>
       <div className="col-span-2">
         <FormField
@@ -352,11 +350,12 @@ export function ProductDetailsForm({ control, watch }: ProductDetailsFormProps) 
   });
   const { setValue } = useFormContext<OrderFormValues>(); // Get setValue from form context
 
-  const totalAmount = watch('productDetails.products')?.reduce((acc, item) => {
-    const itemPrice = Number(item.price) || 0;
-    const itemUnits = Number(item.quantity) || 0;
-    return acc + (itemPrice * itemUnits);
-  }, 0) || 0;
+  const totalAmount =
+    watch('productDetails.products')?.reduce((acc, item) => {
+      const itemPrice = Number(item.price) || 0;
+      const itemUnits = Number(item.quantity) || 0;
+      return acc + itemPrice * itemUnits;
+    }, 0) || 0;
 
   // Update taxableValue whenever totalAmount changes
   useEffect(() => {
@@ -396,7 +395,7 @@ export function ProductDetailsForm({ control, watch }: ProductDetailsFormProps) 
         <Plus className="mr-2 h-4 w-4" />
         Add Another Product
       </Button>
-      <Alert className='bg-gray-200'>
+      <Alert className="bg-gray-200">
         <AlertTitle>Total Order Value: ₹{totalAmount}</AlertTitle>
         <AlertDescription>
           The total order value is the sum of the prices of all the products in the order.

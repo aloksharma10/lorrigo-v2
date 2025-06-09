@@ -19,7 +19,6 @@ import {
 import { Control, UseFormWatch } from 'react-hook-form';
 import { OrderFormValues } from '../types';
 
-
 interface PackageDetailsFormProps {
   control: Control<OrderFormValues>;
   watch: UseFormWatch<OrderFormValues>;
@@ -27,9 +26,14 @@ interface PackageDetailsFormProps {
 
 export function PackageDetailsForm({ control, watch }: PackageDetailsFormProps) {
   const [applicableWeight, setApplicableWeight] = useState('0');
-  const [volumetricWeight, setVolumetricWeight] = useState("0")
+  const [volumetricWeight, setVolumetricWeight] = useState('0');
 
-  const watchedDimensions = watch(['packageDetails.length', 'packageDetails.breadth', 'packageDetails.height', 'packageDetails.deadWeight']);
+  const watchedDimensions = watch([
+    'packageDetails.length',
+    'packageDetails.breadth',
+    'packageDetails.height',
+    'packageDetails.deadWeight',
+  ]);
 
   useEffect(() => {
     const [length, breadth, height, deadWeight] = watchedDimensions;
@@ -39,7 +43,7 @@ export function PackageDetailsForm({ control, watch }: PackageDetailsFormProps) 
       const h = Number.parseFloat(height);
       if (l > 0 && b > 0 && h > 0) {
         const volumetric = (l * b * h) / 5000;
-        setVolumetricWeight(volumetric.toFixed(2))
+        setVolumetricWeight(volumetric.toFixed(2));
         // control._formValues.packageDetails.volumetricWeight = volumetric.toFixed(2);
         const dead = Number.parseFloat(deadWeight) || 0;
         setApplicableWeight(Math.max(dead, volumetric).toFixed(2));
@@ -88,7 +92,12 @@ export function PackageDetailsForm({ control, watch }: PackageDetailsFormProps) 
               </FormLabel>
               <div className="flex">
                 <FormControl>
-                  <Input {...field} value={volumetricWeight} readOnly className="bg-muted h-8 rounded-r-none" />
+                  <Input
+                    {...field}
+                    value={volumetricWeight}
+                    readOnly
+                    className="bg-muted h-8 rounded-r-none"
+                  />
                 </FormControl>
                 <div className="bg-muted flex items-center justify-center rounded-r-md border border-l-0 px-2 text-xs">
                   kg

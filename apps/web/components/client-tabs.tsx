@@ -96,7 +96,7 @@ export default function ClientTabs({ menuItems, onValueChange }: ClientTabsProps
   }, [currentPath, pathname, menuItems]);
 
   return (
-    <header className=" dark:border-gray-800">
+    <header className="dark:border-gray-800">
       <div className="flex items-center justify-between py-3">
         <div className="relative flex w-full items-center md:w-auto">
           {/* Left scroll button for mobile */}

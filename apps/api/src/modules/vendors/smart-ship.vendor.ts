@@ -38,7 +38,7 @@ export class SmartShipVendor extends BaseVendor {
       }
 
       const response = await this.makeRequest(
-        "",
+        '',
         'POST',
         {
           username: APP_CONFIG.VENDOR.SMART_SHIP.EMAIL,
@@ -97,7 +97,7 @@ export class SmartShipVendor extends BaseVendor {
         };
       }
 
-      const address2 = hubData.address.length > 150 ? hubData.address.slice(150) : "";
+      const address2 = hubData.address.length > 150 ? hubData.address.slice(150) : '';
 
       const payload = {
         hub_details: {
@@ -130,9 +130,9 @@ export class SmartShipVendor extends BaseVendor {
       };
 
       // Extract hub_id from the response
-      let hubId = "";
+      let hubId = '';
       if (smartShipData.data.hub_id || smartShipData.data.message?.registered_hub_id) {
-        hubId = smartShipData.data.hub_id || smartShipData.data.message?.registered_hub_id || "";
+        hubId = smartShipData.data.hub_id || smartShipData.data.message?.registered_hub_id || '';
       }
 
       return {
@@ -141,7 +141,7 @@ export class SmartShipVendor extends BaseVendor {
         data: {
           hubId,
           deliveryTypeId,
-          response: smartShipData
+          response: smartShipData,
         },
       };
     } catch (error: any) {
@@ -160,7 +160,9 @@ export class SmartShipVendor extends BaseVendor {
    * @param hubData Hub data for registration
    * @returns Promise resolving to registration result
    */
-  public async registerHubWithBothDeliveryTypes(hubData: PickupAddress): Promise<VendorRegistrationResult> {
+  public async registerHubWithBothDeliveryTypes(
+    hubData: PickupAddress
+  ): Promise<VendorRegistrationResult> {
     try {
       // Register with surface delivery type (2)
       const surfaceResult = await this.registerHub(hubData, 2);
@@ -170,12 +172,10 @@ export class SmartShipVendor extends BaseVendor {
 
       // If either registration was successful, consider it a success
       const success = surfaceResult.success || expressResult.success;
-      const surfaceHubId = surfaceResult.success && surfaceResult.data?.hubId ?
-        surfaceResult.data.hubId :
-        "0";
-      const expressHubId = expressResult.success && expressResult.data?.hubId ?
-        expressResult.data.hubId :
-        "0";
+      const surfaceHubId =
+        surfaceResult.success && surfaceResult.data?.hubId ? surfaceResult.data.hubId : '0';
+      const expressHubId =
+        expressResult.success && expressResult.data?.hubId ? expressResult.data.hubId : '0';
 
       return {
         success,
@@ -274,7 +274,8 @@ export class SmartShipVendor extends BaseVendor {
             },
             product_details: [
               {
-                client_product_reference_id: firstOrderItem.id || firstOrderItem.code || 'product-1',
+                client_product_reference_id:
+                  firstOrderItem.id || firstOrderItem.code || 'product-1',
                 product_name: firstOrderItem.name,
                 product_category: firstOrderItem.category || 'General',
                 product_hsn_code: firstOrderItem.hsn || '0000',
@@ -348,4 +349,4 @@ export class SmartShipVendor extends BaseVendor {
       };
     }
   }
-} 
+}

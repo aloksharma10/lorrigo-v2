@@ -10,7 +10,9 @@ interface CardItemsProps {
   value: string;
   percentage?: string;
   description: string;
-  icon: ComponentType<IconProps> | ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>;
+  icon:
+    | ComponentType<IconProps>
+    | ForwardRefExoticComponent<Omit<LucideProps, 'ref'> & RefAttributes<SVGSVGElement>>;
 }
 
 export function CardItems({ title, value, percentage, description, icon: Icon }: CardItemsProps) {

@@ -84,7 +84,7 @@ export const APP_CONFIG = {
       GRANT_TYPE: process.env.ZOHO_GRANT_TYPE || '',
       REFRESH_TOKEN: process.env.ZOHO_REFRESH_TOKEN || '',
     },
-    
+
     // Shopify settings
     SHOPIFY: {
       API_KEY: process.env.SHOPIFY_API_KEY || '',

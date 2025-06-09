@@ -6,7 +6,7 @@ import { pickupAddressRegistrationSchema } from '@lorrigo/utils';
  * Controller for pickup address operations
  */
 export class PickupController {
-  constructor(private pickupService: PickupService) { }
+  constructor(private pickupService: PickupService) {}
   /**
    * Create a new hub
    * @param request Request object
@@ -24,7 +24,11 @@ export class PickupController {
       }
 
       // Create hub using service
-      const result = await this.pickupService.createPickup(body, request.userPayload!.id, request.userPayload!.name);
+      const result = await this.pickupService.createPickup(
+        body,
+        request.userPayload!.id,
+        request.userPayload!.name
+      );
 
       // Return result with appropriate status code
       if (!result.valid) {
@@ -34,7 +38,7 @@ export class PickupController {
 
       return reply.code(200).send(result);
     } catch (error: any) {
-      console.error("Error in createHub controller:", error);
+      console.error('Error in createHub controller:', error);
       return reply.code(500).send({
         valid: false,
         message: 'Internal server error',
@@ -54,7 +58,7 @@ export class PickupController {
       const hubs = await this.pickupService.getHubs(request.userPayload!.id);
       return reply.code(200).send({ hubs });
     } catch (error: any) {
-      console.error("Error in getHubs controller:", error);
+      console.error('Error in getHubs controller:', error);
       return reply.code(500).send({
         message: 'Failed to fetch hubs',
         error: error.message || error,
@@ -81,7 +85,7 @@ export class PickupController {
 
       return reply.code(200).send({ hub });
     } catch (error: any) {
-      console.error("Error in getHubById controller:", error);
+      console.error('Error in getHubById controller:', error);
       return reply.code(500).send({
         message: 'Failed to fetch hub',
         error: error.message || error,

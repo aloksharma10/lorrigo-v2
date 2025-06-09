@@ -4,13 +4,18 @@ import { ShiprocketVendor, ShiprocketB2BVendor } from '@/modules/vendors/shiproc
 import { DelhiveryVendorFactory } from '@/modules/vendors/delhivery.vendor';
 import { getPincodeDetails } from '@/utils/pincode';
 import { FastifyInstance } from 'fastify';
-import { generateId, getFinancialYear, getFinancialYearStartDate, PickupAddress } from '@lorrigo/utils';
+import {
+  generateId,
+  getFinancialYear,
+  getFinancialYearStartDate,
+  PickupAddress,
+} from '@lorrigo/utils';
 
 /**
  * Service for hub-related operations
  */
 export class PickupService {
-  constructor(private fastify: FastifyInstance) { }
+  constructor(private fastify: FastifyInstance) {}
 
   /**
    * Create a new hub and register it with all vendors
@@ -20,16 +25,25 @@ export class PickupService {
    */
   async createPickup(pickupData: PickupAddress, sellerId: string, sellerName: string) {
     try {
-      const { facilityName, contactPersonName, address: addressLine, isRTOAddressSame, rtoAddress, rtoCity, rtoState, rtoPincode } = pickupData;
+      const {
+        facilityName,
+        contactPersonName,
+        address: addressLine,
+        isRTOAddressSame,
+        rtoAddress,
+        rtoCity,
+        rtoState,
+        rtoPincode,
+      } = pickupData;
       const pincode = Number(pickupData.pincode);
       const phone = pickupData.phone;
 
       // Parallel: Check hub & get pincode
       const [existingHub, pincodeDetails] = await Promise.all([
         this.fastify.prisma.hub.findFirst({
-          where: { name: facilityName, user_id: sellerId }
+          where: { name: facilityName, user_id: sellerId },
         }),
-        getPincodeDetails(pincode)
+        getPincodeDetails(pincode),
       ]);
 
       if (existingHub) {
@@ -49,8 +63,8 @@ export class PickupService {
             created_at: {
               gte: new Date(new Date().getFullYear(), 0, 1),
               lte: new Date(new Date().getFullYear(), 11, 31),
-            }
-          }
+            },
+          },
         }),
         this.fastify.prisma.address.count({
           where: {
@@ -60,13 +74,13 @@ export class PickupService {
             },
           },
         }),
-        null
+        null,
         // this.fastify.prisma.vendorConfig.findFirst({
         //   where: { vendorName: 'SHIPROCKET_B2B' },
         // }),
       ]);
 
-      console.log(lastSequenceNumberHub, "lastSequenceNumberHub")
+      console.log(lastSequenceNumberHub, 'lastSequenceNumberHub');
       const lorrigoPickupId = generateId({
         entityName: sellerName.toUpperCase(),
         tableName: 'hub',
@@ -94,15 +108,19 @@ export class PickupService {
       const shiprocketB2BVendor = new ShiprocketB2BVendor();
       const delhiveryVendors = DelhiveryVendorFactory.getAllVendors();
 
-      const [smartShipResult, shiprocketResult, delhiveryResults, shiprocketB2BResult] = await Promise.all([
-        smartShipVendor.registerHubWithBothDeliveryTypes(vendorPayload),
-        shiprocketVendor.registerHub(vendorPayload, `${lorrigoPickupId}-${vendorPayload.facilityName}`),
-        Promise.all(delhiveryVendors.map(vendor => vendor.registerHub(vendorPayload))),
-        null
-        // (b2bConfig?.token && b2bConfig?.clientId)
-        //   ? (shiprocketB2BVendor.setClientId(b2bConfig.clientId), shiprocketB2BVendor.registerHub(vendorPayload, lorrigoPickupId, b2bConfig.token))
-        //   : Promise.resolve(null)
-      ]);
+      const [smartShipResult, shiprocketResult, delhiveryResults, shiprocketB2BResult] =
+        await Promise.all([
+          smartShipVendor.registerHubWithBothDeliveryTypes(vendorPayload),
+          shiprocketVendor.registerHub(
+            vendorPayload,
+            `${lorrigoPickupId}-${vendorPayload.facilityName}`
+          ),
+          Promise.all(delhiveryVendors.map((vendor) => vendor.registerHub(vendorPayload))),
+          null,
+          // (b2bConfig?.token && b2bConfig?.clientId)
+          //   ? (shiprocketB2BVendor.setClientId(b2bConfig.clientId), shiprocketB2BVendor.registerHub(vendorPayload, lorrigoPickupId, b2bConfig.token))
+          //   : Promise.resolve(null)
+        ]);
 
       const vendorResults: Record<string, VendorRegistrationResult> = {
         smartShip: smartShipResult,
@@ -118,72 +136,73 @@ export class PickupService {
       let savedHub;
 
       try {
-        savedHub = await this.fastify.prisma.$transaction(async tx => {
-          const primaryAddress = await tx.address.create({
-            data: {
-              address: addressLine,
-              city,
-              state,
-              pincode: pincode.toString(),
-            }
-          });
-
-          let rtoAddressRecord = null;
-          if (!isRTOAddressSame && rtoAddress && rtoCity && rtoState && rtoPincode) {
-            rtoAddressRecord = await tx.address.create({
+        savedHub = await this.fastify.prisma
+          .$transaction(async (tx) => {
+            const primaryAddress = await tx.address.create({
               data: {
-                address: rtoAddress,
-                city: rtoCity,
-                state: rtoState,
-                pincode: rtoPincode,
-              }
+                address: addressLine,
+                city,
+                state,
+                pincode: pincode.toString(),
+              },
             });
-          }
 
-          return await tx.hub.create({
-            data: {
-              code: lorrigoPickupId,
-              hub_config: {
-                create: {
-                  smart_ship_hub_code_surface: smartShipResult.data?.surfaceHubId?.toString(),
-                  smart_ship_hub_code_express: smartShipResult.data?.expressHubId?.toString(),
+            let rtoAddressRecord = null;
+            if (!isRTOAddressSame && rtoAddress && rtoCity && rtoState && rtoPincode) {
+              rtoAddressRecord = await tx.address.create({
+                data: {
+                  address: rtoAddress,
+                  city: rtoCity,
+                  state: rtoState,
+                  pincode: rtoPincode,
                 },
-              },
-              user: {
-                connect: {
-                  id: sellerId,
-                },
-              },
-              name: facilityName,
-              contact_person_name: contactPersonName,
-              phone,
-              is_rto_address_same: isRTOAddressSame ?? true,
-              address: {
-                connect: {
-                  id: primaryAddress.id,
-                },
-              },
-              ...(rtoAddressRecord
-                ? {
-                  rto_address: {
-                    connect: {
-                      id: rtoAddressRecord.id,
-                    },
+              });
+            }
+
+            return await tx.hub.create({
+              data: {
+                code: lorrigoPickupId,
+                hub_config: {
+                  create: {
+                    smart_ship_hub_code_surface: smartShipResult.data?.surfaceHubId?.toString(),
+                    smart_ship_hub_code_express: smartShipResult.data?.expressHubId?.toString(),
                   },
-                }
-                : {}),
-            },
+                },
+                user: {
+                  connect: {
+                    id: sellerId,
+                  },
+                },
+                name: facilityName,
+                contact_person_name: contactPersonName,
+                phone,
+                is_rto_address_same: isRTOAddressSame ?? true,
+                address: {
+                  connect: {
+                    id: primaryAddress.id,
+                  },
+                },
+                ...(rtoAddressRecord
+                  ? {
+                      rto_address: {
+                        connect: {
+                          id: rtoAddressRecord.id,
+                        },
+                      },
+                    }
+                  : {}),
+              },
+            });
+          })
+          .catch((error) => {
+            console.log(error, 'error');
+            throw error;
           });
-
-        }).catch(error => {
-          console.log(error, "error")
-          throw error;
-        });
       } catch (error: any) {
-        this.fastify.log.error("Transaction failed:", error);
+        this.fastify.log.error('Transaction failed:', error);
         return {
           valid: false,
-          message: "Request failed while creating pickup address, Please try again later!",
+          message: 'Request failed while creating pickup address, Please try again later!',
           // error: error.message || error,
         };
       }
@@ -191,7 +210,7 @@ export class PickupService {
       // If transaction succeeded
       return {
         valid: true,
-        message: "Hub created successfully",
+        message: 'Hub created successfully',
         hub: savedHub,
       };
     } catch (error: any) {
@@ -203,7 +222,6 @@ export class PickupService {
       };
     }
   }
-
 
   /**
    * Get all hubs for a seller

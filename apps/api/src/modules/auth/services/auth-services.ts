@@ -112,7 +112,11 @@ export class AuthService {
     };
   }
 
-  async login(email: string, password: string, ipAddress: string): Promise<AuthResponse | { error: string }> {
+  async login(
+    email: string,
+    password: string,
+    ipAddress: string
+  ): Promise<AuthResponse | { error: string }> {
     // Find user by email
     const user = await this.prisma.user.findUnique({
       where: { email },

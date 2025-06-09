@@ -118,14 +118,14 @@ const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (fastify, _optio
           permissions: true,
           plan: {
             include: {
-               plan_courier_pricings: {
-                  include: {
-                     courier: true,
-                     zone_pricing: true
-                  }
-               }
-            }
-         }
+              plan_courier_pricings: {
+                include: {
+                  courier: true,
+                  zone_pricing: true,
+                },
+              },
+            },
+          },
         },
       });
 

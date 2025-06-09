@@ -1,4 +1,3 @@
-
 export function filterHubs(hubs: any[], query: string) {
   if (!query.trim()) return hubs;
   const lowerQuery = query.toLowerCase();

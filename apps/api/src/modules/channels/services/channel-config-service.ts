@@ -18,7 +18,12 @@ export class ChannelConfigService {
   /**
    * Get all channel configurations with pagination and search
    */
-  async getAllChannelConfigs(page: number = 1, limit: number = 10, search?: string, is_active?: boolean) {
+  async getAllChannelConfigs(
+    page: number = 1,
+    limit: number = 10,
+    search?: string,
+    is_active?: boolean
+  ) {
     const skip = (page - 1) * limit;
 
     // Build the where clause based on search parameter and active status
@@ -159,9 +164,10 @@ export class ChannelConfigService {
 
       if (existingConfig) {
         return {
-          error: existingConfig.name.toLowerCase() === data.name.toLowerCase() 
-            ? 'Channel configuration with this name already exists'
-            : 'Channel configuration with this nickname already exists',
+          error:
+            existingConfig.name.toLowerCase() === data.name.toLowerCase()
+              ? 'Channel configuration with this name already exists'
+              : 'Channel configuration with this nickname already exists',
           status: 409,
         };
       }
@@ -214,7 +220,10 @@ export class ChannelConfigService {
   /**
    * Update a channel configuration
    */
-  async updateChannelConfig(id: string, data: Partial<ChannelConfigData>): Promise<any | ErrorResponse> {
+  async updateChannelConfig(
+    id: string,
+    data: Partial<ChannelConfigData>
+  ): Promise<any | ErrorResponse> {
     try {
       // Check if channel config exists
       const existingConfig = await this.fastify.prisma.channelConfig.findUnique({
@@ -236,8 +245,19 @@ export class ChannelConfigService {
               { id: { not: id } },
               {
                 OR: [
-                  ...(data.name ? [{ name: { equals: data.name, mode: 'insensitive' as Prisma.QueryMode } }] : []),
-                  ...(data.nickname ? [{ nickname: { equals: data.nickname, mode: 'insensitive' as Prisma.QueryMode } }] : []),
+                  ...(data.name
+                    ? [{ name: { equals: data.name, mode: 'insensitive' as Prisma.QueryMode } }]
+                    : []),
+                  ...(data.nickname
+                    ? [
+                        {
+                          nickname: {
+                            equals: data.nickname,
+                            mode: 'insensitive' as Prisma.QueryMode,
+                          },
+                        },
+                      ]
+                    : []),
                 ],
               },
             ],
@@ -246,9 +266,10 @@ export class ChannelConfigService {
 
         if (conflictConfig) {
           return {
-            error: conflictConfig.name.toLowerCase() === data.name?.toLowerCase()
-              ? 'Channel configuration with this name already exists'
-              : 'Channel configuration with this nickname already exists',
+            error:
+              conflictConfig.name.toLowerCase() === data.name?.toLowerCase()
+                ? 'Channel configuration with this name already exists'
+                : 'Channel configuration with this nickname already exists',
             status: 409,
           };
         }
@@ -327,7 +348,8 @@ export class ChannelConfigService {
     // Check if channel config has associated couriers
     if (channelConfig._count.couriers > 0) {
       return {
-        error: 'Cannot delete channel configuration. It has associated couriers. Please remove or reassign the couriers first.',
+        error:
+          'Cannot delete channel configuration. It has associated couriers. Please remove or reassign the couriers first.',
         status: 409,
       };
     }
@@ -402,4 +424,4 @@ export class ChannelConfigService {
 
     return channelConfigs;
   }
-} 
+}

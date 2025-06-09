@@ -33,12 +33,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <ProgressProvider
-      height="4px"
-      color="#5b3c37"
-      options={{ showSpinner: false }}
-      shallowRouting
-    >
+    <ProgressProvider height="4px" color="#5b3c37" options={{ showSpinner: false }} shallowRouting>
       <SessionProvider>
         <QueryClientProvider client={queryClient}>
           <TokenProvider>
@@ -52,9 +47,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
               <ModalProvider>
                 <ModalRegistry />
                 <LoadingBar />
-                <CSVUploadProvider>
-                  {children}
-                </CSVUploadProvider>
+                <CSVUploadProvider>{children}</CSVUploadProvider>
                 <Toaster position="top-right" toastOptions={{ duration: 4000 }} richColors />
               </ModalProvider>
             </NextThemesProvider>

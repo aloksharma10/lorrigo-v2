@@ -18,12 +18,7 @@ import { toast } from '@lorrigo/ui/components';
 import type { ColumnDef } from '@lorrigo/ui/components';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 
-import {
-  fetchShipments,
-  downloadManifest,
-  generateLabels,
-  cancelOrders,
-} from '@/lib/apis/order';
+import { fetchShipments, downloadManifest, generateLabels, cancelOrders } from '@/lib/apis/order';
 import { Shipment, ShipmentParams } from '@/lib/type/response-types';
 
 interface UsersTableProps {

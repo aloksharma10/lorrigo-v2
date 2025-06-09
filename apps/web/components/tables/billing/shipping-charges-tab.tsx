@@ -1,5 +1,5 @@
-"use client"
-import { Info } from "lucide-react"
+'use client';
+import { Info } from 'lucide-react';
 
 import {
   Button,
@@ -7,20 +7,22 @@ import {
   Badge,
   DataTableColumnHeader,
   type ColumnDef,
-  useSidebar
-} from "@lorrigo/ui/components";
-import { CardItems } from "@/components/card-items";
-import React from "react";
-import { useDebounce } from "@/lib/hooks/use-debounce";
-import { useQueryClient } from "@tanstack/react-query";
-import { useQuery } from "@tanstack/react-query";
-import { fetchShippingChargesReport, ShippingCharge } from "@/app/(www)/(seller)/seller/billing/billing-action";
-import { ShipmentParams } from "@/lib/type/response-types";
-
+  useSidebar,
+} from '@lorrigo/ui/components';
+import { CardItems } from '@/components/card-items';
+import React from 'react';
+import { useDebounce } from '@/lib/hooks/use-debounce';
+import { useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
+import {
+  fetchShippingChargesReport,
+  ShippingCharge,
+} from '@/app/(www)/(seller)/seller/billing/billing-action';
+import { ShipmentParams } from '@/lib/type/response-types';
 
 export default function ShippingChargesTab({ initialParams }: { initialParams: ShipmentParams }) {
-  const { state } = useSidebar()
-  const isCollapsed = state === "collapsed"
+  const { state } = useSidebar();
+  const isCollapsed = state === 'collapsed';
 
   const [pagination, setPagination] = React.useState({
     pageIndex: initialParams.page || 0,
@@ -55,15 +57,16 @@ export default function ShippingChargesTab({ initialParams }: { initialParams: S
       dateRange,
       // "shipping-charges",
     ],
-    queryFn: () => fetchShippingChargesReport({
-      page: pagination.pageIndex,
-      pageSize: pagination.pageSize,
-      sort: sorting,
-      filters,
-      globalFilter: debouncedGlobalFilter,
-      dateRange,
-      // status: "",
-    }),
+    queryFn: () =>
+      fetchShippingChargesReport({
+        page: pagination.pageIndex,
+        pageSize: pagination.pageSize,
+        sort: sorting,
+        filters,
+        globalFilter: debouncedGlobalFilter,
+        dateRange,
+        // status: "",
+      }),
     // initialData: initialData,
     placeholderData: (previousData) => previousData,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -79,235 +82,247 @@ export default function ShippingChargesTab({ initialParams }: { initialParams: S
   // Mock data for the shipping charges
   const summaryCards = [
     {
-      title: "Total Freight Charges",
-      amount: "₹ 2,759,061.47",
-      bgColor: "bg-blue-600",
+      title: 'Total Freight Charges',
+      amount: '₹ 2,759,061.47',
+      bgColor: 'bg-blue-600',
       icon: Info,
     },
     {
-      title: "Billed Freight Charges",
-      amount: "₹ 1,471,905.64",
-      bgColor: "bg-blue-600",
+      title: 'Billed Freight Charges',
+      amount: '₹ 1,471,905.64',
+      bgColor: 'bg-blue-600',
       icon: Info,
     },
     {
-      title: "Unbilled Freight Charges",
-      amount: "₹ 1,287,155.83",
-      bgColor: "bg-blue-600",
+      title: 'Unbilled Freight Charges',
+      amount: '₹ 1,287,155.83',
+      bgColor: 'bg-blue-600',
       icon: Info,
     },
     {
-      title: "Total On-Hold Amount",
-      amount: "₹ 16,181.78",
-      bgColor: "bg-blue-600",
+      title: 'Total On-Hold Amount',
+      amount: '₹ 16,181.78',
+      bgColor: 'bg-blue-600',
       icon: Info,
     },
     {
-      title: "Invoice Due Amount",
-      amount: "₹ 0.00",
-      bgColor: "bg-blue-600",
+      title: 'Invoice Due Amount',
+      amount: '₹ 0.00',
+      bgColor: 'bg-blue-600',
       icon: Info,
     },
     {
-      title: "Engage Charges",
-      amount: "₹ 0.00",
-      bgColor: "bg-blue-600",
+      title: 'Engage Charges',
+      amount: '₹ 0.00',
+      bgColor: 'bg-blue-600',
       icon: Info,
     },
-  ]
+  ];
 
   // Define the columns for the data table
   const columns: ColumnDef<ShippingCharge>[] = [
     {
-      accessorKey: "orderId",
+      accessorKey: 'orderId',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Order ID" />,
       cell: ({ row }) => {
-        const orderId = row.getValue("orderId") as string
-        return <div className="text-blue-600 font-medium">{orderId}</div>
+        const orderId = row.getValue('orderId') as string;
+        return <div className="font-medium text-blue-600">{orderId}</div>;
       },
       enableSorting: true,
       enableHiding: true,
     },
     {
-      accessorKey: "awbNumber",
+      accessorKey: 'awbNumber',
       header: ({ column }) => <DataTableColumnHeader column={column} title="AWB Number" />,
       cell: ({ row }) => {
-        const awbNumber = row.getValue("awbNumber") as string
-        return <div className="text-blue-600">{awbNumber}</div>
+        const awbNumber = row.getValue('awbNumber') as string;
+        return <div className="text-blue-600">{awbNumber}</div>;
       },
       enableSorting: true,
       enableHiding: true,
     },
     {
-      accessorKey: "courier",
+      accessorKey: 'courier',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Courier" />,
       cell: ({ row }) => {
-        const courier = row.getValue("courier") as string
-        return <div>{courier}</div>
+        const courier = row.getValue('courier') as string;
+        return <div>{courier}</div>;
       },
       enableSorting: true,
       enableHiding: true,
     },
     {
-      accessorKey: "shipmentStatus",
+      accessorKey: 'shipmentStatus',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Shipment Status" />,
       cell: ({ row }) => {
-        const status = row.getValue("shipmentStatus") as string
+        const status = row.getValue('shipmentStatus') as string;
         return (
-          <Badge variant="outline" className="text-green-600 border-green-600">
+          <Badge variant="outline" className="border-green-600 text-green-600">
             {status}
           </Badge>
-        )
+        );
       },
       enableSorting: true,
       enableHiding: true,
       filterFn: (row, id, value) => {
-        return value.includes(row.getValue(id))
+        return value.includes(row.getValue(id));
       },
     },
     {
-      accessorKey: "awbAssignedDate",
+      accessorKey: 'awbAssignedDate',
       header: ({ column }) => <DataTableColumnHeader column={column} title="AWB Assigned Date" />,
       cell: ({ row }) => {
-        const date = row.getValue("awbAssignedDate") as string
-        return <div>{date}</div>
+        const date = row.getValue('awbAssignedDate') as string;
+        return <div>{date}</div>;
       },
       enableSorting: true,
       enableHiding: true,
     },
     {
-      accessorKey: "appliedWeight",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Applied Weight Charges (₹)" />,
+      accessorKey: 'appliedWeight',
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Applied Weight Charges (₹)" />
+      ),
       cell: ({ row }) => {
-        const weight = row.getValue("appliedWeight") as number
+        const weight = row.getValue('appliedWeight') as number;
         return (
           <div className="flex items-center gap-2">
             {weight.toFixed(2)}
             <Info className="h-4 w-4 text-gray-400" />
           </div>
-        )
+        );
       },
       enableSorting: true,
       enableHiding: true,
     },
     {
-      accessorKey: "excessWeight",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Excess Weight Charges (₹)" />,
+      accessorKey: 'excessWeight',
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Excess Weight Charges (₹)" />
+      ),
       cell: ({ row }) => {
-        const excessWeight = row.getValue("excessWeight") as number
+        const excessWeight = row.getValue('excessWeight') as number;
         return (
           <div className="flex items-center gap-2">
-            {excessWeight > 0 ? excessWeight.toFixed(2) : ""}
+            {excessWeight > 0 ? excessWeight.toFixed(2) : ''}
             <Info className="h-4 w-4 text-gray-400" />
           </div>
-        )
+        );
       },
       enableSorting: true,
       enableHiding: true,
     },
     {
-      accessorKey: "onHoldAmount",
+      accessorKey: 'onHoldAmount',
       header: ({ column }) => <DataTableColumnHeader column={column} title="On Hold Amount (₹)" />,
       cell: ({ row }) => {
-        const amount = row.getValue("onHoldAmount") as number
-        return <div>{amount.toFixed(2)}</div>
+        const amount = row.getValue('onHoldAmount') as number;
+        return <div>{amount.toFixed(2)}</div>;
       },
       enableSorting: true,
       enableHiding: true,
     },
     {
-      accessorKey: "totalFreightCharges",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Total Freight Charges (₹)" />,
+      accessorKey: 'totalFreightCharges',
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Total Freight Charges (₹)" />
+      ),
       cell: ({ row }) => {
-        const charges = row.getValue("totalFreightCharges") as number
+        const charges = row.getValue('totalFreightCharges') as number;
         return (
           <div className="flex items-center gap-2">
             {charges.toFixed(2)}
             <Info className="h-4 w-4 text-gray-400" />
           </div>
-        )
+        );
       },
       enableSorting: true,
       enableHiding: true,
     },
     {
-      accessorKey: "enteredWeight",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Entered Weight & Dimensions" />,
+      accessorKey: 'enteredWeight',
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Entered Weight & Dimensions" />
+      ),
       cell: ({ row }) => {
-        const weight = row.getValue("enteredWeight") as string
-        const dimensions = row.original.enteredDimensions
+        const weight = row.getValue('enteredWeight') as string;
+        const dimensions = row.original.enteredDimensions;
         return (
           <div className="text-sm">
             <div>{weight}</div>
             <div className="text-gray-500">{dimensions}</div>
           </div>
-        )
+        );
       },
       enableSorting: false,
       enableHiding: true,
     },
     {
-      accessorKey: "chargedWeight",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Charged Weight & Dimensions" />,
+      accessorKey: 'chargedWeight',
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Charged Weight & Dimensions" />
+      ),
       cell: ({ row }) => {
-        const weight = row.getValue("chargedWeight") as string
-        const dimensions = row.original.chargedDimensions
+        const weight = row.getValue('chargedWeight') as string;
+        const dimensions = row.original.chargedDimensions;
         return (
           <div className="text-sm">
             <div>{weight}</div>
             <div className="text-gray-500">{dimensions}</div>
           </div>
-        )
+        );
       },
       enableSorting: false,
       enableHiding: true,
     },
     {
-      id: "actions",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="View Transactions Details" />,
+      id: 'actions',
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="View Transactions Details" />
+      ),
       cell: ({ row }) => {
         return (
           <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
             View
           </Button>
-        )
+        );
       },
       enableSorting: false,
       enableHiding: false,
     },
-  ]
+  ];
 
   // Define filterable columns
   const filterableColumns = [
     {
-      id: "shipmentStatus",
-      title: "Shipment Status",
+      id: 'shipmentStatus',
+      title: 'Shipment Status',
       options: [
-        { label: "Pickup Generated", value: "Pickup Generated" },
-        { label: "In Transit", value: "In Transit" },
-        { label: "Delivered", value: "Delivered" },
-        { label: "RTO", value: "RTO" },
+        { label: 'Pickup Generated', value: 'Pickup Generated' },
+        { label: 'In Transit', value: 'In Transit' },
+        { label: 'Delivered', value: 'Delivered' },
+        { label: 'RTO', value: 'RTO' },
       ],
     },
-  ]
+  ];
 
   // Define bulk actions
   const bulkActions = [
     {
-      label: "Download Manifest",
+      label: 'Download Manifest',
       action: (selectedRows: ShippingCharge[]) => {
-        console.log("Download manifest for:", selectedRows)
+        console.log('Download manifest for:', selectedRows);
       },
       isLoading: false,
     },
     {
-      label: "Generate Labels",
+      label: 'Generate Labels',
       action: (selectedRows: ShippingCharge[]) => {
-        console.log("Generate labels for:", selectedRows)
+        console.log('Generate labels for:', selectedRows);
       },
       isLoading: false,
     },
-  ]
+  ];
 
   // Handle pagination change
   const handlePaginationChange = (newPagination: { pageIndex: number; pageSize: number }) => {
@@ -335,11 +350,13 @@ export default function ShippingChargesTab({ initialParams }: { initialParams: S
   };
 
   return (
-    <div className={`${isCollapsed ? "lg:w-full lg:pr-10" : "lg:container lg:mx-auto"} transition-all duration-300 h-full flex flex-col space-y-4`}>
-      <h1 className="text-lg font-bold  capitalize lg:text-2xl">Shipping Charges</h1>
+    <div
+      className={`${isCollapsed ? 'lg:w-full lg:pr-10' : 'lg:container lg:mx-auto'} flex h-full flex-col space-y-4 transition-all duration-300`}
+    >
+      <h1 className="text-lg font-bold capitalize lg:text-2xl">Shipping Charges</h1>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-6">
         {summaryCards.map((card, index) => (
           <CardItems
             key={index}
@@ -363,16 +380,16 @@ export default function ShippingChargesTab({ initialParams }: { initialParams: S
         dateRangeFilter={true}
         searchableColumns={[
           {
-            id: "orderNumber",
-            title: "Order Number",
+            id: 'orderNumber',
+            title: 'Order Number',
           },
           {
-            id: "customerName",
-            title: "Customer Name",
+            id: 'customerName',
+            title: 'Customer Name',
           },
           {
-            id: "awbNumber",
-            title: "AWB Number",
+            id: 'awbNumber',
+            title: 'AWB Number',
           },
         ]}
         searchPlaceholder="Search for AWB, Order ID, Buyer Mobile Number, Email, SKU, Pickup ID"
@@ -389,5 +406,5 @@ export default function ShippingChargesTab({ initialParams }: { initialParams: S
         manualFiltering={true}
       />
     </div>
-  )
+  );
 }

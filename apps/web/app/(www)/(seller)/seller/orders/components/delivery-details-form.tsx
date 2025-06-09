@@ -35,7 +35,8 @@ export function DeliveryDetailsForm({ control, watch }: DeliveryDetailsFormProps
 
     control._formValues.deliveryDetails.billingMobileNumber = deliveryDetails.mobileNumber || '';
     control._formValues.deliveryDetails.billingFullName = deliveryDetails.fullName || '';
-    control._formValues.deliveryDetails.billingCompleteAddress = deliveryDetails.completeAddress || '';
+    control._formValues.deliveryDetails.billingCompleteAddress =
+      deliveryDetails.completeAddress || '';
     control._formValues.deliveryDetails.billingLandmark = deliveryDetails.landmark || '';
     control._formValues.deliveryDetails.billingPincode = deliveryDetails.pincode || '';
     control._formValues.deliveryDetails.billingCity = deliveryDetails.city || '';

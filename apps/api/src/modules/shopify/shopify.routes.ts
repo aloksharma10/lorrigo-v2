@@ -10,4 +10,4 @@ export default async function shopifyRoutes(fastify: FastifyInstance): Promise<v
 
   // Register all Shopify routes
   ShopifyController.registerRoutes(fastify);
-} 
+}

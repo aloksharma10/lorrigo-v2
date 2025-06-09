@@ -7,7 +7,7 @@ import { CreateShipmentSchema, UpdateShipmentSchema, AddTrackingEventSchema } fr
  * Service for handling shipment-related business logic
  */
 export class ShipmentService {
-  constructor(private fastify: FastifyInstance) { }
+  constructor(private fastify: FastifyInstance) {}
 
   /**
    * Generate a unique tracking number
@@ -62,7 +62,7 @@ export class ShipmentService {
           create: {
             code: `ST-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
             status: ShipmentStatus.CREATED,
-            location: "",
+            location: '',
             description: 'Shipment created and ready for pickup',
           },
         },

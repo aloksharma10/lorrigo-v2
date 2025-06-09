@@ -146,7 +146,7 @@ export class ShipmentService {
    */
   private getVendorForCourier(courier: any): BaseVendor {
     const courierCode = courier.courier_code.toUpperCase();
-    
+
     // Delhivery couriers
     if (courierCode.includes('DELHIVERY')) {
       if (courierCode.includes('0.5')) {
@@ -157,18 +157,18 @@ export class ShipmentService {
         return DelhiveryVendorFactory.getVendor('5');
       }
     }
-    
+
     // Shiprocket courier
     if (courierCode.includes('SHIPROCKET')) {
       return new ShiprocketVendor();
     }
-    
+
     // SmartShip courier
     if (courierCode.includes('SMARTSHIP')) {
       return new SmartShipVendor();
     }
-    
+
     // Default to Shiprocket if no match
     return new ShiprocketVendor();
   }
-} 
+}

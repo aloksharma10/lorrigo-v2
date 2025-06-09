@@ -1,16 +1,16 @@
-import { Skeleton } from "@lorrigo/ui/components"
+import { Skeleton } from '@lorrigo/ui/components';
 
 interface CardSkeletonProps {
-  numberOfCards?: number
+  numberOfCards?: number;
 }
 
 export function CardSkeleton({ numberOfCards = 3 }: CardSkeletonProps) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {Array.from({ length: numberOfCards }).map((_, i) => (
-        <div 
-          key={`card-${i}`} 
-          className="rounded-lg border border-border bg-card p-4 shadow-sm transition-all hover:shadow-md"
+        <div
+          key={`card-${i}`}
+          className="border-border bg-card rounded-lg border p-4 shadow-sm transition-all hover:shadow-md"
         >
           <div className="flex flex-col space-y-3">
             <div className="flex items-center justify-between">
@@ -27,5 +27,5 @@ export function CardSkeleton({ numberOfCards = 3 }: CardSkeletonProps) {
         </div>
       ))}
     </div>
-  )
+  );
 }

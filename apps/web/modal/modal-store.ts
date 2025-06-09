@@ -1,7 +1,14 @@
 import type React from 'react';
 import { create } from 'zustand';
 
-export type ModalType = 'confirm' | 'image' | 'seller:new-order' | 'seller:add-pickup-location' | 'assign-plan' | 'create-courier' | 'create-channel';
+export type ModalType =
+  | 'confirm'
+  | 'image'
+  | 'seller:new-order'
+  | 'seller:add-pickup-location'
+  | 'assign-plan'
+  | 'create-courier'
+  | 'create-channel';
 export type ModalProps = Record<string, unknown>;
 
 // export type ModalType = "wallet" | "addPickupLocation" | "payForInvoice" | "addSeller" | "addCustomer" | "schedulePickup" | "cancelOrder" | "cloneOrder" | "trackModal" | "editOrder" | "downloadLabel" | "downloadManifest" | "ndrOrder" | "ndrRTOrder" | "BulkHubUpload" | "BulkPincodeUpload" | 'downloadLabels'  | "BulkPickupUpdate" | 'cancelBulkOrder' | "downloadManifests" | "updateShopifyOrders" | "ViewUserDocsAdmin" | "ClientBillingUpload" | "adminRemittanceManage" | "cloneB2BOrder" | "editB2BOrder" | "addB2BCustomer" | "completeKyc" | 'downloadB2BLabel' | 'alert-kyc' | 'alert-payment' | "downloadB2BManifest" | "BulkShipNow" | "B2BClientBillingUpload" | "B2BShipNow" | "raiseDisputeManage" | "disputeDetails" | "DisputeUpload" | "bulkPickupSchedule" | "sellerRemittanceConfig";

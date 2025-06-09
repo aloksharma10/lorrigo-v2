@@ -44,7 +44,9 @@ export function PickupAddressSelector({ onAddressSelect, error }: PickupAddressS
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { getHubsQuery: { data, refetch } } = useHubOperations();
+  const {
+    getHubsQuery: { data, refetch },
+  } = useHubOperations();
 
   const form = useForm<AddressFormValues>({
     defaultValues: {
@@ -99,8 +101,6 @@ export function PickupAddressSelector({ onAddressSelect, error }: PickupAddressS
     console.log(values);
   }
 
-
-
   // const handleConfirm = () => {
   //   onConfirm();
   //   onClose();
@@ -126,7 +126,11 @@ export function PickupAddressSelector({ onAddressSelect, error }: PickupAddressS
                   <div className="relative">
                     <Input
                       placeholder="Search by pickup location"
-                      value={selectedAddress ? ` ${selectedAddress.name} | ${selectedAddress.address.address}` : searchQuery}
+                      value={
+                        selectedAddress
+                          ? ` ${selectedAddress.name} | ${selectedAddress.address.address}`
+                          : searchQuery
+                      }
                       onChange={(e) => {
                         setSearchQuery(e.target.value);
                         field.onChange(e.target.value);
@@ -173,12 +177,12 @@ export function PickupAddressSelector({ onAddressSelect, error }: PickupAddressS
                 {addresses.map((address) => (
                   <li
                     key={address.id}
-                    className="hover:bg-muted cursor-pointer px-4 py-3 border-b"
+                    className="hover:bg-muted cursor-pointer border-b px-4 py-3"
                     onClick={() => handleAddressSelect(address)}
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <span className="font-semibold text-base ">{address.name}</span>
+                        <span className="text-base font-semibold">{address.name}</span>
                         <span className="text-muted-foreground"> | </span>
                         <span className="text-xs">{address.address.address}</span>
                       </div>

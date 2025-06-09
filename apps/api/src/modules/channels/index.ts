@@ -21,31 +21,32 @@ export default async function channelRoutes(fastify: FastifyInstance) {
     schema: {
       tags: ['Channel Configuration'],
       summary: 'Get all channel configurations',
-      description: 'Retrieve all channel configurations with pagination, search, and filtering options',
+      description:
+        'Retrieve all channel configurations with pagination, search, and filtering options',
       security: [{ bearerAuth: [] }],
       querystring: {
         type: 'object',
         properties: {
-          page: { 
-            type: 'integer', 
-            minimum: 1, 
+          page: {
+            type: 'integer',
+            minimum: 1,
             default: 1,
-            description: 'Page number for pagination'
+            description: 'Page number for pagination',
           },
-          limit: { 
-            type: 'integer', 
-            minimum: 1, 
-            maximum: 100, 
+          limit: {
+            type: 'integer',
+            minimum: 1,
+            maximum: 100,
             default: 10,
-            description: 'Number of items per page'
+            description: 'Number of items per page',
           },
-          search: { 
+          search: {
             type: 'string',
-            description: 'Search term to filter by name or nickname'
+            description: 'Search term to filter by name or nickname',
           },
-          is_active: { 
+          is_active: {
             type: 'boolean',
-            description: 'Filter by active status'
+            description: 'Filter by active status',
           },
         },
       },
@@ -139,9 +140,9 @@ export default async function channelRoutes(fastify: FastifyInstance) {
         type: 'object',
         required: ['id'],
         properties: {
-          id: { 
+          id: {
             type: 'string',
-            description: 'Channel configuration ID'
+            description: 'Channel configuration ID',
           },
         },
       },
@@ -195,9 +196,9 @@ export default async function channelRoutes(fastify: FastifyInstance) {
         type: 'object',
         required: ['identifier'],
         properties: {
-          identifier: { 
+          identifier: {
             type: 'string',
-            description: 'Channel configuration name or nickname'
+            description: 'Channel configuration name or nickname',
           },
         },
       },
@@ -228,7 +229,8 @@ export default async function channelRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    handler: (request, reply) => channelConfigController.getChannelConfigByIdentifier(request, reply),
+    handler: (request, reply) =>
+      channelConfigController.getChannelConfigByIdentifier(request, reply),
   });
 
   // Create a new channel configuration
@@ -243,24 +245,24 @@ export default async function channelRoutes(fastify: FastifyInstance) {
         type: 'object',
         required: ['name', 'nickname'],
         properties: {
-          name: { 
-            type: 'string', 
-            minLength: 2, 
+          name: {
+            type: 'string',
+            minLength: 2,
             maxLength: 100,
             pattern: '^[a-zA-Z\\s]+$',
-            description: 'Channel configuration name (letters and spaces only)'
+            description: 'Channel configuration name (letters and spaces only)',
           },
-          nickname: { 
-            type: 'string', 
-            minLength: 2, 
+          nickname: {
+            type: 'string',
+            minLength: 2,
             maxLength: 10,
             pattern: '^[A-Z]+$',
-            description: 'Channel configuration nickname (uppercase letters only)'
+            description: 'Channel configuration nickname (uppercase letters only)',
           },
-          is_active: { 
-            type: 'boolean', 
+          is_active: {
+            type: 'boolean',
             default: true,
-            description: 'Whether the channel configuration is active'
+            description: 'Whether the channel configuration is active',
           },
         },
         additionalProperties: false,
@@ -294,32 +296,32 @@ export default async function channelRoutes(fastify: FastifyInstance) {
         type: 'object',
         required: ['id'],
         properties: {
-          id: { 
+          id: {
             type: 'string',
-            description: 'Channel configuration ID'
+            description: 'Channel configuration ID',
           },
         },
       },
       body: {
         type: 'object',
         properties: {
-          name: { 
-            type: 'string', 
-            minLength: 2, 
+          name: {
+            type: 'string',
+            minLength: 2,
             maxLength: 100,
             pattern: '^[a-zA-Z\\s]+$',
-            description: 'Channel configuration name (letters and spaces only)'
+            description: 'Channel configuration name (letters and spaces only)',
           },
-          nickname: { 
-            type: 'string', 
-            minLength: 2, 
+          nickname: {
+            type: 'string',
+            minLength: 2,
             maxLength: 10,
             pattern: '^[A-Z]+$',
-            description: 'Channel configuration nickname (uppercase letters only)'
+            description: 'Channel configuration nickname (uppercase letters only)',
           },
-          is_active: { 
+          is_active: {
             type: 'boolean',
-            description: 'Whether the channel configuration is active'
+            description: 'Whether the channel configuration is active',
           },
         },
         additionalProperties: false,
@@ -354,9 +356,9 @@ export default async function channelRoutes(fastify: FastifyInstance) {
         type: 'object',
         required: ['id'],
         properties: {
-          id: { 
+          id: {
             type: 'string',
-            description: 'Channel configuration ID'
+            description: 'Channel configuration ID',
           },
         },
       },
@@ -389,9 +391,9 @@ export default async function channelRoutes(fastify: FastifyInstance) {
         type: 'object',
         required: ['id'],
         properties: {
-          id: { 
+          id: {
             type: 'string',
-            description: 'Channel configuration ID'
+            description: 'Channel configuration ID',
           },
         },
       },

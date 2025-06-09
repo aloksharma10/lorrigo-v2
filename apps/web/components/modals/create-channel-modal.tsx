@@ -1,49 +1,49 @@
-"use client"
+'use client';
 
-import type React from "react"
+import type React from 'react';
 
-import { toast, Button, Input, Label } from "@lorrigo/ui/components"
-import { X, Loader2 } from "lucide-react"
-import { useState } from "react"
-import { useChannelOperations } from "@/lib/apis/channels"
+import { toast, Button, Input, Label } from '@lorrigo/ui/components';
+import { X, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { useChannelOperations } from '@/lib/apis/channels';
 
 interface CreateChannelModalProps {
-  onClose: () => void
+  onClose: () => void;
 }
 
 export function CreateChannelModal({ onClose }: CreateChannelModalProps) {
-  const { createChannel } = useChannelOperations()
+  const { createChannel } = useChannelOperations();
 
   const [formData, setFormData] = useState({
-    name: "",
-    nickname: "",
-  })
+    name: '',
+    nickname: '',
+  });
 
-  const isCreating = createChannel.isPending
+  const isCreating = createChannel.isPending;
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!formData.name.trim() || !formData.nickname.trim()) {
-      toast.error("Please fill in all required fields")
-      return
+      toast.error('Please fill in all required fields');
+      return;
     }
 
     try {
       await createChannel.mutateAsync({
         name: formData.name.trim(),
         nickname: formData.nickname.trim(),
-      })
-      toast.success("Channel created successfully")
-      onClose()
+      });
+      toast.success('Channel created successfully');
+      onClose();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Failed to create channel")
+      toast.error(error?.response?.data?.message || 'Failed to create channel');
     }
-  }
+  };
 
   return (
     <div className="flex flex-col p-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="mb-4 flex items-center justify-between">
         <h2 className="text-xl font-semibold">Create New Channel</h2>
         <button onClick={onClose} className="rounded-full p-1 hover:bg-neutral-100">
           <X className="h-5 w-5 text-neutral-500" />
@@ -79,18 +79,21 @@ export function CreateChannelModal({ onClose }: CreateChannelModalProps) {
           <Button type="button" variant="outline" onClick={onClose} disabled={isCreating}>
             Cancel
           </Button>
-          <Button type="submit" disabled={isCreating || !formData.name.trim() || !formData.nickname.trim()}>
+          <Button
+            type="submit"
+            disabled={isCreating || !formData.name.trim() || !formData.nickname.trim()}
+          >
             {isCreating ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Creating...
               </>
             ) : (
-              "Create Channel"
+              'Create Channel'
             )}
           </Button>
         </div>
       </form>
     </div>
-  )
+  );
 }

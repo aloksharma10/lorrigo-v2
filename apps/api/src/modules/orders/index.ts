@@ -214,7 +214,7 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
           'deliveryDetails',
           'sellerDetails',
           'packageDetails',
-          'productDetails'
+          'productDetails',
         ],
         properties: {
           pickupAddressId: { type: 'string' },

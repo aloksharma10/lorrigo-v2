@@ -1,4 +1,4 @@
-import { Skeleton } from "@lorrigo/ui/components"
+import { Skeleton } from '@lorrigo/ui/components';
 
 export function OrdersSkeleton() {
   return (
@@ -36,7 +36,7 @@ export function OrdersSkeleton() {
       </div>
 
       {/* Table header */}
-      <div className="grid grid-cols-12 gap-4 border-b border-border pb-2">
+      <div className="border-border grid grid-cols-12 gap-4 border-b pb-2">
         <Skeleton className="col-span-2 h-4 w-full" />
         <Skeleton className="col-span-2 h-4 w-full" />
         <Skeleton className="col-span-1 h-4 w-full" />
@@ -48,7 +48,7 @@ export function OrdersSkeleton() {
 
       {/* Table rows */}
       {Array.from({ length: 5 }).map((_, i) => (
-        <div key={`row-${i}`} className="group grid grid-cols-12 gap-4 border-b border-border py-4">
+        <div key={`row-${i}`} className="border-border group grid grid-cols-12 gap-4 border-b py-4">
           <div className="col-span-2 flex flex-col gap-2">
             <Skeleton className="h-4 w-24" />
             <Skeleton className="h-4 w-32" />
@@ -82,5 +82,5 @@ export function OrdersSkeleton() {
         </div>
       ))}
     </div>
-  )
+  );
 }

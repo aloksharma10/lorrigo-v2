@@ -4,7 +4,7 @@ import { CreatePlanInput, UpdatePlanInput, RateCalculationParams } from '../serv
 
 // Define proper input types based on schema
 export class PlanController {
-  constructor(private planService: PlanService) { }
+  constructor(private planService: PlanService) {}
 
   async getAllPlans(request: FastifyRequest, reply: FastifyReply) {
     try {
@@ -147,7 +147,9 @@ export class PlanController {
       return reply.code(200).send({ rates });
     } catch (error) {
       request.log.error(error);
-      return reply.code(500).send({ error: `Failed to calculate rates: ${(error as Error).message}` });
+      return reply
+        .code(500)
+        .send({ error: `Failed to calculate rates: ${(error as Error).message}` });
     }
   }
-} 
+}

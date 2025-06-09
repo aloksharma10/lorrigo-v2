@@ -1,4 +1,4 @@
-import { hasNumbers, hasSpecialChars } from "./has";
+import { hasNumbers, hasSpecialChars } from './has';
 
 export const formatAddress = (address: string): string => {
   // Add number prefix if none exists

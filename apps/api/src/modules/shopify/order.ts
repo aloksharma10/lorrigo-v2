@@ -67,17 +67,17 @@ export class ShopifyVendor extends BaseVendor {
   private redirectUri: string;
   private accessToken: string | null;
   private userId: string;
-  
+
   constructor(shop: string, userId: string, accessToken?: string) {
     const shopifyConfig = APP_CONFIG.VENDOR.SHOPIFY;
-    
+
     super(
       'Shopify',
       `https://${shop}`,
       shopifyConfig.API_KEY,
       `${CACHE_KEYS.SHOPIFY_TOKEN}:${shop}:${userId}`
     );
-    
+
     this.shop = shop;
     this.apiKey = shopifyConfig.API_KEY;
     this.apiSecret = shopifyConfig.API_SECRET;
@@ -87,7 +87,7 @@ export class ShopifyVendor extends BaseVendor {
     this.accessToken = accessToken || null;
     this.userId = userId;
   }
-  
+
   /**
    * Generate OAuth URL for Shopify authentication
    * @returns Authentication URL
@@ -100,10 +100,10 @@ export class ShopifyVendor extends BaseVendor {
       state: crypto.randomBytes(16).toString('hex'),
       'grant_options[]': 'per-user',
     };
-    
+
     return `https://${this.shop}${APIs.SHOPIFY_OAUTH}?${querystring.stringify(params)}`;
   }
-  
+
   /**
    * Exchange authorization code for access token
    * @param code OAuth authorization code
@@ -111,16 +111,12 @@ export class ShopifyVendor extends BaseVendor {
    */
   public async exchangeCodeForToken(code: string): Promise<ShopifyConnection | null> {
     try {
-      const response = await this.makeRequest(
-        APIs.SHOPIFY_TOKEN,
-        'POST',
-        {
-          client_id: this.apiKey,
-          client_secret: this.apiSecret,
-          code,
-        }
-      );
-      
+      const response = await this.makeRequest(APIs.SHOPIFY_TOKEN, 'POST', {
+        client_id: this.apiKey,
+        client_secret: this.apiSecret,
+        code,
+      });
+
       if (response.data && response.data.access_token) {
         const connection: ShopifyConnection = {
           shop: this.shop,
@@ -128,16 +124,16 @@ export class ShopifyVendor extends BaseVendor {
           scope: response.data.scope,
           user_id: this.userId,
         };
-        
+
         // Set the access token for future requests
         this.accessToken = response.data.access_token;
-        
+
         // Cache the token
         await this.cacheToken(response.data.access_token);
-        
+
         return connection;
       }
-      
+
       console.error('Failed to exchange code for token:', response.data);
       return null;
     } catch (error) {
@@ -145,7 +141,7 @@ export class ShopifyVendor extends BaseVendor {
       return null;
     }
   }
-  
+
   /**
    * Fetch orders from Shopify
    * @param params Query parameters for fetching orders
@@ -154,14 +150,14 @@ export class ShopifyVendor extends BaseVendor {
   public async getOrders(params: Record<string, string | number> = {}): Promise<ShopifyOrder[]> {
     try {
       const token = await this.getAuthToken();
-      
+
       if (!token) {
         console.error('Failed to get Shopify authentication token');
         return [];
       }
-      
+
       const endpoint = APIs.SHOPIFY_ORDERS.replace('{version}', this.apiVersion);
-      
+
       const response = await this.makeRequest(
         endpoint + (Object.keys(params).length ? `?${querystring.stringify(params as any)}` : ''),
         'GET',
@@ -170,11 +166,11 @@ export class ShopifyVendor extends BaseVendor {
           'X-Shopify-Access-Token': token,
         }
       );
-      
+
       if (response.data && response.data.orders) {
         return response.data.orders;
       }
-      
+
       console.error('Failed to fetch orders:', response.data);
       return [];
     } catch (error) {
@@ -182,7 +178,7 @@ export class ShopifyVendor extends BaseVendor {
       return [];
     }
   }
-  
+
   /**
    * Fetch a specific order from Shopify
    * @param orderId Shopify order ID
@@ -191,29 +187,25 @@ export class ShopifyVendor extends BaseVendor {
   public async getOrder(orderId: number): Promise<ShopifyOrder | null> {
     try {
       const token = await this.getAuthToken();
-      
+
       if (!token) {
         console.error('Failed to get Shopify authentication token');
         return null;
       }
-      
-      const endpoint = APIs.SHOPIFY_ORDER
-        .replace('{version}', this.apiVersion)
-        .replace('{id}', orderId.toString());
-      
-      const response = await this.makeRequest(
-        endpoint,
-        'GET',
-        undefined,
-        {
-          'X-Shopify-Access-Token': token,
-        }
+
+      const endpoint = APIs.SHOPIFY_ORDER.replace('{version}', this.apiVersion).replace(
+        '{id}',
+        orderId.toString()
       );
-      
+
+      const response = await this.makeRequest(endpoint, 'GET', undefined, {
+        'X-Shopify-Access-Token': token,
+      });
+
       if (response.data && response.data.order) {
         return response.data.order;
       }
-      
+
       console.error('Failed to fetch order:', response.data);
       return null;
     } catch (error) {
@@ -221,7 +213,7 @@ export class ShopifyVendor extends BaseVendor {
       return null;
     }
   }
-  
+
   /**
    * Cache token in Redis
    * @param token Access token to cache
@@ -233,7 +225,7 @@ export class ShopifyVendor extends BaseVendor {
       console.error('Error caching token:', error);
     }
   }
-  
+
   /**
    * Generate authentication token (required by BaseVendor)
    * @returns Promise resolving to cached token
@@ -243,7 +235,7 @@ export class ShopifyVendor extends BaseVendor {
     // Tokens are obtained through OAuth flow
     return this.accessToken;
   }
-  
+
   /**
    * Register hub (required by BaseVendor but not applicable for Shopify)
    * @returns Promise resolving to registration result
@@ -256,7 +248,7 @@ export class ShopifyVendor extends BaseVendor {
       data: null,
     };
   }
-  
+
   /**
    * Create shipment (required by BaseVendor but not applicable for Shopify)
    * @returns Promise resolving to shipment result
@@ -282,7 +274,7 @@ export async function getShopifyOrders(
   params: Record<string, string | number> = {}
 ): Promise<ShopifyOrder[]> {
   const { shop, user_id, access_token } = shopifyConnection;
-  
+
   const shopifyVendor = new ShopifyVendor(shop, user_id, access_token);
   return shopifyVendor.getOrders(params);
 }
@@ -298,7 +290,7 @@ export async function getShopifyOrder(
   orderId: number
 ): Promise<ShopifyOrder | null> {
   const { shop, user_id, access_token } = shopifyConnection;
-  
+
   const shopifyVendor = new ShopifyVendor(shop, user_id, access_token);
   return shopifyVendor.getOrder(orderId);
 }

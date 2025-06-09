@@ -61,34 +61,36 @@ export function PaymentMethodSelector({ control, watch }: PaymentMethodSelectorP
           </FormItem>
         )}
       />
-      {watch('paymentMethod.paymentMethod') === 'cod' && <div className="flex flex-col gap-2">
-        <FormField
-          control={control}
-          name="amountToCollect"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Amount to Collect</FormLabel>
-              <div className="mt-1 flex items-center">
-                <span className="bg-muted text-muted-foreground flex h-9 w-10 items-center justify-center rounded-l-md border border-r-0">
-                  ₹
-                </span>
-                <FormControl>
-                  <Input
-                    id="amountToCollect"
-                    {...field}
-                    onChange={(e) => {
-                      const value = e.target.value === '' ? 0 : Number.parseFloat(e.target.value);
-                      field.onChange(value);
-                    }}
-                    className="rounded-l-none"
-                  />
-                </FormControl>
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>}
+      {watch('paymentMethod.paymentMethod') === 'cod' && (
+        <div className="flex flex-col gap-2">
+          <FormField
+            control={control}
+            name="amountToCollect"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Amount to Collect</FormLabel>
+                <div className="mt-1 flex items-center">
+                  <span className="bg-muted text-muted-foreground flex h-9 w-10 items-center justify-center rounded-l-md border border-r-0">
+                    ₹
+                  </span>
+                  <FormControl>
+                    <Input
+                      id="amountToCollect"
+                      {...field}
+                      onChange={(e) => {
+                        const value = e.target.value === '' ? 0 : Number.parseFloat(e.target.value);
+                        field.onChange(value);
+                      }}
+                      className="rounded-l-none"
+                    />
+                  </FormControl>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -95,4 +95,4 @@ export abstract class BaseVendor {
   public abstract registerHub(hubData: any): Promise<VendorRegistrationResult>;
 
   public abstract createShipment(shipmentData: any): Promise<VendorShipmentResult>;
-} 
+}

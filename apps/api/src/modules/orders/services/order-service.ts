@@ -2,14 +2,22 @@ import { PlanService } from '@/modules/plan/services/plan.service';
 import { getPincodeDetails } from '@/utils/pincode';
 import { Prisma, prisma, ShipmentStatus } from '@lorrigo/db';
 import { Channel, PaymentMethod } from '@lorrigo/db';
-import { generateId, getFinancialYear, OrderFormValues, UpdateOrderFormValues } from '@lorrigo/utils';
+import {
+  generateId,
+  getFinancialYear,
+  OrderFormValues,
+  UpdateOrderFormValues,
+} from '@lorrigo/utils';
 import { FastifyInstance } from 'fastify';
 
 /**
  * Order Service handles business logic related to orders
  */
 export class OrderService {
-  constructor(private fastify: FastifyInstance, private planService: PlanService) { }
+  constructor(
+    private fastify: FastifyInstance,
+    private planService: PlanService
+  ) {}
 
   /**
    * Get all orders with pagination and filters
@@ -211,19 +219,22 @@ export class OrderService {
       return { rates: JSON.parse(cachedRates), order };
     }
 
-    const rates = await this.planService.calculateRates({
-      pickupPincode: order?.hub?.address?.pincode || '',
-      deliveryPincode: order?.customer?.addresses[0]?.pincode || '',
-      weight: order?.package?.dead_weight || 0,
-      weightUnit: 'kg',
-      boxLength: order?.package?.length || 0,
-      boxWidth: order?.package?.breadth || 0,
-      boxHeight: order?.package?.height || 0,
-      sizeUnit: 'cm',
-      paymentType: 0,
-      collectableAmount: order?.amount_to_collect || 0,
-      isReversedOrder: false,
-    }, userId);
+    const rates = await this.planService.calculateRates(
+      {
+        pickupPincode: order?.hub?.address?.pincode || '',
+        deliveryPincode: order?.customer?.addresses[0]?.pincode || '',
+        weight: order?.package?.dead_weight || 0,
+        weightUnit: 'kg',
+        boxLength: order?.package?.length || 0,
+        boxWidth: order?.package?.breadth || 0,
+        boxHeight: order?.package?.height || 0,
+        sizeUnit: 'cm',
+        paymentType: 0,
+        collectableAmount: order?.amount_to_collect || 0,
+        isReversedOrder: false,
+      },
+      userId
+    );
     await this.fastify.redis.set(key, JSON.stringify(rates), 'EX', 60 * 60 * 24);
 
     return { rates, order };
@@ -235,229 +246,239 @@ export class OrderService {
   async createOrder(data: OrderFormValues, userId: string, userName: string) {
     try {
       // Create order transaction with schema-aligned optimizations
-      return await this.fastify.prisma.$transaction(async (tx) => {
-        const orderNumber = data.orderId;
+      return await this.fastify.prisma.$transaction(
+        async (tx) => {
+          const orderNumber = data.orderId;
 
-        // OPTIMIZATION 1: Batch all validation and lookup queries
-        const [existingOrder, orderCount, lastOrder, existingCustomer] = await Promise.all([
-          // Check order number uniqueness for this user
-          tx.order.findUnique({
-            where: {
-              order_number_user_id: {
-                order_number: orderNumber,
-                user_id: userId
-              }
-            },
-            select: { id: true }
-          }),
+          // OPTIMIZATION 1: Batch all validation and lookup queries
+          const [existingOrder, orderCount, lastOrder, existingCustomer] = await Promise.all([
+            // Check order number uniqueness for this user
+            tx.order.findUnique({
+              where: {
+                order_number_user_id: {
+                  order_number: orderNumber,
+                  user_id: userId,
+                },
+              },
+              select: { id: true },
+            }),
 
-          // Get order count for current year
-          tx.order.count({
-            where: {
-              user_id: userId,
-              created_at: { gte: new Date(new Date().getFullYear(), 0, 1) }
-            }
-          }),
-
-          // Get last order timestamp
-          tx.order.findFirst({
-            where: { user_id: userId },
-            orderBy: { created_at: 'desc' },
-            select: { created_at: true }
-          }),
-
-          // Check existing customer
-          tx.customer.findUnique({
-            where: { phone: data.deliveryDetails.mobileNumber },
-            select: { id: true }
-          })
-        ]);
-
-        if (existingOrder) {
-          throw new Error('Order Id already exists. Please try with another Order Id.');
-        }
-
-        // OPTIMIZATION 2: Pre-calculate all values
-        const volumetricWeight = Math.floor(
-          (Number(data.packageDetails.length) *
-            Number(data.packageDetails.breadth) *
-            Number(data.packageDetails.height)) / 5000
-        );
-
-        const deadWeight = Number(data.packageDetails.deadWeight);
-        const applicableWeight = Math.max(deadWeight, volumetricWeight);
-        const financialYear = getFinancialYear(lastOrder?.created_at || new Date());
-
-        // Generate order code
-        const orderCode = generateId({
-          tableName: 'order',
-          entityName: userName,
-          lastUsedFinancialYear: financialYear,
-          lastSequenceNumber: orderCount,
-        }).id;
-
-        // OPTIMIZATION 3: Batch external API calls and independent DB operations
-        const [
-          sellerPincode,
-          customerPincode,
-          package_record,
-          billing_address
-        ] = await Promise.all([
-          // External API calls (biggest bottleneck)
-          getPincodeDetails(Number(data.sellerDetails.pincode || "000000")),
-          getPincodeDetails(Number(
-            data.deliveryDetails.billingIsSameAsDelivery
-              ? data.deliveryDetails.billingPincode
-              : data.deliveryDetails.pincode
-          )),
-
-          // Create package
-          tx.package.create({
-            data: {
-              weight: deadWeight,
-              dead_weight: deadWeight,
-              volumetric_weight: volumetricWeight,
-              length: Number(data.packageDetails.length),
-              breadth: Number(data.packageDetails.breadth),
-              height: Number(data.packageDetails.height),
-            },
-            select: { id: true }
-          }),
-
-          // Create billing address (seller address)
-          tx.address.create({
-            data: {
-              name: data.sellerDetails.sellerName,
-              country: data.sellerDetails.isAddressAvailable ? data.sellerDetails.country : 'India',
-              address: data.sellerDetails.address || '',
-              city: '', // Will update after pincode lookup
-              state: '', // Will update after pincode lookup  
-              pincode: '', // Will update after pincode lookup
-            },
-            select: { id: true }
-          })
-        ]);
-
-        // OPTIMIZATION 4: Handle customer creation/retrieval and address updates in parallel
-        const [customer, updated_billing_address] = await Promise.all([
-          // Handle customer
-          existingCustomer || tx.customer.create({
-            data: {
-              name: data.deliveryDetails.fullName,
-              email: data.deliveryDetails.email,
-              phone: data.deliveryDetails.mobileNumber,
-            },
-            select: { id: true }
-          }),
-
-          // Update billing address with pincode data
-          tx.address.update({
-            where: { id: billing_address.id },
-            data: {
-              city: sellerPincode?.city || '',
-              state: sellerPincode?.state || '',
-              pincode: sellerPincode?.pincode || '',
-            },
-            select: { id: true }
-          })
-        ]);
-
-        // OPTIMIZATION 5: Create order channel config first (required for order)
-        const orderChannelConfig = await tx.orderChannelConfig.create({
-          data: {
-            channel: (data.orderChannel?.toUpperCase() as Channel) || 'CUSTOM',
-            channel_order_id: orderNumber,
-          },
-          select: { id: true }
-        });
-
-        // OPTIMIZATION 6: Create order with all required foreign keys
-        const order = await tx.order.create({
-          data: {
-            code: orderCode,
-            order_number: orderNumber,
-            type: 'B2C', // Default from schema
-            status: 'NEW',
-            shipment: {
-              create: {
-                code: orderCode,
+            // Get order count for current year
+            tx.order.count({
+              where: {
                 user_id: userId,
-                tracking_events: {
-                  create: [{
-                    description: 'Order Created',
-                    status: 'NEW',
-                    timestamp: new Date(),
-                    code: 'NEW',
-                  }]
-                }
-              }
-            },
-            payment_mode: (data.paymentMethod.paymentMethod?.toUpperCase() as PaymentMethod) || 'COD',
-            order_channel_config_id: orderChannelConfig.id,
-            total_amount: data.productDetails.taxableValue,
-            amount_to_collect: data.amountToCollect,
-            applicable_weight: applicableWeight,
-            ewaybill: data.ewaybill,
-            user_id: userId,
-            customer_id: customer.id,
-            package_id: package_record.id,
-            billing_address_id: updated_billing_address.id,
-            hub_id: data.pickupAddressId,
-          },
-          select: {
-            id: true,
-            code: true,
-            order_number: true,
-            status: true,
-            created_at: true
+                created_at: { gte: new Date(new Date().getFullYear(), 0, 1) },
+              },
+            }),
+
+            // Get last order timestamp
+            tx.order.findFirst({
+              where: { user_id: userId },
+              orderBy: { created_at: 'desc' },
+              select: { created_at: true },
+            }),
+
+            // Check existing customer
+            tx.customer.findUnique({
+              where: { phone: data.deliveryDetails.mobileNumber },
+              select: { id: true },
+            }),
+          ]);
+
+          if (existingOrder) {
+            throw new Error('Order Id already exists. Please try with another Order Id.');
           }
-        });
 
-        // OPTIMIZATION 7: Create order items in batch (final step)
-        const orderItems = data.productDetails.products.map((item, idx) => ({
-          code: `${orderCode}-${generateId({
-            tableName: 'order_item',
-            entityName: item.name,
+          // OPTIMIZATION 2: Pre-calculate all values
+          const volumetricWeight = Math.floor(
+            (Number(data.packageDetails.length) *
+              Number(data.packageDetails.breadth) *
+              Number(data.packageDetails.height)) /
+              5000
+          );
+
+          const deadWeight = Number(data.packageDetails.deadWeight);
+          const applicableWeight = Math.max(deadWeight, volumetricWeight);
+          const financialYear = getFinancialYear(lastOrder?.created_at || new Date());
+
+          // Generate order code
+          const orderCode = generateId({
+            tableName: 'order',
+            entityName: userName,
             lastUsedFinancialYear: financialYear,
-            lastSequenceNumber: idx,
-          }).id}`,
-          name: item.name,
-          sku: item.sku,
-          units: item.quantity,
-          selling_price: item.price,
-          tax: item.taxRate,
-          hsn: item.hsnCode,
-          order_id: order.id,
-        }));
+            lastSequenceNumber: orderCount,
+          }).id;
 
-        await tx.orderItem.createMany({
-          data: orderItems,
-          skipDuplicates: true
-        });
+          // OPTIMIZATION 3: Batch external API calls and independent DB operations
+          const [sellerPincode, customerPincode, package_record, billing_address] =
+            await Promise.all([
+              // External API calls (biggest bottleneck)
+              getPincodeDetails(Number(data.sellerDetails.pincode || '000000')),
+              getPincodeDetails(
+                Number(
+                  data.deliveryDetails.billingIsSameAsDelivery
+                    ? data.deliveryDetails.billingPincode
+                    : data.deliveryDetails.pincode
+                )
+              ),
 
-        // OPTIMIZATION 8: Create customer delivery address only if customer was just created
-        if (!existingCustomer) {
-          await tx.address.create({
+              // Create package
+              tx.package.create({
+                data: {
+                  weight: deadWeight,
+                  dead_weight: deadWeight,
+                  volumetric_weight: volumetricWeight,
+                  length: Number(data.packageDetails.length),
+                  breadth: Number(data.packageDetails.breadth),
+                  height: Number(data.packageDetails.height),
+                },
+                select: { id: true },
+              }),
+
+              // Create billing address (seller address)
+              tx.address.create({
+                data: {
+                  name: data.sellerDetails.sellerName,
+                  country: data.sellerDetails.isAddressAvailable
+                    ? data.sellerDetails.country
+                    : 'India',
+                  address: data.sellerDetails.address || '',
+                  city: '', // Will update after pincode lookup
+                  state: '', // Will update after pincode lookup
+                  pincode: '', // Will update after pincode lookup
+                },
+                select: { id: true },
+              }),
+            ]);
+
+          // OPTIMIZATION 4: Handle customer creation/retrieval and address updates in parallel
+          const [customer, updated_billing_address] = await Promise.all([
+            // Handle customer
+            existingCustomer ||
+              tx.customer.create({
+                data: {
+                  name: data.deliveryDetails.fullName,
+                  email: data.deliveryDetails.email,
+                  phone: data.deliveryDetails.mobileNumber,
+                },
+                select: { id: true },
+              }),
+
+            // Update billing address with pincode data
+            tx.address.update({
+              where: { id: billing_address.id },
+              data: {
+                city: sellerPincode?.city || '',
+                state: sellerPincode?.state || '',
+                pincode: sellerPincode?.pincode || '',
+              },
+              select: { id: true },
+            }),
+          ]);
+
+          // OPTIMIZATION 5: Create order channel config first (required for order)
+          const orderChannelConfig = await tx.orderChannelConfig.create({
             data: {
-              name: data.deliveryDetails.fullName,
-              address: data.deliveryDetails.billingIsSameAsDelivery
-                ? data.deliveryDetails.completeAddress
-                : (data.deliveryDetails.billingCompleteAddress || ""),
-              city: customerPincode?.city || "",
-              state: customerPincode?.state || "",
-              pincode: customerPincode?.pincode || "",
-              customer_id: customer.id
-            }
+              channel: (data.orderChannel?.toUpperCase() as Channel) || 'CUSTOM',
+              channel_order_id: orderNumber,
+            },
+            select: { id: true },
           });
-        }
 
-        return order;
-      }, {
-        // OPTIMIZATION 9: Configure transaction settings for better performance
-        maxWait: 5000, // 5 seconds max wait
-        timeout: 10000, // 10 seconds timeout
-        isolationLevel: 'ReadCommitted' // Less strict isolation for better performance
-      });
+          // OPTIMIZATION 6: Create order with all required foreign keys
+          const order = await tx.order.create({
+            data: {
+              code: orderCode,
+              order_number: orderNumber,
+              type: 'B2C', // Default from schema
+              status: 'NEW',
+              shipment: {
+                create: {
+                  code: orderCode,
+                  user_id: userId,
+                  tracking_events: {
+                    create: [
+                      {
+                        description: 'Order Created',
+                        status: 'NEW',
+                        timestamp: new Date(),
+                        code: 'NEW',
+                      },
+                    ],
+                  },
+                },
+              },
+              payment_mode:
+                (data.paymentMethod.paymentMethod?.toUpperCase() as PaymentMethod) || 'COD',
+              order_channel_config_id: orderChannelConfig.id,
+              total_amount: data.productDetails.taxableValue,
+              amount_to_collect: data.amountToCollect,
+              applicable_weight: applicableWeight,
+              ewaybill: data.ewaybill,
+              user_id: userId,
+              customer_id: customer.id,
+              package_id: package_record.id,
+              billing_address_id: updated_billing_address.id,
+              hub_id: data.pickupAddressId,
+            },
+            select: {
+              id: true,
+              code: true,
+              order_number: true,
+              status: true,
+              created_at: true,
+            },
+          });
+
+          // OPTIMIZATION 7: Create order items in batch (final step)
+          const orderItems = data.productDetails.products.map((item, idx) => ({
+            code: `${orderCode}-${
+              generateId({
+                tableName: 'order_item',
+                entityName: item.name,
+                lastUsedFinancialYear: financialYear,
+                lastSequenceNumber: idx,
+              }).id
+            }`,
+            name: item.name,
+            sku: item.sku,
+            units: item.quantity,
+            selling_price: item.price,
+            tax: item.taxRate,
+            hsn: item.hsnCode,
+            order_id: order.id,
+          }));
+
+          await tx.orderItem.createMany({
+            data: orderItems,
+            skipDuplicates: true,
+          });
+
+          // OPTIMIZATION 8: Create customer delivery address only if customer was just created
+          if (!existingCustomer) {
+            await tx.address.create({
+              data: {
+                name: data.deliveryDetails.fullName,
+                address: data.deliveryDetails.billingIsSameAsDelivery
+                  ? data.deliveryDetails.completeAddress
+                  : data.deliveryDetails.billingCompleteAddress || '',
+                city: customerPincode?.city || '',
+                state: customerPincode?.state || '',
+                pincode: customerPincode?.pincode || '',
+                customer_id: customer.id,
+              },
+            });
+          }
+
+          return order;
+        },
+        {
+          // OPTIMIZATION 9: Configure transaction settings for better performance
+          maxWait: 5000, // 5 seconds max wait
+          timeout: 10000, // 10 seconds timeout
+          isolationLevel: 'ReadCommitted', // Less strict isolation for better performance
+        }
+      );
     } catch (error: any) {
       // Enhanced error handling
       if (error.message === 'Order number already exists. Please try another order number.') {
@@ -466,20 +487,25 @@ export class OrderService {
 
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         const errorMap = {
-          'P2002': 'A conflict occurred: An order or related record already exists.',
-          'P2025': 'Required record not found: Customer, address, or hub does not exist.',
-          'P2003': 'Foreign key constraint failed: Invalid reference to related record.',
-          'P2034': 'Transaction failed due to a write conflict or deadlock. Please retry.'
+          P2002: 'A conflict occurred: An order or related record already exists.',
+          P2025: 'Required record not found: Customer, address, or hub does not exist.',
+          P2003: 'Foreign key constraint failed: Invalid reference to related record.',
+          P2034: 'Transaction failed due to a write conflict or deadlock. Please retry.',
         };
-        throw new Error(errorMap[error.code as keyof typeof errorMap] || `Database error: ${error.message}`);
+        throw new Error(
+          errorMap[error.code as keyof typeof errorMap] || `Database error: ${error.message}`
+        );
       }
 
-      throw new Error(error instanceof Error ? `Failed to create order: ${error.message}` :
-        'An unexpected error occurred while creating the order. Please try again.');
+      throw new Error(
+        error instanceof Error
+          ? `Failed to create order: ${error.message}`
+          : 'An unexpected error occurred while creating the order. Please try again.'
+      );
     }
   }
 
-  // OPTIMIZATION 10: Add method with caching for frequently called operations 
+  // OPTIMIZATION 10: Add method with caching for frequently called operations
   async createOrderOptimized(data: OrderFormValues, userId: string, userName: string) {
     // Pre-validation to fail fast
     if (!data.orderId || !userId || !data.pickupAddressId) {
@@ -534,7 +560,8 @@ export class OrderService {
     }
 
     // Check if there are any shipments in progress
-    const hasShipmentsInProgress = existingOrder.shipment && !['CREATED', 'CANCELLED'].includes(existingOrder.shipment.status);
+    const hasShipmentsInProgress =
+      existingOrder.shipment && !['CREATED', 'CANCELLED'].includes(existingOrder.shipment.status);
 
     if (hasShipmentsInProgress) {
       return { error: 'Cannot cancel order with shipments in progress' };

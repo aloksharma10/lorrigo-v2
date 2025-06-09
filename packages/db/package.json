@@ -14,6 +14,7 @@
     "db:setup": "npm run db:push && npm run db:gin-indexes",
     "db:studio": "npx prisma studio --schema=./schema/schema.prisma --browser none",
     "db:seed": "ts-node seeds/seed.ts",
+    "db:format": "npx prisma format --schema=./schema/schema.prisma",
     "postinstall": "prisma generate --schema=./schema/schema.prisma"
   },
   "author": "<aloksharma.cs1@gmail.com> Alok Sharma",

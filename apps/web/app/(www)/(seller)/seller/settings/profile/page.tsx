@@ -1,14 +1,11 @@
-
 import { getUserProfile } from '@/lib/actions/users';
 export default async function UserProfile() {
   const user = await getUserProfile();
   return <div>{JSON.stringify(user)}</div>;
 }
 
-
 // // profile/page.tsx
 // 'use client';
-
 
 // export default function UserProfile() {
 //   const { data: session, status } = useSession();

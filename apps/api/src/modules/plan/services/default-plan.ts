@@ -8,36 +8,36 @@ const defaultZonePricing = {
     increment_price: 10,
     isRTOSameAsFW: true,
     rto_base_price: 0,
-    rto_increment_price: 0
+    rto_increment_price: 0,
   },
   withinZone: {
     base_price: 50,
     increment_price: 15,
     isRTOSameAsFW: true,
     rto_base_price: 0,
-    rto_increment_price: 0
+    rto_increment_price: 0,
   },
   withinMetro: {
     base_price: 60,
     increment_price: 18,
     isRTOSameAsFW: true,
     rto_base_price: 0,
-    rto_increment_price: 0
+    rto_increment_price: 0,
   },
   withinRoi: {
     base_price: 70,
     increment_price: 20,
     isRTOSameAsFW: true,
     rto_base_price: 0,
-    rto_increment_price: 0
+    rto_increment_price: 0,
   },
   northEast: {
     base_price: 100,
     increment_price: 30,
     isRTOSameAsFW: true,
     rto_base_price: 0,
-    rto_increment_price: 0
-  }
+    rto_increment_price: 0,
+  },
 };
 
 /**
@@ -48,7 +48,7 @@ export async function ensureDefaultPlan(fastify: FastifyInstance) {
   try {
     // Check if a default plan already exists
     const existingDefaultPlan = await fastify.prisma.plan.findFirst({
-      where: { isDefault: true }
+      where: { isDefault: true },
     });
 
     if (existingDefaultPlan) {
@@ -63,12 +63,8 @@ export async function ensureDefaultPlan(fastify: FastifyInstance) {
         code: generatePlanId('PL'),
         description: 'Default plan for all users',
         isDefault: true,
-        features: [
-          'Limited courier selection',
-          'Basic shipping rates',
-          'Standard support'
-        ]
-      }
+        features: ['Limited courier selection', 'Basic shipping rates', 'Standard support'],
+      },
     });
 
     console.log('Created default plan:', defaultPlan.id);
@@ -76,9 +72,9 @@ export async function ensureDefaultPlan(fastify: FastifyInstance) {
     // Get default couriers for the free plan
     const defaultCouriers = await fastify.prisma.courier.findMany({
       where: {
-        is_active: true
+        is_active: true,
       },
-      take: 3 // Limit to 3 couriers for the free plan
+      take: 3, // Limit to 3 couriers for the free plan
     });
 
     // Create pricing for each courier
@@ -91,8 +87,8 @@ export async function ensureDefaultPlan(fastify: FastifyInstance) {
           weight_slab: 0.5,
           increment_weight: 0.5,
           increment_price: 0,
-          zonePricing: defaultZonePricing
-        }
+          zonePricing: defaultZonePricing,
+        },
       });
     }
 
@@ -103,4 +99,4 @@ export async function ensureDefaultPlan(fastify: FastifyInstance) {
     console.error('Error ensuring default plan:', error);
     throw error;
   }
-} 
+}

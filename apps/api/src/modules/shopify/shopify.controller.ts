@@ -1,10 +1,10 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { 
-  createShopifyAuthUrl, 
-  exchangeShopifyCodeForToken, 
+import {
+  createShopifyAuthUrl,
+  exchangeShopifyCodeForToken,
   getShopifyOrders,
   getShopifyOrder,
-  ShopifyConnection
+  ShopifyConnection,
 } from './order';
 
 /**
@@ -59,17 +59,17 @@ export class ShopifyController {
   public static registerRoutes(fastify: FastifyInstance): void {
     // Initiate OAuth flow
     fastify.get('/auth', ShopifyController.initiateAuth);
-    
+
     // OAuth callback
     fastify.get('/callback', ShopifyController.handleCallback);
-    
+
     // Get orders
     fastify.get('/orders', ShopifyController.getOrders);
-    
+
     // Get a specific order
     fastify.get('/orders/:id', ShopifyController.getOrder);
   }
-  
+
   /**
    * Initiate Shopify OAuth flow
    * @param request Fastify request
@@ -81,24 +81,24 @@ export class ShopifyController {
   ): Promise<void> {
     try {
       const { shop } = request.query;
-      
+
       if (!shop) {
         reply.code(400).send({ error: 'Shop parameter is required' });
         return;
       }
-      
+
       // Get authenticated user from request
       // This assumes you have authentication middleware that adds user to request
-      const user = (request).userPayload;
-      
+      const user = request.userPayload;
+
       if (!user) {
         reply.code(401).send({ error: 'Authentication required' });
         return;
       }
-      
+
       // Generate auth URL
       const authUrl = createShopifyAuthUrl(shop, user.id);
-      
+
       // Redirect to Shopify auth page
       reply.redirect(authUrl);
     } catch (error) {
@@ -106,7 +106,7 @@ export class ShopifyController {
       reply.code(500).send({ error: 'Failed to initiate Shopify authentication' });
     }
   }
-  
+
   /**
    * Handle Shopify OAuth callback
    * @param request Fastify request
@@ -118,32 +118,32 @@ export class ShopifyController {
   ): Promise<void> {
     try {
       const { shop, code } = request.query;
-      
+
       if (!shop || !code) {
         reply.code(400).send({ error: 'Shop and code parameters are required' });
         return;
       }
-      
+
       // Get authenticated user from request
       const user = (request as any).user;
-      
+
       if (!user) {
         reply.code(401).send({ error: 'Authentication required' });
         return;
       }
-      
+
       // Exchange code for token
       const connection = await exchangeShopifyCodeForToken(shop, user.id, code);
-      
+
       if (!connection) {
         reply.code(500).send({ error: 'Failed to exchange code for token' });
         return;
       }
-      
+
       // Here you would typically store the connection in your database
       // This is just an example placeholder
       const savedConnection = await saveShopifyConnection(connection, user.id);
-      
+
       // Redirect to a success page or back to the app
       reply.redirect('/shopify/success');
     } catch (error) {
@@ -151,7 +151,7 @@ export class ShopifyController {
       reply.code(500).send({ error: 'Failed to complete Shopify authentication' });
     }
   }
-  
+
   /**
    * Get Shopify orders
    * @param request Fastify request
@@ -163,45 +163,45 @@ export class ShopifyController {
   ): Promise<void> {
     try {
       const { status, created_at_min, created_at_max, limit } = request.query;
-      
+
       // Get authenticated user from request
       const user = (request as any).user;
-      
+
       if (!user) {
         reply.code(401).send({ error: 'Authentication required' });
         return;
       }
-      
+
       // Get user's Shopify connection from database
       const connection = await getUserShopifyConnection(user.id);
-      
+
       if (!connection) {
         reply.code(404).send({ error: 'Shopify connection not found' });
         return;
       }
-      
+
       // Build query params
       const params: Record<string, string | number> = {};
-      
+
       if (status) {
         params.status = status;
       }
-      
+
       if (created_at_min) {
         params.created_at_min = created_at_min;
       }
-      
+
       if (created_at_max) {
         params.created_at_max = created_at_max;
       }
-      
+
       if (limit) {
         params.limit = parseInt(limit, 10);
       }
-      
+
       // Get orders from Shopify
       const orders = await getShopifyOrders(connection, params);
-      
+
       reply.send({
         success: true,
         count: orders.length,
@@ -212,7 +212,7 @@ export class ShopifyController {
       reply.code(500).send({ error: 'Failed to fetch Shopify orders' });
     }
   }
-  
+
   /**
    * Get a specific Shopify order
    * @param request Fastify request
@@ -224,31 +224,31 @@ export class ShopifyController {
   ): Promise<void> {
     try {
       const { id } = request.params;
-      
+
       // Get authenticated user from request
       const user = (request as any).user;
-      
+
       if (!user) {
         reply.code(401).send({ error: 'Authentication required' });
         return;
       }
-      
+
       // Get user's Shopify connection from database
       const connection = await getUserShopifyConnection(user.id);
-      
+
       if (!connection) {
         reply.code(404).send({ error: 'Shopify connection not found' });
         return;
       }
-      
+
       // Get order from Shopify
       const order = await getShopifyOrder(connection, parseInt(id, 10));
-      
+
       if (!order) {
         reply.code(404).send({ error: 'Order not found' });
         return;
       }
-      
+
       reply.send({
         success: true,
         data: order,
@@ -280,9 +280,9 @@ async function saveShopifyConnection(
 async function getUserShopifyConnection(userId: string): Promise<ShopifyConnection | null> {
   // In a real implementation, you would fetch this from your database
   console.log('Getting Shopify connection for user:', userId);
-  
+
   // Return dummy connection for example purposes
   return null;
 }
 
-export default ShopifyController; 
+export default ShopifyController;
