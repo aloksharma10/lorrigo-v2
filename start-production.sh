@@ -28,26 +28,6 @@ pnpm build
 # Create logs directory if it doesn't exist
 mkdir -p logs
 
-# Function to start a service
-start_service() {
-    local service=$1
-    local log_file="logs/${service}.log"
-    
-    echo "🚀 Starting $service service..."
-    cd "apps/$service"
-    
-    if [ -f "ecosystem.config.js" ]; then
-        # Use PM2 if ecosystem file exists
-        pm2 start ecosystem.config.js --env production
-    else
-        # Use PM2 with default configuration
-        pm2 start npm --name "$service" -- start
-    fi
-    
-    cd ../..
-    echo "✅ $service service started and logging to $log_file"
-}
-
 # Check if PM2 is installed
 if ! command -v pm2 &> /dev/null; then
     echo "PM2 is not installed. Installing PM2..."
@@ -58,16 +38,9 @@ fi
 echo "🛑 Stopping any existing services..."
 pm2 delete all 2>/dev/null || true
 
-# Start services in order
+# Start all services using consolidated ecosystem config
 echo "🚀 Starting all services..."
-
-# Start API first
-start_service "api"
-
-# Start other services
-start_service "notifications"
-start_service "workers"
-start_service "web"
+pm2 start ecosystem.config.cjs --env production
 
 # Save PM2 configuration for auto-restart
 pm2 save

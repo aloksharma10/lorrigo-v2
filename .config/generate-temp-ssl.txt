@@ -1,0 +1,13 @@
+Option 1: Generate SSL certificate
+sudo openssl req -x509 -nodes -days 365 \
+  -newkey rsa:2048 \
+  -keyout /etc/ssl/private/selfsigned.key \
+  -out /etc/ssl/certs/selfsigned.crt \
+  -subj "/C=IN/ST=Delhi/L=Delhi/O=Lorrigo/CN=stagingv2.lorrigo.com"
+
+
+
+Option 2: Use Certbot to generate SSL certificate
+sudo apt update
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d stagingv2.lorrigo.com -d www.stagingv2.lorrigo.com

@@ -37,22 +37,8 @@ call pm2 delete all >nul 2>&1
 
 echo Starting all services...
 
-:: Start services using PM2 and ecosystem configs
-cd apps\api
-call pm2 start ecosystem.config.js --env production
-cd ..\..
-
-cd apps\notifications
-call pm2 start ecosystem.config.js --env production
-cd ..\..
-
-cd apps\workers
-call pm2 start ecosystem.config.js --env production
-cd ..\..
-
-cd apps\web
-call pm2 start ecosystem.config.js --env production
-cd ..\..
+:: Start all services using consolidated ecosystem config
+call pm2 start ecosystem.config.cjs --env production
 
 :: Save PM2 configuration for auto-restart
 call pm2 save
