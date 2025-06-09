@@ -21,5 +21,4 @@ export type VendorRegistrationData = {
    pincode: string;
    phone: string;
    email: string;
-   password: string;
 };

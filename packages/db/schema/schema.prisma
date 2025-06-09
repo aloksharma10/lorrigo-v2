@@ -537,8 +537,8 @@ model Courier {
   shipments     Shipment[]
   plan_pricings PlanCourierPricing[]
 
-  channel_config_id String?
-  channel_config    ChannelConfig? @relation(fields: [channel_config_id], references: [id])
+  channel_config_id String
+  channel_config    ChannelConfig @relation(fields: [channel_config_id], references: [id])
 
   @@unique([code, name, weight_slab])
   @@index([courier_code, is_active])

@@ -205,6 +205,12 @@ export class OrderService {
 
   async getRates(id: string, userId: string) {
     const order = await this.getOrderById(id, userId);
+    const key = `${order?.hub?.address?.pincode}-${order?.customer?.addresses[0]?.pincode}:${order?.applicable_weight}`;
+    const cachedRates = await this.fastify.redis.get(key);
+    if (cachedRates) {
+      return { rates: JSON.parse(cachedRates), order };
+    }
+
     const rates = await this.planService.calculateRates({
       pickupPincode: order?.hub?.address?.pincode || '',
       deliveryPincode: order?.customer?.addresses[0]?.pincode || '',
@@ -218,6 +224,8 @@ export class OrderService {
       collectableAmount: order?.amount_to_collect || 0,
       isReversedOrder: false,
     }, userId);
+    await this.fastify.redis.set(key, JSON.stringify(rates), 'EX', 60 * 60 * 24);
+
     return { rates, order };
   }
 

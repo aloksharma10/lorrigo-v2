@@ -2,6 +2,7 @@ import { FastifyPluginAsync, FastifyReply } from 'fastify';
 import fp from 'fastify-plugin';
 import { FastifyRequest } from 'fastify';
 import { prisma } from '@lorrigo/db';
+import redis from '@/lib/redis';
 
 // Define our custom user type
 interface UserPayload {
@@ -26,6 +27,7 @@ declare module 'fastify' {
       allowedRoles: string[]
     ) => (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
     prisma: typeof prisma;
+    redis: typeof redis;
   }
 }
 
