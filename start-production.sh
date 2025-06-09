@@ -2,6 +2,7 @@
 
 # Start Production Services Script for Lorrigo Application
 # This script builds and starts all services for production environment
+# and ensures Redis Docker container is running
 
 # Set environment to production
 export NODE_ENV=production
@@ -13,9 +14,35 @@ echo "======================================"
 echo "  Lorrigo Production Deployment"
 echo "======================================"
 
+# Check if Docker is installed
+if command -v docker &> /dev/null; then
+    echo "🐳 Docker found, checking Redis container..."
+
+    # Check if Redis container is running
+    if [ "$(docker ps -q -f name=lorrigo-v2-redis)" ]; then
+        echo "✅ Redis container 'lorrigo-v2-redis' is already running."
+    else
+        # Check if Redis container exists but stopped
+        if [ "$(docker ps -aq -f status=exited -f name=lorrigo-v2-redis)" ]; then
+            echo "⚠️ Redis container exists but stopped. Starting container..."
+            docker start lorrigo-v2-redis
+        else
+            echo "🚀 Starting Redis container..."
+            docker run -d \
+              --name lorrigo-v2-redis \
+              -v lorrigo-redis-data:/data \
+              -p 6379:6379 \
+              redis:latest
+        fi
+    fi
+else
+    echo "❌ Docker is not installed. Please install Docker to run Redis."
+    exit 1
+fi
+
 # Check if pnpm is installed
 if ! command -v pnpm &> /dev/null; then
-    echo "pnpm is not installed. Please install it first."
+    echo "❌ pnpm is not installed. Please install pnpm first."
     exit 1
 fi
 
@@ -54,4 +81,4 @@ echo "To stop all: pm2 delete all"
 echo "======================================"
 
 # Display all running services
-pm2 list 
+pm2 list

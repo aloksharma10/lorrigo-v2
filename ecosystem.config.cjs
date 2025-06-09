@@ -5,8 +5,8 @@ module.exports = {
       name: 'lorrigo-api',
       script: 'dist/index.js',
       cwd: './apps/api',
-      instances: 'max',
-      exec_mode: 'cluster',
+      instances: 1,         // changed from 'max'
+      exec_mode: 'fork',    // changed from 'cluster'
       autorestart: true,
       watch: false,
       max_memory_restart: '1G',
@@ -29,6 +29,7 @@ module.exports = {
       script: 'dist/index.js',
       cwd: './apps/notifications',
       instances: 1,
+      exec_mode: 'fork',    // added for clarity, although default is fork
       autorestart: true,
       watch: false,
       max_memory_restart: '500M',
@@ -49,7 +50,8 @@ module.exports = {
       name: 'lorrigo-workers',
       script: 'dist/index.js',
       cwd: './apps/workers',
-      instances: 2,
+      instances: 1,         // changed from 2
+      exec_mode: 'fork',    // changed from cluster
       autorestart: true,
       watch: false,
       max_memory_restart: '500M',
@@ -71,8 +73,8 @@ module.exports = {
       script: 'node_modules/next/dist/bin/next',
       args: 'start',
       cwd: './apps/web',
-      instances: 'max',
-      exec_mode: 'cluster',
+      instances: 1,         // changed from 'max'
+      exec_mode: 'fork',    // changed from cluster
       autorestart: true,
       watch: false,
       max_memory_restart: '1G',
@@ -90,4 +92,4 @@ module.exports = {
       merge_logs: true,
     },
   ],
-}; 
+};
