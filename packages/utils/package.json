@@ -1,8 +1,9 @@
 {
   "name": "@lorrigo/utils",
   "version": "0.1.0",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
   "type": "module",
   "scripts": {
     "build": "tsup",
@@ -21,24 +22,19 @@
   },
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/cjs/index.js",
+      "import": "./dist/esm/index.js",
+      "types": "./dist/esm/index.d.ts"
     },
     "./validations": {
-      "import": "./dist/validations/index.js",
-      "require": "./dist/validations/index.js",
-      "types": "./dist/validations/index.d.ts"
-    },
-    "./validations/*": {
-      "import": "./dist/validations/*.js",
-      "require": "./dist/validations/*.js",
-      "types": "./dist/validations/*.d.ts"
+      "require": "./dist/cjs/validations/index.js",
+      "import": "./dist/esm/validations/index.js",
+      "types": "./dist/esm/validations/index.d.ts"
     },
     "./helpers": {
-      "import": "./dist/helpers/index.js",
-      "require": "./dist/helpers/index.js",
-      "types": "./dist/helpers/index.d.ts"
+      "require": "./dist/cjs/helpers/index.js",
+      "import": "./dist/esm/helpers/index.js",
+      "types": "./dist/esm/helpers/index.d.ts"
     }
   }
 }
