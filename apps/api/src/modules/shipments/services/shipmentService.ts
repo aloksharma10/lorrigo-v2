@@ -194,7 +194,7 @@ export class ShipmentService {
     rates.sort((a, b) => a.total_price - b.total_price);
 
     // Cache the rates
-    await this.fastify.redis.set(key, JSON.stringify({formattedRates, rates, order}), 'EX', 60 * 60 * 24);
+    await this.fastify.redis.set(key, JSON.stringify({ formattedRates, rates, order }), 'EX', 60 * 60 * 24);
 
     return { rates: formattedRates, order };
   }
@@ -203,7 +203,7 @@ export class ShipmentService {
    */
   async createShipment(data: z.infer<typeof CreateShipmentSchema>, userId: string) {
     // Check if order exists and belongs to the user
-   const order = await this.orderService.getOrderById(data.order_id, userId)
+    const order = await this.orderService.getOrderById(data.order_id, userId)
 
     if (!order) {
       return { error: 'Order not found' };
@@ -212,7 +212,13 @@ export class ShipmentService {
     const cacheKey = `rates-${order?.is_reverse_order ? 'reversed' : 'forward'}-${order?.hub?.address?.pincode}-${order?.customer?.address?.pincode}-${order?.applicable_weight}-${order?.payment_mode}`;
 
     const cachedRates = await this.fastify.redis.get(cacheKey);
-    console.log(cachedRates, "cachedRates")
+    const rate = JSON.parse(cachedRates || '[]').find((rate: any) => rate.id === data.courier_id)
+    if (!rate) {
+      return { error: 'Courier not found' };
+    }
+
+    console.log(rate, "cachedRates")
+
     // if (cachedRates) {
     //   return { rates: JSON.parse(cachedRates), order };
     // }

@@ -95,6 +95,14 @@ enum Zone {
   NORTH_EAST
 }
 
+enum ZoneLabel {
+  Z_A
+  Z_B
+  Z_C
+  Z_D
+  Z_E
+}
+
 enum Channel {
   CUSTOM
   WEBSITE
@@ -252,7 +260,7 @@ model Customer {
   updated_at DateTime @updatedAt
 
   address Address? @relation("CustomerAddresses")
-  orders    Order[]   @relation("CustomerOrders")
+  orders  Order[]  @relation("CustomerOrders")
 
   @@index([phone, email])
   @@index([name])
@@ -274,7 +282,7 @@ model Address {
   user_id String? @unique
   user    User?   @relation(fields: [user_id], references: [id], onDelete: SetNull)
 
-  customer_id String? @unique
+  customer_id String?   @unique
   customer    Customer? @relation("CustomerAddresses", fields: [customer_id], references: [id])
 
   hub_primary Hub? @relation("HubPrimaryAddress")
@@ -459,10 +467,10 @@ model Shipment {
   fw_charge       Float     @default(0)
   cod_amount      Float?    @default(0)
   rto_charge      Float     @default(0)
-  order_zone      String?   @db.VarChar(50)
-  edd             DateTime?
-  pickup_date     DateTime?
-  pickup_id       String?
+  order_zone      ZoneLabel    
+  edd             DateTime
+  pickup_date     DateTime
+  pickup_id       String
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -472,9 +480,10 @@ model Shipment {
 
   user_id         String
   user            User            @relation("UserShipments", fields: [user_id], references: [id], onDelete: Cascade)
-  courier_id      String?
-  courier         Courier?        @relation(fields: [courier_id], references: [id], onDelete: Cascade)
+  courier_id      String         @unique
+  courier         Courier        @relation(fields: [courier_id], references: [id], onDelete: Cascade)
   tracking_events TrackingEvent[]
+  pricing         ShipmentPricing?
 
   @@index([order_id, user_id, courier_id, status, created_at])
   @@index([awb])
@@ -649,8 +658,8 @@ model Billing {
   is_forward_applicable Boolean
   is_rto_applicable     Boolean
 
-  base_price      Boolean
-  base_weight     Boolean
+  base_price  Boolean
+  base_weight Boolean
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -890,4 +899,31 @@ model ZonePricing {
   @@unique([plan_courier_pricing_id, zone])
   @@index([zone])
   @@index([plan_courier_pricing_id])
+}
+
+model ShipmentPricing {
+  id                 String   @id @default(cuid())
+  shipment_id        String   @unique
+  shipment           Shipment @relation(fields: [shipment_id], references: [id])
+  cod_charge_hard    Float?   @default(40)
+  cod_charge_percent Float?   @default(1.5)
+
+  is_fw_applicable           Boolean @default(true)
+  is_rto_applicable          Boolean @default(true)
+  is_cod_applicable          Boolean @default(true)
+  is_cod_reversal_applicable Boolean @default(true)
+
+  weight_slab      Float @default(0.5)
+  increment_weight Float @default(0.5)
+  increment_price  Float @default(0)
+
+  zone                Zone
+  base_price          Float
+  is_rto_same_as_fw   Boolean
+  rto_base_price      Float
+  rto_increment_price Float
+  flat_rto_charge     Float
+  
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
 }
