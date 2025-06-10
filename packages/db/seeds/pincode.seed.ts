@@ -1,5 +1,5 @@
 import { prisma } from '@lorrigo/db';
-import pincodes from './lorrigo.pincodes.json';
+import pincodes from './data/lorrigo.pincodes.json';
 
 type RawPincode = {
   Pincode: number;

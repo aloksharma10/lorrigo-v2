@@ -20,6 +20,7 @@ import { useDebounce } from '@/lib/hooks/use-debounce';
 
 import { fetchShipments, downloadManifest, generateLabels, cancelOrders } from '@/lib/apis/order';
 import { Shipment, ShipmentParams } from '@/lib/type/response-types';
+import { useAuthToken } from '@/components/providers/token-provider';
 
 interface ShipmentsTableProps {
   initialParams: ShipmentParams;
@@ -45,6 +46,8 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
       to: new Date(),
     }
   );
+
+  const { isTokenReady } = useAuthToken();
 
   // Fetch shipments with React Query
   const { data, isLoading, isError, isFetching } = useQuery({
@@ -78,6 +81,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
     refetchInterval: false,
     retryOnMount: false,
     retry: false,
+    enabled: isTokenReady,
   });
 
   // Bulk action mutations

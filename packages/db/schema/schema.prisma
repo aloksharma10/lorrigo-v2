@@ -83,6 +83,7 @@ enum RemittanceCycle {
 
 enum DeliveryType {
   EXPRESS
+  AIR
   SURFACE
 }
 
@@ -648,7 +649,6 @@ model Billing {
   is_forward_applicable Boolean
   is_rto_applicable     Boolean
 
-  increment_price Boolean
   base_price      Boolean
   base_weight     Boolean
 

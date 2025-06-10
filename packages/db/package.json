@@ -13,7 +13,8 @@
     "db:gin-indexes": "node migrations/apply-indexes.js",
     "db:setup": "npm run db:push && npm run db:gin-indexes",
     "db:studio": "npx prisma studio --schema=./schema/schema.prisma --browser none",
-    "db:seed": "ts-node seeds/seed.ts",
+    "db:seed:pincode": "ts-node seeds/pincode.seed.ts",
+    "db:seed:courier": "ts-node seeds/courier.seed.ts",
     "db:format": "npx prisma format --schema=./schema/schema.prisma",
     "postinstall": "prisma generate --schema=./schema/schema.prisma"
   },

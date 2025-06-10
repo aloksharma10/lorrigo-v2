@@ -23,6 +23,7 @@ import HoverCardToolTip from '@/components/hover-card-tooltip';
 import { currencyFormatter, formatDateTimeSmart } from '@lorrigo/utils';
 import { Shipment, ShipmentParams } from '@/lib/type/response-types';
 import { useRouter } from 'next/navigation';
+import { useAuthToken } from '@/components/providers/token-provider';
 
 interface ShipmentsTableProps {
   initialParams: ShipmentParams;
@@ -50,6 +51,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
     }
   );
 
+  const { isTokenReady } = useAuthToken();
   // Fetch shipments with React Query
   const { data, isLoading, isError, isFetching, error } = useQuery({
     queryKey: [
@@ -72,14 +74,16 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
         dateRange,
         status: activeTab,
       }),
+    enabled: isTokenReady,
     placeholderData: (previousData) => previousData,
-    // staleTime: 30 * 1000, // 30 seconds for more frequent updates
-    // gcTime: 5 * 60 * 1000, // 5 minutes
-    // refetchOnWindowFocus: true,
-    // refetchOnMount: true,
-    // refetchOnReconnect: true,
-    // refetchInterval: 2 * 60 * 1000, // Refetch every 2 minutes
-    retry: 2, // Retry failed requests twice
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    refetchInterval: false,
+    retryOnMount: false,
+    retry: false,
   });
 
   // Define the columns for the data table

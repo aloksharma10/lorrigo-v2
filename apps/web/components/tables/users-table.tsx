@@ -20,11 +20,13 @@ import { useDebounce } from '@/lib/hooks/use-debounce';
 
 import { fetchShipments, downloadManifest, generateLabels, cancelOrders } from '@/lib/apis/order';
 import { Shipment, ShipmentParams } from '@/lib/type/response-types';
+import { useAuthToken } from '../providers/token-provider';
 
 interface UsersTableProps {
   initialParams: ShipmentParams;
 }
 
+// TODO: This is a temporary table for testing. It will be replaced with the actual users table.
 export default function UsersTable({ initialParams }: UsersTableProps) {
   const [activeTab, setActiveTab] = React.useState(initialParams.status || 'all');
   const [pagination, setPagination] = React.useState({
@@ -46,7 +48,7 @@ export default function UsersTable({ initialParams }: UsersTableProps) {
     }
   );
 
-  const queryClient = useQueryClient();
+  const { isTokenReady } = useAuthToken();
 
   // Fetch shipments with React Query
   const { data, isLoading, isError, isFetching } = useQuery({
@@ -80,6 +82,7 @@ export default function UsersTable({ initialParams }: UsersTableProps) {
     refetchInterval: false,
     retryOnMount: false,
     retry: false,
+    enabled: isTokenReady,
   });
 
   // Bulk action mutations with Sonner toast
@@ -116,7 +119,7 @@ export default function UsersTable({ initialParams }: UsersTableProps) {
     },
     onSuccess: (result) => {
       toast.success(`Cancelled ${result.count} orders`);
-      queryClient.invalidateQueries({ queryKey: ['shipments'] });
+      // queryClient.invalidateQueries({ queryKey: ['shipments'] });
     },
     onError: () => {
       toast.error('Failed to cancel orders');

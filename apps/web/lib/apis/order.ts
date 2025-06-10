@@ -8,9 +8,11 @@ import {
   OrdersApiResponse,
   ShipmentParams,
 } from '../type/response-types';
+import { useAuthToken } from '@/components/providers/token-provider';
 
 // Comprehensive hook for order operations
 export const useOrderOperations = (queryParams: OrderQueryParams = {}, orderId?: string) => {
+  const { isTokenReady } = useAuthToken();
   const queryClient = useQueryClient();
 
   // Get order statistics
@@ -27,6 +29,7 @@ export const useOrderOperations = (queryParams: OrderQueryParams = {}, orderId?:
     queryFn: async () => await api.get<OrdersApiResponse>('/orders', { params: queryParams }),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
+    enabled: isTokenReady,
   });
 
   // Fetch single order
@@ -34,6 +37,8 @@ export const useOrderOperations = (queryParams: OrderQueryParams = {}, orderId?:
     queryKey: ['order', orderId],
     queryFn: async () => await api.get<BackendOrder>(`/orders/${orderId}`),
     enabled: !!orderId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 
   // Create order
@@ -143,7 +148,6 @@ export async function fetchOrders(params: any) {
     const response = await api.get<OrdersApiResponse>(`/orders?${queryParams.toString()}`);
     // Response structure: { data: OrdersApiResponse }
     const responseData = response;
-    console.log(responseData);
 
     // Transform backend response to match frontend expectations
     return {

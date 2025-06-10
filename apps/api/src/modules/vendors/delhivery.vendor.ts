@@ -3,7 +3,7 @@ import { BaseVendor } from './base-vendor';
 import { APIs } from '@/config/api';
 import { CACHE_KEYS } from '@/config/cache';
 import { formatPhoneNumber } from '@lorrigo/utils';
-import { VendorRegistrationResult, VendorShipmentResult } from '@/types/vendor';
+import { VendorRegistrationResult, VendorServiceabilityResult, VendorShipmentResult } from '@/types/vendor';
 
 /**
  * Delhivery vendor implementation
@@ -46,6 +46,94 @@ export class DelhiveryVendor extends BaseVendor {
   protected async generateToken(): Promise<string | null> {
     // Delhivery uses direct API key, so we'll just return it
     return this.apiKey || null;
+  }
+
+  /**
+   * Check serviceability with Delhivery
+   * @param pickupPincode Pickup pincode
+   * @param deliveryPincode Delivery pincode
+   * @param weight Weight in kg
+   * @param dimensions Package dimensions
+   * @param paymentType Payment type (0 for prepaid, 1 for COD)
+   * @param collectableAmount Collectable amount for COD
+   * @param couriers List of courier IDs to check
+   * @returns Promise resolving to serviceability result
+   */
+  public async checkServiceability(
+    pickupPincode: string,
+    deliveryPincode: string,
+    weight: number,
+    dimensions: { length: number; width: number; height: number },
+    paymentType: 0 | 1,
+    collectableAmount?: number,
+    couriers?: string[]
+  ): Promise<VendorServiceabilityResult> {
+    try {
+      const token = await this.getAuthToken();
+
+      if (!token) {
+        return {
+          success: false,
+          message: `Failed to get Delhivery ${this.weightCategory} kg authentication token`,
+          serviceableCouriers: [],
+        };
+      }
+
+      // Delhivery checks serviceability by delivery pincode
+      const endpoint = `${APIs.DELHIVERY.PINCODE_SERVICEABILITY}${deliveryPincode}`;
+
+      const response = await this.makeRequest(endpoint, 'GET', null, {
+        Authorization: `Token ${token}`,
+      });
+
+      // Check if pincode is serviceable
+      const deliveryData = response.data?.delivery_codes?.[0];
+      if (!deliveryData) {
+        return {
+          success: false,
+          message: `Pincode ${deliveryPincode} is not serviceable by Delhivery ${this.weightCategory}`,
+          serviceableCouriers: [],
+        };
+      }
+
+      // Check if weight is within the weight category limit
+      const weightLimit = parseFloat(this.weightCategory);
+      if (weight > weightLimit) {
+        return {
+          success: false,
+          message: `Weight ${weight}kg exceeds the limit of ${weightLimit}kg for Delhivery ${this.weightCategory}`,
+          serviceableCouriers: [],
+        };
+      }
+
+      // In a real implementation, we would check if the pickup pincode is also serviceable
+      // and potentially check other constraints like dimensions, but for simplicity:
+      const isServiceable = deliveryData.postal_code === deliveryPincode;
+
+      const serviceableCourier = {
+        id: `delhivery-${this.weightCategory}`,
+        name: `Delhivery ${this.weightCategory} kg`,
+        code: `DL${this.weightCategory.replace('.', '')}`,
+        serviceability: isServiceable,
+        data: response.data,
+      };
+
+      return {
+        success: true,
+        message: isServiceable 
+          ? `Pincode ${deliveryPincode} is serviceable by Delhivery ${this.weightCategory}` 
+          : `Pincode ${deliveryPincode} is not serviceable by Delhivery ${this.weightCategory}`,
+        serviceableCouriers: isServiceable ? [serviceableCourier] : [],
+      };
+    } catch (error: any) {
+      console.error(`Error checking serviceability with Delhivery ${this.weightCategory}:`, error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to check serviceability',
+        serviceableCouriers: [],
+      };
+    }
   }
 
   /**

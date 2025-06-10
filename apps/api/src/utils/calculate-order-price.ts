@@ -213,7 +213,7 @@ export function calculateVolumetricWeight(
   length: number,
   width: number,
   height: number,
-  sizeUnit: 'cm' | 'inch'
+  sizeUnit: 'cm' | 'inch' = 'cm'
 ): number {
   const volume =
     sizeUnit === 'cm' ? (length * width * height) / 5000 : (length * width * height) / 5;

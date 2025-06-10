@@ -291,7 +291,6 @@ export default function ShipOrderPage() {
                     <thead className="border-b bg-gray-50">
                       <tr>
                         <th className="p-4 text-left text-sm font-medium">Courier Partner</th>
-                        <th className="p-4 text-left text-sm font-medium">Rating</th>
                         <th className="p-4 text-left text-sm font-medium">Expected Pickup</th>
                         <th className="p-4 text-left text-sm font-medium">Estimated Delivery</th>
                         <th className="p-4 text-left text-sm font-medium">
@@ -300,6 +299,7 @@ export default function ShipOrderPage() {
                             <Info className="text-muted-foreground h-3 w-3" />
                           </div>
                         </th>
+                        <th className="p-4 text-left text-sm font-medium">Zone</th>
                         <th className="p-4 text-left text-sm font-medium">
                           <div className="flex items-center gap-1">
                             Charges
@@ -314,14 +314,14 @@ export default function ShipOrderPage() {
                         <tr key={rate.carrierId} className="border-b hover:bg-gray-50">
                           <td className="p-4">
                             <div className="flex items-center gap-3">
-                              {index === 0 && (
+                              {/* {index === 0 && (
                                 <Badge
                                   variant="secondary"
                                   className="bg-purple-100 text-xs text-purple-700"
                                 >
                                   Recommended
                                 </Badge>
-                              )}
+                              )} */}
                               <CourierLogo courierName={rate.name} />
                               <div>
                                 <div className="font-medium">{rate.name}</div>
@@ -334,9 +334,9 @@ export default function ShipOrderPage() {
                               </div>
                             </div>
                           </td>
-                          <td className="p-4">
+                          {/* <td className="p-4">
                             <RatingBadge rating={4.0 + Math.random() * 0.8} />
-                          </td>
+                          </td> */}
                           <td className="p-4">
                             <div className="flex items-center gap-2">
                               <Clock className="text-muted-foreground h-4 w-4" />
@@ -353,7 +353,10 @@ export default function ShipOrderPage() {
                             <span>{rate.minWeight} Kg</span>
                           </td>
                           <td className="p-4">
-                            <div className="text-lg font-bold">₹{rate.charge}</div>
+                            <span>{rate.order_zone}</span>
+                          </td>
+                          <td className="p-4">
+                            <div className="text-lg font-bold">{currencyFormatter(rate.charge)}</div>
                             <div className="text-muted-foreground flex items-center gap-1 text-xs">
                               <Info className="h-3 w-3" />
                             </div>

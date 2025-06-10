@@ -1,7 +1,7 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { redis } from '@/lib/redis';
 import { CACHE_TTL } from '@/config/cache';
-import { VendorRegistrationResult, VendorShipmentResult } from '@/types/vendor';
+import { VendorRegistrationResult, VendorServiceabilityResult, VendorShipmentResult } from '@/types/vendor';
 
 /**
  * Base class for all vendor implementations
@@ -94,5 +94,31 @@ export abstract class BaseVendor {
    */
   public abstract registerHub(hubData: any): Promise<VendorRegistrationResult>;
 
+  /**
+   * Abstract method to create a shipment
+   * Must be implemented by each vendor class
+   */
   public abstract createShipment(shipmentData: any): Promise<VendorShipmentResult>;
+
+  /**
+   * Abstract method to check serviceability
+   * Must be implemented by each vendor class
+   * @param pickupPincode Pickup pincode
+   * @param deliveryPincode Delivery pincode
+   * @param weight Weight in kg
+   * @param dimensions Package dimensions
+   * @param paymentType Payment type (0 for prepaid, 1 for COD)
+   * @param collectableAmount Collectable amount for COD
+   * @param couriers List of courier IDs to check
+   * @returns Promise resolving to serviceability result
+   */
+  public abstract checkServiceability(
+    pickupPincode: string, 
+    deliveryPincode: string, 
+    weight: number, 
+    dimensions: { length: number; width: number; height: number }, 
+    paymentType: 0 | 1, 
+    collectableAmount?: number,
+    couriers?: string[]
+  ): Promise<VendorServiceabilityResult>;
 }

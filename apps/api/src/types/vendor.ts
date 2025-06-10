@@ -12,6 +12,18 @@ export interface VendorShipmentResult {
   data: any;
 }
 
+export interface VendorServiceabilityResult {
+  success: boolean;
+  message: string;
+  serviceableCouriers: Array<{
+    id: string;
+    name: string;
+    code: string;
+    serviceability: boolean;
+    data?: any;
+  }>;
+}
+
 export type VendorRegistrationData = {
   name: string;
   address: string;

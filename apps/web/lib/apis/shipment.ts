@@ -38,7 +38,7 @@ export const useShippingOperations = () => {
     return useQuery({
       queryKey: ['shipping-rates', orderId],
       queryFn: () =>
-        api.get(`/orders/${orderId}/rates`).then((res: any) => res as ShippingRatesResponse),
+        api.get(`/shipments/${orderId}/rates`).then((res: any) => res as ShippingRatesResponse),
       enabled: !!orderId && isTokenReady,
       staleTime: 1000 * 60 * 5,
       gcTime: 1000 * 60 * 10,

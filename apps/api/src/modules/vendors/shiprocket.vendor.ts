@@ -3,7 +3,7 @@ import { BaseVendor } from './base-vendor';
 import { APIs } from '@/config/api';
 import { CACHE_KEYS } from '@/config/cache';
 import { formatAddress, formatPhoneNumber, PickupAddress } from '@lorrigo/utils';
-import { VendorRegistrationResult, VendorShipmentResult } from '@/types/vendor';
+import { VendorRegistrationResult, VendorServiceabilityResult, VendorShipmentResult } from '@/types/vendor';
 import { getPincodeDetails } from '@/utils/pincode';
 
 /**
@@ -51,6 +51,94 @@ export class ShiprocketVendor extends BaseVendor {
     } catch (error) {
       console.error('Error generating Shiprocket token:', error);
       return null;
+    }
+  }
+
+  /**
+   * Check serviceability with Shiprocket
+   * @param pickupPincode Pickup pincode
+   * @param deliveryPincode Delivery pincode
+   * @param weight Weight in kg
+   * @param dimensions Package dimensions
+   * @param paymentType Payment type (0 for prepaid, 1 for COD)
+   * @param collectableAmount Collectable amount for COD
+   * @param couriers List of courier IDs to check
+   * @returns Promise resolving to serviceability result
+   */
+  public async checkServiceability(
+    pickupPincode: string,
+    deliveryPincode: string,
+    weight: number,
+    dimensions: { length: number; width: number; height: number },
+    paymentType: 0 | 1,
+    collectableAmount?: number,
+    couriers?: string[]
+  ): Promise<VendorServiceabilityResult> {
+    try {
+      const token = await this.getAuthToken();
+
+      if (!token) {
+        return {
+          success: false,
+          message: 'Failed to get Shiprocket authentication token',
+          serviceableCouriers: [],
+        };
+      }
+
+      const apiConfig = {
+        Authorization: token,
+      };
+
+      // Calculate volumetric weight
+      const volumeInCm = dimensions.length * dimensions.width * dimensions.height;
+      const volumetricWeight = volumeInCm / 5000; // Standard formula: volume in cm³ / 5000
+      const finalWeight = Math.max(weight, volumetricWeight);
+
+      // Construct API endpoint with query parameters
+      const endpoint = `${APIs.SHIPROCKET.ORDER_COURIER}?pickup_postcode=${pickupPincode}&delivery_postcode=${deliveryPincode}&weight=${finalWeight}&cod=${paymentType}`;
+
+      const response = await this.makeRequest(endpoint, 'GET', null, apiConfig);
+
+      if (!response.data || !response.data.data || !response.data.data.available_courier_companies) {
+        return {
+          success: false,
+          message: 'No serviceable couriers found',
+          serviceableCouriers: [],
+        };
+      }
+
+      // Extract available courier companies
+      const availableCouriers = response.data.data.available_courier_companies || [];
+      
+      // Map to standardized format
+      const serviceableCouriers = availableCouriers.map((courier: any) => ({
+        id: courier.courier_company_id.toString(),
+        name: courier.courier_name,
+        code: courier.courier_code || courier.courier_name.toLowerCase().replace(/\s+/g, '_'),
+        serviceability: true,
+        data: courier,
+      }));
+
+      // Filter by provided courier IDs if applicable
+      const filteredCouriers = couriers && couriers.length > 0
+        ? serviceableCouriers.filter((c: { id: string }) => couriers.includes(c.id))
+        : serviceableCouriers;
+
+      return {
+        success: true,
+        message: filteredCouriers.length > 0 
+          ? 'Serviceable couriers found' 
+          : 'No matching serviceable couriers found',
+        serviceableCouriers: filteredCouriers,
+      };
+    } catch (error: any) {
+      console.error('Error checking serviceability with Shiprocket:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to check serviceability',
+        serviceableCouriers: [],
+      };
     }
   }
 
@@ -417,6 +505,26 @@ export class ShiprocketB2BVendor extends BaseVendor {
       success: false,
       message: 'B2B shipment creation not yet implemented',
       data: null,
+    };
+  }
+
+  /**
+   * Check serviceability with Shiprocket B2B
+   * This is a placeholder implementation
+   */
+  public async checkServiceability(
+    pickupPincode: string,
+    deliveryPincode: string,
+    weight: number,
+    dimensions: { length: number; width: number; height: number },
+    paymentType: 0 | 1,
+    collectableAmount?: number,
+    couriers?: string[]
+  ): Promise<VendorServiceabilityResult> {
+    return {
+      success: false,
+      message: 'Serviceability check not implemented for Shiprocket B2B',
+      serviceableCouriers: [],
     };
   }
 }
