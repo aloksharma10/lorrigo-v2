@@ -77,11 +77,12 @@ export class SmartShipVendor extends BaseVendor {
   public async checkServiceability(
     pickupPincode: string,
     deliveryPincode: string,
-    weight: number,
-    dimensions: { length: number; width: number; height: number },
+    volumeWeight: number,
+    dimensions: { length: number; width: number; height: number, weight: number },
     paymentType: 0 | 1,
     collectableAmount: number = 0,
-    couriers: string[] = []
+    couriers: string[] = [],
+    isReverseOrder: boolean = false
   ): Promise<VendorServiceabilityResult> {
     try {
       const token = await this.getAuthToken();
@@ -98,50 +99,25 @@ export class SmartShipVendor extends BaseVendor {
         Authorization: `Bearer ${token}`,
       };
 
-      // Calculate volumetric weight
-      const volumeInCm = dimensions.length * dimensions.width * dimensions.height;
-      const volumetricWeight = volumeInCm / 5000; // Standard formula: volume in cm³ / 5000
-      const finalWeight = Math.max(weight, volumetricWeight) * 1000; // Convert to grams
-
-      // Prepare the request payload
-      const payload: {
-        serviceability_details: {
-          pickup_pincode: string;
-          delivery_pincode: string;
-          order_weight: number;
-          order_type: string;
-          order_collectable_amount: number;
-          product_mrp: number;
-          shipment_dimensions: {
-            length: number;
-            breadth: number;
-            height: number;
-          };
-          preferred_carriers?: string[];
-        };
-      } = {
-        serviceability_details: {
-          pickup_pincode: pickupPincode,
-          delivery_pincode: deliveryPincode,
-          order_weight: finalWeight, // in grams
-          order_type: paymentType === 1 ? 'cod' : 'prepaid',
-          order_collectable_amount: collectableAmount,
-          product_mrp: collectableAmount, // Using collectableAmount as product MRP
-          shipment_dimensions: {
-            length: dimensions.length,
-            breadth: dimensions.width,
-            height: dimensions.height,
-          },
+      const payload = {
+        order_info: {
+          email: "noreply@lorrigo.com",
+          source_pincode: pickupPincode,
+          destination_pincode: deliveryPincode,
+          order_weight: dimensions.weight.toString(),
+          order_value: collectableAmount || 1000,
+          payment_type: paymentType === 1 ? 'cod' : 'prepaid',
+          length: dimensions.length,
+          width: dimensions.width,
+          height: dimensions.height,
+          shipment_type: isReverseOrder ? 'return' : 'forward',
+          preferred_carriers: couriers,
         },
-      };
-
-      // Add courier IDs if provided
-      if (couriers && couriers.length > 0) {
-        payload.serviceability_details.preferred_carriers = couriers;
+        request_info: { extra_info: true, cost_info: false },
       }
 
       const response = await this.makeRequest(
-        APIs.SMART_SHIP.HUB_SERVICEABILITY,
+        APIs.SMART_SHIP.RATE_CALCULATION,
         'POST',
         payload,
         apiConfig
@@ -157,7 +133,7 @@ export class SmartShipVendor extends BaseVendor {
       }
 
       // Extract serviceable couriers from the response
-      const serviceableCouriers = (response.data.data || []).map((carrier: any) => ({
+      const serviceableCouriers = Object.values(response.data.data.carrier_info || {}).map((carrier: any) => ({
         id: carrier.carrier_id.toString(),
         name: carrier.carrier_name,
         code: carrier.carrier_code || carrier.carrier_name.toLowerCase().replace(/\s+/g, '_'),
@@ -167,8 +143,8 @@ export class SmartShipVendor extends BaseVendor {
 
       return {
         success: true,
-        message: serviceableCouriers.length > 0 
-          ? 'Serviceable couriers found' 
+        message: serviceableCouriers.length > 0
+          ? 'Serviceable couriers found'
           : 'No serviceable couriers found',
         serviceableCouriers,
       };

@@ -35,7 +35,7 @@ async function main() {
    const planId = 'cmbno133r0000h084bb24bvaq'; // Replace with your actual Plan ID
 
    for (const courier of courierData) {
-      const channelId = channelMap.get(getChannelNameById(courier.vendor_channel_id.$oid));
+      const channelId = channelMap.get(getChannelNameById(courier.vendor_channel_id.$oid.trim()));
       if (!channelId) continue;
 
       const code = `CR-${new Date().getFullYear().toString().slice(2)}${(new Date().getMonth() + 1)
@@ -133,12 +133,12 @@ async function main() {
 // Maps channel OIDs to names in env file
 function getChannelNameById(oid: string): string | undefined {
    const mapping: Record<string, string> = {
-      '6627acadabe95523ee592372': 'SHIPROCKET',
-      '6628abf579087bcaf24ef3da': 'SMARTSHIP',
-      '66595e59ea09cc12380f0b85': 'DELHIVERY_5',
-      '66695e2bc475271f3f11df4b': 'DELHIVERY_0.5',
-      '66695e40c475271f3f11df4c': 'DELHIVERY_10',
-      '66a34cbc3d165482f1409477': 'MARUTI',
+      // '6627acadabe95523ee592372': 'SHIPROCKET',
+      // '6628abf579087bcaf24ef3da': 'SMARTSHIP',
+      '66595e59ea09cc12380f0b85': 'DELHIVERY',
+      // '66695e2bc475271f3f11df4b': 'DELHIVERY_0.5',
+      // '66695e40c475271f3f11df4c': 'DELHIVERY_10',
+      // '66a34cbc3d165482f1409477': 'MARUTI',
    };
    return mapping[oid];
 }

@@ -36,8 +36,6 @@ export class ShipmentController {
    */
   async createShipment(request: FastifyRequest, reply: FastifyReply) {
     try {
-      // Check if user is authenticated
-      await checkAuth(request, reply);
 
       const data = CreateShipmentSchema.parse(request.body);
       const user_id = request.userPayload!.id;
@@ -48,7 +46,7 @@ export class ShipmentController {
         return reply.code(404).send({ error: result.error });
       }
 
-      return reply.code(201).send(result.shipment);
+      return reply.code(201).send(result.rates);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return reply.code(400).send({ error: error.errors });

@@ -1,7 +1,7 @@
 import { ShipmentStatus } from '@lorrigo/db';
 import { z } from 'zod';
 import { FastifyInstance } from 'fastify';
-import { CreateShipmentSchema, UpdateShipmentSchema, AddTrackingEventSchema } from '@lorrigo/utils';
+import { CreateShipmentSchema, UpdateShipmentSchema, AddTrackingEventSchema, formatDateAddDays } from '@lorrigo/utils';
 import { OrderService } from '@/modules/orders/services/order-service';
 import { VendorService } from '@/modules/vendors/vendor.service';
 import { calculatePricesForCouriers, calculateVolumetricWeight, PincodeDetails, PriceCalculationParams } from '@/utils/calculate-order-price';
@@ -19,9 +19,9 @@ export class ShipmentService {
     private orderService: OrderService
   ) {
     this.vendorService = new VendorService(fastify);
-    this.fastify.redis.flushall().then(() => {
-      console.log('Redis flushed');
-    });
+    // this.fastify.redis.flushall().then(() => {
+    //   console.log('Redis flushed');
+    // });
   }
 
   /**
@@ -50,7 +50,7 @@ export class ShipmentService {
     }
 
     // Build cache key
-    const key = `${order?.is_reverse_order ? 'reversed' : 'forward'}-${order?.hub?.address?.pincode}-${order?.customer?.address?.pincode}-${order?.applicable_weight}-${order?.payment_mode}`;
+    const key = `rates-${order?.is_reverse_order ? 'reversed' : 'forward'}-${order?.hub?.address?.pincode}-${order?.customer?.address?.pincode}-${order?.applicable_weight}-${order?.payment_mode}`;
 
     // Try to get rates from cache
     const cachedRates = await this.fastify.redis.get(key);
@@ -98,10 +98,12 @@ export class ShipmentService {
       {
         length: params.boxLength,
         width: params.boxWidth,
-        height: params.boxHeight
+        height: params.boxHeight,
+        weight: params.weight
       },
       params.paymentType,
-      params.collectableAmount
+      params.collectableAmount,
+      order?.is_reverse_order
     );
 
     let rates: PriceCalculationResult[] = [];
@@ -121,8 +123,8 @@ export class ShipmentService {
       params,
       serviceabilityResult.serviceableCouriers.map(courier => ({
         courier: {
-          estimated_delivery_days: courier.data.estimated_delivery_days,
-          etd: courier.data.etd,
+          estimated_delivery_days: courier.data.estimated_delivery_days ?? 5,
+          etd: courier.data.etd || formatDateAddDays(5),
           rating: courier.data.rating,
           pickup_performance: courier.data.pickup_performance,
           rto_performance: courier.data.rto_performance,
@@ -134,7 +136,8 @@ export class ShipmentService {
           is_active: true,
           is_reversed_courier: !!order?.is_reverse_order,
           pickup_time: undefined,
-          weight_slab: courier.pricing?.weight_slab || 0.5
+          weight_slab: courier.pricing?.weight_slab || 0.5,
+          nickname: courier.pricing?.courier.channel_config.nickname || ''
         },
         pricing: {
           weight_slab: courier.pricing?.weight_slab || 0.5,
@@ -203,53 +206,57 @@ export class ShipmentService {
    */
   async createShipment(data: z.infer<typeof CreateShipmentSchema>, userId: string) {
     // Check if order exists and belongs to the user
-    const order = await this.fastify.prisma.order.findFirst({
-      where: {
-        id: data.orderId,
-        user_id: userId,
-      },
-    });
+   const order = await this.orderService.getOrderById(data.orderId, userId)
 
     if (!order) {
       return { error: 'Order not found' };
     }
 
+    const cacheKey = `rates-${order?.is_reverse_order ? 'reversed' : 'forward'}-${order?.hub?.address?.pincode}-${order?.customer?.address?.pincode}-${order?.applicable_weight}-${order?.payment_mode}`;
+
+    const cachedRates = await this.fastify.redis.get(cacheKey);
+    console.log(cachedRates, "cachedRates")
+    // if (cachedRates) {
+    //   return { rates: JSON.parse(cachedRates), order };
+    // }
+
+
     // Create shipment with tracking number
-    const shipment = await this.fastify.prisma.shipment.create({
-      data: {
-        code: `SHP-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
-        awb: this.generateTrackingNumber(),
-        status: ShipmentStatus.NEW,
-        order: {
-          connect: {
-            id: data.orderId,
-          },
-        },
-        user: {
-          connect: {
-            id: userId,
-          },
-        },
-        courier: {
-          connect: {
-            id: data.courierId,
-          },
-        },
-        tracking_events: {
-          create: {
-            code: `ST-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
-            status: ShipmentStatus.NEW,
-            location: '',
-            description: 'Shipment created and ready for pickup',
-          },
-        },
-      },
-      include: {
-        order: true,
-        courier: true,
-        tracking_events: true,
-      },
-    });
+    // const shipment = await this.fastify.prisma.shipment.create({
+    //   data: {
+    //     code: `SHP-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
+    //     awb: this.generateTrackingNumber(),
+    //     status: ShipmentStatus.NEW,
+    //     order: {
+    //       connect: {
+    //         id: data.orderId,
+    //       },
+    //     },
+    //     user: {
+    //       connect: {
+    //         id: userId,
+    //       },
+    //     },
+    //     courier: {
+    //       connect: {
+    //         id: data.courierId,
+    //       },
+    //     },
+    //     tracking_events: {
+    //       create: {
+    //         code: `ST-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
+    //         status: ShipmentStatus.NEW,
+    //         location: '',
+    //         description: 'Shipment created and ready for pickup',
+    //       },
+    //     },
+    //   },
+    //   include: {
+    //     order: true,
+    //     courier: true,
+    //     tracking_events: true,
+    //   },
+    // });
 
     // Update order status if it's still in CREATED status
     // if (order.status === 'CREATED') {
@@ -259,7 +266,7 @@ export class ShipmentService {
     //   });
     // }
 
-    return { shipment };
+    return { rates: JSON.parse(cachedRates || '[]'), order };
   }
 
   /**

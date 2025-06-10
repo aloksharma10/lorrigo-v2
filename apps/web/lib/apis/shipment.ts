@@ -25,6 +25,7 @@ export interface CourierRate {
   final_weight: number;
   volumetric_weight: number;
   expected_pickup: string;
+  nickname: string;
   breakdown: {
     actual_weight: number;
     volumetric_weight: number;
@@ -57,8 +58,8 @@ export const useShippingOperations = () => {
 
   // Ship order with selected courier
   const shipOrder = useMutation({
-    mutationFn: ({ orderId, carrierId }: { orderId: string; carrierId: string }) =>
-      api.post(`/orders/${orderId}/ship`, { carrierId }),
+    mutationFn: ({ order_id, courier_id }: { order_id: string; courier_id: string }) =>
+      api.post(`/shipments`, { order_id, courier_id }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
     },

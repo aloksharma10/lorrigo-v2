@@ -105,7 +105,7 @@ export abstract class BaseVendor {
    * Must be implemented by each vendor class
    * @param pickupPincode Pickup pincode
    * @param deliveryPincode Delivery pincode
-   * @param weight Weight in kg
+   * @param volumeWeight Volume weight in kg
    * @param dimensions Package dimensions
    * @param paymentType Payment type (0 for prepaid, 1 for COD)
    * @param collectableAmount Collectable amount for COD
@@ -115,10 +115,12 @@ export abstract class BaseVendor {
   public abstract checkServiceability(
     pickupPincode: string, 
     deliveryPincode: string, 
-    weight: number, 
-    dimensions: { length: number; width: number; height: number }, 
+    volumeWeight: number, 
+    dimensions: { length: number; width: number; height: number, weight: number }, 
     paymentType: 0 | 1, 
     collectableAmount?: number,
-    couriers?: string[]
+    couriers?: string[],
+    isReverseOrder?: boolean,
+    couriersData?: any
   ): Promise<VendorServiceabilityResult>;
 }

@@ -40,12 +40,10 @@ export default async function shipmentRoutes(fastify: FastifyInstance) {
       security: [{ bearerAuth: [] }],
       body: {
         type: 'object',
-        required: ['orderId', 'weight', 'hubId', 'courierId'],
+        required: ['order_id', 'courier_id'],
         properties: {
-          orderId: { type: 'string' },
-          weight: { type: 'number' },
-          hubId: { type: 'string' },
-          courierId: { type: 'string' },
+          order_id: { type: 'string' },
+          courier_id: { type: 'string' },
         },
       },
     },

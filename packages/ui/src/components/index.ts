@@ -11,7 +11,6 @@ export * from './textarea';
 
 export * from './tooltip';
 export * from './input';
-export * from './copy-btn';
 
 export * from './sidebar';
 export * from './skeleton';

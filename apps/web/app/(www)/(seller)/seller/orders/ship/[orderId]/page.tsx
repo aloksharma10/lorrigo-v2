@@ -58,6 +58,7 @@ import { CourierRate, useShippingOperations } from "@/lib/apis/shipment"
 import HoverCardToolTip from "@/components/hover-card-tooltip"
 import ShipOrderPageSkeleton from "@/components/skeletons/select-courier-skeleton"
 import ActionTooltip from "@/components/action-tooltip"
+import { CopyBtn } from "@/components/copy-btn"
 
 const CourierLogo = ({ courierName }: { courierName: string }) => {
   const getInitials = (name: string) => {
@@ -140,7 +141,7 @@ const DesktopOrderDetails = ({
   setIsOpen: (open: boolean) => void
 }) => {
   return (
-    <div className="hidden md:block w-80 h-screen sticky top-0 border-r border-gray-200 bg-white overflow-y-auto">
+    <div className="hidden md:block w-80 h-screen sticky top-0 border-r border-gray-200 dark:border-gray-800 overflow-y-auto">
       <div className="p-6 space-y-6">
         <Collapsible open={isOpen} onOpenChange={setIsOpen}>
           <CollapsibleTrigger asChild>
@@ -152,9 +153,9 @@ const DesktopOrderDetails = ({
 
           <CollapsibleContent className="space-y-4 mt-4">
             {/* Order ID */}
-            <div className="p-3 bg-blue-50 rounded-lg">
-              <div className="text-sm text-blue-600 font-medium">Order ID</div>
-              <div className="font-semibold text-blue-900">{order.order_number}</div>
+            <div className="p-3  rounded-lg">
+              <div className="text-sm text-blue-600 dark:text-white font-medium">Order ID</div>
+              <CopyBtn text={order.order_number} label={order.order_number} className="font-semibold text-blue-900 dark:text-white" />
             </div>
 
             {/* Pickup Location */}
@@ -253,9 +254,9 @@ const DesktopOrderDetails = ({
             <div className="space-y-3">
               <div className="text-sm text-muted-foreground">Customer Details:</div>
               <div className="space-y-2">
-                <div className="flex items-center gap-3 p-2 rounded-lg bg-blue-50">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
-                    <Package className="h-4 w-4 text-blue-600" />
+                <div className="flex items-center gap-3 p-2 rounded-lg bg-blue-50 dark:bg-blue-800">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900">
+                    <Package className="h-4 w-4 text-blue-600 dark:text-white" />
                   </div>
                   <div className="flex-1">
                     <div className="text-sm font-medium">{order.customer.name}</div>
@@ -293,7 +294,7 @@ export default function ShipOrderPage() {
   const handleShipOrder = async (carrierId: string, courierName: string) => {
     setIsShipping(carrierId)
     try {
-      await shipOrder.mutateAsync({ orderId, carrierId })
+      await shipOrder.mutateAsync({ order_id: orderId, courier_id: carrierId })
       console.log(`Order shipped with ${courierName}`)
     } catch (error) {
       console.error("Failed to ship order")
@@ -365,7 +366,7 @@ export default function ShipOrderPage() {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-transparent">
         <div className="flex flex-col md:flex-row">
           {/* Desktop Order Details */}
           <DesktopOrderDetails order={order} isOpen={isOrderDetailsOpen} setIsOpen={setIsOrderDetailsOpen} />
@@ -389,9 +390,9 @@ export default function ShipOrderPage() {
                     </SheetHeader>
                     <div className="mt-6 px-6 space-y-4">
                       {/* Order ID */}
-                      <div className="p-3 bg-blue-50 rounded-lg">
-                        <div className="text-sm text-blue-600 font-medium">Order ID</div>
-                        <div className="font-semibold text-blue-900">{order.order_number}</div>
+                      <div className="p-3  rounded-lg">
+                        <div className="text-sm text-blue-600 dark:text-white font-medium">Order ID</div>
+                        <CopyBtn text={order.order_number} label={order.order_number} labelClassName="text-blue-900 dark:text-white" className="font-semibold" />
                       </div>
 
                       {/* Locations */}
@@ -446,13 +447,8 @@ export default function ShipOrderPage() {
 
               {/* Desktop Header */}
               <div className="hidden md:flex items-center justify-between">
-                <div>
-                  <h1 className="text-2xl font-bold">Select Courier Partner</h1>
-                  <p className="text-muted-foreground">Choose the best shipping option for your order</p>
-                </div>
-                <Button variant="ghost" size="sm">
-                  <X className="h-4 w-4" />
-                </Button>
+                <h1 className="text-2xl font-bold">Select Courier Partner</h1>
+                <p className="text-muted-foreground">Choose the best shipping option for your order</p>
               </div>
 
               {/* Mobile Order Summary */}
@@ -537,10 +533,10 @@ export default function ShipOrderPage() {
               </Alert> */}
 
               {/* Auto-Scheduled Pickup Info */}
-              <div className="flex items-center gap-2 text-sm bg-blue-50 p-3 rounded-lg">
-                <Checkbox className="h-4 w-4 border-blue-600" id="auto-scheduled-pickup" checked={autoScheduledPickup} onCheckedChange={(checked) => setAutoScheduledPickup(checked === "indeterminate" ? false : checked)} />
-                <span className="text-blue-700 font-medium">Auto-Scheduled Pickup</span>
-                <span className="text-blue-600">Tomorrow, 10:00 AM - 6:00 PM</span>
+              <div className="flex items-center gap-2 text-sm bg-blue-50 dark:bg-blue-800 p-3 rounded-lg">
+                <Checkbox className="h-4 w-4 border-blue-600 dark:border-white" id="auto-scheduled-pickup" checked={autoScheduledPickup} onCheckedChange={(checked) => setAutoScheduledPickup(checked === "indeterminate" ? false : checked)} />
+                <span className="text-blue-700 dark:text-white font-medium">Auto-Scheduled Pickup</span>
+                <span className="text-blue-600 dark:text-white">Tomorrow, 10:00 AM - 6:00 PM</span>
               </div>
 
               {/* Results Count */}
@@ -560,12 +556,12 @@ export default function ShipOrderPage() {
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
                     <table className="w-full">
-                      <thead className="border-b bg-gray-50">
-                      <tr>
+                      <thead className="border-b">
+                        <tr>
                           <th className="p-4 text-left text-sm font-medium">Courier Partner</th>
                           <th className="p-4 text-left text-sm font-medium">Performance</th>
-                          <th className="p-4 text-left text-sm font-medium">Pickup</th>
-                          <th className="p-4 text-left text-sm font-medium">Delivery</th>
+                          <th className="p-4 text-left text-sm font-medium">Estimated Pickup</th>
+                          <th className="p-4 text-left text-sm font-medium">Estimated Delivery</th>
                           <th className="p-4 text-left text-sm font-medium">
                             <ActionTooltip label="Chargeable weight used for pricing" className="p-0 h-auto">
                               <div className="flex items-center gap-1">
@@ -588,12 +584,12 @@ export default function ShipOrderPage() {
                       </thead>
                       <tbody>
                         {filteredRates.map((rate, index) => (
-                          <tr key={rate.id} className="border-b hover:bg-gray-50 transition-colors">
+                          <tr key={rate.id} className="border-b hover:bg-gray-50 dark:hover:bg-transparent transition-colors">
                             <td className="p-4">
                               <div className="flex items-center gap-3">
                                 <CourierLogo courierName={rate.name} />
                                 <div>
-                                  <div className="font-medium">{rate.name}</div>
+                                  <div className="font-medium">{rate.name} ({rate.nickname})</div>
                                   <div className="text-sm text-muted-foreground">
                                     {rate.type} • Min: {rate.breakdown.min_weight} Kg
                                   </div>

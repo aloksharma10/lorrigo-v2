@@ -58,7 +58,7 @@ export class VendorService {
    * Check serviceability across all vendors or specified vendors
    * @param pickupPincode Pickup pincode
    * @param deliveryPincode Delivery pincode
-   * @param weight Weight in kg
+   * @param volumeWeight Volume weight in kg
    * @param dimensions Package dimensions
    * @param paymentType Payment type (0 for prepaid, 1 for COD)
    * @param collectableAmount Collectable amount for COD
@@ -68,8 +68,8 @@ export class VendorService {
   public async checkServiceability(
     pickupPincode: string,
     deliveryPincode: string,
-    weight: number,
-    dimensions: { length: number; width: number; height: number },
+    volumeWeight: number,
+    dimensions: { length: number; width: number; height: number, weight: number },
     paymentType: 0 | 1,
     collectableAmount: number = 0,
     vendorNames?: string[]
@@ -101,7 +101,7 @@ export class VendorService {
           const result = await vendor.checkServiceability(
             pickupPincode,
             deliveryPincode,
-            weight,
+            volumeWeight,
             dimensions,
             paymentType,
             collectableAmount
@@ -129,7 +129,7 @@ export class VendorService {
       });
 
       // Determine overall success
-      const anyServiceable = results.some(({ result }) => 
+      const anyServiceable = results.some(({ result }) =>
         result.success && result.serviceableCouriers.length > 0
       );
 
@@ -156,7 +156,7 @@ export class VendorService {
    * @param planId Plan ID
    * @param pickupPincode Pickup pincode
    * @param deliveryPincode Delivery pincode
-   * @param weight Weight in kg
+   * @param volumeWeight Volume weight in kg
    * @param dimensions Package dimensions
    * @param paymentType Payment type (0 for prepaid, 1 for COD)
    * @param collectableAmount Collectable amount for COD
@@ -166,10 +166,11 @@ export class VendorService {
     userId: string,
     pickupPincode: string,
     deliveryPincode: string,
-    weight: number,
-    dimensions: { length: number; width: number; height: number },
+    volumeWeight: number,
+    dimensions: { length: number; width: number; height: number, weight: number },
     paymentType: 0 | 1,
-    collectableAmount: number = 0
+    collectableAmount: number = 0,
+    isReverseOrder: boolean = false
   ): Promise<{
     success: boolean;
     message: string;
@@ -215,17 +216,17 @@ export class VendorService {
 
       // Extract couriers from the plan
       const planCouriers = user.plan.plan_courier_pricings.map(pricing => pricing.courier);
-      
+
       // Group couriers by vendor
       const couriersByVendor: { [vendorName: string]: { courierId: string, courier: any }[] } = {};
-      
+
       planCouriers.forEach(courier => {
         // Extract vendor name from courier config
         const vendorName = courier.channel_config.name;
         if (!couriersByVendor[vendorName]) {
           couriersByVendor[vendorName] = [];
         }
-        couriersByVendor[vendorName].push({ 
+        couriersByVendor[vendorName].push({
           courierId: courier.courier_code || courier.code,
           courier
         });
@@ -241,11 +242,13 @@ export class VendorService {
           const result = await vendor.checkServiceability(
             pickupPincode,
             deliveryPincode,
-            weight,
+            volumeWeight,
             dimensions,
             paymentType,
             collectableAmount,
-            courierIds
+            courierIds,
+            isReverseOrder,
+            couriers
           );
           // Match serviceability results with courier pricing
           return {
@@ -257,17 +260,17 @@ export class VendorService {
                 const courierInfo = couriers.find(c => c.courierId === sc.id || c.courier.code === sc.code);
                 // Find pricing for this courier
                 const pricing = user.plan?.plan_courier_pricings.find(p => p.courier_id === courierInfo?.courier.id);
-                
+
                 return {
                   id: courierInfo?.courier.id,
                   name: courierInfo?.courier.name,
                   code: courierInfo?.courier.code,
                   serviceability: sc.serviceability,
-                  data: { 
+                  data: {
                     min_weight: sc.data.min_weight,
                     estimated_delivery_days: sc.data.estimated_delivery_days,
                     etd: sc.data.etd,
-                    rating: sc.data.rating,
+                    rating: sc.data.rating ?? 4,
                     pickup_performance: sc.data.pickup_performance,
                     rto_performance: sc.data.rto_performance,
                     delivery_performance: sc.data.delivery_performance,
@@ -286,7 +289,7 @@ export class VendorService {
       });
 
       const results = await Promise.all(serviceabilityPromises);
-      
+
       // Combine serviceable couriers from all vendors
       const allServiceableCouriers = results
         .filter(Boolean)

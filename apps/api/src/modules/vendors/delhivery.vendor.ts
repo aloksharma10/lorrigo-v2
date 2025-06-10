@@ -66,7 +66,9 @@ export class DelhiveryVendor extends BaseVendor {
     dimensions: { length: number; width: number; height: number },
     paymentType: 0 | 1,
     collectableAmount?: number,
-    couriers?: string[]
+    couriers?: string[],
+    isReverseOrder?: boolean,
+    couriersData?: any
   ): Promise<VendorServiceabilityResult> {
     try {
       const token = await this.getAuthToken();
@@ -97,31 +99,31 @@ export class DelhiveryVendor extends BaseVendor {
       }
 
       // Check if weight is within the weight category limit
-      const weightLimit = parseFloat(this.weightCategory);
-      if (weight > weightLimit) {
-        return {
-          success: false,
-          message: `Weight ${weight}kg exceeds the limit of ${weightLimit}kg for Delhivery ${this.weightCategory}`,
-          serviceableCouriers: [],
-        };
-      }
+      // const weightLimit = parseFloat(this.weightCategory);
+      // if (weight > weightLimit) {
+      //   return {
+      //     success: false,
+      //     message: `Weight ${weight}kg exceeds the limit of ${weightLimit}kg for Delhivery ${this.weightCategory}`,
+      //     serviceableCouriers: [],
+      //   };
+      // }
 
-      // In a real implementation, we would check if the pickup pincode is also serviceable
-      // and potentially check other constraints like dimensions, but for simplicity:
-      const isServiceable = deliveryData.postal_code === deliveryPincode;
+      const isServiceable = Number(deliveryData.postal_code.pin) === Number(deliveryPincode);
+
+      const courierData = isServiceable ? couriersData.find((c: any) => c.courier.is_reversed_courier === isReverseOrder) : null;
 
       const serviceableCourier = {
-        id: `delhivery-${this.weightCategory}`,
+        id: courierData?.courierId || `delhivery-${this.weightCategory}`,
         name: `Delhivery ${this.weightCategory} kg`,
         code: `DL${this.weightCategory.replace('.', '')}`,
         serviceability: isServiceable,
-        data: response.data,
+        data: courierData,
       };
 
       return {
         success: true,
-        message: isServiceable 
-          ? `Pincode ${deliveryPincode} is serviceable by Delhivery ${this.weightCategory}` 
+        message: isServiceable
+          ? `Pincode ${deliveryPincode} is serviceable by Delhivery ${this.weightCategory}`
           : `Pincode ${deliveryPincode} is not serviceable by Delhivery ${this.weightCategory}`,
         serviceableCouriers: isServiceable ? [serviceableCourier] : [],
       };
