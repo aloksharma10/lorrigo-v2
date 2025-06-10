@@ -247,7 +247,6 @@ export class VendorService {
             collectableAmount,
             courierIds
           );
-
           // Match serviceability results with courier pricing
           return {
             vendorName,
@@ -260,7 +259,20 @@ export class VendorService {
                 const pricing = user.plan?.plan_courier_pricings.find(p => p.courier_id === courierInfo?.courier.id);
                 
                 return {
-                  ...sc,
+                  id: courierInfo?.courier.id,
+                  name: courierInfo?.courier.name,
+                  code: courierInfo?.courier.code,
+                  serviceability: sc.serviceability,
+                  data: { 
+                    min_weight: sc.data.min_weight,
+                    estimated_delivery_days: sc.data.estimated_delivery_days,
+                    etd: sc.data.etd,
+                    rating: sc.data.rating,
+                    pickup_performance: sc.data.pickup_performance,
+                    rto_performance: sc.data.rto_performance,
+                    delivery_performance: sc.data.delivery_performance,
+                    zone: sc.data.zone,
+                  },
                   pricing: pricing || null,
                   vendor: vendorName
                 };

@@ -79,7 +79,7 @@ export interface RateCalculationResult {
   isReversedCourier: boolean;
   rtoCharges: number;
   charge: number;
-  type: string;
+  type?: string;
   expectedPickup: string;
   carrierId: string;
   order_zone: string;
@@ -465,7 +465,15 @@ export class PlanService {
             include: {
               plan_courier_pricings: {
                 include: {
-                  courier: true,
+                  courier: {
+                    include: {
+                      channel_config: {
+                        select: {
+                          nickname: true,
+                        },
+                      },
+                    },
+                  },
                   zone_pricing: true,
                 },
               },
@@ -546,6 +554,11 @@ export class PlanService {
           is_reversed_courier: courierPricing.courier.is_reversed_courier,
           pickup_time: courierPricing.courier.pickup_time ?? '',
           weight_slab: courierPricing.weight_slab,
+          channel_config_id: courierPricing.courier.channel_config_id,
+          // nickname: courierPricing.courier?.con?.nickname ?? 'LORRIGO',
+          // rating: courierPricing.data?.rating ?? 0,
+          // estimated_delivery_days: courierPricing.data?.estimated_delivery_days ?? '3',
+          // etd: courierPricing.data?.etd ?? 'Jun 13, 2025',
         },
         pricing: {
           weight_slab: courierPricing.weight_slab,
@@ -566,20 +579,27 @@ export class PlanService {
         pickupDetails,
         deliveryDetails
       );
-
       // Convert utility results back to original format
       const rates: RateCalculationResult[] = utilityResults.map((result) => ({
-        nickName: result.courier.name,
+        nickName: result.courier.nickname ?? "LORRIGO",
         name: result.courier.name,
-        minWeight: result.pricing.weight_slab,
-        cod: result.codCharges,
+        minWeight: result.pricing.weight_slab ?? 0.5,
         isReversedCourier: result.courier.is_reversed_courier,
-        rtoCharges: result.rtoCharges,
-        charge: result.totalPrice,
-        type: result.courier.type,
-        expectedPickup: result.expectedPickup,
+        type: result.courier.type ?? "SURFACE", // Ensure type is always defined
+        cod: result.cod_charges,
+        charge: result.total_price,
+        order_zone: result.zone,
+        rtoCharges: result.rto_charges,
+        expectedPickup: result.expected_pickup,
         carrierId: result.courier.id,
-        order_zone: result.zoneName,
+        zone: result.zoneName,
+        basePrice: result.base_price,
+        weightCharges: result.weight_charges,
+        codCharges: result.cod_charges,
+        totalPrice: result.total_price,
+        finalWeight: result.final_weight,
+        volumetricWeight: result.volumetric_weight,
+        breakdown: result.breakdown,
         courier: {
           id: result.courier.id,
           name: result.courier.name,

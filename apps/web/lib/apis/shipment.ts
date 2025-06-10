@@ -3,24 +3,34 @@ import { api } from './axios';
 import { useAuthToken } from '@/components/providers/token-provider';
 
 export interface CourierRate {
-  nickName: string;
+  id: string;
+  estimated_delivery_days: string;
+  etd: string;
+  rating: number;
+  pickup_performance: number;
+  rto_performance: number;
+  delivery_performance: number;
+  zone: string;
   name: string;
-  minWeight: number;
-  cod: number;
-  isReversedCourier: boolean;
-  rtoCharges: number;
-  charge: number;
-  type: 'EXPRESS' | 'SURFACE' | 'AIR';
-  expectedPickup: string;
-  carrierId: string;
-  order_zone: string;
-  courier: {
-    id: string;
-    name: string;
-    courier_code: string;
-    is_cod_applicable: boolean;
-    is_fw_applicable: boolean;
-    is_rto_applicable: boolean;
+  courier_code: string;
+  type: string;
+  is_active: boolean;
+  is_reversed_courier: boolean;
+  weight_slab: number;
+  base_price: number;
+  weight_charges: number;
+  cod_charges: number;
+  rto_charges: number;
+  total_price: number;
+  final_weight: number;
+  volumetric_weight: number;
+  expected_pickup: string;
+  breakdown: {
+    actual_weight: number;
+    volumetric_weight: number;
+    chargeable_weight: number;
+    min_weight: number;
+    weight_increment_ratio: number;
   };
 }
 

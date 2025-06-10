@@ -45,11 +45,18 @@ export interface CourierInfo {
   id: string;
   name: string;
   courier_code: string;
-  type: string;
+  nickname?: string;
   is_active: boolean;
   is_reversed_courier: boolean;
   pickup_time?: string;
   weight_slab: number;
+  rating?: number;
+  estimated_delivery_days?: string;
+  etd?: string;
+  type?: string;
+  pickup_performance?: number;
+  rto_performance?: number;
+  delivery_performance?: number;
 }
 
 export interface PincodeDetails {
@@ -60,22 +67,22 @@ export interface PincodeDetails {
 export interface PriceCalculationResult {
   courier: CourierInfo;
   pricing: CourierPricing;
-  basePrice: number;
-  weightCharges: number;
-  codCharges: number;
-  rtoCharges: number;
-  totalPrice: number;
-  finalWeight: number;
-  volumetricWeight: number;
+  base_price: number;
+  weight_charges: number;
+  cod_charges: number;
+  rto_charges: number;
+  total_price: number;
+  final_weight: number;
+  volumetric_weight: number;
   zone: ZonePricing['zone'];
   zoneName: string;
-  expectedPickup: string;
+  expected_pickup: string;
   breakdown: {
-    actualWeight: number;
-    volumetricWeight: number;
-    chargeableWeight: number;
-    minWeight: number;
-    weightIncrementRatio: number;
+    actual_weight: number;
+    volumetric_weight: number;
+    chargeable_weight: number;
+    min_weight: number;
+    weight_increment_ratio: number;
   };
 }
 
@@ -422,22 +429,22 @@ export function calculatePrice(
     return {
       courier,
       pricing: courierPricing,
-      basePrice,
-      weightCharges,
-      codCharges,
-      rtoCharges,
-      totalPrice,
-      finalWeight: chargeableWeight,
-      volumetricWeight,
+      base_price: basePrice,
+      weight_charges: weightCharges,
+      cod_charges: codCharges,
+      rto_charges: rtoCharges,
+      total_price: totalPrice,
+      final_weight: chargeableWeight,
+      volumetric_weight: volumetricWeight,
       zone,
       zoneName,
-      expectedPickup,
+      expected_pickup: expectedPickup,
       breakdown: {
-        actualWeight,
-        volumetricWeight,
-        chargeableWeight,
-        minWeight,
-        weightIncrementRatio,
+        actual_weight: actualWeight,
+        volumetric_weight: volumetricWeight,
+        chargeable_weight: chargeableWeight,
+        min_weight: minWeight,
+        weight_increment_ratio: weightIncrementRatio,
       },
     };
   } catch (error) {
@@ -480,7 +487,7 @@ export function getCheapestOption(
   if (results.length === 0) return null;
 
   return results.reduce((cheapest, current) =>
-    current.totalPrice < cheapest.totalPrice ? current : cheapest
+    current.total_price < cheapest.total_price ? current : cheapest
   );
 }
 
@@ -493,7 +500,7 @@ export function getMostExpensiveOption(
   if (results.length === 0) return null;
 
   return results.reduce((expensive, current) =>
-    current.totalPrice > expensive.totalPrice ? current : expensive
+    current.total_price > expensive.total_price ? current : expensive
   );
 }
 
@@ -506,8 +513,8 @@ export function filterResults(
 ): PriceCalculationResult[] {
   return results.filter((result) => {
     // Price range filters
-    if (filters.maxPrice !== undefined && result.totalPrice > filters.maxPrice) return false;
-    if (filters.minPrice !== undefined && result.totalPrice < filters.minPrice) return false;
+    if (filters.maxPrice !== undefined && result.total_price > filters.maxPrice) return false;
+    if (filters.minPrice !== undefined && result.total_price < filters.minPrice) return false;
 
     // Courier type filter
     if (filters.courierType && result.courier.type !== filters.courierType) return false;
@@ -545,7 +552,7 @@ export function sortByPrice(
   order: 'asc' | 'desc' = 'asc'
 ): PriceCalculationResult[] {
   return [...results].sort((a, b) =>
-    order === 'asc' ? a.totalPrice - b.totalPrice : b.totalPrice - a.totalPrice
+    order === 'asc' ? a.total_price - b.total_price : b.total_price - a.total_price
   );
 }
 
@@ -554,8 +561,8 @@ export function sortByPrice(
  */
 export function sortByPickupTime(results: PriceCalculationResult[]): PriceCalculationResult[] {
   return [...results].sort((a, b) => {
-    if (a.expectedPickup === 'Today' && b.expectedPickup === 'Tomorrow') return -1;
-    if (a.expectedPickup === 'Tomorrow' && b.expectedPickup === 'Today') return 1;
+    if (a.expected_pickup === 'Today' && b.expected_pickup === 'Tomorrow') return -1;
+    if (a.expected_pickup === 'Tomorrow' && b.expected_pickup === 'Today') return 1;
     return 0;
   });
 }
@@ -592,7 +599,7 @@ export function getPriceSummary(results: PriceCalculationResult[]): PriceSummary
     };
   }
 
-  const prices = results.map((r) => r.totalPrice);
+  const prices = results.map((r) => r.total_price);
   const sum = prices.reduce((a, b) => a + b, 0);
 
   return {

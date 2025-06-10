@@ -4,7 +4,6 @@ import { authorizeRoles } from '@/middleware/auth';
 import { Role } from '@lorrigo/db';
 import { ShipmentService } from './services/shipmentService';
 import { OrderService } from '../orders/services/order-service';
-import { PlanService } from '../plan/services/plan.service';
 
 /**
  * Shipments module routes
@@ -12,7 +11,7 @@ import { PlanService } from '../plan/services/plan.service';
 export default async function shipmentRoutes(fastify: FastifyInstance) {
   // All routes require authentication
   fastify.addHook('onRequest', fastify.authenticate);
-  const shipmentService = new ShipmentService(fastify, new PlanService(fastify), new OrderService(fastify));
+  const shipmentService = new ShipmentService(fastify, new OrderService(fastify));
   const shipmentController = new ShipmentController(shipmentService);
 
     // Get rates for an order

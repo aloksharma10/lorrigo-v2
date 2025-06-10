@@ -2,22 +2,20 @@ import { ShipmentStatus } from '@lorrigo/db';
 import { z } from 'zod';
 import { FastifyInstance } from 'fastify';
 import { CreateShipmentSchema, UpdateShipmentSchema, AddTrackingEventSchema } from '@lorrigo/utils';
-import { PlanService } from '@/modules/plan/services/plan.service';
 import { OrderService } from '@/modules/orders/services/order-service';
 import { VendorService } from '@/modules/vendors/vendor.service';
-import { calculatePricesForCouriers, calculateVolumetricWeight, determineZone, PincodeDetails, PriceCalculationParams } from '@/utils/calculate-order-price';
+import { calculatePricesForCouriers, calculateVolumetricWeight, PincodeDetails, PriceCalculationParams } from '@/utils/calculate-order-price';
 import { PriceCalculationResult } from '@/utils/calculate-order-price';
 
 /**
  * Service for handling shipment-related business logic
  */
 export class ShipmentService {
-  
+
   private vendorService: VendorService;
 
   constructor(
-    private fastify: FastifyInstance, 
-    private planService: PlanService, 
+    private fastify: FastifyInstance,
     private orderService: OrderService
   ) {
     this.vendorService = new VendorService(fastify);
@@ -50,16 +48,16 @@ export class ShipmentService {
     if (!order) {
       return { error: 'Order not found' };
     }
-  
+
     // Build cache key
     const key = `${order?.is_reverse_order ? 'reversed' : 'forward'}-${order?.hub?.address?.pincode}-${order?.customer?.address?.pincode}-${order?.applicable_weight}-${order?.payment_mode}`;
-    
+
     // Try to get rates from cache
     const cachedRates = await this.fastify.redis.get(key);
     if (cachedRates) {
       return { rates: JSON.parse(cachedRates), order };
     }
-  
+
     // Prepare parameters for price calculation
     const params: PriceCalculationParams = {
       weight: order?.package?.dead_weight || 0,
@@ -74,18 +72,18 @@ export class ShipmentService {
       deliveryPincode: order?.customer?.address?.pincode || '',
       isReversedOrder: !!order?.is_reverse_order
     };
-  
+
     // Prepare pincode details
     const pickupDetails: PincodeDetails = {
       city: order?.hub?.address?.city || '',
       state: order?.hub?.address?.state || ''
     };
-    
+
     const deliveryDetails: PincodeDetails = {
       city: order?.customer?.address?.city || '',
       state: order?.customer?.address?.state || ''
     };
-  
+
     // Check serviceability for the user's plan
     const serviceabilityResult = await this.vendorService.checkServiceabilityForPlan(
       userId,
@@ -106,43 +104,33 @@ export class ShipmentService {
       params.collectableAmount
     );
 
-    console.log(JSON.stringify(serviceabilityResult, null, 2));
-  
     let rates: PriceCalculationResult[] = [];
-  
-    // If no serviceability, fall back to plan rates
+
+    // If no serviceability, return empty rates with message
     if (!serviceabilityResult.success || serviceabilityResult.serviceableCouriers.length === 0) {
-      const fallbackRates = await this.planService.calculateRates(
-        {
-          pickupPincode: params.pickupPincode,
-          deliveryPincode: params.deliveryPincode,
-          weight: params.weight,
-          weightUnit: params.weightUnit,
-          boxLength: params.boxLength,
-          boxWidth: params.boxWidth,
-          boxHeight: params.boxHeight,
-          sizeUnit: params.sizeUnit as 'cm' | 'in',
-          paymentType: params.paymentType,
-          collectableAmount: params.collectableAmount,
-          isReversedOrder: params.isReversedOrder
-        },
-        userId
-      );
-  
-      // Cache the rates
+      // Cache empty rates
       await this.fastify.redis.set(key, JSON.stringify([]), 'EX', 60 * 60 * 24);
-      return { rates: [], order };
+      return {
+        rates: [],
+        order,
+        message: 'No courier is serviceable for this order'
+      };
     }
-  
     // Calculate rates for serviceable couriers using utility function
     rates = calculatePricesForCouriers(
       params,
       serviceabilityResult.serviceableCouriers.map(courier => ({
         courier: {
+          estimated_delivery_days: courier.data.estimated_delivery_days,
+          etd: courier.data.etd,
+          rating: courier.data.rating,
+          pickup_performance: courier.data.pickup_performance,
+          rto_performance: courier.data.rto_performance,
+          delivery_performance: courier.data.delivery_performance,
           id: courier.id,
           name: courier.name,
           courier_code: courier.code,
-          type: courier.vendor || '', // Ensure type is always string
+          type: courier.pricing.courier.type || '', // Ensure type is always string
           is_active: true,
           is_reversed_courier: !!order?.is_reverse_order,
           pickup_time: undefined,
@@ -162,13 +150,53 @@ export class ShipmentService {
       pickupDetails,
       deliveryDetails
     );
+
+    const formattedRates = rates.map(rate => ({
+      // Core courier identification
+      id: rate.courier.id,
+      name: rate.courier.name,
+      nickname: rate.courier.nickname,
+      courier_code: rate.courier.courier_code,
+      type: rate.courier.type,
+      is_active: rate.courier.is_active,
+      is_reversed_courier: rate.courier.is_reversed_courier,
+
+      // Delivery and pickup details
+      estimated_delivery_days: rate.courier.estimated_delivery_days,
+      etd: rate.courier.etd,
+      pickup_time: rate.courier.pickup_time,
+      expected_pickup: rate.expected_pickup,
+
+      // Performance metrics
+      rating: rate.courier.rating,
+      pickup_performance: rate.courier.pickup_performance,
+      delivery_performance: rate.courier.delivery_performance,
+      rto_performance: rate.courier.rto_performance,
+
+      // Weight and zone details
+      zone: rate.zoneName,
+      weight_slab: rate.courier.weight_slab,
+      final_weight: rate.final_weight,
+      volumetric_weight: rate.volumetric_weight,
+
+      // Pricing breakdown
+      base_price: rate.base_price,
+      weight_charges: rate.weight_charges,
+      cod_charges: rate.cod_charges,
+      rto_charges: rate.rto_charges,
+      total_price: rate.total_price,
+
+      // Additional details
+      breakdown: rate.breakdown
+    }));
+
     // Sort rates by total price
-    rates.sort((a, b) => a.totalPrice - b.totalPrice);
-  
+    rates.sort((a, b) => a.total_price - b.total_price);
+
     // Cache the rates
-    await this.fastify.redis.set(key, JSON.stringify(rates), 'EX', 60 * 60 * 24);
-  
-    return { rates, order };
+    await this.fastify.redis.set(key, JSON.stringify(formattedRates), 'EX', 60 * 60 * 24);
+
+    return { rates: formattedRates, order };
   }
   /**
    * Create a new shipment
