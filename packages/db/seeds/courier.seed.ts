@@ -5,19 +5,28 @@ import { prisma, DeliveryType, Zone } from '@lorrigo/db';
 
 async function main() {
 
+   // await prisma.zonePricing.deleteMany();
+   // await prisma.planCourierPricing.deleteMany();
+   // await prisma.courier.deleteMany();
+   // await prisma.channelConfig.deleteMany();
+
    const channelMap = new Map();
 
    // 1. Seed Channels
    for (const channel of channelData) {
       const dbChannel = await prisma.channelConfig.upsert({
-         where: { name: channel.name },
-         update: {},
-         create: {
-            name: channel.name,
-            nickname: channel.nickName,
-            is_active: true,
+         where: { nickname: channel.nickName },
+         update: {
+           name: channel.name, // in case name changed
+           is_active: true,
          },
-      });
+         create: {
+           name: channel.name,
+           nickname: channel.nickName,
+           is_active: true,
+         },
+       });
+       
 
       channelMap.set(channel.name, dbChannel.id);
    }
@@ -124,10 +133,9 @@ async function main() {
 // Maps channel OIDs to names in env file
 function getChannelNameById(oid: string): string | undefined {
    const mapping: Record<string, string> = {
-      '6627acadabe95523ee592372': 'DELHIVERY',
+      '6627acadabe95523ee592372': 'SHIPROCKET',
       '6628abf579087bcaf24ef3da': 'SMARTSHIP',
-      '6628abf779087bcaf24ef7b2': 'SMARTR',
-      '66595e59ea09cc12380f0b85': 'DELHIVERY_0.5',
+      '66595e59ea09cc12380f0b85': 'DELHIVERY_5',
       '66695e2bc475271f3f11df4b': 'DELHIVERY_0.5',
       '66695e40c475271f3f11df4c': 'DELHIVERY_10',
       '66a34cbc3d165482f1409477': 'MARUTI',

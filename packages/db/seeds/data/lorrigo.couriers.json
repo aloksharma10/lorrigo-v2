@@ -288,54 +288,6 @@
 },
 {
   "_id": {
-    "$oid": "664f37941b37fa5a1f779af5"
-  },
-  "name": "Smartr Express",
-  "weightSlab": 0.5,
-  "weightUnit": "Kg",
-  "incrementWeight": 0.5,
-  "type": "air",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 40,
-    "percent": 2.1
-  },
-  "withinCity": {
-    "basePrice": 43,
-    "incrementPrice": 32
-  },
-  "withinZone": {
-    "basePrice": 46,
-    "incrementPrice": 41
-  },
-  "withinMetro": {
-    "basePrice": 65,
-    "incrementPrice": 58
-  },
-  "withinRoi": {
-    "basePrice": 73,
-    "incrementPrice": 67
-  },
-  "northEast": {
-    "basePrice": 80,
-    "incrementPrice": 70
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "vendor_channel_id": {
-    "$oid": "6628abf779087bcaf24ef7b2"
-  },
-  "isActive": true,
-  "carrierID": 0,
-  "isReversedCourier": false
-},
-{
-  "_id": {
     "$oid": "66596494ea09cc12380f0b87"
   },
   "name": "Delhivery surface 5 kg",

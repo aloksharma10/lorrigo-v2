@@ -2,7 +2,7 @@ import { APP_CONFIG } from '@/config/app';
 import { BaseVendor } from './base-vendor';
 import { APIs } from '@/config/api';
 import { CACHE_KEYS } from '@/config/cache';
-import { VendorRegistrationResult, VendorShipmentResult } from '@/types/vendor';
+import { VendorRegistrationResult, VendorServiceabilityResult, VendorShipmentResult } from '@/types/vendor';
 import { PickupAddress } from '@lorrigo/utils';
 import { getPincodeDetails } from '@/utils/pincode';
 
@@ -60,6 +60,126 @@ export class SmartShipVendor extends BaseVendor {
     } catch (error) {
       console.error('Error generating SmartShip token:', error);
       return null;
+    }
+  }
+
+  /**
+   * Check serviceability with SmartShip
+   * @param pickupPincode Pickup pincode
+   * @param deliveryPincode Delivery pincode
+   * @param weight Weight in kg
+   * @param dimensions Package dimensions
+   * @param paymentType Payment type (0 for prepaid, 1 for COD)
+   * @param collectableAmount Collectable amount for COD
+   * @param couriers List of courier IDs to check
+   * @returns Promise resolving to serviceability result
+   */
+  public async checkServiceability(
+    pickupPincode: string,
+    deliveryPincode: string,
+    weight: number,
+    dimensions: { length: number; width: number; height: number },
+    paymentType: 0 | 1,
+    collectableAmount: number = 0,
+    couriers: string[] = []
+  ): Promise<VendorServiceabilityResult> {
+    try {
+      const token = await this.getAuthToken();
+
+      if (!token) {
+        return {
+          success: false,
+          message: 'Failed to get SmartShip authentication token',
+          serviceableCouriers: [],
+        };
+      }
+
+      const apiConfig = {
+        Authorization: `Bearer ${token}`,
+      };
+
+      // Calculate volumetric weight
+      const volumeInCm = dimensions.length * dimensions.width * dimensions.height;
+      const volumetricWeight = volumeInCm / 5000; // Standard formula: volume in cm³ / 5000
+      const finalWeight = Math.max(weight, volumetricWeight) * 1000; // Convert to grams
+
+      // Prepare the request payload
+      const payload: {
+        serviceability_details: {
+          pickup_pincode: string;
+          delivery_pincode: string;
+          order_weight: number;
+          order_type: string;
+          order_collectable_amount: number;
+          product_mrp: number;
+          shipment_dimensions: {
+            length: number;
+            breadth: number;
+            height: number;
+          };
+          preferred_carriers?: string[];
+        };
+      } = {
+        serviceability_details: {
+          pickup_pincode: pickupPincode,
+          delivery_pincode: deliveryPincode,
+          order_weight: finalWeight, // in grams
+          order_type: paymentType === 1 ? 'cod' : 'prepaid',
+          order_collectable_amount: collectableAmount,
+          product_mrp: collectableAmount, // Using collectableAmount as product MRP
+          shipment_dimensions: {
+            length: dimensions.length,
+            breadth: dimensions.width,
+            height: dimensions.height,
+          },
+        },
+      };
+
+      // Add courier IDs if provided
+      if (couriers && couriers.length > 0) {
+        payload.serviceability_details.preferred_carriers = couriers;
+      }
+
+      const response = await this.makeRequest(
+        APIs.SMART_SHIP.HUB_SERVICEABILITY,
+        'POST',
+        payload,
+        apiConfig
+      );
+
+      // Check if the response has serviceable couriers
+      if (!response.data || response.data.status === false) {
+        return {
+          success: false,
+          message: response.data?.message || 'No serviceable couriers found',
+          serviceableCouriers: [],
+        };
+      }
+
+      // Extract serviceable couriers from the response
+      const serviceableCouriers = (response.data.data || []).map((carrier: any) => ({
+        id: carrier.carrier_id.toString(),
+        name: carrier.carrier_name,
+        code: carrier.carrier_code || carrier.carrier_name.toLowerCase().replace(/\s+/g, '_'),
+        serviceability: true,
+        data: carrier,
+      }));
+
+      return {
+        success: true,
+        message: serviceableCouriers.length > 0 
+          ? 'Serviceable couriers found' 
+          : 'No serviceable couriers found',
+        serviceableCouriers,
+      };
+    } catch (error: any) {
+      console.error('Error checking serviceability with SmartShip:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to check serviceability',
+        serviceableCouriers: [],
+      };
     }
   }
 

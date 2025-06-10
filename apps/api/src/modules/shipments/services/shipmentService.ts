@@ -5,13 +5,14 @@ import { CreateShipmentSchema, UpdateShipmentSchema, AddTrackingEventSchema } fr
 import { PlanService } from '@/modules/plan/services/plan.service';
 import { OrderService } from '@/modules/orders/services/order-service';
 import { VendorService } from '@/modules/vendors/vendor.service';
-import { Zone } from '@lorrigo/db';
-import { determineZone } from '@/utils/calculate-order-price';
+import { calculatePricesForCouriers, calculateVolumetricWeight, determineZone, PincodeDetails, PriceCalculationParams } from '@/utils/calculate-order-price';
+import { PriceCalculationResult } from '@/utils/calculate-order-price';
 
 /**
  * Service for handling shipment-related business logic
  */
 export class ShipmentService {
+  
   private vendorService: VendorService;
 
   constructor(
@@ -20,6 +21,9 @@ export class ShipmentService {
     private orderService: OrderService
   ) {
     this.vendorService = new VendorService(fastify);
+    this.fastify.redis.flushall().then(() => {
+      console.log('Redis flushed');
+    });
   }
 
   /**
@@ -41,12 +45,12 @@ export class ShipmentService {
    * @returns Promise resolving to shipping rates and order details
    */
   async getShipmentRates(id: string, userId: string) {
-    // Check if rates are cached
+    // Fetch order details
     const order = await this.orderService.getOrderById(id, userId);
     if (!order) {
       return { error: 'Order not found' };
     }
-
+  
     // Build cache key
     const key = `${order?.is_reverse_order ? 'reversed' : 'forward'}-${order?.hub?.address?.pincode}-${order?.customer?.address?.pincode}-${order?.applicable_weight}-${order?.payment_mode}`;
     
@@ -55,134 +59,117 @@ export class ShipmentService {
     if (cachedRates) {
       return { rates: JSON.parse(cachedRates), order };
     }
-
-    // Calculate volumetric weight
-    const volume = (order?.package?.length || 0) * (order?.package?.breadth || 0) * (order?.package?.height || 0) / 5000;
-    const volumetricWeight = Math.ceil(volume);
-    const finalWeight = Math.max(volumetricWeight, order?.package?.dead_weight || 0);
-    
-    // Determine payment type (0 for prepaid, 1 for COD)
-    const paymentType = order?.payment_mode === 'COD' ? 1 : 0;
-
-    // Prepare dimensions object
-    const dimensions = {
-      length: order?.package?.length || 0,
-      width: order?.package?.breadth || 0,
-      height: order?.package?.height || 0
+  
+    // Prepare parameters for price calculation
+    const params: PriceCalculationParams = {
+      weight: order?.package?.dead_weight || 0,
+      weightUnit: 'kg',
+      boxLength: order?.package?.length || 0,
+      boxWidth: order?.package?.breadth || 0,
+      boxHeight: order?.package?.height || 0,
+      sizeUnit: 'cm',
+      paymentType: order?.payment_mode === 'COD' ? 1 : 0,
+      collectableAmount: order?.amount_to_collect || 0,
+      pickupPincode: order?.hub?.address?.pincode || '',
+      deliveryPincode: order?.customer?.address?.pincode || '',
+      isReversedOrder: !!order?.is_reverse_order
     };
-
+  
+    // Prepare pincode details
+    const pickupDetails: PincodeDetails = {
+      city: order?.hub?.address?.city || '',
+      state: order?.hub?.address?.state || ''
+    };
+    
+    const deliveryDetails: PincodeDetails = {
+      city: order?.customer?.address?.city || '',
+      state: order?.customer?.address?.state || ''
+    };
+  
     // Check serviceability for the user's plan
     const serviceabilityResult = await this.vendorService.checkServiceabilityForPlan(
       userId,
-      order?.hub?.address?.pincode || '',
-      order?.customer?.address?.pincode || '',
-      finalWeight,
-      dimensions,
-      paymentType,
-      order?.amount_to_collect || 0
+      params.pickupPincode,
+      params.deliveryPincode,
+      calculateVolumetricWeight(
+        params.boxLength,
+        params.boxWidth,
+        params.boxHeight,
+        params.sizeUnit as 'cm' | 'inch'
+      ),
+      {
+        length: params.boxLength,
+        width: params.boxWidth,
+        height: params.boxHeight
+      },
+      params.paymentType,
+      params.collectableAmount
     );
 
+    console.log(JSON.stringify(serviceabilityResult, null, 2));
+  
+    let rates: PriceCalculationResult[] = [];
+  
     // If no serviceability, fall back to plan rates
     if (!serviceabilityResult.success || serviceabilityResult.serviceableCouriers.length === 0) {
       const fallbackRates = await this.planService.calculateRates(
         {
-          pickupPincode: order?.hub?.address?.pincode || '',
-          deliveryPincode: order?.customer?.address?.pincode || '',
-          weight: order?.package?.dead_weight || 0,
-          weightUnit: 'kg',
-          boxLength: order?.package?.length || 0,
-          boxWidth: order?.package?.breadth || 0,
-          boxHeight: order?.package?.height || 0,
-          sizeUnit: 'cm',
-          paymentType: order?.payment_mode === 'COD' ? 1 : 0,
-          collectableAmount: order?.amount_to_collect || 0,
-          isReversedOrder: !!order?.is_reverse_order,
+          pickupPincode: params.pickupPincode,
+          deliveryPincode: params.deliveryPincode,
+          weight: params.weight,
+          weightUnit: params.weightUnit,
+          boxLength: params.boxLength,
+          boxWidth: params.boxWidth,
+          boxHeight: params.boxHeight,
+          sizeUnit: params.sizeUnit as 'cm' | 'in',
+          paymentType: params.paymentType,
+          collectableAmount: params.collectableAmount,
+          isReversedOrder: params.isReversedOrder
         },
         userId
       );
-
+  
       // Cache the rates
-      await this.fastify.redis.set(key, JSON.stringify(fallbackRates), 'EX', 60 * 60 * 24);
-      return { rates: fallbackRates, order };
+      await this.fastify.redis.set(key, JSON.stringify([]), 'EX', 60 * 60 * 24);
+      return { rates: [], order };
     }
-
-    // Calculate rates for serviceable couriers
-    const rates = await Promise.all(serviceabilityResult.serviceableCouriers.map(async (courier) => {
-      if (!courier.pricing) {
-        return null;
-      }
-
-      // Determine zone
-      const zone = determineZone(
-        {
-          state: order?.hub?.address?.state || '',
-          city: order?.hub?.address?.city || '',
+  
+    // Calculate rates for serviceable couriers using utility function
+    rates = calculatePricesForCouriers(
+      params,
+      serviceabilityResult.serviceableCouriers.map(courier => ({
+        courier: {
+          id: courier.id,
+          name: courier.name,
+          courier_code: courier.code,
+          type: courier.vendor || '', // Ensure type is always string
+          is_active: true,
+          is_reversed_courier: !!order?.is_reverse_order,
+          pickup_time: undefined,
+          weight_slab: courier.pricing?.weight_slab || 0.5
         },
-        {
-          state: order?.customer?.address?.state || '',
-          city: order?.customer?.address?.city || '',
+        pricing: {
+          weight_slab: courier.pricing?.weight_slab || 0.5,
+          increment_weight: courier.pricing?.increment_weight || 0.5,
+          cod_charge_hard: courier.pricing?.cod_charge_hard || 0,
+          cod_charge_percent: courier.pricing?.cod_charge_percent || 0,
+          is_cod_applicable: true,
+          is_rto_applicable: true,
+          is_fw_applicable: true,
+          zone_pricing: courier.pricing?.zone_pricing || []
         }
-      );
-
-      // Find zone pricing
-      const zonePricing = courier.pricing.zone_pricing.find((zp: { zone: Zone }) => zp.zone === zone.zone);
-      if (!zonePricing) {
-        return null;
-      }
-
-      // Calculate weight-based charges
-      const minWeight = courier.pricing.weight_slab || 0.5;
-      let orderWeight = finalWeight;
-      if (orderWeight < minWeight) {
-        orderWeight = minWeight;
-      }
-
-      // Calculate weight increment and charges
-      const weightIncrementRatio = Math.ceil((orderWeight - minWeight) / (courier.pricing.increment_weight || 0.5));
-      let shippingCharge = zonePricing.base_price || 0;
-      shippingCharge += (zonePricing.increment_price || 0) * weightIncrementRatio;
-
-      // Calculate COD charges if applicable
-      const codPrice = courier.pricing.cod_charge_hard || 0;
-      const codAfterPercent = ((courier.pricing.cod_charge_percent || 0) / 100) * (order?.amount_to_collect || 0);
-      const codAmount = paymentType === 1 ? Math.max(codPrice, codAfterPercent) : 0;
-
-      // Calculate RTO charges
-      const isRTOSameAsFW = zonePricing.is_rto_same_as_fw;
-      const rtoCharges = isRTOSameAsFW
-        ? shippingCharge
-        : zonePricing.rto_base_price + (zonePricing.rto_increment_price * weightIncrementRatio);
-
-      // Calculate expected pickup time
-      const today = new Date();
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const expectedPickup = today.getHours() < 17 ? 'Today' : 'Tomorrow';
-
-      return {
-        id: courier.id,
-        name: courier.name,
-        code: courier.code,
-        vendor: courier.vendor,
-        charge: shippingCharge + codAmount,
-        cod: codAmount,
-        rtoCharges,
-        minWeight,
-        order_zone: zone,
-        expectedPickup,
-        serviceability: true
-      };
-    }));
-
-    // Filter out null entries and sort by charge
-    const validRates = rates.filter(Boolean).sort((a, b) => (a?.charge || 0) - (b?.charge || 0));
-
+      })),
+      pickupDetails,
+      deliveryDetails
+    );
+    // Sort rates by total price
+    rates.sort((a, b) => a.totalPrice - b.totalPrice);
+  
     // Cache the rates
-    await this.fastify.redis.set(key, JSON.stringify(validRates), 'EX', 60 * 60 * 24);
-
-    return { rates: validRates, order };
+    await this.fastify.redis.set(key, JSON.stringify(rates), 'EX', 60 * 60 * 24);
+  
+    return { rates, order };
   }
-
   /**
    * Create a new shipment
    */
