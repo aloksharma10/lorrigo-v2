@@ -1,4 +1,3 @@
-import { PlanService } from '@/modules/plan/services/plan.service';
 import { getPincodeDetails } from '@/utils/pincode';
 import { Prisma, prisma, ShipmentStatus } from '@lorrigo/db';
 import { Channel, PaymentMethod } from '@lorrigo/db';
@@ -16,7 +15,6 @@ import { FastifyInstance } from 'fastify';
 export class OrderService {
   constructor(
     private fastify: FastifyInstance,
-    private planService: PlanService
   ) { }
 
   /**
@@ -216,35 +214,6 @@ export class OrderService {
         payments: true,
       },
     });
-  }
-
-  async getRates(id: string, userId: string) {
-    const order = await this.getOrderById(id, userId);
-    const key = `${order?.is_reverse_order ? 'reversed' : 'forward'}-${order?.hub?.address?.pincode}-${order?.customer?.address?.pincode}-${order?.applicable_weight}-${order?.payment_mode}`;
-    const cachedRates = await this.fastify.redis.get(key);
-    if (cachedRates) {
-      return { rates: JSON.parse(cachedRates), order };
-    }
-
-    const rates = await this.planService.calculateRates(
-      {
-        pickupPincode: order?.hub?.address?.pincode || '',
-        deliveryPincode: order?.customer?.address?.pincode || '',
-        weight: order?.package?.dead_weight || 0,
-        weightUnit: 'kg',
-        boxLength: order?.package?.length || 0,
-        boxWidth: order?.package?.breadth || 0,
-        boxHeight: order?.package?.height || 0,
-        sizeUnit: 'cm',
-        paymentType: order?.payment_mode === 'COD' ? 1 : 0,
-        collectableAmount: order?.amount_to_collect || 0,
-        isReversedOrder: false,
-      },
-      userId
-    );
-    await this.fastify.redis.set(key, JSON.stringify(rates), 'EX', 60 * 60 * 24);
-
-    return { rates, order };
   }
 
   /**

@@ -2,12 +2,14 @@ import { ShipmentStatus } from '@lorrigo/db';
 import { z } from 'zod';
 import { FastifyInstance } from 'fastify';
 import { CreateShipmentSchema, UpdateShipmentSchema, AddTrackingEventSchema } from '@lorrigo/utils';
+import { PlanService } from '@/modules/plan/services/plan.service';
+import { OrderService } from '@/modules/orders/services/order-service';
 
 /**
  * Service for handling shipment-related business logic
  */
 export class ShipmentService {
-  constructor(private fastify: FastifyInstance) {}
+  constructor(private fastify: FastifyInstance, private planService: PlanService, private orderService: OrderService) {}
 
   /**
    * Generate a unique tracking number
@@ -19,6 +21,36 @@ export class ShipmentService {
       .toString()
       .padStart(5, '0');
     return `${prefix}${timestamp}${random}`;
+  }
+
+  
+  async getShipmentRates(id: string, userId: string) {
+    const order = await this.orderService.getOrderById(id, userId);
+    const key = `${order?.is_reverse_order ? 'reversed' : 'forward'}-${order?.hub?.address?.pincode}-${order?.customer?.address?.pincode}-${order?.applicable_weight}-${order?.payment_mode}`;
+    const cachedRates = await this.fastify.redis.get(key);
+    if (cachedRates) {
+      return { rates: JSON.parse(cachedRates), order };
+    }
+
+    const rates = await this.planService.calculateRates(
+      {
+        pickupPincode: order?.hub?.address?.pincode || '',
+        deliveryPincode: order?.customer?.address?.pincode || '',
+        weight: order?.package?.dead_weight || 0,
+        weightUnit: 'kg',
+        boxLength: order?.package?.length || 0,
+        boxWidth: order?.package?.breadth || 0,
+        boxHeight: order?.package?.height || 0,
+        sizeUnit: 'cm',
+        paymentType: order?.payment_mode === 'COD' ? 1 : 0,
+        collectableAmount: order?.amount_to_collect || 0,
+        isReversedOrder: false,
+      },
+      userId
+    );
+    await this.fastify.redis.set(key, JSON.stringify(rates), 'EX', 60 * 60 * 24);
+
+    return { rates, order };
   }
 
   /**
@@ -42,7 +74,7 @@ export class ShipmentService {
       data: {
         code: `SHP-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
         awb: this.generateTrackingNumber(),
-        status: ShipmentStatus.CREATED,
+        status: ShipmentStatus.NEW,
         order: {
           connect: {
             id: data.orderId,
@@ -61,7 +93,7 @@ export class ShipmentService {
         tracking_events: {
           create: {
             code: `ST-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
-            status: ShipmentStatus.CREATED,
+            status: ShipmentStatus.NEW,
             location: '',
             description: 'Shipment created and ready for pickup',
           },
@@ -196,7 +228,7 @@ export class ShipmentService {
       } else if (updateData.status === 'IN_TRANSIT') {
         await this.fastify.prisma.order.update({
           where: { id: existingShipment.order_id },
-          data: { status: 'SHIPPED' },
+          data: { status: ShipmentStatus.IN_TRANSIT },
         });
       }
     }
@@ -250,7 +282,7 @@ export class ShipmentService {
     } else if (eventData.status === 'IN_TRANSIT') {
       await this.fastify.prisma.order.update({
         where: { id: shipment.order_id },
-        data: { status: 'SHIPPED' },
+        data: { status: ShipmentStatus.IN_TRANSIT },
       });
     }
 

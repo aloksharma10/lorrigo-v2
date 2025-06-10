@@ -9,7 +9,7 @@ import { PlanService } from '../plan/services/plan.service';
  * Orders module routes
  */
 export default async function ordersRoutes(fastify: FastifyInstance) {
-  const orderService = new OrderService(fastify, new PlanService(fastify));
+  const orderService = new OrderService(fastify);
   const orderController = new OrderController(orderService);
 
   // All routes require authentication
@@ -179,24 +179,6 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
     },
     handler: (request: FastifyRequest<{ Params: { id: string } }>, reply) =>
       orderController.getOrderById(request, reply),
-  });
-
-  // Get rates for an order
-  fastify.get('/:id/rates', {
-    schema: {
-      tags: ['Orders'],
-      summary: 'Get rates for an order',
-      security: [{ bearerAuth: [] }],
-      params: {
-        type: 'object',
-        required: ['id'],
-        properties: {
-          id: { type: 'string' },
-        },
-      },
-    },
-    handler: (request: FastifyRequest<{ Params: { id: string } }>, reply) =>
-      orderController.getRates(request, reply),
   });
 
   // Create a new order

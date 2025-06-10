@@ -73,27 +73,6 @@ export class OrderController {
   }
 
   /**
-   * Get rates for an order
-   */
-  async getRates(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
-    try {
-      const { id } = request.params;
-      const user_id = request.userPayload!.id;
-
-      const rates = await this.orderService.getRates(id, user_id);
-
-      return rates;
-    } catch (error) {
-      request.log.error(error);
-      captureException(error as Error);
-
-      return reply.code(500).send({
-        message: 'Internal server error',
-      });
-    }
-  }
-
-  /**
    * Create a new order
    */
   async createOrder(request: FastifyRequest, reply: FastifyReply) {

@@ -3,6 +3,8 @@ import { ShipmentController } from './controllers/shipmentsController';
 import { authorizeRoles } from '@/middleware/auth';
 import { Role } from '@lorrigo/db';
 import { ShipmentService } from './services/shipmentService';
+import { OrderService } from '../orders/services/order-service';
+import { PlanService } from '../plan/services/plan.service';
 
 /**
  * Shipments module routes
@@ -10,8 +12,26 @@ import { ShipmentService } from './services/shipmentService';
 export default async function shipmentRoutes(fastify: FastifyInstance) {
   // All routes require authentication
   fastify.addHook('onRequest', fastify.authenticate);
-  const shipmentService = new ShipmentService(fastify);
+  const shipmentService = new ShipmentService(fastify, new PlanService(fastify), new OrderService(fastify));
   const shipmentController = new ShipmentController(shipmentService);
+
+    // Get rates for an order
+    fastify.get('/:id/rates', {
+      schema: {
+        tags: ['Orders'],
+        summary: 'Get rates for an order',
+        security: [{ bearerAuth: [] }],
+        params: {
+          type: 'object',
+          required: ['id'],
+          properties: {
+            id: { type: 'string' },
+          },
+        },
+      },
+      handler: (request: FastifyRequest<{ Params: { id: string } }>, reply) =>
+        shipmentController.getRates(request, reply),
+    });
 
   // Create a new shipment
   fastify.post('/', {

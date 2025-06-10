@@ -3,12 +3,33 @@ import { z } from 'zod';
 import { ShipmentService } from '../services/shipmentService';
 import { CreateShipmentSchema, UpdateShipmentSchema, AddTrackingEventSchema } from '@lorrigo/utils';
 import { checkAuth } from '@/middleware/auth';
+import { captureException } from '@/lib/sentry';
 
 /**
  * Controller for shipment-related API endpoints
  */
 export class ShipmentController {
   constructor(private shipmentService: ShipmentService) {}
+  /**
+   * Get rates for an order
+   */
+  async getRates(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+    try {
+      const { id } = request.params;
+      const user_id = request.userPayload!.id;
+
+      const rates = await this.shipmentService.getShipmentRates(id, user_id);
+
+      return rates;
+    } catch (error) {
+      request.log.error(error);
+      captureException(error as Error);
+
+      return reply.code(500).send({
+        message: 'Internal server error',
+      });
+    }
+  }
 
   /**
    * Create a new shipment
