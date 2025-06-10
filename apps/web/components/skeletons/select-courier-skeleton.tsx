@@ -7,10 +7,10 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@lor
 
 export default function ShipOrderPageSkeleton() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       <div className="flex flex-col md:flex-row">
         {/* Desktop Order Details Skeleton */}
-        <div className="hidden md:block w-80 h-screen sticky top-0 border-r border-gray-200 bg-white overflow-y-auto">
+        <div className="hidden md:block w-80 h-screen sticky top-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-stone-900 overflow-y-auto">
           <div className="p-6 space-y-6">
             {/* Order Details Header */}
             <div className="flex justify-between items-center">
@@ -18,7 +18,7 @@ export default function ShipOrderPageSkeleton() {
               <Skeleton className="h-5 w-5 rounded-full" />
             </div>
             {/* Order ID */}
-            <div className="p-3 bg-blue-50 rounded-lg">
+            <div className="p-3 rounded-lg">
               <Skeleton className="h-4 w-20 mb-2" />
               <Skeleton className="h-5 w-40" />
             </div>
@@ -80,7 +80,7 @@ export default function ShipOrderPageSkeleton() {
                 <Skeleton className="h-5 w-5 rounded-full" />
                 <Skeleton className="h-5 w-28" />
               </div>
-              <div className="p-2 rounded-lg bg-blue-50">
+              <div className="p-2 rounded-lg">
                 <div className="flex items-center gap-3">
                   <Skeleton className="h-8 w-8 rounded-full" />
                   <div className="flex-1 space-y-1">
@@ -230,7 +230,7 @@ export default function ShipOrderPageSkeleton() {
               <div className="p-0">
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="border-b bg-gray-50">
+                    <thead className="border-b bg-gray-50 dark:bg-stone-900">
                       <tr>
                         <th className="p-4 text-left">
                           <Skeleton className="h-4 w-24" />
@@ -259,7 +259,7 @@ export default function ShipOrderPageSkeleton() {
                       </tr>
                     </thead>
                     <tbody>
-                      {[...Array(3)].map((_, index) => (
+                      {[...Array(5)].map((_, index) => (
                         <tr key={index} className="border-b">
                           <td className="p-4">
                             <div className="flex items-center gap-3">
@@ -358,7 +358,7 @@ export default function ShipOrderPageSkeleton() {
             </div>
 
             {/* Auto-Scheduled Pickup Info */}
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-50">
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 dark:bg-stone-900">
               <Skeleton className="h-2 w-2 rounded-full" />
               <Skeleton className="h-4 w-32" />
               <Skeleton className="h-4 w-40" />

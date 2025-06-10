@@ -3,20 +3,14 @@
 import { useState } from "react"
 import { useParams } from "next/navigation"
 import {
-  X,
   MapPin,
   Package,
-  CreditCard,
   Weight,
   AlertTriangle,
   Clock,
   Calendar,
   Info,
-  ChevronDown,
-  ChevronUp,
   Search,
-  Star,
-  TrendingUp,
   Shield,
   Menu,
   Loader2,
@@ -37,16 +31,7 @@ import {
   TabsTrigger,
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
   Input,
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
   Sheet,
   SheetContent,
   SheetHeader,
@@ -59,221 +44,11 @@ import HoverCardToolTip from "@/components/hover-card-tooltip"
 import ShipOrderPageSkeleton from "@/components/skeletons/select-courier-skeleton"
 import ActionTooltip from "@/components/action-tooltip"
 import { CopyBtn } from "@/components/copy-btn"
-
-const CourierLogo = ({ courierName }: { courierName: string }) => {
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((word) => word[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
-  }
-
-  return (
-    <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold text-xs md:text-sm">
-      {getInitials(courierName)}
-    </div>
-  )
-}
-
-const RatingBadge = ({ rating }: { rating: number }) => {
-  return (
-    <div className="flex items-center gap-1">
-      <Star className="h-3 w-3 md:h-4 md:w-4 fill-yellow-400 text-yellow-400" />
-      <span className="font-medium text-xs md:text-sm">{rating.toFixed(1)}</span>
-    </div>
-  )
-}
-
-const currencyFormatter = (amount: number) => {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    minimumFractionDigits: 0,
-  }).format(amount)
-}
-
-// Mobile Order Summary Component
-const MobileOrderSummary = ({ order }: { order: any }) => {
-  return (
-    <Card className="md:hidden mb-4">
-      <CardContent className="p-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <div className="text-xs text-muted-foreground">Order Value</div>
-            <div className="font-semibold text-green-600">{currencyFormatter(order.total_amount)}</div>
-          </div>
-          <div>
-            <div className="text-xs text-muted-foreground">Weight</div>
-            <div className="font-medium">{order.applicable_weight} Kg</div>
-          </div>
-          <div>
-            <div className="text-xs text-muted-foreground">From</div>
-            <div className="text-sm font-medium">{order.hub.address.city}</div>
-          </div>
-          <div>
-            <div className="text-xs text-muted-foreground">To</div>
-            <div className="text-sm font-medium">{order.customer.address.city}</div>
-          </div>
-        </div>
-        <div className="mt-3 pt-3 border-t">
-          <div className="flex items-center justify-between">
-            <div className="text-xs text-muted-foreground">Payment</div>
-            <Badge variant={order.payment_mode === "COD" ? "destructive" : "default"} className="text-xs">
-              {order.payment_mode}
-            </Badge>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-// Desktop Order Details Component
-const DesktopOrderDetails = ({
-  order,
-  isOpen,
-  setIsOpen,
-}: {
-  order: any
-  isOpen: boolean
-  setIsOpen: (open: boolean) => void
-}) => {
-  return (
-    <div className="hidden md:block w-80 h-screen sticky top-0 border-r border-gray-200 dark:border-gray-800 overflow-y-auto">
-      <div className="p-6 space-y-6">
-        <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" className="w-full justify-between p-0 h-auto">
-              <h2 className="text-lg font-semibold">Order Details</h2>
-              {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            </Button>
-          </CollapsibleTrigger>
-
-          <CollapsibleContent className="space-y-4 mt-4">
-            {/* Order ID */}
-            <div className="p-3  rounded-lg">
-              <div className="text-sm text-blue-600 dark:text-white font-medium">Order ID</div>
-              <CopyBtn text={order.order_number} label={order.order_number} className="font-semibold text-blue-900 dark:text-white" />
-            </div>
-
-            {/* Pickup Location */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <MapPin className="h-4 w-4 text-green-600" />
-                Pickup From
-              </div>
-              <div className="pl-6 space-y-1">
-                <div className="font-medium">
-                  {order.hub.address.pincode}, {order.hub.address.city}
-                </div>
-                <div className="text-sm text-muted-foreground">{order.hub.address.state}, India</div>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Delivery Location */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <MapPin className="h-4 w-4 text-red-600" />
-                Deliver To
-              </div>
-              <div className="pl-6 space-y-1">
-                <div className="font-medium">
-                  {order.customer.address.pincode}, {order.customer.address.city}
-                </div>
-                <div className="text-sm text-muted-foreground">{order.customer.address.state}, India</div>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Order Value */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <CreditCard className="h-4 w-4" />
-                Order Value
-              </div>
-              <div className="text-lg font-semibold text-green-600">{currencyFormatter(order.total_amount)}</div>
-            </div>
-
-            {/* Amount to collect */}
-            {order.amount_to_collect > 0 && order.payment_mode === "COD" && (
-              <>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <CreditCard className="h-4 w-4" />
-                    Amount to Collect
-                  </div>
-                  <div className="text-lg font-semibold text-orange-600">
-                    {currencyFormatter(order.amount_to_collect)}
-                  </div>
-                </div>
-                <Separator />
-              </>
-            )}
-
-            {/* Payment Mode */}
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">Payment Mode</div>
-              <Badge variant={order.payment_mode === "COD" ? "destructive" : "default"}>{order.payment_mode}</Badge>
-            </div>
-
-            <Separator />
-
-            {/* Weight */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Weight className="h-4 w-4" />
-                Applicable Weight
-              </div>
-              <div className="font-medium">{order.applicable_weight} Kg</div>
-            </div>
-
-            {/* Package Dimensions */}
-            <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">Package Dimensions</div>
-              <div className="text-sm font-medium">
-                {order.package.length} × {order.package.breadth} × {order.package.height} cm
-              </div>
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
-
-        {/* Buyer Insights */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Buyer Insights
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-3">
-              <div className="text-sm text-muted-foreground">Customer Details:</div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-3 p-2 rounded-lg bg-blue-50 dark:bg-blue-800">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900">
-                    <Package className="h-4 w-4 text-blue-600 dark:text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">{order.customer.name}</div>
-                    <div className="text-xs text-muted-foreground">{order.customer.phone}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <Button variant="outline" size="sm" className="w-full">
-              View All Details
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  )
-}
+import { DesktopOrderDetails } from "../components/desktop-order-summary"
+import { MobileOrderSummary } from "../components/mobile-order-summary"
+import { currencyFormatter } from "@lorrigo/utils"
+import { CourierLogo } from "@/components/courier-logo"
+import { RatingBadgeStart } from "@/components/rating-badge"
 
 export default function ShipOrderPage() {
   const params = useParams()
@@ -352,7 +127,7 @@ export default function ShipOrderPage() {
   // Error state
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4">
+      <div className="min-h-screen bg-gray-50 dark:bg-stone-900 p-4">
         <Alert variant="destructive" className="max-w-md mx-auto mt-8">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>Failed to load shipping rates. Please try again.</AlertDescription>
@@ -365,166 +140,165 @@ export default function ShipOrderPage() {
   const order = data.order
 
   return (
-    <TooltipProvider>
-      <div className="min-h-screen bg-gray-50 dark:bg-transparent">
-        <div className="flex flex-col md:flex-row">
-          {/* Desktop Order Details */}
-          <DesktopOrderDetails order={order} isOpen={isOrderDetailsOpen} setIsOpen={setIsOrderDetailsOpen} />
+    <div className="min-h-screen bg-gray-50 dark:bg-transparent">
+      <div className="flex flex-col md:flex-row">
+        {/* Desktop Order Details */}
+        <DesktopOrderDetails order={order} isOpen={isOrderDetailsOpen} setIsOpen={setIsOrderDetailsOpen} />
 
-          {/* Main Content */}
-          <div className="flex-1 p-4 md:p-6">
-            <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
-              {/* Mobile Header with Order Details Sheet */}
-              <div className="md:hidden flex items-center justify-between">
-                <h1 className="text-xl font-bold">Select Courier</h1>
-                <Sheet open={showMobileOrderDetails} onOpenChange={setShowMobileOrderDetails}>
-                  <SheetTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Menu className="h-4 w-4 mr-2" />
-                      Order Details
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="left" className="w-80">
-                    <SheetHeader>
-                      <SheetTitle>Order Details</SheetTitle>
-                    </SheetHeader>
-                    <div className="mt-6 px-6 space-y-4">
-                      {/* Order ID */}
-                      <div className="p-3  rounded-lg">
-                        <div className="text-sm text-blue-600 dark:text-white font-medium">Order ID</div>
-                        <CopyBtn text={order.order_number} label={order.order_number} labelClassName="text-blue-900 dark:text-white" className="font-semibold" />
-                      </div>
+        {/* Main Content */}
+        <div className="flex-1 p-4 md:p-6">
+          <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
+            {/* Mobile Header with Order Details Sheet */}
+            <div className="md:hidden flex items-center justify-between">
+              <h1 className="text-xl font-bold">Select Courier</h1>
+              <Sheet open={showMobileOrderDetails} onOpenChange={setShowMobileOrderDetails}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Menu className="h-4 w-4 mr-2" />
+                    Order Details
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-80">
+                  <SheetHeader>
+                    <SheetTitle>Order Details</SheetTitle>
+                  </SheetHeader>
+                  <div className="mt-6 px-6 space-y-4">
+                    {/* Order ID */}
+                    <div className="p-3  rounded-lg">
+                      <div className="text-sm text-blue-600 dark:text-white font-medium">Order ID</div>
+                      <CopyBtn text={order.order_number} label={order.order_number} labelClassName="text-blue-900 dark:text-white" className="font-semibold" />
+                    </div>
 
-                      {/* Locations */}
-                      <div className="space-y-3">
-                        <div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                            <MapPin className="h-4 w-4 text-green-600" />
-                            Pickup From
-                          </div>
-                          <div className="pl-6 text-sm font-medium">
-                            {order.hub.address.city}, {order.hub.address.state}
-                          </div>
+                    {/* Locations */}
+                    <div className="space-y-3">
+                      <div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                          <MapPin className="h-4 w-4 text-green-600" />
+                          Pickup From
                         </div>
-                        <div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                            <MapPin className="h-4 w-4 text-red-600" />
-                            Deliver To
-                          </div>
-                          <div className="pl-6 text-sm font-medium">
-                            {order.customer.address.city}, {order.customer.address.state}
-                          </div>
+                        <div className="pl-6 text-sm font-medium">
+                          {order.hub.address.city}, {order.hub.address.state}
                         </div>
                       </div>
-
-                      <Separator />
-
-                      {/* Key Details */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <div className="text-sm text-muted-foreground">Order Value</div>
-                          <div className="font-semibold text-green-600">{currencyFormatter(order.total_amount)}</div>
+                      <div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                          <MapPin className="h-4 w-4 text-red-600" />
+                          Deliver To
                         </div>
-                        <div>
-                          <div className="text-sm text-muted-foreground">Weight</div>
-                          <div className="font-medium">{order.applicable_weight} Kg</div>
-                        </div>
-                        <div>
-                          <div className="text-sm text-muted-foreground">Payment</div>
-                          <Badge variant={order.payment_mode === "COD" ? "destructive" : "default"}>
-                            {order.payment_mode}
-                          </Badge>
-                        </div>
-                        <div>
-                          <div className="text-sm text-muted-foreground">Customer</div>
-                          <div className="text-sm font-medium">{order.customer.name}</div>
+                        <div className="pl-6 text-sm font-medium">
+                          {order.customer.address.city}, {order.customer.address.state}
                         </div>
                       </div>
                     </div>
-                  </SheetContent>
-                </Sheet>
-              </div>
 
-              {/* Desktop Header */}
-              <div className="hidden md:flex items-center justify-between">
-                <h1 className="text-2xl font-bold">Select Courier Partner</h1>
-                <p className="text-muted-foreground">Choose the best shipping option for your order</p>
-              </div>
+                    <Separator />
 
-              {/* Mobile Order Summary */}
-              <MobileOrderSummary order={order} />
-
-              {/* Filters and Controls */}
-              <div className="space-y-4">
-                {/* Search and Primary Filters */}
-                <div className="flex flex-col gap-3">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search courier partners..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
-                    />
+                    {/* Key Details */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-sm text-muted-foreground">Order Value</div>
+                        <div className="font-semibold text-green-600">{currencyFormatter(order.total_amount)}</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-muted-foreground">Weight</div>
+                        <div className="font-medium">{order.applicable_weight} Kg</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-muted-foreground">Payment</div>
+                        <Badge variant={order.payment_mode === "COD" ? "destructive" : "default"}>
+                          {order.payment_mode}
+                        </Badge>
+                      </div>
+                      <div>
+                        <div className="text-sm text-muted-foreground">Customer</div>
+                        <div className="text-sm font-medium">{order.customer.name}</div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex gap-2 overflow-x-auto pb-2">
-                    <Select value={priceFilter} onValueChange={setPriceFilter}>
-                      <SelectTrigger className="w-36 flex-shrink-0">
-                        <SelectValue placeholder="Price Range" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Prices</SelectItem>
-                        <SelectItem value="under-500">Under ₹500</SelectItem>
-                        <SelectItem value="500-1000">₹500 - ₹1000</SelectItem>
-                        <SelectItem value="above-1000">Above ₹1000</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select value={ratingFilter} onValueChange={setRatingFilter}>
-                      <SelectTrigger className="w-32 flex-shrink-0">
-                        <SelectValue placeholder="Rating" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Ratings</SelectItem>
-                        <SelectItem value="above-4.5">4.5+ Stars</SelectItem>
-                        <SelectItem value="4-4.5">4.0 - 4.5 Stars</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
+
+            {/* Desktop Header */}
+            <div className="hidden md:flex items-center justify-between">
+              <h1 className="text-2xl font-bold">Select Courier Partner</h1>
+              <p className="text-muted-foreground">Choose the best shipping option for your order</p>
+            </div>
+
+            {/* Mobile Order Summary */}
+            <MobileOrderSummary order={order} />
+
+            {/* Filters and Controls */}
+            <div className="space-y-4">
+              {/* Search and Primary Filters */}
+              <div className="flex flex-col gap-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search courier partners..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
                 </div>
-
-                {/* Tabs and Sort */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList className="grid w-full grid-cols-3 sm:w-fit">
-                      <TabsTrigger value="All" className="text-xs sm:text-sm">
-                        All ({data?.rates?.length || 0})
-                      </TabsTrigger>
-                      <TabsTrigger value="Air" className="text-xs sm:text-sm">
-                        Air ({data?.rates?.filter((r) => r.type === "AIR").length || 0})
-                      </TabsTrigger>
-                      <TabsTrigger value="Surface" className="text-xs sm:text-sm">
-                        Surface ({data?.rates?.filter((r) => r.type === "SURFACE").length || 0})
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-
-                  <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger className="w-full sm:w-64">
-                      <SelectValue />
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  <Select value={priceFilter} onValueChange={setPriceFilter}>
+                    <SelectTrigger className="w-36 flex-shrink-0">
+                      <SelectValue placeholder="Price Range" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="custom">Custom (Recommended)</SelectItem>
-                      <SelectItem value="price-low">Price: Low to High</SelectItem>
-                      <SelectItem value="price-high">Price: High to Low</SelectItem>
-                      <SelectItem value="rating">Rating: High to Low</SelectItem>
-                      <SelectItem value="delivery-time">Fastest Delivery</SelectItem>
+                      <SelectItem value="all">All Prices</SelectItem>
+                      <SelectItem value="under-500">Under ₹500</SelectItem>
+                      <SelectItem value="500-1000">₹500 - ₹1000</SelectItem>
+                      <SelectItem value="above-1000">Above ₹1000</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={ratingFilter} onValueChange={setRatingFilter}>
+                    <SelectTrigger className="w-32 flex-shrink-0">
+                      <SelectValue placeholder="Rating" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Ratings</SelectItem>
+                      <SelectItem value="above-4.5">4.5+ Stars</SelectItem>
+                      <SelectItem value="4-4.5">4.0 - 4.5 Stars</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
-              {/* Warning Alert */}
-              {/* <Alert className="border-orange-200 bg-orange-50">
+              {/* Tabs and Sort */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <Tabs value={activeTab} onValueChange={setActiveTab}>
+                  <TabsList className="grid w-full grid-cols-3 sm:w-fit">
+                    <TabsTrigger value="All" className="text-xs sm:text-sm">
+                      All ({data?.rates?.length || 0})
+                    </TabsTrigger>
+                    <TabsTrigger value="Air" className="text-xs sm:text-sm">
+                      Air ({data?.rates?.filter((r) => r.type === "AIR").length || 0})
+                    </TabsTrigger>
+                    <TabsTrigger value="Surface" className="text-xs sm:text-sm">
+                      Surface ({data?.rates?.filter((r) => r.type === "SURFACE").length || 0})
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-full sm:w-64">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="custom">Custom (Recommended)</SelectItem>
+                    <SelectItem value="price-low">Price: Low to High</SelectItem>
+                    <SelectItem value="price-high">Price: High to Low</SelectItem>
+                    <SelectItem value="rating">Rating: High to Low</SelectItem>
+                    <SelectItem value="delivery-time">Fastest Delivery</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Warning Alert */}
+            {/* <Alert className="border-orange-200 bg-orange-50">
                 <AlertTriangle className="h-4 w-4 text-orange-600" />
                 <AlertDescription className="text-orange-800 text-sm">
                   Some courier partners may have limited serviceability. Check individual courier details for more
@@ -532,221 +306,220 @@ export default function ShipOrderPage() {
                 </AlertDescription>
               </Alert> */}
 
-              {/* Auto-Scheduled Pickup Info */}
-              <div className="flex items-center gap-2 text-sm bg-blue-50 dark:bg-blue-800 p-3 rounded-lg">
-                <Checkbox className="h-4 w-4 border-blue-600 dark:border-white" id="auto-scheduled-pickup" checked={autoScheduledPickup} onCheckedChange={(checked) => setAutoScheduledPickup(checked === "indeterminate" ? false : checked)} />
-                <span className="text-blue-700 dark:text-white font-medium">Auto-Scheduled Pickup</span>
-                <span className="text-blue-600 dark:text-white">Tomorrow, 10:00 AM - 6:00 PM</span>
-              </div>
+            {/* Auto-Scheduled Pickup Info */}
+            <div className="flex items-center gap-2 text-sm bg-blue-50 dark:bg-blue-800 p-3 rounded-lg">
+              <Checkbox className="h-4 w-4 border-blue-600 dark:border-white" id="auto-scheduled-pickup" checked={autoScheduledPickup} onCheckedChange={(checked) => setAutoScheduledPickup(checked === "indeterminate" ? false : checked)} />
+              <span className="text-blue-700 dark:text-white font-medium">Auto-Scheduled Pickup</span>
+              <span className="text-blue-600 dark:text-white">Tomorrow, 10:00 AM - 6:00 PM</span>
+            </div>
 
-              {/* Results Count */}
-              <div className="flex items-center justify-between text-sm">
+            {/* Results Count */}
+            <div className="flex items-center justify-between text-sm">
+              <div className="text-muted-foreground">
+                {filteredRates.length} courier{filteredRates.length !== 1 ? "s" : ""} found
+              </div>
+              {filteredRates.length > 0 && (
                 <div className="text-muted-foreground">
-                  {filteredRates.length} courier{filteredRates.length !== 1 ? "s" : ""} found
-                </div>
-                {filteredRates.length > 0 && (
-                  <div className="text-muted-foreground">
-                    Best: {currencyFormatter(Math.min(...filteredRates.map((r) => r.total_price)))}
-                  </div>
-                )}
-              </div>
-
-              {/* Couriers Table - Desktop */}
-              <Card className="hidden md:block">
-                <CardContent className="p-0">
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="border-b">
-                        <tr>
-                          <th className="p-4 text-left text-sm font-medium">Courier Partner</th>
-                          <th className="p-4 text-left text-sm font-medium">Performance</th>
-                          <th className="p-4 text-left text-sm font-medium">Estimated Pickup</th>
-                          <th className="p-4 text-left text-sm font-medium">Estimated Delivery</th>
-                          <th className="p-4 text-left text-sm font-medium">
-                            <ActionTooltip label="Chargeable weight used for pricing" className="p-0 h-auto">
-                              <div className="flex items-center gap-1">
-                                Weight
-                                <Info className="h-3 w-3" />
-                              </div>
-                            </ActionTooltip>
-                          </th>
-                          <th className="p-4 text-left text-sm font-medium">Zone</th>
-                          <th className="p-4 text-left text-sm font-medium">
-                            <ActionTooltip label="Total shipping charges including all fees" className="p-0 h-auto">
-                              <div className="flex items-center gap-1">
-                                Charges
-                                <Info className="h-3 w-3" />
-                              </div>
-                            </ActionTooltip>
-                          </th>
-                          <th className="p-4 text-left text-sm font-medium">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredRates.map((rate, index) => (
-                          <tr key={rate.id} className="border-b hover:bg-gray-50 dark:hover:bg-transparent transition-colors">
-                            <td className="p-4">
-                              <div className="flex items-center gap-3">
-                                <CourierLogo courierName={rate.name} />
-                                <div>
-                                  <div className="font-medium">{rate.name} ({rate.nickname})</div>
-                                  <div className="text-sm text-muted-foreground">
-                                    {rate.type} • Min: {rate.breakdown.min_weight} Kg
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    RTO: {currencyFormatter(rate.rto_charges)}
-                                  </div>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="p-4">
-                              <div className="space-y-1">
-                                <RatingBadge rating={rate.rating} />
-                                <div className="flex items-center gap-1">
-                                  <Shield className="h-3 w-3 text-green-600" />
-                                  <span className="text-xs text-green-600">Reliable</span>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="p-4">
-                              <div className="flex items-center gap-2">
-                                <Clock className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm">{rate.expected_pickup}</span>
-                              </div>
-                            </td>
-                            <td className="p-4">
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                                  <span className="text-sm">{rate.etd}</span>
-                                </div>
-                                <div className="text-xs text-muted-foreground">{rate.estimated_delivery_days} days</div>
-                              </div>
-                            </td>
-                            <td className="p-4">
-                              <span className="font-medium">{rate.final_weight} Kg</span>
-                            </td>
-                            <td className="p-4">
-                              <Badge variant="outline">{rate.zone}</Badge>
-                            </td>
-                            <td className="p-4">
-                              <div className="text-right">
-                                <div className="text-lg font-bold text-green-600">
-                                  {currencyFormatter(rate.total_price)}
-                                </div>
-                                <HoverCardToolTip className="w-64" triggerComponent={
-                                  <Button variant="ghost" size="sm" className="h-auto p-0 text-xs text-muted-foreground">
-                                    View breakdown
-                                  </Button>
-                                }>
-                                  <div className="space-y-2 text-sm">
-                                    <div className="flex justify-between">
-                                      <span>Base Price:</span>
-                                      <span>{currencyFormatter(rate.base_price)}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span>Weight Charges:</span>
-                                      <span>{currencyFormatter(rate.weight_charges)}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span>COD Charges:</span>
-                                      <span>{currencyFormatter(rate.cod_charges)}</span>
-                                    </div>
-                                    <Separator />
-                                    <div className="flex justify-between font-semibold">
-                                      <span>Total:</span>
-                                      <span>{currencyFormatter(rate.total_price)}</span>
-                                    </div>
-                                  </div>
-                                </HoverCardToolTip>
-                              </div>
-                            </td>
-                            <td className="p-4">
-                              <Button
-                                onClick={() => handleShipOrder(rate.id, rate.name)}
-                                disabled={isShipping === rate.id}
-                                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
-                              >
-                                {isShipping === rate.id ? "Shipping..." : "Ship Now"}
-                              </Button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Couriers Cards - Mobile */}
-              <div className="md:hidden space-y-3">
-                {filteredRates.map((rate, index) => (
-                  <Card key={rate.id} className="relative">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <CourierLogo courierName={rate.name} />
-                          <div>
-                            <div className="font-medium text-sm">{rate.name}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {rate.type} • {rate.zone}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-lg font-bold text-green-600">{currencyFormatter(rate.total_price)}</div>
-                          <RatingBadge rating={rate.rating} />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3 mb-4 text-xs">
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-3 w-3 text-muted-foreground" />
-                          <span>Pickup: {rate.expected_pickup}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-3 w-3 text-muted-foreground" />
-                          <span>Delivery: {rate.estimated_delivery_days} days</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Weight className="h-3 w-3 text-muted-foreground" />
-                          <span>Weight: {rate.final_weight} Kg</span>
-                        </div>
-                        <div className="text-muted-foreground">RTO: {currencyFormatter(rate.rto_charges)}</div>
-                      </div>
-
-                      <Button
-                        onClick={() => handleShipOrder(rate.id, rate.name)}
-                        disabled={isShipping === rate.id}
-                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
-                        size="sm"
-                      >
-                        {isShipping === rate.id ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                            Shipping...
-                          </>
-                        ) : (
-                          "Ship Now"
-                        )}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-
-              {filteredRates.length === 0 && (
-                <div className="text-center py-12">
-                  <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No couriers found</h3>
-                  <p className="text-muted-foreground">Try adjusting your filters or search criteria</p>
+                  Best: {currencyFormatter(Math.min(...filteredRates.map((r) => r.total_price)))}
                 </div>
               )}
-
             </div>
+
+            {/* Couriers Table - Desktop */}
+            <Card className="hidden md:block">
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="border-b">
+                      <tr>
+                        <th className="p-4 text-left text-sm font-medium">Courier Partner</th>
+                        <th className="p-4 text-left text-sm font-medium">Performance</th>
+                        <th className="p-4 text-left text-sm font-medium">Estimated Pickup</th>
+                        <th className="p-4 text-left text-sm font-medium">Estimated Delivery</th>
+                        <th className="p-4 text-left text-sm font-medium">
+                          <ActionTooltip label="Chargeable weight used for pricing" className="p-0 h-auto">
+                            <div className="flex items-center gap-1">
+                              Weight
+                              <Info className="h-3 w-3" />
+                            </div>
+                          </ActionTooltip>
+                        </th>
+                        <th className="p-4 text-left text-sm font-medium">Zone</th>
+                        <th className="p-4 text-left text-sm font-medium">
+                          <ActionTooltip label="Total shipping charges including all fees" className="p-0 h-auto">
+                            <div className="flex items-center gap-1">
+                              Charges
+                              <Info className="h-3 w-3" />
+                            </div>
+                          </ActionTooltip>
+                        </th>
+                        <th className="p-4 text-left text-sm font-medium">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredRates.map((rate, index) => (
+                        <tr key={rate.id} className="border-b hover:bg-gray-50 dark:hover:bg-transparent transition-colors">
+                          <td className="p-4">
+                            <div className="flex items-center gap-3">
+                              <CourierLogo courierName={rate.name} />
+                              <div>
+                                <div className="font-medium">{rate.name} ({rate.nickname})</div>
+                                <div className="text-sm text-muted-foreground">
+                                  {rate.type} • Min: {rate.breakdown.min_weight} Kg
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  RTO: {currencyFormatter(rate.rto_charges)}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <div className="space-y-1">
+                              <RatingBadgeStart rating={rate.rating} />
+                              <div className="flex items-center gap-1">
+                                <Shield className="h-3 w-3 text-green-600" />
+                                <span className="text-xs text-green-600">Reliable</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm">{rate.expected_pickup}</span>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm">{rate.etd}</span>
+                              </div>
+                              <div className="text-xs text-muted-foreground">{rate.estimated_delivery_days} days</div>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <span className="font-medium">{rate.final_weight} Kg</span>
+                          </td>
+                          <td className="p-4">
+                            <Badge variant="outline">{rate.zone}</Badge>
+                          </td>
+                          <td className="p-4">
+                            <div className="text-right">
+                              <div className="text-lg font-bold text-green-600">
+                                {currencyFormatter(rate.total_price)}
+                              </div>
+                              <HoverCardToolTip className="w-64" triggerComponent={
+                                <Button variant="ghost" size="sm" className="h-auto p-0 text-xs text-muted-foreground">
+                                  View breakdown
+                                </Button>
+                              }>
+                                <div className="space-y-2 text-sm">
+                                  <div className="flex justify-between">
+                                    <span>Base Price:</span>
+                                    <span>{currencyFormatter(rate.base_price)}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Weight Charges:</span>
+                                    <span>{currencyFormatter(rate.weight_charges)}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>COD Charges:</span>
+                                    <span>{currencyFormatter(rate.cod_charges)}</span>
+                                  </div>
+                                  <Separator />
+                                  <div className="flex justify-between font-semibold">
+                                    <span>Total:</span>
+                                    <span>{currencyFormatter(rate.total_price)}</span>
+                                  </div>
+                                </div>
+                              </HoverCardToolTip>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <Button
+                              onClick={() => handleShipOrder(rate.id, rate.name)}
+                              disabled={isShipping === rate.id}
+                              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                            >
+                              {isShipping === rate.id ? "Shipping..." : "Ship Now"}
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Couriers Cards - Mobile */}
+            <div className="md:hidden space-y-3">
+              {filteredRates.map((rate, index) => (
+                <Card key={rate.id} className="relative">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <CourierLogo courierName={rate.name} />
+                        <div>
+                          <div className="font-medium text-sm">{rate.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {rate.type} • {rate.zone}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-lg font-bold text-green-600">{currencyFormatter(rate.total_price)}</div>
+                        <RatingBadgeStart rating={rate.rating} />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 mb-4 text-xs">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-3 w-3 text-muted-foreground" />
+                        <span>Pickup: {rate.expected_pickup}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-3 w-3 text-muted-foreground" />
+                        <span>Delivery: {rate.estimated_delivery_days} days</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Weight className="h-3 w-3 text-muted-foreground" />
+                        <span>Weight: {rate.final_weight} Kg</span>
+                      </div>
+                      <div className="text-muted-foreground">RTO: {currencyFormatter(rate.rto_charges)}</div>
+                    </div>
+
+                    <Button
+                      onClick={() => handleShipOrder(rate.id, rate.name)}
+                      disabled={isShipping === rate.id}
+                      className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                      size="sm"
+                    >
+                      {isShipping === rate.id ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Shipping...
+                        </>
+                      ) : (
+                        "Ship Now"
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {filteredRates.length === 0 && (
+              <div className="text-center py-12">
+                <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">No couriers found</h3>
+                <p className="text-muted-foreground">Try adjusting your filters or search criteria</p>
+              </div>
+            )}
+
           </div>
         </div>
       </div>
-    </TooltipProvider>
+    </div>
   )
 }
