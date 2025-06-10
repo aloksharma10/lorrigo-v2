@@ -135,7 +135,7 @@ export default function ShipOrderPage() {
                 Deliver To
               </div>
               <div className="font-medium">
-                {order?.customer?.addresses[0]?.pincode}, {order?.customer?.addresses[0]?.city}
+                {order?.customer?.address?.pincode}, {order?.customer?.address?.city}
               </div>
               <div className="text-muted-foreground text-sm">India</div>
             </div>

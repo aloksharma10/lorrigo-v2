@@ -17,7 +17,7 @@ export class OrderService {
   constructor(
     private fastify: FastifyInstance,
     private planService: PlanService
-  ) {}
+  ) { }
 
   /**
    * Get all orders with pagination and filters
@@ -179,14 +179,21 @@ export class OrderService {
             },
           },
         },
-        package: true,
+        package: {
+          select: {
+            length: true,
+            breadth: true,
+            height: true,
+            dead_weight: true,
+          },
+        },
         customer: {
           select: {
             id: true,
             name: true,
             email: true,
             phone: true,
-            addresses: {
+            address: {
               select: {
                 pincode: true,
                 city: true,
@@ -213,7 +220,7 @@ export class OrderService {
 
   async getRates(id: string, userId: string) {
     const order = await this.getOrderById(id, userId);
-    const key = `${order?.hub?.address?.pincode}-${order?.customer?.addresses[0]?.pincode}:${order?.applicable_weight}`;
+    const key = `${order?.is_reverse_order ? 'reversed' : 'forward'}-${order?.hub?.address?.pincode}-${order?.customer?.address?.pincode}-${order?.applicable_weight}-${order?.payment_mode}`;
     const cachedRates = await this.fastify.redis.get(key);
     if (cachedRates) {
       return { rates: JSON.parse(cachedRates), order };
@@ -222,14 +229,14 @@ export class OrderService {
     const rates = await this.planService.calculateRates(
       {
         pickupPincode: order?.hub?.address?.pincode || '',
-        deliveryPincode: order?.customer?.addresses[0]?.pincode || '',
+        deliveryPincode: order?.customer?.address?.pincode || '',
         weight: order?.package?.dead_weight || 0,
         weightUnit: 'kg',
         boxLength: order?.package?.length || 0,
         boxWidth: order?.package?.breadth || 0,
         boxHeight: order?.package?.height || 0,
         sizeUnit: 'cm',
-        paymentType: 0,
+        paymentType: order?.payment_mode === 'COD' ? 1 : 0,
         collectableAmount: order?.amount_to_collect || 0,
         isReversedOrder: false,
       },
@@ -294,7 +301,7 @@ export class OrderService {
             (Number(data.packageDetails.length) *
               Number(data.packageDetails.breadth) *
               Number(data.packageDetails.height)) /
-              5000
+            5000
           );
 
           const deadWeight = Number(data.packageDetails.deadWeight);
@@ -355,14 +362,14 @@ export class OrderService {
           const [customer, updated_billing_address] = await Promise.all([
             // Handle customer
             existingCustomer ||
-              tx.customer.create({
-                data: {
-                  name: data.deliveryDetails.fullName,
-                  email: data.deliveryDetails.email,
-                  phone: data.deliveryDetails.mobileNumber,
-                },
-                select: { id: true },
-              }),
+            tx.customer.create({
+              data: {
+                name: data.deliveryDetails.fullName,
+                email: data.deliveryDetails.email,
+                phone: data.deliveryDetails.mobileNumber,
+              },
+              select: { id: true },
+            }),
 
             // Update billing address with pincode data
             tx.address.update({
@@ -432,14 +439,13 @@ export class OrderService {
 
           // OPTIMIZATION 7: Create order items in batch (final step)
           const orderItems = data.productDetails.products.map((item, idx) => ({
-            code: `${orderCode}-${
-              generateId({
-                tableName: 'order_item',
-                entityName: item.name,
-                lastUsedFinancialYear: financialYear,
-                lastSequenceNumber: idx,
-              }).id
-            }`,
+            code: `${orderCode}-${generateId({
+              tableName: 'order_item',
+              entityName: item.name,
+              lastUsedFinancialYear: financialYear,
+              lastSequenceNumber: idx,
+            }).id
+              }`,
             name: item.name,
             sku: item.sku,
             units: item.quantity,

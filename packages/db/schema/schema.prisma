@@ -250,7 +250,7 @@ model Customer {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  addresses Address[] @relation("CustomerAddresses")
+  address Address? @relation("CustomerAddresses")
   orders    Order[]   @relation("CustomerOrders")
 
   @@index([phone, email])
@@ -273,8 +273,8 @@ model Address {
   user_id String? @unique
   user    User?   @relation(fields: [user_id], references: [id], onDelete: SetNull)
 
-  customer_id String?
-  customer    Customer? @relation("CustomerAddresses", fields: [customer_id], references: [id], onDelete: SetNull)
+  customer_id String? @unique
+  customer    Customer? @relation("CustomerAddresses", fields: [customer_id], references: [id])
 
   hub_primary Hub? @relation("HubPrimaryAddress")
   hub_rto     Hub? @relation("HubRTOAddress")

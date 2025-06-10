@@ -6,13 +6,13 @@ interface CustomerData {
   name: string;
   email?: string;
   phone: string;
-  addresses?: Array<{
+  address?: {
     address: string;
     address_2?: string;
     city: string;
     state: string;
     pincode: string;
-  }>;
+  };
 }
 
 interface AddressData {
@@ -80,7 +80,7 @@ export class CustomerService {
     const customer = await this.fastify.prisma.customer.findUnique({
       where: { id },
       include: {
-        addresses: true,
+        address: true,
       },
     });
 
@@ -97,19 +97,13 @@ export class CustomerService {
   async createCustomer(data: CustomerData) {
     const customer = await this.fastify.prisma.customer.create({
       data: {
-        code: generateId({
-          tableName: 'customer',
-          entityName: data.name,
-          lastUsedFinancialYear: getFinancialYear(new Date()),
-          lastSequenceNumber: 0,
-        }).id,
         name: data.name,
         email: data.email,
         phone: data.phone,
-        ...(data.addresses && data.addresses.length > 0
+        ...(data.address
           ? {
-              addresses: {
-                create: data.addresses,
+              address: {
+                create: data.address,
               },
             }
           : {}),
@@ -142,10 +136,9 @@ export class CustomerService {
       where: { id },
       data: {
         ...data,
-        addresses: data.addresses
+        address: data.address
           ? {
-              deleteMany: {},
-              create: data.addresses,
+              update: data.address,
             }
           : undefined,
       },
