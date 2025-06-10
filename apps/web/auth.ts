@@ -1,4 +1,4 @@
-import NextAuth, { NextAuthResult, type NextAuthConfig } from 'next-auth';
+import NextAuth, { NextAuthResult } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 
 // Declare module augmentation for next-auth
@@ -87,6 +87,10 @@ export const result = NextAuth({
         token.token = user.token;
       }
       return token;
+    },
+    authorized: async ({ auth }) => {
+      // Logged in users are authenticated, otherwise redirect to login page
+      return !!auth
     },
   },
   secret: process.env.AUTH_SECRET,

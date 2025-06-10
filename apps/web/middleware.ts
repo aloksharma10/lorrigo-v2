@@ -1,24 +1,13 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { getToken } from 'next-auth/jwt';
-import { checkAccessAndRedirect } from './lib/routes/check-permission';
-import { Role } from '@lorrigo/db';
-import { getRoleBasedRedirect } from './lib/routes/redirect';
+import { auth } from "@/auth"
+import { Role } from "@lorrigo/db";
+import { NextResponse } from "next/server";
+import { checkAccessAndRedirect } from "./lib/routes/check-permission";
+import { getRoleBasedRedirect } from "./lib/routes/redirect";
 
-interface TokenWithRole {
-  role?: Role;
-  email?: string;
-  [key: string]: any;
-}
-
-export async function middleware(request: NextRequest) {
-  const token = (await getToken({
-    req: request,
-    secret: process.env.AUTH_SECRET,
-  })) as TokenWithRole | null;
-
-  const isAuthenticated = !!token;
-  const userRole = token?.role;
+// Use explicit type annotation to fix the TypeScript error
+export const middleware: any = auth((request) => {
+  const isAuthenticated = request.auth !== null;
+  const userRole = request.auth?.user?.role as Role;
 
   // Check if the path is protected
   const isProtectedPath =
@@ -150,22 +139,10 @@ export async function middleware(request: NextRequest) {
   }
 
   return NextResponse.next();
-}
+})
 
-// Helper function to get appropriate redirect path based on user role
+export default middleware
+
 export const config = {
-  matcher: [
-    // Protected routes
-    '/seller/:path*',
-    '/staff/:path*',
-    '/admin/:path*',
-    // API routes for CORS
-    '/api/:path*',
-    // Public routes that need caching optimization
-    '/',
-    '/about/:path*',
-    '/pricing/:path*',
-    '/features/:path*',
-    '/auth/:path*',
-  ],
-};
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+}
