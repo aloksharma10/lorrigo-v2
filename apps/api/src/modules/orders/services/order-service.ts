@@ -170,6 +170,8 @@ export class OrderService {
           select: {
             name: true,
             phone: true,
+            code: true,
+            contact_person_name: true,
             address: {
               select: {
                 pincode: true,

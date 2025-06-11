@@ -24,16 +24,19 @@ export const APIs = {
     CREATE_PICKUP_LOCATION: '/settings/company/addpickup',
     ORDER_COURIER: '/courier/serviceability',
     LIST_COURIER: '/courier/courierListWithCounts',
-    CREATE_SHIPROCKET_ORDER: '/orders/create/adhoc',
     UPDATE_ORDER: '/orders/update/adhoc',
-    UPDATE_CUSTOMER: '/orders/address/update',
+    UPDATE_CUSTOMER: '/orders/update/customer',
     CREATE_RETURN_ORDER: '/orders/create/return',
-    GENRATE_AWB: '/courier/assign/awb',
-    CANCEL_SHIPMENT: '/orders/cancel/shipment/awbs',
+    GET_MANIFEST: '/manifests/generate',
     CANCEL_ORDER: '/orders/cancel',
-    GET_MANIFEST: '/courier/generate/pickup',
-    ORDER_TRACKING: '/courier/track/awb',
-    ORDER_NDR: '/ndr',
+    CANCEL_SHIPMENT: '/orders/cancel/shipment/awbs',
+    ORDER_STATUS: '/shipments/status',
+    ORDER_NDR: '/courier/track',
+    
+    CREATE_ORDER: '/orders/create/adhoc',
+    GENRATE_AWB: '/courier/assign/awb',
+
+    CREATE_FORWARD_SHIPMENT_WRAPPER: '/shipments/create/forward-shipment',
   },
 
   // Shiprocket B2B API endpoints

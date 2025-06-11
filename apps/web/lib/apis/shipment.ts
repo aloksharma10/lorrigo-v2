@@ -58,8 +58,8 @@ export const useShippingOperations = () => {
 
   // Ship order with selected courier
   const shipOrder = useMutation({
-    mutationFn: ({ order_id, courier_id }: { order_id: string; courier_id: string }) =>
-      api.post(`/shipments`, { order_id, courier_id }),
+    mutationFn: ({ order_id, courier_id, schedule_pickup }: { order_id: string; courier_id: string; schedule_pickup: boolean }) =>
+      api.post(`/shipments`, { order_id, courier_id, schedule_pickup }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
     },

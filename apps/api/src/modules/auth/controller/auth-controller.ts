@@ -4,7 +4,6 @@ import bcrypt from 'bcrypt';
 import { captureException } from '@/lib/sentry';
 
 import { AuthService } from '../services/auth-services';
-import { generateId } from '@lorrigo/utils';
 
 // Add type augmentation for Fastify
 // declare module 'fastify' {

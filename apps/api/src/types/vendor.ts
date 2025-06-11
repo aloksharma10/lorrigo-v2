@@ -25,6 +25,7 @@ export interface VendorShipmentResult {
   message: string;
   awb?: string;
   routingCode?: string;
+  pickup_date?: string;
   data: any;
 }
 
@@ -55,6 +56,7 @@ export interface VendorShipmentData {
   seller_gst?: string;
   isSchedulePickup?: boolean;
   pickupDate?: string;
+  isBulkShipment?: boolean;
 }
 
 export interface ShipmentPickupData {

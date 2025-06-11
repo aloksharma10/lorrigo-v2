@@ -28,6 +28,7 @@ interface BulkOperationJobData {
   data: any[];
   userId: string;
   operationId: string;
+  isBulkShipment?: boolean;
 }
 
 /**
@@ -114,7 +115,7 @@ async function processBulkCreateShipment(
   fastify: FastifyInstance,
   shipmentService: ShipmentService
 ) {
-  const { data, userId, operationId } = job.data;
+  const { data, userId, operationId, isBulkShipment } = job.data;
   const results: BulkOperationResult[] = [];
   let successCount = 0;
   let failedCount = 0;
@@ -123,7 +124,10 @@ async function processBulkCreateShipment(
   for (let i = 0; i < data.length; i++) {
     try {
       // Validate the data
-      const shipmentData = data[i];
+      const shipmentData = {
+        ...data[i],
+        isBulkShipment: isBulkShipment || true // Ensure bulk shipment flag is set
+      };
       const validatedData = CreateShipmentSchema.parse(shipmentData);
 
       // Create the shipment

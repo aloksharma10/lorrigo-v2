@@ -8,7 +8,6 @@ export const CreateShipmentSchema = z.object({
   order_id: z.string().nonempty('Order ID is required'),
   courier_id: z.string().nonempty('Courier ID is required'),
   schedule_pickup: z.boolean().optional(),
-  pickup_date: z.string().optional(),
 });
 
 /**

@@ -3,6 +3,8 @@
  * A comprehensive utility for calculating shipping rates across different couriers
  */
 
+import { ZoneLabel } from "@lorrigo/db";
+
 // ================================
 // TYPE DEFINITIONS
 // ================================
@@ -233,6 +235,26 @@ export function calculateVolumetricWeight(
  */
 export function normalizeWeight(weight: number, unit: 'kg' | 'g'): number {
   return unit === 'g' ? weight / 1000 : weight;
+}
+
+/**
+ * Maps courier zone to order zone.
+ * @param courierZone - Zone name from the selected courier
+ * @returns Corresponding order zone code
+ */
+export function getOrderZoneFromCourierZone(courierZone: string): ZoneLabel {
+  switch (courierZone) {
+    case 'Zone A':
+      return 'Z_A';
+    case 'Zone B':
+      return 'Z_B';
+    case 'Zone C':
+      return 'Z_C';
+    case 'Zone D':
+      return 'Z_D';
+    default:
+      return 'Z_E';
+  }
 }
 
 /**

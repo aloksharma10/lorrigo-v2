@@ -26,6 +26,7 @@ enum OrderType {
 
 enum ShipmentStatus {
   NEW
+  COURIER_ASSIGNED
   PICKUP_SCHEDULED
   PICKED_UP
   IN_TRANSIT
@@ -917,7 +918,7 @@ model ShipmentPricing {
   increment_weight Float @default(0.5)
   increment_price  Float @default(0)
 
-  zone                Zone
+  zone                ZoneLabel
   base_price          Float
   is_rto_same_as_fw   Boolean
   rto_base_price      Float

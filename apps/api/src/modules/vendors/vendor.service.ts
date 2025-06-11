@@ -328,12 +328,14 @@ export class VendorService {
       awb?: string;
       shipmentCode: string;
       isSchedulePickup?: boolean;
-      pickupDate?: string;
+      isBulkShipment?: boolean;
     }
   ): Promise<{
     success: boolean;
     message: string;
     awb?: string;
+    pickup_date?: string;
+    routingCode?: string;
     data?: any;
   }> {
     try {
@@ -347,7 +349,7 @@ export class VendorService {
       }
 
       // Prepare data for vendor API
-      const { order, courier, hub, awb, isSchedulePickup, pickupDate } = shipmentData;
+      const { order, courier, hub, awb, isSchedulePickup, isBulkShipment } = shipmentData;
       
       // Check if hub is valid
       if (!hub || !hub.address || !hub.address.pincode) {
@@ -400,7 +402,7 @@ export class VendorService {
         courier,
         seller_gst: userDetails?.gstin || '',
         isSchedulePickup,
-        pickupDate
+        isBulkShipment
       };
 
       // Create shipment with vendor
@@ -410,6 +412,8 @@ export class VendorService {
         success: result.success,
         message: result.message || '',
         awb: result.awb || awb,
+        routingCode: result.routingCode || '',
+        pickup_date: result.pickup_date || '',
         data: result.data
       };
     } catch (error: unknown) {

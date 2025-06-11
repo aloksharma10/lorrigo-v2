@@ -69,7 +69,7 @@ export default function ShipOrderPage() {
   const handleShipOrder = async (carrierId: string, courierName: string) => {
     setIsShipping(carrierId)
     try {
-      await shipOrder.mutateAsync({ order_id: orderId, courier_id: carrierId })
+      await shipOrder.mutateAsync({ order_id: orderId, courier_id: carrierId, schedule_pickup: autoScheduledPickup })
       console.log(`Order shipped with ${courierName}`)
     } catch (error) {
       console.error("Failed to ship order")
