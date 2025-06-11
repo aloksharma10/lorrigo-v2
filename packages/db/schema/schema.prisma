@@ -463,14 +463,14 @@ model Shipment {
   awb    String?        @unique @db.VarChar(50)
   status ShipmentStatus @default(NEW)
 
-  shipping_charge Float     @default(0)
-  fw_charge       Float     @default(0)
-  cod_amount      Float?    @default(0)
-  rto_charge      Float     @default(0)
-  order_zone      ZoneLabel    
-  edd             DateTime
-  pickup_date     DateTime
-  pickup_id       String
+  shipping_charge Float?     @default(0)
+  fw_charge       Float?     @default(0)
+  cod_amount      Float?     @default(0)
+  rto_charge      Float?     @default(0)
+  order_zone      ZoneLabel?
+  edd             DateTime?
+  pickup_date     DateTime?
+  pickup_id       String?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -479,9 +479,9 @@ model Shipment {
   order    Order  @relation("OrderShipment", fields: [order_id], references: [id], onDelete: Cascade)
 
   user_id         String
-  user            User            @relation("UserShipments", fields: [user_id], references: [id], onDelete: Cascade)
-  courier_id      String         @unique
-  courier         Courier        @relation(fields: [courier_id], references: [id], onDelete: Cascade)
+  user            User             @relation("UserShipments", fields: [user_id], references: [id], onDelete: Cascade)
+  courier_id      String?           @unique
+  courier         Courier?         @relation(fields: [courier_id], references: [id], onDelete: Cascade)
   tracking_events TrackingEvent[]
   pricing         ShipmentPricing?
 
@@ -923,7 +923,7 @@ model ShipmentPricing {
   rto_base_price      Float
   rto_increment_price Float
   flat_rto_charge     Float
-  
-  created_at          DateTime @default(now())
-  updated_at          DateTime @updatedAt
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 }

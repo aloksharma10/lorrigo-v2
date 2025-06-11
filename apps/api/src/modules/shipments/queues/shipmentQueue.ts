@@ -5,10 +5,12 @@ import { z } from 'zod';
 import { CreateShipmentSchema } from '@lorrigo/utils';
 
 // Queue names
-export const SHIPMENT_QUEUE = 'shipment-queue';
-export const BULK_OPERATION_QUEUE = 'bulk-operation-queue';
+const SHIPMENT_QUEUE = 'shipment-queue';
+const BULK_OPERATION_QUEUE = 'bulk-operation-queue';
 
-// Job types
+/**
+ * Job types for the shipment queue
+ */
 export enum JobType {
   CREATE_SHIPMENT = 'create-shipment',
   SCHEDULE_PICKUP = 'schedule-pickup',
@@ -18,6 +20,19 @@ export enum JobType {
   BULK_CANCEL_SHIPMENT = 'bulk-cancel-shipment'
 }
 
+/**
+ * Interface for bulk operation job data
+ */
+interface BulkOperationJobData {
+  type: string;
+  data: any[];
+  userId: string;
+  operationId: string;
+}
+
+/**
+ * Interface for bulk operation result
+ */
 interface BulkOperationResult {
   id: string;
   success: boolean;
@@ -26,290 +41,340 @@ interface BulkOperationResult {
 }
 
 /**
- * Initialize shipment queue and worker processors
+ * Initialize the shipment queue
  * @param fastify Fastify instance
  * @param shipmentService Shipment service instance
  */
 export function initShipmentQueue(fastify: FastifyInstance, shipmentService: ShipmentService) {
+  // Get Redis connection details from environment or config
   const connection = {
-    host: fastify.config.REDIS_HOST,
-    port: parseInt(fastify.config.REDIS_PORT),
-    password: fastify.config.REDIS_PASSWORD
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379'),
+    password: process.env.REDIS_PASSWORD || undefined
   };
 
-  // Create queues
-  const shipmentQueue = new Queue(SHIPMENT_QUEUE, { connection });
-  const bulkOperationQueue = new Queue(BULK_OPERATION_QUEUE, { connection });
-
-  // Create worker for regular shipment operations
-  const shipmentWorker = new Worker(SHIPMENT_QUEUE, async (job: Job) => {
-    const { type, data, userId } = job.data;
-
-    switch (type) {
-      case JobType.CREATE_SHIPMENT:
-        return await shipmentService.createShipment(data, userId);
-
-      case JobType.SCHEDULE_PICKUP:
-        return await shipmentService.schedulePickup(data.id, userId, data.pickupDate);
-
-      case JobType.CANCEL_SHIPMENT:
-        return await shipmentService.cancelShipment(data.id, userId, data.reason);
-
-      default:
-        throw new Error(`Unknown job type: ${type}`);
+  // Create the queue
+  const bulkOperationQueue = new Queue(BULK_OPERATION_QUEUE, {
+    connection,
+    defaultJobOptions: {
+      attempts: 3,
+      backoff: {
+        type: 'exponential',
+        delay: 5000
+      },
+      removeOnComplete: true,
+      removeOnFail: 1000 // Keep last 1000 failed jobs
     }
-  }, { connection });
+  });
 
-  // Create worker for bulk operations
-  const bulkOperationWorker = new Worker(BULK_OPERATION_QUEUE, async (job: Job) => {
-    const { type, data, userId, operationId } = job.data;
-    const results: BulkOperationResult[] = [];
-    let processedCount = 0;
-    let successCount = 0;
-    let failedCount = 0;
+  // Create the worker
+  const worker = new Worker(BULK_OPERATION_QUEUE, async (job: Job) => {
+    fastify.log.info(`Processing job ${job.id} of type ${job.name}`);
 
     try {
-      // Update operation status to PROCESSING
-      await fastify.prisma.bulkOperation.update({
-        where: { id: operationId },
-        data: {
-          status: 'PROCESSING',
-          processed_count: 0,
-          success_count: 0,
-          failed_count: 0
-        }
-      });
-
-      // Process each item in batches
-      switch (type) {
+      switch (job.name) {
         case JobType.BULK_CREATE_SHIPMENT:
-          for (const item of data) {
-            try {
-              processedCount++;
-              
-              // Update progress
-              await job.updateProgress(Math.floor((processedCount / data.length) * 100));
-              
-              // Validate the data
-              const validatedData = CreateShipmentSchema.parse(item);
-              
-              // Create the shipment
-              const result = await shipmentService.createShipment(validatedData, userId);
-              
-              if (result.error) {
-                failedCount++;
-                results.push({
-                  id: item.order_id,
-                  success: false,
-                  message: result.error
-                });
-              } else {
-                successCount++;
-                results.push({
-                  id: item.order_id,
-                  success: true,
-                  message: 'Shipment created successfully',
-                  data: result.shipment
-                });
-              }
-              
-              // Update operation status periodically
-              if (processedCount % 10 === 0 || processedCount === data.length) {
-                await fastify.prisma.bulkOperation.update({
-                  where: { id: operationId },
-                  data: {
-                    processed_count: processedCount,
-                    success_count: successCount,
-                    failed_count: failedCount
-                  }
-                });
-              }
-            } catch (error) {
-              failedCount++;
-              results.push({
-                id: item.order_id,
-                success: false,
-                message: error instanceof Error ? error.message : 'Unknown error'
-              });
-            }
-          }
-          break;
-
+          return await processBulkCreateShipment(job, fastify, shipmentService);
         case JobType.BULK_SCHEDULE_PICKUP:
-          for (const item of data) {
-            try {
-              processedCount++;
-              
-              // Update progress
-              await job.updateProgress(Math.floor((processedCount / data.length) * 100));
-              
-              // Schedule the pickup
-              const result = await shipmentService.schedulePickup(
-                item.shipment_id,
-                userId,
-                item.pickup_date
-              );
-              
-              if (result.error) {
-                failedCount++;
-                results.push({
-                  id: item.shipment_id,
-                  success: false,
-                  message: result.error
-                });
-              } else {
-                successCount++;
-                results.push({
-                  id: item.shipment_id,
-                  success: true,
-                  message: 'Pickup scheduled successfully',
-                  data: result
-                });
-              }
-              
-              // Update operation status periodically
-              if (processedCount % 10 === 0 || processedCount === data.length) {
-                await fastify.prisma.bulkOperation.update({
-                  where: { id: operationId },
-                  data: {
-                    processed_count: processedCount,
-                    success_count: successCount,
-                    failed_count: failedCount
-                  }
-                });
-              }
-            } catch (error) {
-              failedCount++;
-              results.push({
-                id: item.shipment_id,
-                success: false,
-                message: error instanceof Error ? error.message : 'Unknown error'
-              });
-            }
-          }
-          break;
-
+          return await processBulkSchedulePickup(job, fastify, shipmentService);
         case JobType.BULK_CANCEL_SHIPMENT:
-          for (const item of data) {
-            try {
-              processedCount++;
-              
-              // Update progress
-              await job.updateProgress(Math.floor((processedCount / data.length) * 100));
-              
-              // Cancel the shipment
-              const result = await shipmentService.cancelShipment(
-                item.shipment_id,
-                userId,
-                item.reason
-              );
-              
-              if (result.error) {
-                failedCount++;
-                results.push({
-                  id: item.shipment_id,
-                  success: false,
-                  message: result.error
-                });
-              } else {
-                successCount++;
-                results.push({
-                  id: item.shipment_id,
-                  success: true,
-                  message: 'Shipment cancelled successfully',
-                  data: result
-                });
-              }
-              
-              // Update operation status periodically
-              if (processedCount % 10 === 0 || processedCount === data.length) {
-                await fastify.prisma.bulkOperation.update({
-                  where: { id: operationId },
-                  data: {
-                    processed_count: processedCount,
-                    success_count: successCount,
-                    failed_count: failedCount
-                  }
-                });
-              }
-            } catch (error) {
-              failedCount++;
-              results.push({
-                id: item.shipment_id,
-                success: false,
-                message: error instanceof Error ? error.message : 'Unknown error'
-              });
-            }
-          }
-          break;
-
+          return await processBulkCancelShipment(job, fastify, shipmentService);
         default:
-          throw new Error(`Unknown bulk operation type: ${type}`);
+          throw new Error(`Unknown job type: ${job.name}`);
       }
-
-      // Update operation status to COMPLETED
-      await fastify.prisma.bulkOperation.update({
-        where: { id: operationId },
-        data: {
-          status: 'COMPLETED',
-          processed_count: processedCount,
-          success_count: successCount,
-          failed_count: failedCount
-        }
-      });
-
-      return {
-        success: true,
-        results,
-        total: data.length,
-        processed: processedCount,
-        successful: successCount,
-        failed: failedCount
-      };
     } catch (error) {
-      // Update operation status to FAILED
-      await fastify.prisma.bulkOperation.update({
-        where: { id: operationId },
-        data: {
-          status: 'FAILED',
-          processed_count: processedCount,
-          success_count: successCount,
-          failed_count: failedCount
-        }
-      });
-
+      fastify.log.error(`Error processing job ${job.id}: ${error}`);
       throw error;
     }
   }, { connection });
 
   // Handle worker events
-  shipmentWorker.on('completed', (job) => {
-    fastify.log.info(`Shipment job ${job.id} completed`);
+  worker.on('completed', (job) => {
+    fastify.log.info(`Job ${job.id} completed`);
   });
 
-  shipmentWorker.on('failed', (job, error) => {
-    fastify.log.error(`Shipment job ${job?.id} failed: ${error.message}`);
+  worker.on('failed', (job, error) => {
+    fastify.log.error(`Job ${job?.id} failed: ${error}`);
   });
 
-  bulkOperationWorker.on('completed', (job) => {
-    fastify.log.info(`Bulk operation job ${job.id} completed`);
+  // Add the queue to the fastify instance for use in other parts of the application
+  (fastify as any).bulkOperationQueue = bulkOperationQueue;
+
+  return { queue: bulkOperationQueue, worker };
+}
+
+/**
+ * Process bulk shipment creation
+ * @param job Job data
+ * @param fastify Fastify instance
+ * @param shipmentService Shipment service
+ */
+async function processBulkCreateShipment(
+  job: Job<BulkOperationJobData>,
+  fastify: FastifyInstance,
+  shipmentService: ShipmentService
+) {
+  const { data, userId, operationId } = job.data;
+  const results: BulkOperationResult[] = [];
+  let successCount = 0;
+  let failedCount = 0;
+
+  // Process each shipment
+  for (let i = 0; i < data.length; i++) {
+    try {
+      // Validate the data
+      const shipmentData = data[i];
+      const validatedData = CreateShipmentSchema.parse(shipmentData);
+
+      // Create the shipment
+      const result = await shipmentService.createShipment(validatedData, userId);
+
+      if (result.error) {
+        failedCount++;
+        results.push({
+          id: shipmentData.orderId,
+          success: false,
+          message: result.error
+        });
+      } else {
+        successCount++;
+        results.push({
+          id: shipmentData.orderId,
+          success: true,
+          message: 'Shipment created successfully',
+          data: !result.error ? result : null
+        });
+      }
+
+      // Update job progress
+      await job.updateProgress(Math.floor(((i + 1) / data.length) * 100));
+
+      // Update bulk operation status
+      await fastify.prisma.bulkOperation.update({
+        where: { id: operationId },
+        data: {
+          processed_count: i + 1,
+          success_count: successCount,
+          failed_count: failedCount
+        }
+      });
+    } catch (error) {
+      failedCount++;
+      results.push({
+        id: data[i].orderId || 'unknown',
+        success: false,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+
+      // Update job progress
+      await job.updateProgress(Math.floor(((i + 1) / data.length) * 100));
+
+      // Update bulk operation status
+      await fastify.prisma.bulkOperation.update({
+        where: { id: operationId },
+        data: {
+          processed_count: i + 1,
+          success_count: successCount,
+          failed_count: failedCount
+        }
+      });
+    }
+  }
+
+  // Update bulk operation status to completed
+  await fastify.prisma.bulkOperation.update({
+    where: { id: operationId },
+    data: {
+      status: 'COMPLETED',
+      processed_count: data.length,
+      success_count: successCount,
+      failed_count: failedCount
+    }
   });
 
-  bulkOperationWorker.on('failed', (job, error) => {
-    fastify.log.error(`Bulk operation job ${job?.id} failed: ${error.message}`);
+  return { success: true, results };
+}
+
+/**
+ * Process bulk schedule pickup
+ * @param job Job data
+ * @param fastify Fastify instance
+ * @param shipmentService Shipment service
+ */
+async function processBulkSchedulePickup(
+  job: Job<BulkOperationJobData>,
+  fastify: FastifyInstance,
+  shipmentService: ShipmentService
+) {
+  const { data, userId, operationId } = job.data;
+  const results: BulkOperationResult[] = [];
+  let successCount = 0;
+  let failedCount = 0;
+
+  // Process each pickup
+  for (let i = 0; i < data.length; i++) {
+    try {
+      // Schedule the pickup
+      const result = await shipmentService.schedulePickup(
+        data[i].shipmentId,
+        userId,
+        data[i].pickupDate
+      );
+
+      if (result.error) {
+        failedCount++;
+        results.push({
+          id: data[i].shipmentId,
+          success: false,
+          message: result.error
+        });
+      } else {
+        successCount++;
+        results.push({
+          id: data[i].shipmentId,
+          success: true,
+          message: 'Pickup scheduled successfully',
+          data: result
+        });
+      }
+
+      // Update job progress
+      await job.updateProgress(Math.floor(((i + 1) / data.length) * 100));
+
+      // Update bulk operation status
+      await fastify.prisma.bulkOperation.update({
+        where: { id: operationId },
+        data: {
+          processed_count: i + 1,
+          success_count: successCount,
+          failed_count: failedCount
+        }
+      });
+    } catch (error) {
+      failedCount++;
+      results.push({
+        id: data[i].shipmentId || 'unknown',
+        success: false,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+
+      // Update job progress
+      await job.updateProgress(Math.floor(((i + 1) / data.length) * 100));
+
+      // Update bulk operation status
+      await fastify.prisma.bulkOperation.update({
+        where: { id: operationId },
+        data: {
+          processed_count: i + 1,
+          success_count: successCount,
+          failed_count: failedCount
+        }
+      });
+    }
+  }
+
+  // Update bulk operation status to completed
+  await fastify.prisma.bulkOperation.update({
+    where: { id: operationId },
+    data: {
+      status: 'COMPLETED',
+      processed_count: data.length,
+      success_count: successCount,
+      failed_count: failedCount
+    }
   });
 
-  // Add queues to fastify instance for easy access
-  fastify.decorate('shipmentQueue', shipmentQueue);
-  fastify.decorate('bulkOperationQueue', bulkOperationQueue);
+  return { success: true, results };
+}
 
-  // Clean up on shutdown
-  fastify.addHook('onClose', async (instance) => {
-    await shipmentWorker.close();
-    await bulkOperationWorker.close();
-    await shipmentQueue.close();
-    await bulkOperationQueue.close();
+/**
+ * Process bulk cancel shipment
+ * @param job Job data
+ * @param fastify Fastify instance
+ * @param shipmentService Shipment service
+ */
+async function processBulkCancelShipment(
+  job: Job<BulkOperationJobData>,
+  fastify: FastifyInstance,
+  shipmentService: ShipmentService
+) {
+  const { data, userId, operationId } = job.data;
+  const results: BulkOperationResult[] = [];
+  let successCount = 0;
+  let failedCount = 0;
+
+  // Process each shipment
+  for (let i = 0; i < data.length; i++) {
+    try {
+      // Cancel the shipment
+      const result = await shipmentService.cancelShipment(
+        data[i].shipmentId,
+        userId,
+        data[i].reason
+      );
+
+      if (result.error) {
+        failedCount++;
+        results.push({
+          id: data[i].shipmentId,
+          success: false,
+          message: result.error
+        });
+      } else {
+        successCount++;
+        results.push({
+          id: data[i].shipmentId,
+          success: true,
+          message: 'Shipment cancelled successfully',
+          data: result
+        });
+      }
+
+      // Update job progress
+      await job.updateProgress(Math.floor(((i + 1) / data.length) * 100));
+
+      // Update bulk operation status
+      await fastify.prisma.bulkOperation.update({
+        where: { id: operationId },
+        data: {
+          processed_count: i + 1,
+          success_count: successCount,
+          failed_count: failedCount
+        }
+      });
+    } catch (error) {
+      failedCount++;
+      results.push({
+        id: data[i].shipmentId || 'unknown',
+        success: false,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+
+      // Update job progress
+      await job.updateProgress(Math.floor(((i + 1) / data.length) * 100));
+
+      // Update bulk operation status
+      await fastify.prisma.bulkOperation.update({
+        where: { id: operationId },
+        data: {
+          processed_count: i + 1,
+          success_count: successCount,
+          failed_count: failedCount
+        }
+      });
+    }
+  }
+
+  // Update bulk operation status to completed
+  await fastify.prisma.bulkOperation.update({
+    where: { id: operationId },
+    data: {
+      status: 'COMPLETED',
+      processed_count: data.length,
+      success_count: successCount,
+      failed_count: failedCount
+    }
   });
 
-  return { shipmentQueue, bulkOperationQueue };
+  return { success: true, results };
 } 

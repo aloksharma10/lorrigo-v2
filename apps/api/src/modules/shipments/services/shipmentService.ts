@@ -6,6 +6,18 @@ import { OrderService } from '@/modules/orders/services/order-service';
 import { VendorService } from '@/modules/vendors/vendor.service';
 import { calculatePricesForCouriers, calculateVolumetricWeight, PincodeDetails, PriceCalculationParams } from '@/utils/calculate-order-price';
 import { PriceCalculationResult } from '@/utils/calculate-order-price';
+import { VendorShipmentData } from '@/types/vendor';
+import { Queue } from 'bullmq';
+
+// Define the interface for the extended FastifyInstance
+interface ExtendedFastifyInstance extends FastifyInstance {
+  bulkOperationQueue?: Queue;
+  config?: {
+    REDIS_HOST: string;
+    REDIS_PORT: string;
+    REDIS_PASSWORD: string;
+  };
+}
 
 /**
  * Service for handling shipment-related business logic
@@ -13,11 +25,13 @@ import { PriceCalculationResult } from '@/utils/calculate-order-price';
 export class ShipmentService {
 
   private vendorService: VendorService;
+  private fastify: ExtendedFastifyInstance;
 
   constructor(
-    private fastify: FastifyInstance,
+    fastify: FastifyInstance,
     private orderService: OrderService
   ) {
+    this.fastify = fastify as ExtendedFastifyInstance;
     this.vendorService = new VendorService(fastify);
     // this.fastify.redis.flushall().then(() => {
     //   console.log('Redis flushed');
@@ -224,7 +238,6 @@ export class ShipmentService {
     }
     
     const cachedRates = JSON.parse(cachedRatesString);
-    console.log(data.courier_id);
     
     const selectedCourier = cachedRates.formattedRates.find((rate: any) => (rate.id === data.courier_id));
     
@@ -246,133 +259,157 @@ export class ShipmentService {
         
         const shippingCost = selectedCourier.total_price;
         
-        if (userWallet.balance < shippingCost) {
-          return { error: 'Insufficient wallet balance' };
-        }
+        // if (userWallet.balance < shippingCost) {
+        //   return { error: 'Insufficient wallet balance' };
+        // }
 
-        // Generate tracking number and shipment code
-        const awb = this.generateTrackingNumber();
+        // Generate temporary shipment code
         const shipmentCode = `SHP-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
         
-        // Create a shipment record
-        const shipment = await prisma.shipment.create({
-          data: {
-            code: shipmentCode,
-            awb,
-            status: ShipmentStatus.NEW,
-            shipping_charge: selectedCourier.base_price,
-            fw_charge: selectedCourier.weight_charges,
-            cod_amount: order.payment_mode === 'COD' ? order.amount_to_collect : 0,
-            rto_charge: selectedCourier.rto_charges,
-            order_zone: selectedCourier.zone === 'WITHIN_CITY' ? 'Z_A' : 
-                       selectedCourier.zone === 'WITHIN_STATE' ? 'Z_B' : 
-                       selectedCourier.zone === 'WITHIN_METRO' ? 'Z_C' : 
-                       selectedCourier.zone === 'WITHIN_ROI' ? 'Z_D' : 'Z_E',
-            edd: new Date(selectedCourier.etd || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000)),
-            pickup_date: new Date(),
-            pickup_id: `PK-${Date.now()}`,
-            
-            order: {
-              connect: { id: data.order_id }
-            },
-            user: {
-              connect: { id: userId }
-            },
-            courier: {
-              connect: { id: data.courier_id }
-            }
-          }
-        });
-        
-        // Add first tracking event
-        await prisma.trackingEvent.create({
-          data: {
-            code: `TE-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
-            status: ShipmentStatus.NEW,
-            location: order.hub?.address?.city || '',
-            description: 'Shipment created and ready for pickup',
-            shipment_id: shipment.id
-          }
-        });
-        
-        // Store shipment pricing
-        await prisma.shipmentPricing.create({
-          data: {
-            shipment_id: shipment.id,
-            cod_charge_hard: selectedCourier.cod_charges > 0 ? 40 : 0,
-            cod_charge_percent: selectedCourier.cod_charges > 0 ? 1.5 : 0,
-            is_fw_applicable: true,
-            is_rto_applicable: true,
-            is_cod_applicable: order.payment_mode === 'COD',
-            is_cod_reversal_applicable: order.payment_mode === 'COD',
-            weight_slab: selectedCourier.weight_slab,
-            increment_weight: 0.5,
-            increment_price: selectedCourier.weight_charges / Math.max(1, Math.ceil((selectedCourier.final_weight - selectedCourier.weight_slab) / 0.5)),
-            zone: selectedCourier.zone,
-            base_price: selectedCourier.base_price,
-            is_rto_same_as_fw: false,
-            rto_base_price: selectedCourier.rto_charges,
-            rto_increment_price: 0,
-            flat_rto_charge: selectedCourier.rto_charges
-          }
-        });
-        
-        // Update order status
-        await prisma.order.update({
-          where: { id: data.order_id },
-          data: { status: ShipmentStatus.NEW }
-        });
-        
-        // Deduct amount from wallet
-        await prisma.wallet.update({
-          where: { id: userWallet.id },
-          data: { balance: { decrement: shippingCost } }
-        });
-        
-        // Record transaction
-        await prisma.transaction.create({
-          data: {
-            code: `TR-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
-            amount: shippingCost,
-            type: 'DEBIT',
-            description: `Shipping charges for AWB: ${awb}`,
-            status: 'COMPLETED',
-            currency: 'INR',
-            wallet_id: userWallet.id,
-            user_id: userId
-          }
-        });
-        
-        // Prepare vendor data based on courier
+        // Fetch courier details - we need this for the vendor
         const courier = await prisma.courier.findUnique({
           where: { id: data.courier_id },
           include: { channel_config: true }
         });
         
-        if (courier && courier.channel_config) {
-          // Create shipment on vendor's platform based on channel config
-          const vendorResult = await this.vendorService.createShipmentOnVendor(
-            courier.channel_config.name,
-            {
-              order,
-              courier,
-              hub: order.hub,
+        if (!courier || !courier.channel_config) {
+          return { error: 'Selected courier not found or not properly configured' };
+        }
+
+        // Get order items for the shipment
+        const orderItems = await prisma.orderItem.findMany({
+          where: { order_id: order.id }
+        });
+
+        // Get business details if available
+        const userDetails = await prisma.user.findUnique({
+          where: { id: userId },
+          select: {
+            business_name: true,
+            gstin: true
+          }
+        });
+
+        // Step 1: Create shipment on vendor's platform first to get the AWB
+        const vendorResult = await this.vendorService.createShipmentOnVendor(
+          courier.channel_config.name,
+          {
+            order,
+            courier,
+            hub: order.hub || {},
+            awb: '', // Empty AWB as we'll get it from the vendor
+            shipmentCode
+          }
+        );
+        
+        if (!vendorResult.success || !vendorResult.awb) {
+          return { error: `Failed to create shipment with vendor: ${vendorResult.message}` };
+        }
+        
+        // Use the AWB from the vendor
+        const awb = vendorResult.awb;
+        
+        // Step 2: Perform independent operations in parallel
+        const [shipment, orderUpdate, walletUpdate, transactionRecord] = await Promise.all([
+          // Create shipment record
+          prisma.shipment.create({
+            data: {
+              code: shipmentCode,
               awb,
-              shipmentCode
+              status: ShipmentStatus.NEW,
+              shipping_charge: selectedCourier.base_price,
+              fw_charge: selectedCourier.weight_charges,
+              cod_amount: order.payment_mode === 'COD' ? order.amount_to_collect : 0,
+              rto_charge: selectedCourier.rto_charges,
+              order_zone: selectedCourier.zone === 'WITHIN_CITY' ? 'Z_A' : 
+                        selectedCourier.zone === 'WITHIN_STATE' ? 'Z_B' : 
+                        selectedCourier.zone === 'WITHIN_METRO' ? 'Z_C' : 
+                        selectedCourier.zone === 'WITHIN_ROI' ? 'Z_D' : 'Z_E',
+              edd: new Date(selectedCourier.etd || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000)),
+              pickup_date: new Date(),
+              pickup_id: `PK-${Date.now()}`,
+              
+              order: {
+                connect: { id: data.order_id }
+              },
+              user: {
+                connect: { id: userId }
+              },
+              courier: {
+                connect: { id: data.courier_id }
+              }
             }
-          );
+          }),
           
-          if (!vendorResult.success) {
-            throw new Error(`Failed to create shipment with vendor: ${vendorResult.message}`);
-          }
+          // Update order status
+          prisma.order.update({
+            where: { id: data.order_id },
+            data: { status: ShipmentStatus.NEW }
+          }),
           
-          // Update AWB if vendor provided a different one
-          if (vendorResult.awb && vendorResult.awb !== awb) {
-            await prisma.shipment.update({
-              where: { id: shipment.id },
-              data: { awb: vendorResult.awb }
-            });
-          }
+          // Deduct amount from wallet
+          prisma.wallet.update({
+            where: { id: userWallet.id },
+            data: { balance: { decrement: shippingCost } }
+          }),
+          
+          // Record transaction
+          prisma.transaction.create({
+            data: {
+              code: `TR-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
+              amount: shippingCost,
+              type: 'DEBIT',
+              description: `Shipping charges for AWB: ${awb}`,
+              status: 'COMPLETED',
+              currency: 'INR',
+              wallet_id: userWallet.id,
+              user_id: userId
+            }
+          })
+        ]);
+        
+        // Step 3: Create additional records that depend on the shipment ID
+        // Get hub city from order if available
+        const hubCity = order.hub?.address?.city || 'Unknown';
+        
+        await Promise.all([
+          // Add first tracking event
+          prisma.trackingEvent.create({
+            data: {
+              code: `TE-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
+              status: ShipmentStatus.NEW,
+              location: hubCity,
+              description: 'Shipment created and ready for pickup',
+              shipment_id: shipment.id
+            }
+          }),
+          
+          // Store shipment pricing
+          prisma.shipmentPricing.create({
+            data: {
+              shipment_id: shipment.id,
+              cod_charge_hard: selectedCourier.cod_charges > 0 ? 40 : 0,
+              cod_charge_percent: selectedCourier.cod_charges > 0 ? 1.5 : 0,
+              is_fw_applicable: true,
+              is_rto_applicable: true,
+              is_cod_applicable: order.payment_mode === 'COD',
+              is_cod_reversal_applicable: order.payment_mode === 'COD',
+              weight_slab: selectedCourier.weight_slab,
+              increment_weight: 0.5,
+              increment_price: selectedCourier.weight_charges / Math.max(1, Math.ceil((selectedCourier.final_weight - selectedCourier.weight_slab) / 0.5)),
+              zone: selectedCourier.zone,
+              base_price: selectedCourier.base_price,
+              is_rto_same_as_fw: false,
+              rto_base_price: selectedCourier.rto_charges,
+              rto_increment_price: 0,
+              flat_rto_charge: selectedCourier.rto_charges
+            }
+          })
+        ]);
+        
+        // Log vendor data for reference but don't store it directly
+        if (vendorResult.data) {
+          console.info(`Vendor data for shipment ${shipment.id}:`, vendorResult.data);
         }
         
         return { 
@@ -610,13 +647,17 @@ export class ShipmentService {
         },
         order: {
           include: {
-            hub: true,
+            hub: {
+              include: {
+                address: true
+              }
+            }
           }
         }
       }
     });
 
-    if (!shipment) {
+    if (!shipment || !shipment.courier) {
       return { error: 'Shipment not found or not in a valid state for pickup scheduling' };
     }
 
@@ -631,11 +672,19 @@ export class ShipmentService {
 
       // Schedule pickup with vendor
       const channelName = shipment.courier.channel_config.name;
+      
+      // Ensure we have a valid AWB before proceeding
+      const awbToUse = shipment.awb || '';
+      
+      if (!awbToUse) {
+        return { error: 'Missing AWB number for shipment' };
+      }
+      
       const pickupResult = await this.vendorService.schedulePickup(
         channelName,
         {
-          awb: shipment.awb,
-          pickupDate: pickupDateTime.toISOString().split('T')[0], // Format as YYYY-MM-DD
+          awb: awbToUse,
+          pickupDate: pickupDateTime.toISOString().split('T')[0] as string, // Force as string
           hub: shipment.order.hub,
           shipment
         }
@@ -644,6 +693,9 @@ export class ShipmentService {
       if (!pickupResult.success) {
         return { error: pickupResult.message || 'Failed to schedule pickup with vendor' };
       }
+
+      // Get hub city safely
+      const hubCity = shipment.order.hub?.address?.city || 'Unknown';
 
       // Update shipment status
       await this.fastify.prisma.shipment.update({
@@ -659,7 +711,7 @@ export class ShipmentService {
         data: {
           code: `TE-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
           status: ShipmentStatus.PICKUP_SCHEDULED,
-          location: shipment.order.hub?.address?.city || '',
+          location: hubCity,
           description: 'Pickup scheduled with courier',
           shipment_id: id
         }
@@ -706,13 +758,20 @@ export class ShipmentService {
 
     try {
       return await this.fastify.prisma.$transaction(async (prisma) => {
+        if (!shipment.courier) {
+          return { error: 'Shipment not found or cannot be cancelled' };
+        }
         // Cancel shipment with vendor if needed
         if (shipment.status !== ShipmentStatus.NEW) {
           const channelName = shipment.courier.channel_config.name;
+          
+          // Ensure we have a valid AWB to pass to vendor
+          const awbToUse = shipment.awb || '';
+          
           const cancelResult = await this.vendorService.cancelShipment(
             channelName,
             {
-              awb: shipment.awb,
+              awb: awbToUse,
               shipment
             }
           );
@@ -726,16 +785,20 @@ export class ShipmentService {
         let refundAmount = 0;
         let refundDescription = '';
 
+        if (!shipment.shipping_charge || !shipment.fw_charge || !shipment.cod_amount) {
+          return { error: 'Shipment not found or cannot be cancelled' };
+        }
+
         if (shipment.status === ShipmentStatus.NEW || shipment.status === ShipmentStatus.PICKUP_SCHEDULED) {
           // Full refund for shipments that haven't been picked up
           refundAmount = shipment.shipping_charge + shipment.fw_charge + 
-                        (shipment.order.payment_mode === 'COD' ? shipment.cod_amount : 0);
-          refundDescription = `Full refund for cancelled shipment: ${shipment.awb}`;
+                        (shipment.order.payment_mode === 'COD' ? shipment.cod_amount || 0 : 0);
+          refundDescription = `Full refund for cancelled shipment: ${shipment.awb || 'No AWB'}`;
         } else if (shipment.status === ShipmentStatus.PICKED_UP || 
                   shipment.status === ShipmentStatus.IN_TRANSIT) {
           // Partial refund for in-transit shipments (no COD refund)
           refundAmount = shipment.fw_charge * 0.5; // 50% of forward charge
-          refundDescription = `Partial refund for cancelled in-transit shipment: ${shipment.awb}`;
+          refundDescription = `Partial refund for cancelled in-transit shipment: ${shipment.awb || 'No AWB'}`;
         }
 
         if (refundAmount > 0) {
@@ -844,9 +907,6 @@ export class ShipmentService {
 
   /**
    * Create multiple shipments in bulk
-   * @param data Array of shipment creation data
-   * @param userId User ID
-   * @returns Promise resolving to bulk operation details
    */
   async createShipmentBulk(
     data: Array<z.infer<typeof CreateShipmentSchema>>,
@@ -887,7 +947,7 @@ export class ShipmentService {
             orderIds.map(async (orderId) => {
               const rates = await this.getShipmentRates(orderId, userId);
               return {
-                order_id: orderId,
+                orderId,
                 couriers: rates.rates || []
               };
             })
@@ -897,7 +957,7 @@ export class ShipmentService {
           data = orderCouriers
             .filter(oc => oc.couriers && oc.couriers.length > 0)
             .map(oc => ({
-              order_id: oc.order_id,
+              order_id: oc.orderId,
               courier_id: oc.couriers[0].id // Use the first (cheapest) courier
             }));
         }
@@ -916,7 +976,7 @@ export class ShipmentService {
         }
       });
       
-      // Queue the bulk operation
+      // Queue the bulk operation if queue is available
       if (this.fastify.bulkOperationQueue) {
         await this.fastify.bulkOperationQueue.add(
           'bulk-create-shipment',
@@ -934,61 +994,76 @@ export class ShipmentService {
             }
           }
         );
-      } else {
-        // Fallback if queue is not available (for testing or development)
-        this.fastify.log.warn('BulkOperationQueue not available, processing synchronously');
         
-        let successCount = 0;
-        let failedCount = 0;
-        const results = [];
-        
-        for (const item of data) {
-          try {
-            const result = await this.createShipment(item, userId);
-            if (result.error) {
-              failedCount++;
-              results.push({
-                id: item.order_id,
-                success: false,
-                message: result.error
-              });
-            } else {
-              successCount++;
-              results.push({
-                id: item.order_id,
-                success: true,
-                message: 'Shipment created successfully'
-              });
-            }
-          } catch (error) {
+        return {
+          success: true,
+          message: 'Bulk shipment creation operation started',
+          operation: {
+            id: bulkOperation.id,
+            code: bulkOperation.code,
+            status: bulkOperation.status,
+            total: bulkOperation.total_count
+          }
+        };
+      }
+      
+      // Fallback if queue is not available (for testing or development)
+      this.fastify.log.warn('BulkOperationQueue not available, processing synchronously');
+      
+      let successCount = 0;
+      let failedCount = 0;
+      const results = [];
+      
+      for (const item of data) {
+        try {
+          const result = await this.createShipment(item, userId);
+          if (result.error) {
             failedCount++;
             results.push({
               id: item.order_id,
               success: false,
-              message: error instanceof Error ? error.message : 'Unknown error'
+              message: result.error
+            });
+          } else {
+            successCount++;
+            results.push({
+              id: item.order_id,
+              success: true,
+              message: 'Shipment created successfully'
             });
           }
+        } catch (error) {
+          failedCount++;
+          results.push({
+            id: item.order_id,
+            success: false,
+            message: error instanceof Error ? error.message : 'Unknown error'
+          });
         }
-        
-        await this.fastify.prisma.bulkOperation.update({
-          where: { id: bulkOperation.id },
-          data: {
-            status: 'COMPLETED',
-            processed_count: data.length,
-            success_count: successCount,
-            failed_count: failedCount
-          }
-        });
       }
+      
+      await this.fastify.prisma.bulkOperation.update({
+        where: { id: bulkOperation.id },
+        data: {
+          status: 'COMPLETED',
+          processed_count: data.length,
+          success_count: successCount,
+          failed_count: failedCount
+        }
+      });
       
       return {
         success: true,
-        message: 'Bulk shipment creation operation started',
+        message: 'Bulk shipment creation operation completed',
         operation: {
           id: bulkOperation.id,
           code: bulkOperation.code,
-          status: bulkOperation.status,
-          total: bulkOperation.total_count
+          status: 'COMPLETED',
+          total: bulkOperation.total_count,
+          processed: data.length,
+          successful: successCount,
+          failed: failedCount,
+          results
         }
       };
     } catch (error) {
@@ -1040,7 +1115,7 @@ export class ShipmentService {
         data = shipments.map(shipment => ({
           shipment_id: shipment.id,
           pickup_date: pickupDate
-        }));
+        })) as Array<{ shipment_id: string; pickup_date: string }>;
       }
       
       // Create bulk operation record

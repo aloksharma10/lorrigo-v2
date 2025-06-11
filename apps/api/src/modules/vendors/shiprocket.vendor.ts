@@ -2,8 +2,8 @@ import { APP_CONFIG } from '@/config/app';
 import { BaseVendor } from './base-vendor';
 import { APIs } from '@/config/api';
 import { CACHE_KEYS } from '@/config/cache';
-import { formatAddress, formatPhoneNumber, PickupAddress } from '@lorrigo/utils';
-import { VendorRegistrationResult, VendorServiceabilityResult, VendorShipmentResult, VendorPickupResult, VendorCancellationResult } from '@/types/vendor';
+import { formatAddress, formatPhoneNumber, formatShiprocketAddress, PickupAddress } from '@lorrigo/utils';
+import { VendorRegistrationResult, VendorServiceabilityResult, VendorShipmentResult, VendorPickupResult, VendorCancellationResult, VendorShipmentData, ShipmentPickupData, ShipmentCancelData } from '@/types/vendor';
 import { getPincodeDetails } from '@/utils/pincode';
 
 /**
@@ -246,7 +246,7 @@ export class ShiprocketVendor extends BaseVendor {
    * @param shipmentData Shipment data
    * @returns Promise resolving to shipment creation result
    */
-  public async createShipment(shipmentData: any): Promise<VendorShipmentResult> {
+  public async createShipment(shipmentData: VendorShipmentData): Promise<VendorShipmentResult> {
     try {
       const token = await this.getAuthToken();
 
@@ -264,21 +264,16 @@ export class ShiprocketVendor extends BaseVendor {
 
       const { order, hub, orderItems, paymentMethod, dimensions } = shipmentData;
 
-      // Function to trim address to fit Shiprocket requirements
-      const trimAddress = (address = '') => {
-        const fullAddress = `0-/, ${address}`;
-        return fullAddress.length > 150 ? fullAddress.slice(0, 150) : fullAddress;
-      };
-
-      // Extract customer name components
-      const nameParts = order.customer.name.split(' ');
+      // Extract customer name components safely
+      const customerName = order.customer?.name || 'Customer';
+      const nameParts = customerName.split(' ');
       const firstName = nameParts[0] || 'Customer';
       const lastName = nameParts.slice(1).join(' ') || '';
 
-      // Prepare order items for payload
+      // Prepare order items for payload safely
       const shiprocketOrderItems = orderItems.map((item: any) => ({
-        name: item.name,
-        sku: `sku-${item.id || item.code}`,
+        name: item.name || 'Product',
+        sku: `sku-${item.id || item.code || Math.random().toString(36).substring(2, 15)}`,
         units: item.units || 1,
         selling_price: item.selling_price || 0,
         discount: item.discount || 0,
@@ -289,46 +284,46 @@ export class ShiprocketVendor extends BaseVendor {
       // Determine payment method
       const isCOD = paymentMethod === 'COD';
 
-      // Create shipment payload
+      // Create shipment payload with safety checks
       const payload: any = {
-        courier_id: shipmentData.courier_id,
-        order_id: order.order_reference_id || order.code,
+        courier_id: shipmentData.courier?.id || '',
+        order_id: order.order_reference_id || order.code || `order-${Date.now()}`,
         order_date: new Date().toISOString().slice(0, 16).replace('T', ' '),
         billing_customer_name: firstName,
         billing_last_name: lastName,
-        billing_address: trimAddress(order.shipping_address.address),
-        billing_city: order.shipping_address.city,
-        billing_pincode: order.shipping_address.pincode,
-        billing_state: order.shipping_address.state,
+        billing_address: formatShiprocketAddress(order.customer?.address?.address || ''),
+        billing_city: order.customer?.address?.city || '',
+        billing_pincode: order.customer?.address?.pincode || '',
+        billing_state: order.customer?.address?.state || '',
         billing_country: 'India',
-        billing_email: order.customer.email || 'customer@example.com',
-        billing_phone: formatPhoneNumber(order.customer.phone),
+        billing_email: order.customer?.email || 'customer@example.com',
+        billing_phone: formatPhoneNumber(order.customer?.phone),
         shipping_is_billing: true,
         order_items: shiprocketOrderItems,
         payment_method: isCOD ? 'COD' : 'Prepaid',
-        sub_total: order.total_amount,
-        length: dimensions.length || 10,
-        breadth: dimensions.width || 10,
-        height: dimensions.height || 10,
-        weight: dimensions.weight || 0.5,
-        pickup_location: hub.name?.trim(),
+        sub_total: order.total_amount || 0,
+        length: dimensions?.length || 10,
+        breadth: dimensions?.width || 10,
+        height: dimensions?.height || 10,
+        weight: dimensions?.weight || 0.5,
+        pickup_location: hub?.name?.trim() || '',
         vendor_details: {
-          name: hub.contact_person_name || hub.name,
+          name: hub?.contact_person_name || hub?.name || 'Seller',
           email: 'noreply@lorrigo.com',
-          phone: formatPhoneNumber(hub.phone),
-          address: trimAddress(hub.address.address),
-          address_2: hub.address.address_2 || '',
-          city: hub.address.city,
-          state: hub.address.state,
+          phone: formatPhoneNumber(hub?.phone),
+          address: formatShiprocketAddress(hub?.address?.address || ''),
+          address_2: hub?.address?.address_2 || '',
+          city: hub?.address?.city || '',
+          state: hub?.address?.state || '',
           country: 'India',
-          pin_code: hub.address.pincode,
-          pickup_location: hub.name?.trim(),
+          pin_code: hub?.address?.pincode || '',
+          pickup_location: hub?.name?.trim() || '',
         },
       };
 
       // Add COD specific fields if applicable
       if (isCOD) {
-        payload.cod_amount = order.total_amount;
+        payload.cod_amount = order.total_amount || 0;
       }
 
       const response = await this.makeRequest(
@@ -337,6 +332,8 @@ export class ShiprocketVendor extends BaseVendor {
         payload,
         apiConfig
       );
+
+      console.log('Shiprocket response:', response.data);
 
       const shiprocketData = response.data?.payload;
 
@@ -375,14 +372,7 @@ export class ShiprocketVendor extends BaseVendor {
    * @param pickupData Pickup data
    * @returns Promise resolving to pickup scheduling result
    */
-  public async schedulePickup(
-    pickupData: {
-      awb: string;
-      pickupDate: string;
-      hub: any;
-      shipment: any;
-    }
-  ): Promise<VendorPickupResult> {
+  public async schedulePickup(pickupData: ShipmentPickupData): Promise<VendorPickupResult> {
     try {
       const token = await this.getAuthToken();
 
@@ -445,12 +435,7 @@ export class ShiprocketVendor extends BaseVendor {
    * @param cancelData Cancellation data
    * @returns Promise resolving to cancellation result
    */
-  public async cancelShipment(
-    cancelData: {
-      awb: string;
-      shipment: any;
-    }
-  ): Promise<VendorCancellationResult> {
+  public async cancelShipment(cancelData: ShipmentCancelData): Promise<VendorCancellationResult> {
     try {
       const token = await this.getAuthToken();
 

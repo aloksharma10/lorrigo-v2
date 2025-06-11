@@ -28,3 +28,9 @@ export const formatPhoneNumber = (phone: number): string => {
   // If it's less than 10 digits, pad with zeros (rare case)
   return phoneStr.padStart(10, '0');
 };
+
+
+export const formatShiprocketAddress = (address = '') => {
+  const fullAddress = `0-/, ${address || ''}`;
+  return fullAddress.length > 150 ? fullAddress.slice(0, 150) : fullAddress;
+};

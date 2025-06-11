@@ -168,6 +168,7 @@ export class OrderService {
       include: {
         hub: {
           select: {
+            phone: true,
             address: {
               select: {
                 pincode: true,

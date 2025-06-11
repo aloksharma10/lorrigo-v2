@@ -17,7 +17,7 @@ export async function shipmentRoutes(fastify: FastifyInstance) {
   const preHandler = [checkAuth];
 
   // Shipment rates
-  fastify.get(
+  fastify.get<{ Params: { id: string } }>(
     '/:id/rates',
     { preHandler },
     shipmentController.getRates.bind(shipmentController)
@@ -36,19 +36,19 @@ export async function shipmentRoutes(fastify: FastifyInstance) {
     shipmentController.getAllShipments.bind(shipmentController)
   );
 
-  fastify.get(
+  fastify.get<{ Params: { id: string } }>(
     '/:id',
     { preHandler },
     shipmentController.getShipmentById.bind(shipmentController)
   );
 
-  fastify.put(
+  fastify.put<{ Params: { id: string } }>(
     '/:id',
     { preHandler },
     shipmentController.updateShipment.bind(shipmentController)
   );
 
-  fastify.post(
+  fastify.post<{ Params: { id: string } }>(
     '/:id/schedule-pickup',
     { preHandler },
     (request, reply) => {
@@ -58,11 +58,11 @@ export async function shipmentRoutes(fastify: FastifyInstance) {
       // Attach the pickupDate to the request
       (request as any).body = { id, pickupDate };
       
-      return shipmentController.schedulePickup(request, reply);
+      return shipmentController.schedulePickup(request as any, reply);
     }
   );
 
-  fastify.post(
+  fastify.post<{ Params: { id: string } }>(
     '/:id/cancel',
     { preHandler },
     (request, reply) => {
@@ -72,17 +72,17 @@ export async function shipmentRoutes(fastify: FastifyInstance) {
       // Attach the reason to the request
       (request as any).body = { id, reason };
       
-      return shipmentController.cancelShipment(request, reply);
+      return shipmentController.cancelShipment(request as any, reply);
     }
   );
 
-  fastify.post(
+  fastify.post<{ Params: { id: string } }>(
     '/:id/tracking-events',
     { preHandler },
     shipmentController.addTrackingEvent.bind(shipmentController)
   );
 
-  fastify.get(
+  fastify.get<{ Params: { id: string } }>(
     '/:id/tracking-events',
     { preHandler },
     shipmentController.getTrackingEvents.bind(shipmentController)
@@ -107,7 +107,7 @@ export async function shipmentRoutes(fastify: FastifyInstance) {
     shipmentController.cancelShipmentBulk.bind(shipmentController)
   );
 
-  fastify.get(
+  fastify.get<{ Params: { id: string } }>(
     '/bulk-operations/:id',
     { preHandler },
     shipmentController.getBulkOperationStatus.bind(shipmentController)

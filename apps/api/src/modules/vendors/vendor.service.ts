@@ -5,6 +5,7 @@ import { DelhiveryVendorFactory } from './delhivery.vendor';
 import { SmartShipVendor } from './smart-ship.vendor';
 import { VendorServiceabilityResult } from '@/types/vendor';
 import { FastifyInstance } from 'fastify';
+import { Courier, Hub, Order } from '@lorrigo/db';
 
 /**
  * Service for managing vendor operations
@@ -321,10 +322,10 @@ export class VendorService {
   public async createShipmentOnVendor(
     vendorName: string,
     shipmentData: {
-      order: any;
-      courier: any;
+      order: Order;
+      courier: Courier;
       hub: any;
-      awb: string;
+      awb?: string;
       shipmentCode: string;
     }
   ): Promise<{
@@ -346,6 +347,15 @@ export class VendorService {
       // Prepare data for vendor API
       const { order, courier, hub, awb } = shipmentData;
       
+      // Check if hub is valid
+      if (!hub || !hub.address || !hub.address.pincode) {
+        return {
+          success: false,
+          message: 'Invalid hub data. Please select a valid pickup location.',
+          data: null,
+        };
+      }
+      
       // Extract order items
       const orderItems = await this.fastify.prisma.orderItem.findMany({
         where: { order_id: order.id }
@@ -363,6 +373,15 @@ export class VendorService {
           data: null,
         };
       }
+      
+      // Get user's business details if available
+      const userDetails = await this.fastify.prisma.user.findUnique({
+        where: { id: order.user_id },
+        select: {
+          business_name: true,
+          gstin: true
+        }
+      });
 
       // Prepare vendor shipment data
       const vendorShipmentData = {
@@ -377,7 +396,7 @@ export class VendorService {
           weight: packageDetails.dead_weight
         },
         courier,
-        seller_gst: order.user?.business?.gstin || ''
+        seller_gst: userDetails?.gstin || ''
       };
 
       // Create shipment with vendor
