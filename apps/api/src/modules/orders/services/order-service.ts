@@ -168,12 +168,14 @@ export class OrderService {
       include: {
         hub: {
           select: {
+            name: true,
             phone: true,
             address: {
               select: {
                 pincode: true,
                 city: true,
                 state: true,
+                address: true,
               },
             },
           },
@@ -197,6 +199,7 @@ export class OrderService {
                 pincode: true,
                 city: true,
                 state: true,
+                address: true,
               },
             },
           },

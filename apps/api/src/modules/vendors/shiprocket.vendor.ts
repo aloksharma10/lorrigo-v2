@@ -262,7 +262,7 @@ export class ShiprocketVendor extends BaseVendor {
         Authorization: token,
       };
 
-      const { order, hub, orderItems, paymentMethod, dimensions } = shipmentData;
+      const { order, hub, orderItems, paymentMethod, dimensions, isSchedulePickup } = shipmentData;
 
       // Extract customer name components safely
       const customerName = order.customer?.name || 'Customer';
@@ -273,7 +273,7 @@ export class ShiprocketVendor extends BaseVendor {
       // Prepare order items for payload safely
       const shiprocketOrderItems = orderItems.map((item: any) => ({
         name: item.name || 'Product',
-        sku: `sku-${item.id || item.code || Math.random().toString(36).substring(2, 15)}`,
+        sku: `sku-${item.code || Math.random().toString(36).substring(2, 15)}`,
         units: item.units || 1,
         selling_price: item.selling_price || 0,
         discount: item.discount || 0,
@@ -284,50 +284,125 @@ export class ShiprocketVendor extends BaseVendor {
       // Determine payment method
       const isCOD = paymentMethod === 'COD';
 
-      // Create shipment payload with safety checks
-      const payload: any = {
-        courier_id: shipmentData.courier?.id || '',
-        order_id: order.order_reference_id || order.code || `order-${Date.now()}`,
-        order_date: new Date().toISOString().slice(0, 16).replace('T', ' '),
-        billing_customer_name: firstName,
-        billing_last_name: lastName,
-        billing_address: formatShiprocketAddress(order.customer?.address?.address || ''),
-        billing_city: order.customer?.address?.city || '',
-        billing_pincode: order.customer?.address?.pincode || '',
-        billing_state: order.customer?.address?.state || '',
-        billing_country: 'India',
-        billing_email: order.customer?.email || 'customer@example.com',
-        billing_phone: formatPhoneNumber(order.customer?.phone),
-        shipping_is_billing: true,
-        order_items: shiprocketOrderItems,
-        payment_method: isCOD ? 'COD' : 'Prepaid',
-        sub_total: order.total_amount || 0,
-        length: dimensions?.length || 10,
-        breadth: dimensions?.width || 10,
-        height: dimensions?.height || 10,
-        weight: dimensions?.weight || 0.5,
-        pickup_location: hub?.name?.trim() || '',
-        vendor_details: {
-          name: hub?.contact_person_name || hub?.name || 'Seller',
-          email: 'noreply@lorrigo.com',
-          phone: formatPhoneNumber(hub?.phone),
-          address: formatShiprocketAddress(hub?.address?.address || ''),
-          address_2: hub?.address?.address_2 || '',
-          city: hub?.address?.city || '',
-          state: hub?.address?.state || '',
-          country: 'India',
-          pin_code: hub?.address?.pincode || '',
-          pickup_location: hub?.name?.trim() || '',
-        },
-      };
+      // Create a random suffix for the order reference ID for uniqueness
+      const randomInt = Math.round(Math.random() * 20);
+      const customOrderReferenceId = `${order.order_reference_id || order.code || `order-${Date.now()}`}-${randomInt}`;
 
-      // Add COD specific fields if applicable
-      if (isCOD) {
-        payload.cod_amount = order.total_amount || 0;
+      // Format address for Shiprocket
+      let billingAddress = formatShiprocketAddress(order.customer?.address?.address || '');
+      let billingAddress2 = '';
+      
+      if (billingAddress.length > 170) {
+        billingAddress2 = billingAddress.slice(170);
+        billingAddress = billingAddress.slice(0, 170);
+      }
+
+      // Determine which API to use based on whether pickup scheduling is requested
+      const apiEndpoint = isSchedulePickup 
+        ? APIs.SHIPROCKET.CREATE_FORWARD_SHIPMENT 
+        : APIs.SHIPROCKET.GENRATE_AWB;
+
+      let payload: any = {};
+
+      if (apiEndpoint === APIs.SHIPROCKET.CREATE_FORWARD_SHIPMENT) {
+        // Use wrapper API for combined order creation, shipment, and pickup scheduling
+        payload = {
+          order_id: customOrderReferenceId,
+          order_date: new Date().toISOString().slice(0, 16).replace('T', ' '),
+          pickup_location: hub?.name?.trim() || '',
+          billing_customer_name: firstName,
+          billing_last_name: lastName,
+          billing_address: billingAddress,
+          billing_address_2: billingAddress2,
+          billing_city: order.customer?.address?.city || '',
+          billing_pincode: order.customer?.address?.pincode || '',
+          billing_state: order.customer?.address?.state || '',
+          billing_country: 'India',
+          billing_email: order.customer?.email || 'customer@example.com',
+          billing_phone: formatPhoneNumber(order.customer?.phone),
+          shipping_is_billing: true,
+          order_items: shiprocketOrderItems,
+          payment_method: isCOD ? 'COD' : 'Prepaid',
+          sub_total: order.total_amount || 0,
+          length: dimensions?.length || 10,
+          breadth: dimensions?.width || 10,
+          height: dimensions?.height || 10,
+          weight: dimensions?.weight || 0.5,
+          courier_id: shipmentData.courier?.courier_code || '',
+          vendor_details: {
+            name: hub?.contact_person_name || hub?.name || 'Seller',
+            email: 'noreply@lorrigo.com',
+            phone: formatPhoneNumber(hub?.phone),
+            address: formatShiprocketAddress(hub?.address?.address || ''),
+            address_2: hub?.address?.address_2 || '',
+            city: hub?.address?.city || '',
+            state: hub?.address?.state || '',
+            country: 'India',
+            pin_code: hub?.address?.pincode || '',
+            pickup_location: hub?.name?.trim() || '',
+          },
+        };
+
+        // Add pickup date if provided
+        if (shipmentData.pickupDate) {
+          payload.pickup_date = new Date(shipmentData.pickupDate).toISOString().split('T')[0];
+        }
+
+        // Add COD specific fields if applicable
+        if (isCOD) {
+          payload.cod_amount = order.total_amount || 0;
+        }
+
+        // Add ewaybill if provided and order value is high
+        if (order.ewaybill && order.total_amount > 50000) {
+          payload.ewaybill_no = order.ewaybill;
+        }
+      } else {
+        // Use standard AWB generation API
+        payload = {
+          courier_id: shipmentData.courier?.courier_code || '',
+          order_id: customOrderReferenceId,
+          order_date: new Date().toISOString().slice(0, 16).replace('T', ' '),
+          billing_customer_name: firstName,
+          billing_last_name: lastName,
+          billing_address: billingAddress,
+          billing_city: order.customer?.address?.city || '',
+          billing_pincode: order.customer?.address?.pincode || '',
+          billing_state: order.customer?.address?.state || '',
+          billing_country: 'India',
+          billing_email: order.customer?.email || 'customer@example.com',
+          billing_phone: formatPhoneNumber(order.customer?.phone),
+          shipping_is_billing: true,
+          order_items: shiprocketOrderItems,
+          payment_method: isCOD ? 'COD' : 'Prepaid',
+          sub_total: order.total_amount || 0,
+          length: dimensions?.length || 10,
+          breadth: dimensions?.width || 10,
+          height: dimensions?.height || 10,
+          weight: dimensions?.weight || 0.5,
+          pickup_location: hub?.name?.trim() || '',
+          vendor_details: {
+            name: hub?.contact_person_name || hub?.name || 'Seller',
+            email: 'noreply@lorrigo.com',
+            phone: formatPhoneNumber(hub?.phone),
+            address: formatShiprocketAddress(hub?.address?.address || ''),
+            address_2: hub?.address?.address_2 || '',
+            city: hub?.address?.city || '',
+            state: hub?.address?.state || '',
+            country: 'India',
+            pin_code: hub?.address?.pincode || '',
+            pickup_location: hub?.name?.trim() || '',
+          },
+        };
+
+        // Add COD specific fields if applicable
+        if (isCOD) {
+          payload.cod_amount = order.total_amount || 0;
+        }
       }
 
       const response = await this.makeRequest(
-        APIs.SHIPROCKET.GENRATE_AWB,
+        apiEndpoint,
         'POST',
         payload,
         apiConfig
@@ -335,27 +410,53 @@ export class ShiprocketVendor extends BaseVendor {
 
       console.log('Shiprocket response:', response.data);
 
-      const shiprocketData = response.data?.payload;
+      const shiprocketData = apiEndpoint === APIs.SHIPROCKET.CREATE_FORWARD_SHIPMENT 
+        ? response.data // Direct response from wrapper API
+        : response.data?.payload; // Response from AWB generation API
 
-      if (!shiprocketData?.order_id || !shiprocketData?.shipment_id || !shiprocketData?.awb_code) {
+      if (apiEndpoint === APIs.SHIPROCKET.CREATE_FORWARD_SHIPMENT) {
+        // Handle wrapper API response
+        if (!shiprocketData?.order_id || !shiprocketData?.shipment_id) {
+          return {
+            success: false,
+            message: shiprocketData?.message || 'Failed to create shipment with Shiprocket wrapper API',
+            data: response.data,
+          };
+        }
+
         return {
-          success: false,
-          message: shiprocketData?.awb_assign_error || 'Failed to create shipment with Shiprocket',
-          data: response.data,
+          success: true,
+          message: 'Shipment created and scheduled successfully',
+          awb: shiprocketData.awb_code || '',
+          routingCode: shiprocketData.routing_code || '',
+          data: {
+            shiprocket_order_id: shiprocketData.order_id,
+            shiprocket_shipment_id: shiprocketData.shipment_id,
+            ...response.data,
+          },
+        };
+      } else {
+        // Handle standard AWB generation API response
+        if (!shiprocketData?.order_id || !shiprocketData?.shipment_id || !shiprocketData?.awb_code) {
+          return {
+            success: false,
+            message: shiprocketData?.awb_assign_error || 'Failed to create shipment with Shiprocket',
+            data: response.data,
+          };
+        }
+
+        return {
+          success: true,
+          message: 'Shipment created successfully',
+          awb: shiprocketData.awb_code,
+          routingCode: shiprocketData.routing_code || '',
+          data: {
+            shiprocket_order_id: shiprocketData.order_id,
+            shiprocket_shipment_id: shiprocketData.shipment_id,
+            ...response.data,
+          },
         };
       }
-
-      return {
-        success: true,
-        message: 'Shipment created successfully',
-        awb: shiprocketData.awb_code,
-        routingCode: shiprocketData.routing_code || '',
-        data: {
-          shiprocket_order_id: shiprocketData.order_id,
-          shiprocket_shipment_id: shiprocketData.shipment_id,
-          ...response.data,
-        },
-      };
     } catch (error: any) {
       console.error('Error creating shipment with Shiprocket:', error);
 

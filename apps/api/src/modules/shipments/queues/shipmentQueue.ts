@@ -132,16 +132,18 @@ async function processBulkCreateShipment(
       if (result.error) {
         failedCount++;
         results.push({
-          id: shipmentData.orderId,
+          id: shipmentData.order_id || 'unknown',
           success: false,
           message: result.error
         });
       } else {
         successCount++;
         results.push({
-          id: shipmentData.orderId,
+          id: shipmentData.order_id || 'unknown',
           success: true,
-          message: 'Shipment created successfully',
+          message: shipmentData.schedule_pickup 
+            ? 'Shipment created and pickup scheduled successfully' 
+            : 'Shipment created successfully',
           data: !result.error ? result : null
         });
       }
@@ -161,7 +163,7 @@ async function processBulkCreateShipment(
     } catch (error) {
       failedCount++;
       results.push({
-        id: data[i].orderId || 'unknown',
+        id: data[i].order_id || 'unknown',
         success: false,
         message: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -216,22 +218,22 @@ async function processBulkSchedulePickup(
     try {
       // Schedule the pickup
       const result = await shipmentService.schedulePickup(
-        data[i].shipmentId,
+        data[i].shipment_id,
         userId,
-        data[i].pickupDate
+        data[i].pickup_date
       );
 
       if (result.error) {
         failedCount++;
         results.push({
-          id: data[i].shipmentId,
+          id: data[i].shipment_id,
           success: false,
           message: result.error
         });
       } else {
         successCount++;
         results.push({
-          id: data[i].shipmentId,
+          id: data[i].shipment_id,
           success: true,
           message: 'Pickup scheduled successfully',
           data: result
@@ -253,7 +255,7 @@ async function processBulkSchedulePickup(
     } catch (error) {
       failedCount++;
       results.push({
-        id: data[i].shipmentId || 'unknown',
+        id: data[i].shipment_id || 'unknown',
         success: false,
         message: error instanceof Error ? error.message : 'Unknown error'
       });

@@ -276,6 +276,22 @@ export class ShipmentService {
           return { error: 'Selected courier not found or not properly configured' };
         }
 
+        // Determine if this is a combined creation + scheduling request
+        const isSchedulePickup = data.schedule_pickup === true;
+        let pickupDate: string | undefined;
+        
+        if (isSchedulePickup && data.pickup_date) {
+          // Validate pickup date
+          const pickupDateTime = new Date(data.pickup_date);
+          const today = new Date();
+          
+          if (isNaN(pickupDateTime.getTime()) || pickupDateTime < today) {
+            return { error: 'Invalid pickup date. Must be a future date.' };
+          }
+          
+          pickupDate = data.pickup_date;
+        }
+
         // Get order items for the shipment
         const orderItems = await prisma.orderItem.findMany({
           where: { order_id: order.id }
@@ -298,7 +314,9 @@ export class ShipmentService {
             courier,
             hub: order.hub || {},
             awb: '', // Empty AWB as we'll get it from the vendor
-            shipmentCode
+            shipmentCode,
+            isSchedulePickup,
+            pickupDate
           }
         );
         
@@ -316,7 +334,7 @@ export class ShipmentService {
             data: {
               code: shipmentCode,
               awb,
-              status: ShipmentStatus.NEW,
+              status: isSchedulePickup ? ShipmentStatus.PICKUP_SCHEDULED : ShipmentStatus.NEW,
               shipping_charge: selectedCourier.base_price,
               fw_charge: selectedCourier.weight_charges,
               cod_amount: order.payment_mode === 'COD' ? order.amount_to_collect : 0,
@@ -326,7 +344,7 @@ export class ShipmentService {
                         selectedCourier.zone === 'WITHIN_METRO' ? 'Z_C' : 
                         selectedCourier.zone === 'WITHIN_ROI' ? 'Z_D' : 'Z_E',
               edd: new Date(selectedCourier.etd || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000)),
-              pickup_date: new Date(),
+              pickup_date: isSchedulePickup && pickupDate ? new Date(pickupDate) : null,
               pickup_id: `PK-${Date.now()}`,
               
               order: {
@@ -344,7 +362,7 @@ export class ShipmentService {
           // Update order status
           prisma.order.update({
             where: { id: data.order_id },
-            data: { status: ShipmentStatus.NEW }
+            data: { status: isSchedulePickup ? ShipmentStatus.PICKUP_SCHEDULED : ShipmentStatus.NEW }
           }),
           
           // Deduct amount from wallet
@@ -377,9 +395,9 @@ export class ShipmentService {
           prisma.trackingEvent.create({
             data: {
               code: `TE-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
-              status: ShipmentStatus.NEW,
+              status: isSchedulePickup ? ShipmentStatus.PICKUP_SCHEDULED : ShipmentStatus.NEW,
               location: hubCity,
-              description: 'Shipment created and ready for pickup',
+              description: isSchedulePickup ? 'Shipment created and pickup scheduled' : 'Shipment created and ready for pickup',
               shipment_id: shipment.id
             }
           }),

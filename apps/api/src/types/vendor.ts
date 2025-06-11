@@ -51,10 +51,10 @@ export interface VendorShipmentData {
     height: number;
     weight: number;
   };
-  courier: any;
-  courier_id?: string;
+  courier?: any;
   seller_gst?: string;
-  is_reshipped?: boolean;
+  isSchedulePickup?: boolean;
+  pickupDate?: string;
 }
 
 export interface ShipmentPickupData {

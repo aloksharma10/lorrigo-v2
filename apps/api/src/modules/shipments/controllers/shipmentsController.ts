@@ -10,7 +10,7 @@ import { ShipmentStatus } from '@lorrigo/db';
  * Controller for shipment-related API endpoints
  */
 export class ShipmentController {
-  constructor(private shipmentService: ShipmentService) {}
+  constructor(private shipmentService: ShipmentService) { }
   /**
    * Get rates for an order
    */
@@ -37,23 +37,28 @@ export class ShipmentController {
    */
   async createShipment(request: FastifyRequest, reply: FastifyReply) {
     try {
+      const { id: userId } = request.userPayload as { id: string };
+      const data = request.body as z.infer<typeof CreateShipmentSchema>;
 
-      const data = CreateShipmentSchema.parse(request.body);
-      const user_id = request.userPayload!.id;
+      // Validate data
+      try {
+        CreateShipmentSchema.parse(data);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return reply.code(400).send({ error: error.errors });
+        }
+        return reply.code(400).send({ error: 'Invalid request data' });
+      }
 
-      const result = await this.shipmentService.createShipment(data, user_id);
+      const result = await this.shipmentService.createShipment(data, userId);
 
       if (result.error) {
-        return reply.code(404).send({ error: result.error });
+        return reply.code(400).send({ error: result.error });
       }
 
       return reply.code(201).send(result);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return reply.code(400).send({ error: error.errors });
-      }
-      request.log.error(error);
-      return reply.code(500).send({ error: 'Internal Server Error' });
+      return reply.code(500).send({ error: 'Failed to create shipment' });
     }
   }
 
@@ -253,33 +258,49 @@ export class ShipmentController {
   }
 
   /**
-   * Create a shipment in bulk
+   * Create multiple shipments in bulk
    */
   async createShipmentBulk(request: FastifyRequest, reply: FastifyReply) {
     try {
-      const user_id = request.userPayload!.id;
-      const { shipments, filters } = request.body as {
-        shipments?: Array<{ order_id: string; courier_id: string }>;
+      const { id: userId } = request.userPayload as { id: string };
+      const body = request.body as {
+        shipments?: Array<z.infer<typeof CreateShipmentSchema>>;
         filters?: {
           status?: string;
           dateRange?: [string, string];
         };
+        schedule_pickup?: boolean;
+        pickup_date?: string;
       };
 
-      // Convert date strings to Date objects if provided
-      const processedFilters = filters
-        ? {
-            ...filters,
-            dateRange: filters.dateRange
-              ? [new Date(filters.dateRange[0]), new Date(filters.dateRange[1])] as [Date, Date]
-              : undefined,
-          }
-        : undefined;
+      // Process date range if provided
+      let dateRange: [Date, Date] | undefined;
+      if (body.filters?.dateRange) {
+        dateRange = [
+          new Date(body.filters.dateRange[0]),
+          new Date(body.filters.dateRange[1]),
+        ];
+      }
+
+      // Validate shipments data if provided
+      let shipments = body.shipments || [];
+
+      // If schedule_pickup is true for bulk operation, add it to all shipments
+      if (body.schedule_pickup && shipments.length > 0) {
+        shipments = shipments.map(shipment => ({
+          ...shipment,
+          schedule_pickup: body.schedule_pickup,
+          pickup_date: body.pickup_date || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        }));
+      }
 
       const result = await this.shipmentService.createShipmentBulk(
-        shipments || [],
-        user_id,
-        processedFilters
+        shipments,
+        userId,
+        {
+          status: body.filters?.status,
+          dateRange,
+        }
       );
 
       if (result.error) {
@@ -288,8 +309,7 @@ export class ShipmentController {
 
       return reply.code(202).send(result);
     } catch (error) {
-      request.log.error(error);
-      return reply.code(500).send({ error: 'Internal Server Error' });
+      return reply.code(500).send({ error: 'Failed to create bulk shipments' });
     }
   }
 
@@ -310,12 +330,12 @@ export class ShipmentController {
       // Convert date strings to Date objects if provided
       const processedFilters = filters
         ? {
-            ...filters,
-            status: filters.status as ShipmentStatus,
-            dateRange: filters.dateRange
-              ? [new Date(filters.dateRange[0]), new Date(filters.dateRange[1])] as [Date, Date]
-              : undefined,
-          }
+          ...filters,
+          status: filters.status as ShipmentStatus,
+          dateRange: filters.dateRange
+            ? [new Date(filters.dateRange[0]), new Date(filters.dateRange[1])] as [Date, Date]
+            : undefined,
+        }
         : undefined;
 
       const result = await this.shipmentService.schedulePickupBulk(
@@ -352,12 +372,12 @@ export class ShipmentController {
       // Convert date strings to Date objects if provided
       const processedFilters = filters
         ? {
-            ...filters,
-            status: filters.status as ShipmentStatus,
-            dateRange: filters.dateRange
-              ? [new Date(filters.dateRange[0]), new Date(filters.dateRange[1])] as [Date, Date]
-              : undefined,
-          }
+          ...filters,
+          status: filters.status as ShipmentStatus,
+          dateRange: filters.dateRange
+            ? [new Date(filters.dateRange[0]), new Date(filters.dateRange[1])] as [Date, Date]
+            : undefined,
+        }
         : undefined;
 
       const result = await this.shipmentService.cancelShipmentBulk(
