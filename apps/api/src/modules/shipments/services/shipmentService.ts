@@ -19,6 +19,11 @@ export class ShipmentService {
     private orderService: OrderService
   ) {
     this.vendorService = new VendorService(fastify);
+    // this.fastify.redis.flushall().then(() => {
+    //   console.log('Redis flushed');
+    // }).catch((err) => {
+    //   console.error('Error flushing Redis', err);
+    // });
   }
 
   /**
@@ -52,7 +57,7 @@ export class ShipmentService {
     // Try to get rates from cache
     const cachedRates = await this.fastify.redis.get(key);
     if (cachedRates) {
-      return { rates: JSON.parse(cachedRates), order };
+      return { rates: JSON.parse(cachedRates).formattedRates, order };
     }
 
     // Prepare parameters for price calculation
@@ -198,78 +203,191 @@ export class ShipmentService {
 
     return { rates: formattedRates, order };
   }
+
   /**
    * Create a new shipment
    */
   async createShipment(data: z.infer<typeof CreateShipmentSchema>, userId: string) {
     // Check if order exists and belongs to the user
-    const order = await this.orderService.getOrderById(data.order_id, userId)
+    const order = await this.orderService.getOrderById(data.order_id, userId);
 
     if (!order) {
       return { error: 'Order not found' };
     }
 
-    const cacheKey = `rates-${order?.is_reverse_order ? 'reversed' : 'forward'}-${order?.hub?.address?.pincode}-${order?.customer?.address?.pincode}-${order?.applicable_weight}-${order?.payment_mode}`;
-
-    const cachedRates = await this.fastify.redis.get(cacheKey);
-    const rate = JSON.parse(cachedRates || '[]').find((rate: any) => rate.id === data.courier_id)
-    if (!rate) {
-      return { error: 'Courier not found' };
+    // Get rates from cache
+    const cacheKey = `rates-${order?.is_reverse_order ? 'reversed' : 'forward'}-${order?.hub?.address?.pincode}-${order?.customer?.address?.pincode}-${order?.applicable_weight}-${order?.payment_mode}-${order.amount_to_collect}`;
+    const cachedRatesString = await this.fastify.redis.get(cacheKey);
+    
+    if (!cachedRatesString) {
+      return { error: 'Rate information not available. Please recalculate rates first.' };
+    }
+    
+    const cachedRates = JSON.parse(cachedRatesString);
+    console.log(data.courier_id);
+    
+    const selectedCourier = cachedRates.formattedRates.find((rate: any) => (rate.id === data.courier_id));
+    
+    if (!selectedCourier) {
+      return { error: 'Selected courier not found in available options' };
     }
 
-    console.log(rate, "cachedRates")
+    try {
+      // Begin transaction
+      return await this.fastify.prisma.$transaction(async (prisma) => {
+        // Check wallet balance
+        const userWallet = await prisma.wallet.findUnique({
+          where: { user_id: userId }
+        });
+        
+        if (!userWallet) {
+          return { error: 'User wallet not found' };
+        }
+        
+        const shippingCost = selectedCourier.total_price;
+        
+        if (userWallet.balance < shippingCost) {
+          return { error: 'Insufficient wallet balance' };
+        }
 
-    // if (cachedRates) {
-    //   return { rates: JSON.parse(cachedRates), order };
-    // }
-
-
-    // Create shipment with tracking number
-    // const shipment = await this.fastify.prisma.shipment.create({
-    //   data: {
-    //     code: `SHP-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
-    //     awb: this.generateTrackingNumber(),
-    //     status: ShipmentStatus.NEW,
-    //     order: {
-    //       connect: {
-    //         id: data.orderId,
-    //       },
-    //     },
-    //     user: {
-    //       connect: {
-    //         id: userId,
-    //       },
-    //     },
-    //     courier: {
-    //       connect: {
-    //         id: data.courierId,
-    //       },
-    //     },
-    //     tracking_events: {
-    //       create: {
-    //         code: `ST-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
-    //         status: ShipmentStatus.NEW,
-    //         location: '',
-    //         description: 'Shipment created and ready for pickup',
-    //       },
-    //     },
-    //   },
-    //   include: {
-    //     order: true,
-    //     courier: true,
-    //     tracking_events: true,
-    //   },
-    // });
-
-    // Update order status if it's still in CREATED status
-    // if (order.status === 'CREATED') {
-    //   await prisma.order.update({
-    //     where: { id: data.orderId },
-    //     data: { status: 'PROCESSING' },
-    //   });
-    // }
-
-    return { rates: JSON.parse(cachedRates || '[]'), order };
+        // Generate tracking number and shipment code
+        const awb = this.generateTrackingNumber();
+        const shipmentCode = `SHP-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+        
+        // Create a shipment record
+        const shipment = await prisma.shipment.create({
+          data: {
+            code: shipmentCode,
+            awb,
+            status: ShipmentStatus.NEW,
+            shipping_charge: selectedCourier.base_price,
+            fw_charge: selectedCourier.weight_charges,
+            cod_amount: order.payment_mode === 'COD' ? order.amount_to_collect : 0,
+            rto_charge: selectedCourier.rto_charges,
+            order_zone: selectedCourier.zone === 'WITHIN_CITY' ? 'Z_A' : 
+                       selectedCourier.zone === 'WITHIN_STATE' ? 'Z_B' : 
+                       selectedCourier.zone === 'WITHIN_METRO' ? 'Z_C' : 
+                       selectedCourier.zone === 'WITHIN_ROI' ? 'Z_D' : 'Z_E',
+            edd: new Date(selectedCourier.etd || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000)),
+            pickup_date: new Date(),
+            pickup_id: `PK-${Date.now()}`,
+            
+            order: {
+              connect: { id: data.order_id }
+            },
+            user: {
+              connect: { id: userId }
+            },
+            courier: {
+              connect: { id: data.courier_id }
+            }
+          }
+        });
+        
+        // Add first tracking event
+        await prisma.trackingEvent.create({
+          data: {
+            code: `TE-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
+            status: ShipmentStatus.NEW,
+            location: order.hub?.address?.city || '',
+            description: 'Shipment created and ready for pickup',
+            shipment_id: shipment.id
+          }
+        });
+        
+        // Store shipment pricing
+        await prisma.shipmentPricing.create({
+          data: {
+            shipment_id: shipment.id,
+            cod_charge_hard: selectedCourier.cod_charges > 0 ? 40 : 0,
+            cod_charge_percent: selectedCourier.cod_charges > 0 ? 1.5 : 0,
+            is_fw_applicable: true,
+            is_rto_applicable: true,
+            is_cod_applicable: order.payment_mode === 'COD',
+            is_cod_reversal_applicable: order.payment_mode === 'COD',
+            weight_slab: selectedCourier.weight_slab,
+            increment_weight: 0.5,
+            increment_price: selectedCourier.weight_charges / Math.max(1, Math.ceil((selectedCourier.final_weight - selectedCourier.weight_slab) / 0.5)),
+            zone: selectedCourier.zone,
+            base_price: selectedCourier.base_price,
+            is_rto_same_as_fw: false,
+            rto_base_price: selectedCourier.rto_charges,
+            rto_increment_price: 0,
+            flat_rto_charge: selectedCourier.rto_charges
+          }
+        });
+        
+        // Update order status
+        await prisma.order.update({
+          where: { id: data.order_id },
+          data: { status: ShipmentStatus.NEW }
+        });
+        
+        // Deduct amount from wallet
+        await prisma.wallet.update({
+          where: { id: userWallet.id },
+          data: { balance: { decrement: shippingCost } }
+        });
+        
+        // Record transaction
+        await prisma.transaction.create({
+          data: {
+            code: `TR-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
+            amount: shippingCost,
+            type: 'DEBIT',
+            description: `Shipping charges for AWB: ${awb}`,
+            status: 'COMPLETED',
+            currency: 'INR',
+            wallet_id: userWallet.id,
+            user_id: userId
+          }
+        });
+        
+        // Prepare vendor data based on courier
+        const courier = await prisma.courier.findUnique({
+          where: { id: data.courier_id },
+          include: { channel_config: true }
+        });
+        
+        if (courier && courier.channel_config) {
+          // Create shipment on vendor's platform based on channel config
+          const vendorResult = await this.vendorService.createShipmentOnVendor(
+            courier.channel_config.name,
+            {
+              order,
+              courier,
+              hub: order.hub,
+              awb,
+              shipmentCode
+            }
+          );
+          
+          if (!vendorResult.success) {
+            throw new Error(`Failed to create shipment with vendor: ${vendorResult.message}`);
+          }
+          
+          // Update AWB if vendor provided a different one
+          if (vendorResult.awb && vendorResult.awb !== awb) {
+            await prisma.shipment.update({
+              where: { id: shipment.id },
+              data: { awb: vendorResult.awb }
+            });
+          }
+        }
+        
+        return { 
+          success: true, 
+          shipment: { 
+            ...shipment, 
+            awb, 
+            courier: courier?.name || 'Unknown' 
+          }
+        };
+      });
+    } catch (error) {
+      this.fastify.log.error(`Error creating shipment: ${error}`);
+      return { error: 'Failed to create shipment' };
+    }
   }
 
   /**
@@ -474,65 +592,214 @@ export class ShipmentService {
   }
 
   /**
-   * Cancel a shipment
+   * Schedule pickup for a shipment
    */
-  async cancelShipment(id: string, user_id: string) {
+  async schedulePickup(id: string, userId: string, pickupDate: string) {
     // Verify shipment exists and belongs to user
     const shipment = await this.fastify.prisma.shipment.findFirst({
       where: {
         id,
-        user_id: user_id,
+        user_id: userId,
+        status: ShipmentStatus.NEW, // Only NEW shipments can be scheduled
       },
       include: {
-        order: true,
-      },
+        courier: {
+          include: {
+            channel_config: true,
+          }
+        },
+        order: {
+          include: {
+            hub: true,
+          }
+        }
+      }
     });
 
     if (!shipment) {
-      return { error: 'Shipment not found' };
+      return { error: 'Shipment not found or not in a valid state for pickup scheduling' };
     }
 
-    // Check if shipment can be cancelled (not already delivered or returned)
-    if (shipment.status === 'DELIVERED' || shipment.status === 'RETURNED') {
-      return {
-        error: `Shipment cannot be cancelled because it is already ${shipment.status.toLowerCase()}`,
-      };
-    }
+    try {
+      // Parse and validate pickup date
+      const pickupDateTime = new Date(pickupDate);
+      const today = new Date();
+      
+      if (isNaN(pickupDateTime.getTime()) || pickupDateTime < today) {
+        return { error: 'Invalid pickup date. Must be a future date.' };
+      }
 
-    // Update shipment status to EXCEPTION
-    const updated_shipment = await this.fastify.prisma.shipment.update({
-      where: { id },
-      data: { status: 'EXCEPTION' },
-    });
+      // Schedule pickup with vendor
+      const channelName = shipment.courier.channel_config.name;
+      const pickupResult = await this.vendorService.schedulePickup(
+        channelName,
+        {
+          awb: shipment.awb,
+          pickupDate: pickupDateTime.toISOString().split('T')[0], // Format as YYYY-MM-DD
+          hub: shipment.order.hub,
+          shipment
+        }
+      );
 
-    // Add tracking event for cancellation
-    await this.fastify.prisma.trackingEvent.create({
-      data: {
-        code: `ST-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
-        shipment_id: id,
-        status: ShipmentStatus.EXCEPTION,
-        location: 'System',
-        description: 'Shipment cancelled by seller',
-      },
-    });
+      if (!pickupResult.success) {
+        return { error: pickupResult.message || 'Failed to schedule pickup with vendor' };
+      }
 
-    // If this was the only shipment for the order, update order status
-    const otherShipments = await this.fastify.prisma.shipment.findMany({
-      where: {
-        order_id: shipment.order_id,
-        id: { not: id },
-        status: { notIn: ['EXCEPTION', 'CANCELLED'] },
-      },
-    });
-
-    if (otherShipments.length === 0) {
-      await this.fastify.prisma.order.update({
-        where: { id: shipment.order_id },
-        data: { status: 'CANCELLED' },
+      // Update shipment status
+      await this.fastify.prisma.shipment.update({
+        where: { id },
+        data: { 
+          status: ShipmentStatus.PICKUP_SCHEDULED,
+          pickup_date: pickupDateTime
+        }
       });
+
+      // Add tracking event
+      await this.fastify.prisma.trackingEvent.create({
+        data: {
+          code: `TE-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
+          status: ShipmentStatus.PICKUP_SCHEDULED,
+          location: shipment.order.hub?.address?.city || '',
+          description: 'Pickup scheduled with courier',
+          shipment_id: id
+        }
+      });
+
+      return { 
+        success: true, 
+        message: 'Pickup scheduled successfully',
+        pickupDate: pickupDateTime
+      };
+    } catch (error) {
+      this.fastify.log.error(`Error scheduling pickup: ${error}`);
+      return { error: 'Failed to schedule pickup' };
+    }
+  }
+
+  /**
+   * Cancel a shipment and process refund
+   */
+  async cancelShipment(id: string, userId: string, reason: string = 'Cancelled by seller') {
+    // Verify shipment exists and belongs to user
+    const shipment = await this.fastify.prisma.shipment.findFirst({
+      where: {
+        id,
+        user_id: userId,
+        status: {
+          notIn: [ShipmentStatus.DELIVERED, ShipmentStatus.RETURNED, ShipmentStatus.CANCELLED]
+        }
+      },
+      include: {
+        courier: {
+          include: {
+            channel_config: true,
+          }
+        },
+        order: true,
+        pricing: true
+      }
+    });
+
+    if (!shipment) {
+      return { error: 'Shipment not found or cannot be cancelled' };
     }
 
-    return { shipment: updated_shipment };
+    try {
+      return await this.fastify.prisma.$transaction(async (prisma) => {
+        // Cancel shipment with vendor if needed
+        if (shipment.status !== ShipmentStatus.NEW) {
+          const channelName = shipment.courier.channel_config.name;
+          const cancelResult = await this.vendorService.cancelShipment(
+            channelName,
+            {
+              awb: shipment.awb,
+              shipment
+            }
+          );
+
+          if (!cancelResult.success) {
+            return { error: cancelResult.message || 'Failed to cancel shipment with vendor' };
+          }
+        }
+
+        // Determine refund amount based on shipment status
+        let refundAmount = 0;
+        let refundDescription = '';
+
+        if (shipment.status === ShipmentStatus.NEW || shipment.status === ShipmentStatus.PICKUP_SCHEDULED) {
+          // Full refund for shipments that haven't been picked up
+          refundAmount = shipment.shipping_charge + shipment.fw_charge + 
+                        (shipment.order.payment_mode === 'COD' ? shipment.cod_amount : 0);
+          refundDescription = `Full refund for cancelled shipment: ${shipment.awb}`;
+        } else if (shipment.status === ShipmentStatus.PICKED_UP || 
+                  shipment.status === ShipmentStatus.IN_TRANSIT) {
+          // Partial refund for in-transit shipments (no COD refund)
+          refundAmount = shipment.fw_charge * 0.5; // 50% of forward charge
+          refundDescription = `Partial refund for cancelled in-transit shipment: ${shipment.awb}`;
+        }
+
+        if (refundAmount > 0) {
+          // Find user wallet
+          const userWallet = await prisma.wallet.findUnique({
+            where: { user_id: userId }
+          });
+
+          if (userWallet) {
+            // Credit refund amount to wallet
+            await prisma.wallet.update({
+              where: { id: userWallet.id },
+              data: { balance: { increment: refundAmount } }
+            });
+
+            // Record transaction
+            await prisma.transaction.create({
+              data: {
+                code: `TR-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
+                amount: refundAmount,
+                type: 'CREDIT',
+                description: refundDescription,
+                status: 'COMPLETED',
+                currency: 'INR',
+                wallet_id: userWallet.id,
+                user_id: userId
+              }
+            });
+          }
+        }
+
+        // Update shipment status
+        await prisma.shipment.update({
+          where: { id },
+          data: { status: ShipmentStatus.CANCELLED }
+        });
+
+        // Add tracking event
+        await prisma.trackingEvent.create({
+          data: {
+            code: `TE-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
+            status: ShipmentStatus.CANCELLED,
+            location: 'System',
+            description: reason || 'Shipment cancelled by seller',
+            shipment_id: id
+          }
+        });
+
+        // Update order status if needed
+        await prisma.order.update({
+          where: { id: shipment.order_id },
+          data: { status: ShipmentStatus.CANCELLED }
+        });
+
+        return { 
+          success: true, 
+          message: 'Shipment cancelled successfully',
+          refundAmount: refundAmount > 0 ? refundAmount : undefined
+        };
+      });
+    } catch (error) {
+      this.fastify.log.error(`Error cancelling shipment: ${error}`);
+      return { error: 'Failed to cancel shipment' };
+    }
   }
 
   /**
@@ -573,5 +840,497 @@ export class ShipmentService {
       by_status: stats_by_status,
       recent_shipments,
     };
+  }
+
+  /**
+   * Create multiple shipments in bulk
+   * @param data Array of shipment creation data
+   * @param userId User ID
+   * @returns Promise resolving to bulk operation details
+   */
+  async createShipmentBulk(
+    data: Array<z.infer<typeof CreateShipmentSchema>>,
+    userId: string,
+    filters?: { status?: string; dateRange?: [Date, Date] }
+  ) {
+    try {
+      // Generate operation code
+      const operationCode = `BO-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+      
+      // If filters are provided, fetch matching orders
+      let orderIds: string[] = [];
+      if (filters) {
+        const where: any = { user_id: userId };
+        
+        if (filters.status) {
+          where.status = filters.status;
+        }
+        
+        if (filters.dateRange && filters.dateRange.length === 2) {
+          where.created_at = {
+            gte: filters.dateRange[0],
+            lte: filters.dateRange[1]
+          };
+        }
+        
+        const orders = await this.fastify.prisma.order.findMany({
+          where,
+          select: { id: true }
+        });
+        
+        orderIds = orders.map(order => order.id);
+        
+        // Apply order IDs to the data if not provided
+        if (orderIds.length > 0 && (!data || data.length === 0)) {
+          // Get available couriers for each order
+          const orderCouriers = await Promise.all(
+            orderIds.map(async (orderId) => {
+              const rates = await this.getShipmentRates(orderId, userId);
+              return {
+                order_id: orderId,
+                couriers: rates.rates || []
+              };
+            })
+          );
+          
+          // Create data entries for each order with its best courier
+          data = orderCouriers
+            .filter(oc => oc.couriers && oc.couriers.length > 0)
+            .map(oc => ({
+              order_id: oc.order_id,
+              courier_id: oc.couriers[0].id // Use the first (cheapest) courier
+            }));
+        }
+      }
+      
+      // Create bulk operation record
+      const bulkOperation = await this.fastify.prisma.bulkOperation.create({
+        data: {
+          code: operationCode,
+          type: 'CREATE_SHIPMENT',
+          status: 'PENDING',
+          total_count: data.length,
+          processed_count: 0,
+          success_count: 0,
+          failed_count: 0
+        }
+      });
+      
+      // Queue the bulk operation
+      if (this.fastify.bulkOperationQueue) {
+        await this.fastify.bulkOperationQueue.add(
+          'bulk-create-shipment',
+          {
+            type: 'BULK_CREATE_SHIPMENT',
+            data,
+            userId,
+            operationId: bulkOperation.id
+          },
+          {
+            attempts: 3,
+            backoff: {
+              type: 'exponential',
+              delay: 5000
+            }
+          }
+        );
+      } else {
+        // Fallback if queue is not available (for testing or development)
+        this.fastify.log.warn('BulkOperationQueue not available, processing synchronously');
+        
+        let successCount = 0;
+        let failedCount = 0;
+        const results = [];
+        
+        for (const item of data) {
+          try {
+            const result = await this.createShipment(item, userId);
+            if (result.error) {
+              failedCount++;
+              results.push({
+                id: item.order_id,
+                success: false,
+                message: result.error
+              });
+            } else {
+              successCount++;
+              results.push({
+                id: item.order_id,
+                success: true,
+                message: 'Shipment created successfully'
+              });
+            }
+          } catch (error) {
+            failedCount++;
+            results.push({
+              id: item.order_id,
+              success: false,
+              message: error instanceof Error ? error.message : 'Unknown error'
+            });
+          }
+        }
+        
+        await this.fastify.prisma.bulkOperation.update({
+          where: { id: bulkOperation.id },
+          data: {
+            status: 'COMPLETED',
+            processed_count: data.length,
+            success_count: successCount,
+            failed_count: failedCount
+          }
+        });
+      }
+      
+      return {
+        success: true,
+        message: 'Bulk shipment creation operation started',
+        operation: {
+          id: bulkOperation.id,
+          code: bulkOperation.code,
+          status: bulkOperation.status,
+          total: bulkOperation.total_count
+        }
+      };
+    } catch (error) {
+      this.fastify.log.error(`Error creating bulk shipments: ${error}`);
+      return { error: 'Failed to start bulk shipment creation' };
+    }
+  }
+
+  /**
+   * Schedule pickups for multiple shipments in bulk
+   * @param data Array of pickup scheduling data
+   * @param userId User ID
+   * @returns Promise resolving to bulk operation details
+   */
+  async schedulePickupBulk(
+    data: Array<{ shipment_id: string; pickup_date: string }>,
+    userId: string,
+    filters?: { status?: ShipmentStatus; dateRange?: [Date, Date] }
+  ) {
+    try {
+      // Generate operation code
+      const operationCode = `BO-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+      
+      // If filters are provided, fetch matching shipments
+      if (filters && (!data || data.length === 0)) {
+        const where: any = { 
+          user_id: userId,
+          status: ShipmentStatus.NEW // Only NEW shipments can be scheduled
+        };
+        
+        if (filters.dateRange && filters.dateRange.length === 2) {
+          where.created_at = {
+            gte: filters.dateRange[0],
+            lte: filters.dateRange[1]
+          };
+        }
+        
+        const shipments = await this.fastify.prisma.shipment.findMany({
+          where,
+          select: { id: true }
+        });
+        
+        // Set pickup date to tomorrow
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const pickupDate = tomorrow.toISOString().split('T')[0];
+        
+        // Create data entries for each shipment
+        data = shipments.map(shipment => ({
+          shipment_id: shipment.id,
+          pickup_date: pickupDate
+        }));
+      }
+      
+      // Create bulk operation record
+      const bulkOperation = await this.fastify.prisma.bulkOperation.create({
+        data: {
+          code: operationCode,
+          type: 'SCHEDULE_PICKUP',
+          status: 'PENDING',
+          total_count: data.length,
+          processed_count: 0,
+          success_count: 0,
+          failed_count: 0
+        }
+      });
+      
+      // Queue the bulk operation
+      if (this.fastify.bulkOperationQueue) {
+        await this.fastify.bulkOperationQueue.add(
+          'bulk-schedule-pickup',
+          {
+            type: 'BULK_SCHEDULE_PICKUP',
+            data,
+            userId,
+            operationId: bulkOperation.id
+          },
+          {
+            attempts: 3,
+            backoff: {
+              type: 'exponential',
+              delay: 5000
+            }
+          }
+        );
+      } else {
+        // Fallback if queue is not available
+        this.fastify.log.warn('BulkOperationQueue not available, processing synchronously');
+        
+        let successCount = 0;
+        let failedCount = 0;
+        const results = [];
+        
+        for (const item of data) {
+          try {
+            const result = await this.schedulePickup(item.shipment_id, userId, item.pickup_date);
+            if (result.error) {
+              failedCount++;
+              results.push({
+                id: item.shipment_id,
+                success: false,
+                message: result.error
+              });
+            } else {
+              successCount++;
+              results.push({
+                id: item.shipment_id,
+                success: true,
+                message: 'Pickup scheduled successfully'
+              });
+            }
+          } catch (error) {
+            failedCount++;
+            results.push({
+              id: item.shipment_id,
+              success: false,
+              message: error instanceof Error ? error.message : 'Unknown error'
+            });
+          }
+        }
+        
+        await this.fastify.prisma.bulkOperation.update({
+          where: { id: bulkOperation.id },
+          data: {
+            status: 'COMPLETED',
+            processed_count: data.length,
+            success_count: successCount,
+            failed_count: failedCount
+          }
+        });
+      }
+      
+      return {
+        success: true,
+        message: 'Bulk pickup scheduling operation started',
+        operation: {
+          id: bulkOperation.id,
+          code: bulkOperation.code,
+          status: bulkOperation.status,
+          total: bulkOperation.total_count
+        }
+      };
+    } catch (error) {
+      this.fastify.log.error(`Error scheduling bulk pickups: ${error}`);
+      return { error: 'Failed to start bulk pickup scheduling' };
+    }
+  }
+
+  /**
+   * Cancel multiple shipments in bulk
+   * @param data Array of shipment cancellation data
+   * @param userId User ID
+   * @returns Promise resolving to bulk operation details
+   */
+  async cancelShipmentBulk(
+    data: Array<{ shipment_id: string; reason?: string }>,
+    userId: string,
+    filters?: { status?: ShipmentStatus; dateRange?: [Date, Date] }
+  ) {
+    try {
+      // Generate operation code
+      const operationCode = `BO-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+      
+      // If filters are provided, fetch matching shipments
+      if (filters && (!data || data.length === 0)) {
+        const where: any = { 
+          user_id: userId,
+          status: {
+            notIn: [ShipmentStatus.DELIVERED, ShipmentStatus.RETURNED, ShipmentStatus.CANCELLED]
+          }
+        };
+        
+        if (filters.status) {
+          where.status = filters.status;
+        }
+        
+        if (filters.dateRange && filters.dateRange.length === 2) {
+          where.created_at = {
+            gte: filters.dateRange[0],
+            lte: filters.dateRange[1]
+          };
+        }
+        
+        const shipments = await this.fastify.prisma.shipment.findMany({
+          where,
+          select: { id: true }
+        });
+        
+        // Create data entries for each shipment
+        data = shipments.map(shipment => ({
+          shipment_id: shipment.id,
+          reason: 'Cancelled by seller in bulk operation'
+        }));
+      }
+      
+      // Create bulk operation record
+      const bulkOperation = await this.fastify.prisma.bulkOperation.create({
+        data: {
+          code: operationCode,
+          type: 'CANCEL_SHIPMENT',
+          status: 'PENDING',
+          total_count: data.length,
+          processed_count: 0,
+          success_count: 0,
+          failed_count: 0
+        }
+      });
+      
+      // Queue the bulk operation
+      if (this.fastify.bulkOperationQueue) {
+        await this.fastify.bulkOperationQueue.add(
+          'bulk-cancel-shipment',
+          {
+            type: 'BULK_CANCEL_SHIPMENT',
+            data,
+            userId,
+            operationId: bulkOperation.id
+          },
+          {
+            attempts: 3,
+            backoff: {
+              type: 'exponential',
+              delay: 5000
+            }
+          }
+        );
+      } else {
+        // Fallback if queue is not available
+        this.fastify.log.warn('BulkOperationQueue not available, processing synchronously');
+        
+        let successCount = 0;
+        let failedCount = 0;
+        const results = [];
+        
+        for (const item of data) {
+          try {
+            const result = await this.cancelShipment(item.shipment_id, userId, item.reason);
+            if (result.error) {
+              failedCount++;
+              results.push({
+                id: item.shipment_id,
+                success: false,
+                message: result.error
+              });
+            } else {
+              successCount++;
+              results.push({
+                id: item.shipment_id,
+                success: true,
+                message: 'Shipment cancelled successfully'
+              });
+            }
+          } catch (error) {
+            failedCount++;
+            results.push({
+              id: item.shipment_id,
+              success: false,
+              message: error instanceof Error ? error.message : 'Unknown error'
+            });
+          }
+        }
+        
+        await this.fastify.prisma.bulkOperation.update({
+          where: { id: bulkOperation.id },
+          data: {
+            status: 'COMPLETED',
+            processed_count: data.length,
+            success_count: successCount,
+            failed_count: failedCount
+          }
+        });
+      }
+      
+      return {
+        success: true,
+        message: 'Bulk shipment cancellation operation started',
+        operation: {
+          id: bulkOperation.id,
+          code: bulkOperation.code,
+          status: bulkOperation.status,
+          total: bulkOperation.total_count
+        }
+      };
+    } catch (error) {
+      this.fastify.log.error(`Error cancelling bulk shipments: ${error}`);
+      return { error: 'Failed to start bulk shipment cancellation' };
+    }
+  }
+
+  /**
+   * Get bulk operation status and results
+   * @param operationId Bulk operation ID
+   * @param userId User ID
+   * @returns Promise resolving to operation status and results
+   */
+  async getBulkOperationStatus(operationId: string, userId: string) {
+    try {
+      const operation = await this.fastify.prisma.bulkOperation.findUnique({
+        where: { id: operationId }
+      });
+      
+      if (!operation) {
+        return { error: 'Bulk operation not found' };
+      }
+      
+      // Get job from queue to check progress
+      let progress = 0;
+      let results = [];
+      
+      if (this.fastify.bulkOperationQueue) {
+        const job = await this.fastify.bulkOperationQueue.getJob(operationId);
+        if (job) {
+          progress = await job.progress() || 0;
+          
+          // If job is completed, get the results
+          if (await job.isCompleted()) {
+            const jobResult = await job.returnValue();
+            results = jobResult.results || [];
+          }
+        }
+      }
+      
+      return {
+        success: true,
+        operation: {
+          id: operation.id,
+          code: operation.code,
+          type: operation.type,
+          status: operation.status,
+          total: operation.total_count,
+          processed: operation.processed_count,
+          successful: operation.success_count,
+          failed: operation.failed_count,
+          progress: progress,
+          results: results.length > 0 ? results : undefined,
+          created_at: operation.created_at,
+          updated_at: operation.updated_at
+        }
+      };
+    } catch (error) {
+      this.fastify.log.error(`Error getting bulk operation status: ${error}`);
+      return { error: 'Failed to get bulk operation status' };
+    }
   }
 }

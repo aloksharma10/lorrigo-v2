@@ -24,6 +24,18 @@ export interface VendorServiceabilityResult {
   }>;
 }
 
+export interface VendorPickupResult {
+  success: boolean;
+  message: string;
+  data: any;
+}
+
+export interface VendorCancellationResult {
+  success: boolean;
+  message: string;
+  data: any;
+}
+
 export type VendorRegistrationData = {
   name: string;
   address: string;

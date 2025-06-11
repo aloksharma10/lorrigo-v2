@@ -4,6 +4,7 @@ import { ShipmentService } from '../services/shipmentService';
 import { CreateShipmentSchema, UpdateShipmentSchema, AddTrackingEventSchema } from '@lorrigo/utils';
 import { checkAuth } from '@/middleware/auth';
 import { captureException } from '@/lib/sentry';
+import { ShipmentStatus } from '@lorrigo/db';
 
 /**
  * Controller for shipment-related API endpoints
@@ -46,7 +47,7 @@ export class ShipmentController {
         return reply.code(404).send({ error: result.error });
       }
 
-      return reply.code(201).send(result.rates);
+      return reply.code(201).send(result);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return reply.code(400).send({ error: error.errors });
@@ -191,15 +192,41 @@ export class ShipmentController {
       await checkAuth(request, reply);
 
       const { id } = request.params;
+      const { reason } = request.body as { reason?: string };
       const user_id = request.userPayload!.id;
 
-      const result = await this.shipmentService.cancelShipment(id, user_id);
+      const result = await this.shipmentService.cancelShipment(id, user_id, reason);
 
       if (result.error) {
         return reply.code(400).send({ error: result.error });
       }
 
-      return reply.send(result.shipment);
+      return reply.send(result);
+    } catch (error) {
+      request.log.error(error);
+      return reply.code(500).send({ error: 'Internal Server Error' });
+    }
+  }
+
+  /**
+   * Schedule pickup for a shipment
+   */
+  async schedulePickup(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+    try {
+      // Check if user is authenticated
+      await checkAuth(request, reply);
+
+      const { id } = request.params;
+      const { pickupDate } = request.body as { pickupDate: string };
+      const user_id = request.userPayload!.id;
+
+      const result = await this.shipmentService.schedulePickup(id, user_id, pickupDate);
+
+      if (result.error) {
+        return reply.code(400).send({ error: result.error });
+      }
+
+      return reply.send(result);
     } catch (error) {
       request.log.error(error);
       return reply.code(500).send({ error: 'Internal Server Error' });
@@ -219,6 +246,155 @@ export class ShipmentController {
       const stats = await this.shipmentService.getShipmentStats(user_id);
 
       return reply.send(stats);
+    } catch (error) {
+      request.log.error(error);
+      return reply.code(500).send({ error: 'Internal Server Error' });
+    }
+  }
+
+  /**
+   * Create a shipment in bulk
+   */
+  async createShipmentBulk(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const user_id = request.userPayload!.id;
+      const { shipments, filters } = request.body as {
+        shipments?: Array<{ order_id: string; courier_id: string }>;
+        filters?: {
+          status?: string;
+          dateRange?: [string, string];
+        };
+      };
+
+      // Convert date strings to Date objects if provided
+      const processedFilters = filters
+        ? {
+            ...filters,
+            dateRange: filters.dateRange
+              ? [new Date(filters.dateRange[0]), new Date(filters.dateRange[1])] as [Date, Date]
+              : undefined,
+          }
+        : undefined;
+
+      const result = await this.shipmentService.createShipmentBulk(
+        shipments || [],
+        user_id,
+        processedFilters
+      );
+
+      if (result.error) {
+        return reply.code(400).send({ error: result.error });
+      }
+
+      return reply.code(202).send(result);
+    } catch (error) {
+      request.log.error(error);
+      return reply.code(500).send({ error: 'Internal Server Error' });
+    }
+  }
+
+  /**
+   * Schedule pickup in bulk
+   */
+  async schedulePickupBulk(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const user_id = request.userPayload!.id;
+      const { shipments, filters } = request.body as {
+        shipments?: Array<{ shipment_id: string; pickup_date: string }>;
+        filters?: {
+          status?: string;
+          dateRange?: [string, string];
+        };
+      };
+
+      // Convert date strings to Date objects if provided
+      const processedFilters = filters
+        ? {
+            ...filters,
+            status: filters.status as ShipmentStatus,
+            dateRange: filters.dateRange
+              ? [new Date(filters.dateRange[0]), new Date(filters.dateRange[1])] as [Date, Date]
+              : undefined,
+          }
+        : undefined;
+
+      const result = await this.shipmentService.schedulePickupBulk(
+        shipments || [],
+        user_id,
+        processedFilters
+      );
+
+      if (result.error) {
+        return reply.code(400).send({ error: result.error });
+      }
+
+      return reply.code(202).send(result);
+    } catch (error) {
+      request.log.error(error);
+      return reply.code(500).send({ error: 'Internal Server Error' });
+    }
+  }
+
+  /**
+   * Cancel shipment in bulk
+   */
+  async cancelShipmentBulk(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const user_id = request.userPayload!.id;
+      const { shipments, filters } = request.body as {
+        shipments?: Array<{ shipment_id: string; reason?: string }>;
+        filters?: {
+          status?: string;
+          dateRange?: [string, string];
+        };
+      };
+
+      // Convert date strings to Date objects if provided
+      const processedFilters = filters
+        ? {
+            ...filters,
+            status: filters.status as ShipmentStatus,
+            dateRange: filters.dateRange
+              ? [new Date(filters.dateRange[0]), new Date(filters.dateRange[1])] as [Date, Date]
+              : undefined,
+          }
+        : undefined;
+
+      const result = await this.shipmentService.cancelShipmentBulk(
+        shipments || [],
+        user_id,
+        processedFilters
+      );
+
+      if (result.error) {
+        return reply.code(400).send({ error: result.error });
+      }
+
+      return reply.code(202).send(result);
+    } catch (error) {
+      request.log.error(error);
+      return reply.code(500).send({ error: 'Internal Server Error' });
+    }
+  }
+
+  /**
+   * Get bulk operation status
+   */
+  async getBulkOperationStatus(
+    request: FastifyRequest<{ Params: { id: string } }>,
+    reply: FastifyReply
+  ) {
+    try {
+      const { id } = request.params;
+      const user_id = request.userPayload!.id;
+
+      const result = await this.shipmentService.getBulkOperationStatus(id, user_id);
+
+      if (result.error) {
+        return reply.code(404).send({ error: result.error });
+      }
+
+      return reply.send(result);
     } catch (error) {
       request.log.error(error);
       return reply.code(500).send({ error: 'Internal Server Error' });

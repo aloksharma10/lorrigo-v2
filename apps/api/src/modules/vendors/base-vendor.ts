@@ -1,7 +1,7 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { redis } from '@/lib/redis';
 import { CACHE_TTL } from '@/config/cache';
-import { VendorRegistrationResult, VendorServiceabilityResult, VendorShipmentResult } from '@/types/vendor';
+import { VendorRegistrationResult, VendorServiceabilityResult, VendorShipmentResult, VendorPickupResult, VendorCancellationResult } from '@/types/vendor';
 
 /**
  * Base class for all vendor implementations
@@ -123,4 +123,42 @@ export abstract class BaseVendor {
     isReverseOrder?: boolean,
     couriersData?: any
   ): Promise<VendorServiceabilityResult>;
+  
+  /**
+   * Schedule pickup for a shipment
+   * @param pickupData Pickup data including AWB, pickup date, and related info
+   * @returns Promise resolving to pickup scheduling result
+   */
+  public async schedulePickup(
+    pickupData: {
+      awb: string;
+      pickupDate: string;
+      hub: any;
+      shipment: any;
+    }
+  ): Promise<VendorPickupResult> {
+    return {
+      success: false,
+      message: `Pickup scheduling not implemented for ${this.name}`,
+      data: null,
+    };
+  }
+  
+  /**
+   * Cancel a shipment
+   * @param cancelData Cancellation data including AWB and shipment details
+   * @returns Promise resolving to cancellation result
+   */
+  public async cancelShipment(
+    cancelData: {
+      awb: string;
+      shipment: any;
+    }
+  ): Promise<VendorCancellationResult> {
+    return {
+      success: false,
+      message: `Shipment cancellation not implemented for ${this.name}`,
+      data: null,
+    };
+  }
 }

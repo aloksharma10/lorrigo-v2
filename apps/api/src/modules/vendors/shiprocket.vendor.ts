@@ -3,7 +3,7 @@ import { BaseVendor } from './base-vendor';
 import { APIs } from '@/config/api';
 import { CACHE_KEYS } from '@/config/cache';
 import { formatAddress, formatPhoneNumber, PickupAddress } from '@lorrigo/utils';
-import { VendorRegistrationResult, VendorServiceabilityResult, VendorShipmentResult } from '@/types/vendor';
+import { VendorRegistrationResult, VendorServiceabilityResult, VendorShipmentResult, VendorPickupResult, VendorCancellationResult } from '@/types/vendor';
 import { getPincodeDetails } from '@/utils/pincode';
 
 /**
@@ -365,6 +365,143 @@ export class ShiprocketVendor extends BaseVendor {
       return {
         success: false,
         message: error.response?.data || error.message,
+        data: null,
+      };
+    }
+  }
+
+  /**
+   * Schedule pickup for a shipment with Shiprocket
+   * @param pickupData Pickup data
+   * @returns Promise resolving to pickup scheduling result
+   */
+  public async schedulePickup(
+    pickupData: {
+      awb: string;
+      pickupDate: string;
+      hub: any;
+      shipment: any;
+    }
+  ): Promise<VendorPickupResult> {
+    try {
+      const token = await this.getAuthToken();
+
+      if (!token) {
+        return {
+          success: false,
+          message: 'Failed to get Shiprocket authentication token',
+          data: null,
+        };
+      }
+
+      const { pickupDate, shipment } = pickupData;
+      
+      // Format date to YYYY-MM-DD format if it's not already
+      const formattedDate = pickupDate.includes('-') 
+        ? pickupDate 
+        : new Date(pickupDate).toISOString().split('T')[0];
+
+      // Format the request body
+      const requestBody = {
+        shipment_id: [shipment.shiprocket_shipment_id || ''],
+        pickup_date: [formattedDate],
+      };
+
+      // Make the API request
+      const response = await this.makeRequest(
+        APIs.SHIPROCKET.GET_MANIFEST,
+        'POST',
+        requestBody,
+        { Authorization: token }
+      );
+
+      return {
+        success: true,
+        message: 'Pickup scheduled successfully with Shiprocket',
+        data: response.data,
+      };
+    } catch (error: any) {
+      // Check if error is due to already scheduled pickup
+      if (error?.response?.data?.message?.includes("Already in Pickup Queue")) {
+        return {
+          success: true,
+          message: 'Pickup already scheduled with Shiprocket',
+          data: error.response?.data,
+        };
+      }
+      
+      console.error(`Error scheduling pickup with Shiprocket:`, error);
+      
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to schedule pickup',
+        data: null,
+      };
+    }
+  }
+
+  /**
+   * Cancel a shipment with Shiprocket
+   * @param cancelData Cancellation data
+   * @returns Promise resolving to cancellation result
+   */
+  public async cancelShipment(
+    cancelData: {
+      awb: string;
+      shipment: any;
+    }
+  ): Promise<VendorCancellationResult> {
+    try {
+      const token = await this.getAuthToken();
+
+      if (!token) {
+        return {
+          success: false,
+          message: 'Failed to get Shiprocket authentication token',
+          data: null,
+        };
+      }
+
+      const { awb, shipment } = cancelData;
+      
+      // Shiprocket requires the order ID for cancellation
+      const orderId = shipment.order?.shiprocket_order_id || '';
+      
+      if (!orderId) {
+        // If order ID is missing, try to cancel using the AWB instead
+        const response = await this.makeRequest(
+          APIs.SHIPROCKET.CANCEL_SHIPMENT,
+          'POST',
+          { awbs: [awb] },
+          { Authorization: token }
+        );
+        
+        return {
+          success: true,
+          message: 'Shipment cancellation requested with Shiprocket using AWB',
+          data: response.data,
+        };
+      }
+      
+      // Make the API request using order ID
+      const response = await this.makeRequest(
+        `${APIs.SHIPROCKET.CANCEL_ORDER}/${orderId}`,
+        'POST',
+        {},
+        { Authorization: token }
+      );
+
+      return {
+        success: true,
+        message: 'Shipment cancelled successfully with Shiprocket',
+        data: response.data,
+      };
+    } catch (error: any) {
+      console.error(`Error cancelling shipment with Shiprocket:`, error);
+      
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to cancel shipment',
         data: null,
       };
     }

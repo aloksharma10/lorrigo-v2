@@ -3,7 +3,7 @@ import { BaseVendor } from './base-vendor';
 import { APIs } from '@/config/api';
 import { CACHE_KEYS } from '@/config/cache';
 import { formatPhoneNumber } from '@lorrigo/utils';
-import { VendorRegistrationResult, VendorServiceabilityResult, VendorShipmentResult } from '@/types/vendor';
+import { VendorRegistrationResult, VendorServiceabilityResult, VendorShipmentResult, VendorPickupResult, VendorCancellationResult } from '@/types/vendor';
 
 /**
  * Delhivery vendor implementation
@@ -323,6 +323,135 @@ export class DelhiveryVendor extends BaseVendor {
       return {
         success: false,
         message: error.response?.data || error.message,
+        data: null,
+      };
+    }
+  }
+
+  /**
+   * Schedule pickup for a shipment with Delhivery
+   * @param pickupData Pickup data
+   * @returns Promise resolving to pickup scheduling result
+   */
+  public async schedulePickup(
+    pickupData: {
+      awb: string;
+      pickupDate: string;
+      hub: any;
+      shipment: any;
+    }
+  ): Promise<VendorPickupResult> {
+    try {
+      const token = await this.getAuthToken();
+
+      if (!token) {
+        return {
+          success: false,
+          message: `Failed to get Delhivery ${this.weightCategory} kg authentication token`,
+          data: null,
+        };
+      }
+
+      const { pickupDate, hub } = pickupData;
+
+      // Format the request body
+      const requestBody = {
+        pickup_location: hub.name,
+        expected_package_count: 1,
+        pickup_date: pickupDate,
+        pickup_time: "12:00:00",
+      };
+
+      // Make the API request
+      const response = await this.makeRequest(
+        APIs.DELHIVERY.MANIFEST_ORDER,
+        'POST',
+        requestBody,
+        { Authorization: `Token ${token}` }
+      );
+
+      // Check for errors in the response
+      if (!response.data?.success) {
+        return {
+          success: false,
+          message: response.data?.error || `Failed to schedule pickup with Delhivery ${this.weightCategory}`,
+          data: response.data,
+        };
+      }
+
+      return {
+        success: true,
+        message: `Pickup scheduled successfully with Delhivery ${this.weightCategory}`,
+        data: response.data,
+      };
+    } catch (error: any) {
+      console.error(`Error scheduling pickup with Delhivery ${this.weightCategory}:`, error);
+      
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to schedule pickup',
+        data: null,
+      };
+    }
+  }
+
+  /**
+   * Cancel a shipment with Delhivery
+   * @param cancelData Cancellation data
+   * @returns Promise resolving to cancellation result
+   */
+  public async cancelShipment(
+    cancelData: {
+      awb: string;
+      shipment: any;
+    }
+  ): Promise<VendorCancellationResult> {
+    try {
+      const token = await this.getAuthToken();
+
+      if (!token) {
+        return {
+          success: false,
+          message: `Failed to get Delhivery ${this.weightCategory} kg authentication token`,
+          data: null,
+        };
+      }
+
+      const { awb } = cancelData;
+
+      // Make the API request - Delhivery uses the waybill for cancellation
+      const endpoint = `/api/packages/json/edit/${awb}`;
+      const requestBody = {
+        cancellation: true
+      };
+      
+      const response = await this.makeRequest(
+        endpoint,
+        'POST',
+        requestBody,
+        { Authorization: `Token ${token}` }
+      );
+
+      // Check for errors in the response
+      if (!response.data?.success) {
+        return {
+          success: false,
+          message: response.data?.error || `Failed to cancel shipment with Delhivery ${this.weightCategory}`,
+          data: response.data,
+        };
+      }
+
+      return {
+        success: true,
+        message: `Shipment cancelled successfully with Delhivery ${this.weightCategory}`,
+        data: response.data,
+      };
+    } catch (error: any) {
+      console.error(`Error cancelling shipment with Delhivery ${this.weightCategory}:`, error);
+      
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to cancel shipment',
         data: null,
       };
     }

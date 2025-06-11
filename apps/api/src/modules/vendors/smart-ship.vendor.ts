@@ -2,7 +2,7 @@ import { APP_CONFIG } from '@/config/app';
 import { BaseVendor } from './base-vendor';
 import { APIs } from '@/config/api';
 import { CACHE_KEYS } from '@/config/cache';
-import { VendorRegistrationResult, VendorServiceabilityResult, VendorShipmentResult } from '@/types/vendor';
+import { VendorRegistrationResult, VendorServiceabilityResult, VendorShipmentResult, VendorPickupResult, VendorCancellationResult } from '@/types/vendor';
 import { PickupAddress } from '@lorrigo/utils';
 import { getPincodeDetails } from '@/utils/pincode';
 
@@ -441,6 +441,152 @@ export class SmartShipVendor extends BaseVendor {
       return {
         success: false,
         message: error.response?.data || error.message,
+        data: null,
+      };
+    }
+  }
+
+  /**
+   * Schedule pickup for a shipment with SmartShip
+   * @param pickupData Pickup data
+   * @returns Promise resolving to pickup scheduling result
+   */
+  public async schedulePickup(
+    pickupData: {
+      awb: string;
+      pickupDate: string;
+      hub: any;
+      shipment: any;
+    }
+  ): Promise<VendorPickupResult> {
+    try {
+      const token = await this.getAuthToken();
+
+      if (!token) {
+        return {
+          success: false,
+          message: 'Failed to get SmartShip authentication token',
+          data: null,
+        };
+      }
+
+      const { awb, pickupDate, shipment } = pickupData;
+
+      // Format the request body
+      const requestBody = {
+        client_order_reference_ids: [shipment.order.order_reference_id || shipment.order.code],
+        preferred_pickup_date: pickupDate,
+        shipment_type: shipment.order.is_reverse_order ? 2 : 1,
+      };
+
+      // Make the API request
+      const response = await this.makeRequest(
+        APIs.SMART_SHIP.ORDER_MANIFEST,
+        'POST',
+        requestBody,
+        { Authorization: `Bearer ${token}` }
+      );
+
+      // Check for errors in the response
+      if (response.data?.status === false || response.data?.status === "403") {
+        return {
+          success: false,
+          message: response.data?.message || 'Failed to schedule pickup with SmartShip',
+          data: response.data,
+        };
+      }
+
+      if (response.data?.data?.errors) {
+        return {
+          success: false,
+          message: JSON.stringify(response.data?.data?.errors),
+          data: response.data,
+        };
+      }
+
+      // Check for failure in the response
+      if (response.data?.data?.failure) {
+        return {
+          success: false,
+          message: 'Incomplete route',
+          data: response.data?.data,
+        };
+      }
+
+      return {
+        success: true,
+        message: 'Pickup scheduled successfully with SmartShip',
+        data: response.data?.data,
+      };
+    } catch (error: any) {
+      console.error(`Error scheduling pickup with SmartShip:`, error);
+      
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to schedule pickup',
+        data: null,
+      };
+    }
+  }
+
+  /**
+   * Cancel a shipment with SmartShip
+   * @param cancelData Cancellation data
+   * @returns Promise resolving to cancellation result
+   */
+  public async cancelShipment(
+    cancelData: {
+      awb: string;
+      shipment: any;
+    }
+  ): Promise<VendorCancellationResult> {
+    try {
+      const token = await this.getAuthToken();
+
+      if (!token) {
+        return {
+          success: false,
+          message: 'Failed to get SmartShip authentication token',
+          data: null,
+        };
+      }
+
+      const { awb } = cancelData;
+
+      // Format the request body
+      const requestBody = {
+        request_type: 'cancel',
+        awb_numbers: [awb]
+      };
+
+      // Make the API request
+      const response = await this.makeRequest(
+        APIs.SMART_SHIP.CANCEL_SHIPMENT,
+        'POST',
+        requestBody,
+        { Authorization: `Bearer ${token}` }
+      );
+
+      // Check for errors in the response
+      if (response.data?.status === false) {
+        return {
+          success: false,
+          message: response.data?.message || 'Failed to cancel shipment with SmartShip',
+          data: response.data,
+        };
+      }
+
+      return {
+        success: true,
+        message: 'Shipment cancelled successfully with SmartShip',
+        data: response.data,
+      };
+    } catch (error: any) {
+      console.error(`Error cancelling shipment with SmartShip:`, error);
+      
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to cancel shipment',
         data: null,
       };
     }

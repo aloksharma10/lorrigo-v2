@@ -1,9 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from './axios';
-import { OrderFormValues } from '@lorrigo/utils';
+import { BackendOrder, OrderFormValues } from '@lorrigo/utils';
 import {
   ApiResponse,
-  BackendOrder,
   OrderQueryParams,
   OrdersApiResponse,
   ShipmentParams,

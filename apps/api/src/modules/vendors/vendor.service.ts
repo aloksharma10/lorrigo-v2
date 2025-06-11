@@ -311,4 +311,183 @@ export class VendorService {
       };
     }
   }
+
+  /**
+   * Create a shipment with a specific vendor
+   * @param vendorName Vendor name
+   * @param shipmentData Shipment data
+   * @returns Promise resolving to shipment creation result
+   */
+  public async createShipmentOnVendor(
+    vendorName: string,
+    shipmentData: {
+      order: any;
+      courier: any;
+      hub: any;
+      awb: string;
+      shipmentCode: string;
+    }
+  ): Promise<{
+    success: boolean;
+    message: string;
+    awb?: string;
+    data?: any;
+  }> {
+    try {
+      const vendor = this.getVendor(vendorName);
+      if (!vendor) {
+        return {
+          success: false,
+          message: `Vendor ${vendorName} not found`,
+          data: null,
+        };
+      }
+
+      // Prepare data for vendor API
+      const { order, courier, hub, awb } = shipmentData;
+      
+      // Extract order items
+      const orderItems = await this.fastify.prisma.orderItem.findMany({
+        where: { order_id: order.id }
+      });
+
+      // Get order package details
+      const packageDetails = await this.fastify.prisma.package.findUnique({
+        where: { id: order.package_id }
+      });
+
+      if (!packageDetails) {
+        return {
+          success: false,
+          message: 'Package details not found',
+          data: null,
+        };
+      }
+
+      // Prepare vendor shipment data
+      const vendorShipmentData = {
+        order,
+        hub,
+        orderItems,
+        paymentMethod: order.payment_mode,
+        dimensions: {
+          length: packageDetails.length,
+          width: packageDetails.breadth,
+          height: packageDetails.height,
+          weight: packageDetails.dead_weight
+        },
+        courier,
+        seller_gst: order.user?.business?.gstin || ''
+      };
+
+      // Create shipment with vendor
+      const result = await vendor.createShipment(vendorShipmentData);
+
+      return {
+        success: result.success,
+        message: result.message || '',
+        awb: result.awb || awb,
+        data: result.data
+      };
+    } catch (error: unknown) {
+      console.error(`Error creating shipment with vendor ${vendorName}:`, error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : `Failed to create shipment with ${vendorName}`,
+        data: null,
+      };
+    }
+  }
+
+  /**
+   * Schedule pickup with a specific vendor
+   * @param vendorName Vendor name
+   * @param pickupData Pickup data
+   * @returns Promise resolving to pickup scheduling result
+   */
+  public async schedulePickup(
+    vendorName: string,
+    pickupData: {
+      awb: string;
+      pickupDate: string;
+      hub: any;
+      shipment: any;
+    }
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: any;
+  }> {
+    try {
+      const vendor = this.getVendor(vendorName);
+      if (!vendor) {
+        return {
+          success: false,
+          message: `Vendor ${vendorName} not found`,
+          data: null,
+        };
+      }
+
+      // Directly use the vendor's implementation
+      const result = await vendor.schedulePickup(pickupData);
+      
+      return {
+        success: result.success,
+        message: result.message,
+        data: result.data
+      };
+    } catch (error: unknown) {
+      console.error(`Error scheduling pickup with vendor ${vendorName}:`, error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : `Failed to schedule pickup with ${vendorName}`,
+        data: null,
+      };
+    }
+  }
+
+  /**
+   * Cancel a shipment with a specific vendor
+   * @param vendorName Vendor name
+   * @param cancelData Cancellation data
+   * @returns Promise resolving to cancellation result
+   */
+  public async cancelShipment(
+    vendorName: string,
+    cancelData: {
+      awb: string;
+      shipment: any;
+    }
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: any;
+  }> {
+    try {
+      const vendor = this.getVendor(vendorName);
+      if (!vendor) {
+        return {
+          success: false,
+          message: `Vendor ${vendorName} not found`,
+          data: null,
+        };
+      }
+
+      // Directly use the vendor's implementation
+      const result = await vendor.cancelShipment(cancelData);
+      
+      return {
+        success: result.success,
+        message: result.message,
+        data: result.data
+      };
+    } catch (error: unknown) {
+      console.error(`Error cancelling shipment with vendor ${vendorName}:`, error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : `Failed to cancel shipment with ${vendorName}`,
+        data: null,
+      };
+    }
+  }
 } 
