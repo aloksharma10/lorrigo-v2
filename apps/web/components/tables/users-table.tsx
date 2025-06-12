@@ -192,7 +192,7 @@ export default function UsersTable({ initialParams }: UsersTableProps) {
         const shipment = row.original;
         return (
           <div className="flex flex-col">
-            <div className="font-medium">{shipment.customerName}</div>
+            <div className="font-medium">{shipment.customer?.name}</div>
             <div className="text-muted-foreground text-sm">{shipment.customer?.email}</div>
             <div className="text-muted-foreground text-sm">{shipment.customer?.phone}</div>
           </div>
