@@ -58,6 +58,8 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
                   id: { type: 'string' },
                   orderNumber: { type: 'string' },
                   awb: { type: 'string' },
+                  courier: { type: 'string' },
+                  courierNickname: { type: 'string' },
                   trackingEvents: {
                     type: 'array',
                     items: {
@@ -88,6 +90,10 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
                       name: { type: 'string' },
                       email: { type: 'string' },
                       phone: { type: 'string' },
+                      address: { type: 'string' },
+                      city: { type: 'string' },
+                      state: { type: 'string' },
+                      pincode: { type: 'string' },
                     },
                   },
                   hub: {
@@ -96,6 +102,9 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
                       lorrigoPickupId: { type: 'string' },
                       name: { type: 'string' },
                       address: { type: 'string' },
+                      city: { type: 'string' },
+                      state: { type: 'string' },
+                      pincode: { type: 'string' },
                     },
                   },
                   paymentType: { type: 'string' },

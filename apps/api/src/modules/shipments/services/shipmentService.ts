@@ -7,6 +7,7 @@ import { VendorService } from '@/modules/vendors/vendor.service';
 import { calculatePricesForCouriers, calculateVolumetricWeight, getOrderZoneFromCourierZone, PincodeDetails, PriceCalculationParams } from '@/utils/calculate-order-price';
 import { PriceCalculationResult } from '@/utils/calculate-order-price';
 import { Queue } from 'bullmq';
+import { normalizeCourierRate } from '@/utils/normalize';
 
 // Define the interface for the extended FastifyInstance
 interface ExtendedFastifyInstance extends FastifyInstance {
@@ -62,6 +63,10 @@ export class ShipmentService {
     const order = await this.orderService.getOrderById(id, userId);
     if (!order) {
       return { error: 'Order not found' };
+    }
+
+    if (order.status === ShipmentStatus.COURIER_ASSIGNED) {
+      return { rates: [], order, message: 'Order already has a courier assigned' };
     }
 
     // Build cache key
@@ -162,6 +167,7 @@ export class ShipmentService {
           is_cod_applicable: true,
           is_rto_applicable: true,
           is_fw_applicable: true,
+          is_cod_reversal_applicable: true,
           zone_pricing: courier.pricing?.zone_pricing || []
         }
       })),
@@ -220,7 +226,11 @@ export class ShipmentService {
   /**
    * Create a new shipment
    */
-  async createShipment(data: z.infer<typeof CreateShipmentSchema> & { isBulkShipment?: boolean }, userId: string) {
+  async createShipment(data: z.infer<typeof CreateShipmentSchema> & { isBulkShipment?: boolean }, userId: string): Promise<{
+    success?: boolean;
+    shipment?: any;
+    error?: string
+  }> {
     // Check if order exists and belongs to the user
     const order = await this.orderService.getOrderById(data.order_id, userId);
 
@@ -237,86 +247,82 @@ export class ShipmentService {
     }
 
     const cachedRates = JSON.parse(cachedRatesString);
+    const selectedCourierRate = normalizeCourierRate(cachedRates.rates.find((rate: any) => (rate.courier.id === data.courier_id)));
+    const courier_curr_zone_pricing = selectedCourierRate.pricing.pricing.zone_pricing.find((zone: any) => zone.zone === selectedCourierRate.zone);
+    const shippingCost = selectedCourierRate.pricing.totalPrice;
 
-    const selectedCourier = cachedRates.formattedRates.find((rate: any) => (rate.id === data.courier_id));
 
-    if (!selectedCourier) {
+    if (!selectedCourierRate) {
       return { error: 'Selected courier not found in available options' };
     }
 
     try {
-      // Begin transaction
-      return await this.fastify.prisma.$transaction(async (prisma) => {
-        // Check wallet balance
-        const userWallet = await prisma.wallet.findUnique({
+      // Prepare data outside of transaction to minimize transaction time
+      const [lastShipment, shipmentCount, userWallet, courier] = await Promise.all([
+        this.fastify.prisma.shipment.findFirst({
+          orderBy: { created_at: 'desc' },
+        }),
+        this.fastify.prisma.shipment.count({
+          where: {
+            user_id: userId,
+            created_at: { gte: getFinancialYearStartDate(new Date().getFullYear().toString()) }
+          }
+        }),
+        this.fastify.prisma.wallet.findUnique({
           where: { user_id: userId }
-        });
-
-        if (!userWallet) {
-          return { error: 'User wallet not found' };
-        }
-
-        const shippingCost = selectedCourier.total_price;
-
-        // if (userWallet.balance < shippingCost) {
-        //   return { error: 'Insufficient wallet balance' };
-        // }
-
-        // Generate temporary shipment code
-        const [lastShipment, shipmentCount] = await Promise.all([
-          this.fastify.prisma.shipment.findFirst({
-            orderBy: {
-              created_at: 'desc',
-            },
-          }),
-          // this year shipment count
-          this.fastify.prisma.shipment.count({
-            where: { user_id: userId, created_at: { gte: getFinancialYearStartDate(new Date().getFullYear().toString()) } }
-          })
-        ])
-
-        const shipmentCode = generateId({
-          tableName: 'shipment',
-          entityName: 'shipment',
-          lastUsedFinancialYear: getFinancialYear(lastShipment?.created_at || new Date()),
-          lastSequenceNumber: shipmentCount,
-        }).id;
-
-        // Fetch courier details - we need this for the vendor
-        const courier = await prisma.courier.findUnique({
+        }),
+        this.fastify.prisma.courier.findUnique({
           where: { id: data.courier_id },
           include: { channel_config: true }
-        });
+        })
+      ]);
 
-        if (!courier || !courier.channel_config) {
-          return { error: 'Selected courier not found or not properly configured' };
+      if (!userWallet) {
+        return { error: 'User wallet not found' };
+      }
+
+      if (!courier || !courier.channel_config) {
+        return { error: 'Selected courier not found or not properly configured' };
+      }
+
+      const shipmentCode = generateId({
+        tableName: 'shipment',
+        entityName: 'shipment',
+        lastUsedFinancialYear: getFinancialYear(lastShipment?.created_at || new Date()),
+        lastSequenceNumber: shipmentCount,
+      }).id;
+
+      // Determine if this is a combined creation + scheduling request
+      const isSchedulePickup = data.schedule_pickup === true;
+
+      // Step 1: Create shipment on vendor's platform first (outside transaction)
+      const vendorResult = await this.vendorService.createShipmentOnVendor(
+        courier.channel_config.name,
+        {
+          order,
+          courier,
+          hub: order.hub || {},
+          awb: '',
+          shipmentCode,
+          isSchedulePickup,
+          isBulkShipment: data.isBulkShipment
         }
+      );
 
-        // Determine if this is a combined creation + scheduling request
-        const isSchedulePickup = data.schedule_pickup === true;
+      if (!vendorResult.success || !vendorResult.awb) {
+        return { error: `Failed to create shipment with vendor: ${vendorResult.message}` };
+      }
 
-        // Step 1: Create shipment on vendor's platform first to get the AWB
-        const vendorResult = await this.vendorService.createShipmentOnVendor(
-          courier.channel_config.name,
-          {
-            order,
-            courier,
-            hub: order.hub || {},
-            awb: '', // Empty AWB as we'll get it from the vendor
-            shipmentCode,
-            isSchedulePickup,
-            isBulkShipment: data.isBulkShipment
-          }
-        );
+      // Use the AWB from the vendor
+      const awb = vendorResult.awb;
 
-        if (!vendorResult.success || !vendorResult.awb) {
-          return { error: `Failed to create shipment with vendor: ${vendorResult.message}` };
-        }
+      // Get hub city from order if available for tracking event
+      const hubCity = order.hub?.address?.city || 'Unknown';
+      const orderZone = getOrderZoneFromCourierZone(selectedCourierRate.zoneName);
 
-        // Use the AWB from the vendor
-        const awb = vendorResult.awb;
-
-        // Step 2: Perform independent operations in parallel
+      // Separate database operations into a shorter transaction
+      return await this.fastify.prisma.$transaction(async (prisma) => {
+        // Step 2: Perform database operations in parallel to save time
         const [shipment, orderUpdate, walletUpdate, transactionRecord] = await Promise.all([
           // Create shipment record
           prisma.shipment.create({
@@ -324,14 +330,14 @@ export class ShipmentService {
               code: shipmentCode,
               awb,
               status: isSchedulePickup ? ShipmentStatus.PICKUP_SCHEDULED : ShipmentStatus.COURIER_ASSIGNED,
-              shipping_charge: selectedCourier.base_price,
-              fw_charge: selectedCourier.weight_charges,
+              shipping_charge: shippingCost,
+              fw_charge: selectedCourierRate.pricing.fwCharges,
               cod_amount: order.payment_mode === 'COD' ? order.amount_to_collect : 0,
-              rto_charge: selectedCourier.rto_charges,
-              order_zone: getOrderZoneFromCourierZone(selectedCourier.zone),
-              edd: selectedCourier.etd ? new Date(selectedCourier.etd) : null,
-              pickup_id: `LS-${shipmentCode}`,
-              pickup_date: isSchedulePickup ? vendorResult.pickup_date : null,
+              rto_charge: selectedCourierRate.pricing.rtoCharges,
+              order_zone: orderZone,
+              edd: selectedCourierRate.etd ? new Date(selectedCourierRate.etd) : null,
+              pickup_id: shipmentCode,
+              pickup_date: isSchedulePickup && vendorResult.pickup_date ? vendorResult.pickup_date : null,
               order: {
                 connect: { id: data.order_id }
               },
@@ -347,7 +353,7 @@ export class ShipmentService {
           // Update order status
           prisma.order.update({
             where: { id: data.order_id },
-            data: { status: isSchedulePickup ? ShipmentStatus.PICKUP_SCHEDULED : ShipmentStatus.NEW }
+            data: { status: isSchedulePickup ? ShipmentStatus.PICKUP_SCHEDULED : ShipmentStatus.COURIER_ASSIGNED }
           }),
 
           // Deduct amount from wallet
@@ -372,15 +378,12 @@ export class ShipmentService {
         ]);
 
         // Step 3: Create additional records that depend on the shipment ID
-        // Get hub city from order if available
-        const hubCity = order.hub?.address?.city || 'Unknown';
-
         await Promise.all([
           // Add first tracking event
           prisma.trackingEvent.create({
             data: {
               code: `TE-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
-              status: isSchedulePickup ? ShipmentStatus.PICKUP_SCHEDULED : ShipmentStatus.NEW,
+              status: isSchedulePickup ? ShipmentStatus.PICKUP_SCHEDULED : ShipmentStatus.COURIER_ASSIGNED,
               location: hubCity,
               description: isSchedulePickup ? 'Shipment created and pickup scheduled' : 'Shipment created and ready for pickup',
               shipment_id: shipment.id
@@ -391,28 +394,40 @@ export class ShipmentService {
           prisma.shipmentPricing.create({
             data: {
               shipment_id: shipment.id,
-              cod_charge_hard: selectedCourier.cod_charges > 0 ? 40 : 0,
-              cod_charge_percent: selectedCourier.cod_charges > 0 ? 1.5 : 0,
-              is_fw_applicable: true,
-              is_rto_applicable: true,
-              is_cod_applicable: order.payment_mode === 'COD',
-              is_cod_reversal_applicable: order.payment_mode === 'COD',
-              weight_slab: selectedCourier.weight_slab,
-              increment_weight: 0.5,
-              increment_price: selectedCourier.weight_charges / Math.max(1, Math.ceil((selectedCourier.final_weight - selectedCourier.weight_slab) / 0.5)),
-              zone: selectedCourier.zone,
-              base_price: selectedCourier.base_price,
-              is_rto_same_as_fw: false,
-              rto_base_price: selectedCourier.rto_charges,
-              rto_increment_price: 0,
-              flat_rto_charge: selectedCourier.rto_charges
+              cod_charge_hard: selectedCourierRate.cod.hardCharge,
+              cod_charge_percent: selectedCourierRate.cod.percentCharge,
+              is_fw_applicable: selectedCourierRate.pricing.pricing.is_fw_applicable,
+              is_rto_applicable: selectedCourierRate.pricing.pricing.is_rto_applicable,
+              is_cod_applicable: selectedCourierRate.pricing.pricing.is_cod_applicable,
+              is_cod_reversal_applicable: selectedCourierRate.pricing.pricing.is_cod_reversal_applicable,
+              weight_slab: selectedCourierRate.pricing.pricing.weight_slab,
+              increment_weight: selectedCourierRate.pricing.pricing.increment_weight,
+              zone: orderZone,
+
+              is_rto_same_as_fw: courier_curr_zone_pricing.is_rto_same_as_fw,
+              increment_price: courier_curr_zone_pricing.increment_price,
+              base_price: courier_curr_zone_pricing.base_price,
+              rto_base_price: courier_curr_zone_pricing.rto_base_price,
+              rto_increment_price: courier_curr_zone_pricing.rto_increment_price,
+              flat_rto_charge: courier_curr_zone_pricing.flat_rto_charge,
+
+              // store other zone pricing: to calculate zone change charges
+              courier_other_zone_pricing: {
+                createMany: {
+                  data: selectedCourierRate.pricing.pricing.zone_pricing.map((zone: any) => {
+                    const { id, plan_courier_pricing_id, created_at, updated_at, ...rest } = zone;
+                    return {
+                      ...rest,
+                    };
+                  }),
+                },
+              }
             }
           })
-        ]);
-
+        ])
         // Log vendor data for reference but don't store it directly
         if (vendorResult.data) {
-          console.info(`Vendor data for shipment ${shipment.id}:`, vendorResult.data);
+          console.info(`Vendor data for shipment ${shipment.id}:`, JSON.stringify(vendorResult.data).substring(0, 200) + '...');
         }
 
         return {
@@ -424,12 +439,24 @@ export class ShipmentService {
           }
         };
       }, {
-        timeout: 10000,
-        maxWait: 10000
+        timeout: 20000,  // Increase timeout to 20 seconds
+        maxWait: 15000   // Increase max wait time to 15 seconds
+      }).catch((error) => {
+        console.error('Error creating shipment:', error);
+        throw error;
       });
+;
     } catch (error) {
-      this.fastify.log.error(`Error creating shipment: ${error}`);
-      return { error: 'Failed to create shipment' };
+      // Improved error handling with detailed error information
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorStack = error instanceof Error ? error.stack : '';
+      this.fastify.log.error(`Error creating shipment: ${errorMessage}\n${errorStack}`);
+
+      if (errorMessage.includes('timeout')) {
+        return { error: 'Transaction timeout. The operation took too long to complete. Please try again.' } as { error: string };
+      }
+
+      return { error: 'Failed to create shipment. Please try again.' } as { error: string };
     }
   }
 

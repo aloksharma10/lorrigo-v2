@@ -25,13 +25,13 @@ interface CopyBtnProps {
 
 function CopyBtn({
   text,
-  label = 'Copy this:',
+  label,
   className = '',
   iconSize = 10,
   strokeWidth = 2,
   tooltipText = 'Click to copy',
   successTooltipText = 'Copied!',
-  variant = 'outline',
+  variant = 'ghost',
   size = 'icon',
   copyTimeout = 1500,
   onCopySuccess,
@@ -62,11 +62,11 @@ function CopyBtn({
       >
         {label}
       </span>
-      <ActionTooltip label={copied ? successTooltipText : tooltipText}>
+      {label && label != "N/A" && <ActionTooltip label={copied ? successTooltipText : tooltipText}>
         <Button
           variant={variant}
           size={size}
-          className={cn('disabled:opacity-100 w-8 h-8', className)}
+          className={cn('disabled:opacity-100 w-6 h-6', className)}
           onClick={handleCopy}
           aria-label={copied ? successTooltipText : tooltipText}
           disabled={copied}
@@ -97,7 +97,7 @@ function CopyBtn({
             />
           </div>
         </Button>
-      </ActionTooltip>
+      </ActionTooltip>}
 
     </div>
   );

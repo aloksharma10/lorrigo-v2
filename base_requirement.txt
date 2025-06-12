@@ -1,3 +1,57 @@
+-----------------------------------------------------------------------------------------------------------------------
+NEW: 
+-----------------------------------------------------------------------------------------------------------------------
+1. Need to fix :  {"error":"Rate information not available. Please recalculate rates first."}
+   reproduce this issue: 
+   - will face an issue when the order being created by directly through the api
+
+
+
+
+
+
+
+
+-----------------------------------------------------------------------------------------------------------------------
+User (Seller): 
+Wallet and Non wallet 
+payment gateway
+Customer (CRUD)
+Hub (CRUD)
+Order creation (CRUD)
+shipment creation 
+Choose coruier 
+remittance
+Invoicing
+dispute orders
+billing
+Notification (System. Whatsapp, mail)
+Bulk operation (Order, shipment)|
+Analytics
+-----------------------------------------------------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------------------------------------------------
+Admin:
+View each seller's order, shipment, 
+Billing of each awbs, accept reject dispute
+Manage the courier view to seller
+Manager custom pricing for each courier based on seller
+User's sidebar permission
+Bulk courier pricing update : Globally, new login, existing users
+controll notification send acccess which to send which not
+uplaod csv in any format give option to map header of the csv with our require data header
+manager remittance cycle of user
+-----------------------------------------------------------------------------------------------------------------------
+
+
+
+-----------------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+OLD: 
+-----------------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+
+
 i want to build a logdstic platform where 
 
 User: 

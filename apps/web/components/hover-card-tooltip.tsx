@@ -25,7 +25,7 @@ const HoverCardToolTip = ({
     <HoverCard openDelay={50}>
       <HoverCardTrigger
         className={cn(
-          'w-min cursor-pointer text-nowrap capitalize text-blue-900',
+          'w-min cursor-pointer text-nowrap capitalize',
           !Icon && !triggerComponent && 'border-b border-dashed border-blue-600 underline-offset-1',
           triggerClassName
         )}

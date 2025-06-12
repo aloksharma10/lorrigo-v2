@@ -568,6 +568,7 @@ export class PlanService {
           is_cod_applicable: courierPricing.is_cod_applicable,
           is_rto_applicable: courierPricing.is_rto_applicable,
           is_fw_applicable: courierPricing.is_fw_applicable,
+          is_cod_reversal_applicable: courierPricing.is_cod_reversal_applicable,
           zone_pricing: courierPricing.zone_pricing,
         },
       }));

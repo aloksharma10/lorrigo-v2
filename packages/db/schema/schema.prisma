@@ -481,7 +481,7 @@ model Shipment {
 
   user_id         String
   user            User             @relation("UserShipments", fields: [user_id], references: [id], onDelete: Cascade)
-  courier_id      String?           @unique
+  courier_id      String?          
   courier         Courier?         @relation(fields: [courier_id], references: [id], onDelete: Cascade)
   tracking_events TrackingEvent[]
   pricing         ShipmentPricing?
@@ -925,6 +925,29 @@ model ShipmentPricing {
   rto_increment_price Float
   flat_rto_charge     Float
 
+  courier_other_zone_pricing_id String?       @unique
+  courier_other_zone_pricing    ShipmentCourierZonePricing[] @relation("CourierOtherZonePricing")
+
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+}
+
+model ShipmentCourierZonePricing {
+  id                  String  @id @default(cuid())
+  zone                Zone
+  base_price          Float
+  increment_price     Float
+  is_rto_same_as_fw   Boolean
+  rto_base_price      Float
+  rto_increment_price Float
+  flat_rto_charge     Float
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+
+  shipment_pricing_id String?
+  shipment_pricing    ShipmentPricing? @relation("CourierOtherZonePricing", fields: [shipment_pricing_id], references: [id])
+
+  @@index([zone])
 }

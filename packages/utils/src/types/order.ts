@@ -4,10 +4,11 @@ export interface BackendOrder {
    status: string;
    totalAmount: number;
    customerId: string;
-   customerName: string;
    paymentType: string;
    amountToCollect: number;
    awb: string;
+   courier: string;
+   courierNickname: string;
    trackingEvents: Array<{
      description: string;
      code: string;
@@ -18,10 +19,13 @@ export interface BackendOrder {
    edd: string;
    pickupId: string;
    customer?: {
-     id: string;
      name: string;
      email: string;
      phone: string;
+     address: string;
+     city: string;
+     state: string;
+     pincode: string;
    };
    packageDetails: {
      length: number;
@@ -34,6 +38,9 @@ export interface BackendOrder {
      name: string;
      lorrigoPickupId: string;
      address: string;
+     city: string;
+     state: string;
+     pincode: string;
    };
    shippingAddress?: {
      id: string;

@@ -67,9 +67,18 @@ export class OrderService {
         include: {
           hub: {
             select: {
-              code: true,
               name: true,
-              address: true,
+              phone: true,
+              code: true,
+              contact_person_name: true,
+              address: {
+                select: {
+                  pincode: true,
+                  city: true,
+                  state: true,
+                  address: true,
+                },
+              },
             },
           },
           package: {
@@ -87,6 +96,16 @@ export class OrderService {
               pickup_date: true,
               edd: true,
               pickup_id: true,
+              courier: {
+                select: {
+                  name: true,
+                  channel_config: { 
+                    select: {
+                      nickname: true,
+                    }
+                  }
+                },
+              },
               tracking_events: {
                 take: 1,
                 orderBy: {
@@ -101,36 +120,56 @@ export class OrderService {
           },
           customer: {
             select: {
+              id: true,
               name: true,
               email: true,
               phone: true,
+              address: {
+                select: {
+                  pincode: true,
+                  city: true,
+                  state: true,
+                  address: true,
+                },
+              },
             },
           },
         },
       }),
-      prisma.order.count({ where }),
+      this.fastify.prisma.order.count({ where }),
     ]);
 
+    
     // Format orders for response
     const formatted_orders = orders.map((order) => ({
       id: order.id,
       orderNumber: order.order_number,
-      status: order.status,
+      status: order.shipment?.tracking_events[0]?.status || order.status,
+      courier: order.shipment?.courier?.name || '',
+      courierNickname: order.shipment?.courier?.channel_config?.nickname || '',
       customer: {
         name: order.customer.name,
         email: order.customer.email || '',
         phone: order.customer.phone || '',
+        address: order.customer.address?.address || '',
+        city: order.customer.address?.city || '',
+        state: order.customer.address?.state || '',
+        pincode: order.customer.address?.pincode || '',
       },
       hub: {
         name: order.hub?.name || '',
         lorrigoPickupId: order.hub?.code || '',
-        address: order.hub?.address.address || '',
+        address: order.hub?.address?.address || '',
+        city: order.hub?.address?.city || '',
+        state: order.hub?.address?.state || '',
+        pincode: order.hub?.address?.pincode || '',
       },
       packageDetails: {
         length: order.package.length,
         breadth: order.package.breadth,
         height: order.package.height,
         deadWeight: order.package.dead_weight,
+        volumetricWeight: order.package.volumetric_weight,
       },
       awb: order.shipment?.awb || '',
       trackingEvents: order.shipment?.tracking_events || [],

@@ -40,6 +40,7 @@ export interface CourierPricing {
   is_cod_applicable: boolean;
   is_rto_applicable: boolean;
   is_fw_applicable: boolean;
+  is_cod_reversal_applicable: boolean;
   zone_pricing: ZonePricing[];
 }
 
@@ -73,6 +74,7 @@ export interface PriceCalculationResult {
   weight_charges: number;
   cod_charges: number;
   rto_charges: number;
+  fw_charges: number;
   total_price: number;
   final_weight: number;
   volumetric_weight: number;
@@ -461,6 +463,7 @@ export function calculatePrice(
       weight_charges: weightCharges,
       cod_charges: codCharges,
       rto_charges: rtoCharges,
+      fw_charges: courierPricing.is_fw_applicable ? baseTotal : 0,
       total_price: totalPrice,
       final_weight: chargeableWeight,
       volumetric_weight: volumetricWeight,

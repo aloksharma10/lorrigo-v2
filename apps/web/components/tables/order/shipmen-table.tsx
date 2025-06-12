@@ -7,7 +7,7 @@ import { DataTable } from '@lorrigo/ui/components';
 import { DataTableColumnHeader } from '@lorrigo/ui/components';
 import { Badge } from '@lorrigo/ui/components';
 import { Button } from '@lorrigo/ui/components';
-import { MoreHorizontal, Package, TruckIcon } from 'lucide-react';
+import { MoreHorizontal, Package, Phone, TruckIcon, UserRound } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +24,7 @@ import { currencyFormatter, formatDateTimeSmart } from '@lorrigo/utils';
 import { Shipment, ShipmentParams } from '@/lib/type/response-types';
 import { useRouter } from 'next/navigation';
 import { useAuthToken } from '@/components/providers/token-provider';
+import { CopyBtn } from '@/components/copy-btn';
 
 interface ShipmentsTableProps {
   initialParams: ShipmentParams;
@@ -120,7 +121,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
         const shipment = row.original;
         return (
           <div className="flex flex-col">
-            <div className="font-medium text-blue-600">{shipment.orderNumber}</div>
+            <CopyBtn label={shipment.orderNumber} className='text-blue-600' labelClassName='text-blue-600 hover:underline underline-offset-2' tooltipText='Copy Order Number' text={shipment.orderNumber} />
             <div className="text-muted-foreground text-sm">
               {new Date(shipment.createdAt).toLocaleDateString()} |{' '}
               {new Date(shipment.createdAt).toLocaleTimeString([], {
@@ -151,11 +152,29 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
       cell: ({ row }) => {
         const shipment = row.original;
         return (
-          <div className="flex flex-col">
-            <div className="font-medium">{shipment.customerName}</div>
-            <div className="text-muted-foreground text-sm">{shipment.customer?.email}</div>
-            <div className="text-muted-foreground text-sm">{shipment.customer?.phone}</div>
-          </div>
+          <HoverCardToolTip className="w-80" label={shipment?.hub?.name}
+            triggerComponent={
+              <div className="flex flex-col">
+                <div className="font-medium">{shipment.customer?.name}</div>
+                <div className="text-muted-foreground text-sm">
+                  <CopyBtn label={shipment.customer?.phone} tooltipText='Copy Phone' text={shipment.customer?.phone || ""} />
+                  <CopyBtn label={shipment.customer?.email} tooltipText='Copy Email' text={shipment.customer?.email || ""} />
+                </div>
+              </div>
+            }
+          >
+            <div className="flex items-center justify-between text-xs font-medium">
+              <div className="flex items-center gap-1">
+                <UserRound className="h-3 w-3" />
+                <span>{shipment?.customer?.name}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Phone className="h-3 w-3" />
+                <span>{shipment?.customer?.phone}</span>
+              </div>
+            </div>
+            <div className="text-muted-foreground text-sm">{shipment.customer?.address}, {shipment.customer?.city}, {shipment.customer?.state}, {shipment.customer?.pincode}</div>
+          </HoverCardToolTip>
         );
       },
       enableSorting: true,
@@ -225,14 +244,8 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
                   {shipment?.hub?.lorrigoPickupId}
                 </div>
               </div>
-              <div className="text-muted-foreground mt-1 text-xs">{shipment?.hub?.address}</div>
+              <div className="text-muted-foreground mt-1 text-xs">{shipment?.hub?.address}, {shipment?.hub?.city}, {shipment?.hub?.state}, {shipment?.hub?.pincode}</div>
             </HoverCardToolTip>
-            {/* {!shipment.addressVerified && (
-              <div className="flex items-center text-xs text-red-500">
-                <AlertTriangle className="mr-1 h-3 w-3" />
-                <span>Unverified</span>
-              </div>
-            )} */}
           </div>
         );
       },
@@ -246,9 +259,11 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
         const shipment = row.original;
         return (
           <div className="flex flex-col">
-            {/* <div className="font-medium">{shipment.shippingService}</div> */}
             <div className="text-sm">
-              AWB # <span className="text-blue-600">{shipment.awb}</span>
+              AWB #  <CopyBtn label={shipment.awb} tooltipText='Copy AWB' text={shipment.awb} />
+              <div className="text-muted-foreground text-xs">
+                {shipment.courier} {shipment.courierNickname}
+              </div>
             </div>
           </div>
         );
@@ -265,6 +280,8 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
         // Status badge color mapping
         const statusColorMap: Record<string, string> = {
           New: 'bg-blue-100 text-blue-800 hover:bg-blue-100',
+          'Pending': 'bg-blue-100 text-blue-800 hover:bg-blue-100',
+          'Courier Assigned': 'bg-blue-100 text-blue-800 hover:bg-blue-100',
           'Pickup Scheduled': 'bg-green-100 text-green-800 hover:bg-green-100',
           'In Transit': 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100',
           Delivered: 'bg-green-100 text-green-800 hover:bg-green-100',
@@ -286,7 +303,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
                 For {shipment.pickupDate.split(' ')[1]}, {shipment.pickupDate.split(' ')[2]}
               </div>
             )}
-            {shipment.edd && <div className="mt-1 text-xs">EDD: {shipment.edd}</div>}
+            {shipment.edd && <div className="mt-1 text-xs">EDD: {shipment.edd.split('T')[0]}</div>}
             {shipment.pickupId && (
               <div className="mt-1 text-xs">Pickup ID: {shipment.pickupId}</div>
             )}
