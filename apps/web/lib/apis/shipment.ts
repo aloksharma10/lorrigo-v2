@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from './axios';
 import { useAuthToken } from '@/components/providers/token-provider';
+import { toast } from '@lorrigo/ui/components';
 
 export interface CourierRate {
   id: string;
@@ -63,6 +64,9 @@ export const useShippingOperations = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
+    onError: (error: any) => {
+      toast.error(error.response.data.error)
+    }
   });
 
   return {

@@ -3,8 +3,9 @@ import { BaseVendor } from './base-vendor';
 import { APIs } from '@/config/api';
 import { CACHE_KEYS } from '@/config/cache';
 import { VendorRegistrationResult, VendorServiceabilityResult, VendorShipmentResult, VendorPickupResult, VendorCancellationResult } from '@/types/vendor';
-import { PickupAddress } from '@lorrigo/utils';
+import { PickupAddress, VendorShipmentData } from '@lorrigo/utils';
 import { getPincodeDetails } from '@/utils/pincode';
+import { DeliveryType } from '@lorrigo/db';
 
 /**
  * SmartShip vendor implementation
@@ -299,7 +300,7 @@ export class SmartShipVendor extends BaseVendor {
    * @param shipmentData Shipment data
    * @returns Promise resolving to shipment creation result
    */
-  public async createShipment(shipmentData: any): Promise<VendorShipmentResult> {
+  public async createShipment(shipmentData: VendorShipmentData): Promise<VendorShipmentResult> {
     try {
       const token = await this.getAuthToken();
 
@@ -317,27 +318,22 @@ export class SmartShipVendor extends BaseVendor {
 
       const { order, hub, orderItems, paymentMethod, dimensions, courier } = shipmentData;
 
-      // Extract first order item for product details
-      const firstOrderItem = orderItems[0];
+      const isExpressCourier = [DeliveryType.EXPRESS, DeliveryType.AIR].includes(courier.type);
 
-      // Calculate product value with tax
-      const productValueWithTax =
-        Number(firstOrderItem.selling_price || 0) +
-        (Number(firstOrderItem.tax_rate || 0) / 100) * Number(firstOrderItem.selling_price || 0);
+      const hubCode = isExpressCourier ? hub.hub_config.smart_ship_hub_code_express : hub.hub_config.smart_ship_hub_code_surface;
 
-      // Calculate total order value
-      const totalOrderValue = productValueWithTax * Number(firstOrderItem.units || 1);
+      const productValueWithTax = orderItems.reduce((acc: number, item: any) => {
+        return acc + (Number(item.selling_price || 0) + (Number(item.tax_rate || 0) / 100) * Number(item.selling_price || 0));
+      }, 0);
 
-      // Determine payment type (0 for prepaid, 1 for COD)
+      const totalOrderValue = productValueWithTax * Number(orderItems.reduce((acc: number, item: any) => acc + Number(item.units || 1), 0));
+
       const paymentType = paymentMethod === 'COD' ? 1 : 0;
 
-      // Determine collectable amount for COD orders
       const collectableAmount = paymentType ? order.total_amount : 0;
 
-      // Generate client order reference ID
-      let clientOrderReferenceId = order.order_reference_id || order.code;
+      let clientOrderReferenceId = order.code || order.order_reference_id;
 
-      // If it's a reshipped order, modify the reference ID
       if (shipmentData.is_reshipped) {
         const lastNumber = clientOrderReferenceId.match(/\d+$/)?.[0] || '';
         const incrementedNumber = lastNumber ? (parseInt(lastNumber) + 1).toString() : '1';
@@ -348,12 +344,12 @@ export class SmartShipVendor extends BaseVendor {
       const payload = {
         request_info: {
           run_type: 'create',
-          shipment_type: order.type === 'RETURNED' ? 2 : 1,
+          shipment_type: order.is_reverse_order ? 2 : 1,
         },
         orders: [
           {
             client_order_reference_id: clientOrderReferenceId,
-            shipment_type: order.type === 'RETURNED' ? 2 : 1,
+            shipment_type: order.is_reverse_order ? 2 : 1,
             order_collectable_amount: paymentType ? collectableAmount : 0,
             total_order_value: totalOrderValue,
             payment_type: paymentType ? 'cod' : 'prepaid',
@@ -361,32 +357,29 @@ export class SmartShipVendor extends BaseVendor {
             package_order_length: dimensions.length || 10,
             package_order_height: dimensions.height || 10,
             package_order_width: dimensions.width || 10,
-            shipper_hub_id: hub.hub_id || 0,
+            shipper_hub_id: hubCode || 0,
             shipper_gst_no: shipmentData.seller_gst || '',
-            order_invoice_date: new Date().toISOString().slice(0, 10),
-            order_invoice_number: order.code || 'Non-commercial',
+            order_invoice_date: order.order_invoice_date || new Date().toISOString().slice(0, 10),
+            order_invoice_number: order.order_invoice_number || 'Non-commercial',
             order_meta: {
               preferred_carriers: [courier.courier_code || ''],
             },
-            product_details: [
-              {
-                client_product_reference_id:
-                  firstOrderItem.id || firstOrderItem.code || 'product-1',
-                product_name: firstOrderItem.name,
-                product_category: firstOrderItem.category || 'General',
-                product_hsn_code: firstOrderItem.hsn || '0000',
-                product_quantity: firstOrderItem.units || 1,
-                product_invoice_value: firstOrderItem.selling_price || 0,
-                product_gst_tax_rate: firstOrderItem.tax_rate || 0,
-                product_taxable_value: firstOrderItem.selling_price || 0,
-              },
-            ],
+            product_details: orderItems.map((item: any) => ({
+              client_product_reference_id: item.id || item.code || 'product-1',
+              product_name: item.name,
+              product_category: item.category || 'General',
+              product_hsn_code: item.hsn || '0000',
+              product_quantity: item.units || 1,
+              product_invoice_value: item.selling_price || 0,
+              product_gst_tax_rate: item.tax_rate || 0,
+              product_taxable_value: item.selling_price || 0,
+            })),
             consignee_details: {
               consignee_name: order.customer.name,
               consignee_phone: order.customer.phone,
               consignee_email: order.customer.email || '',
-              consignee_complete_address: order.shipping_address.address,
-              consignee_pincode: order.shipping_address.pincode,
+              consignee_complete_address: order.customer.address.address,
+              consignee_pincode: order.customer.address.pincode,
             },
           },
         ],
@@ -520,7 +513,7 @@ export class SmartShipVendor extends BaseVendor {
       };
     } catch (error: any) {
       console.error(`Error scheduling pickup with SmartShip:`, error);
-      
+
       return {
         success: false,
         message: error.response?.data?.message || error.message || 'Failed to schedule pickup',
@@ -583,7 +576,7 @@ export class SmartShipVendor extends BaseVendor {
       };
     } catch (error: any) {
       console.error(`Error cancelling shipment with SmartShip:`, error);
-      
+
       return {
         success: false,
         message: error.response?.data?.message || error.message || 'Failed to cancel shipment',

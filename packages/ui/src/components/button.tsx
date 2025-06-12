@@ -37,22 +37,33 @@ function Button({
   variant,
   size,
   asChild = false,
+  icon,
+  children,
   ...props
 }: React.ComponentProps<'button'> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean;
     isLoading?: boolean;
+    icon?: React.ReactNode;
   }) {
   const Comp = asChild ? Slot : 'button';
   const { isLoading } = props;
 
   return (
     <Comp
-      type="button"
-      data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }), isLoading && 'cursor-wait')}
-      {...props}
-    />
+    type="button"
+    data-slot="button"
+    className={cn(
+      buttonVariants({ variant, size, className }),
+      isLoading && 'cursor-wait',
+      icon && 'gap-2'
+    )}
+    {...props}
+  >
+    {icon && <span className="shrink-0">{icon}</span>}
+
+    {children}
+  </Comp>
   );
 }
 

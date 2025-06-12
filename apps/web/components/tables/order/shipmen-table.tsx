@@ -51,6 +51,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
       to: new Date(),
     }
   );
+  const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
 
   const { isTokenReady } = useAuthToken();
   // Fetch shipments with React Query
@@ -339,8 +340,11 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => console.log('View details:', row.original)}>
-                  View details
+                <DropdownMenuItem
+                  onClick={() => setIsDrawerOpen(true)}
+                  className='flex w-full items-center justify-start'
+                >
+                  Clone Order
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => console.log('Track shipment:', row.original)}>
                   Track shipment

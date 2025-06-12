@@ -57,3 +57,5 @@ export * from './progress';
 
 export * from './loading-input';
 export * from './accordion';
+
+export * from './drawer';

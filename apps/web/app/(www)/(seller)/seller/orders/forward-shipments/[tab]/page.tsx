@@ -39,13 +39,13 @@ export default function ShipmentsPage() {
     dateRange:
       dateFrom && dateTo
         ? {
-            from: new Date(dateFrom),
-            to: new Date(dateTo),
-          }
+          from: new Date(dateFrom),
+          to: new Date(dateTo),
+        }
         : {
-            from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-            to: new Date(),
-          },
+          from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+          to: new Date(),
+        },
     status: tab,
   };
 
@@ -73,9 +73,7 @@ export default function ShipmentsPage() {
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Link href="/seller/orders/new" scroll={false}>
-            <OpenModalBtn modalType="seller:new-order" icon={<Plus />}>
-              Add Order
-            </OpenModalBtn>
+            Add Order
           </Link>
           <Button variant="outline" size="sm" className="gap-2">
             <RefreshCw className="h-4 w-4" />

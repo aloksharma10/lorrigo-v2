@@ -45,7 +45,7 @@ export class DelhiveryVendor extends BaseVendor {
    */
   protected async generateToken(): Promise<string | null> {
     // Delhivery uses direct API key, so we'll just return it
-    return this.apiKey || null;
+    return `Token ${this.apiKey}` || null;
   }
 
   /**
@@ -85,7 +85,7 @@ export class DelhiveryVendor extends BaseVendor {
       const endpoint = `${APIs.DELHIVERY.PINCODE_SERVICEABILITY}${deliveryPincode}`;
 
       const response = await this.makeRequest(endpoint, 'GET', null, {
-        Authorization: `Token ${token}`,
+        Authorization: token,
       });
 
       // Check if pincode is serviceable
@@ -156,7 +156,7 @@ export class DelhiveryVendor extends BaseVendor {
       }
 
       const apiConfig = {
-        Authorization: `Token ${token}`,
+        Authorization: token,
       };
 
       const payload = {
@@ -221,14 +221,11 @@ export class DelhiveryVendor extends BaseVendor {
 
       const { order, hub, orderItems, paymentMethod, dimensions } = shipmentData;
 
-      // Extract the first order item for product details
-      const firstOrderItem = orderItems[0];
-
       const isReversed = order.type === 'RETURNED';
       const isCOD = paymentMethod === 'COD';
 
       // Calculate COD amount if applicable
-      const codAmount = isCOD ? order.total_amount : 0;
+      const codAmount = isCOD ? order.amount_to_collect : 0;
 
       // Prepare the shipment payload
       const delhiveryShipmentPayload = {
@@ -237,12 +234,12 @@ export class DelhiveryVendor extends BaseVendor {
           shipments: [
             {
               name: order.customer.name,
-              add: order.shipping_address.address,
-              pin: order.shipping_address.pincode,
-              city: order.shipping_address.city,
-              state: order.shipping_address.state,
+              add: order.customer.address.address,
+              pin: order.customer.address.pincode,
+              city: order.customer.address.city,
+              state: order.customer.address.state,
               country: 'India',
-              phone: formatPhoneNumber(order.shipping_address.phone || order.customer.phone),
+              phone: formatPhoneNumber(order.customer.phone),
               order: order.order_reference_id || order.code,
               payment_mode: isReversed ? 'Pickup' : isCOD ? 'COD' : 'Prepaid',
               return_pin: hub.rto_address?.pincode || hub.address.pincode,
@@ -251,15 +248,15 @@ export class DelhiveryVendor extends BaseVendor {
               return_add: hub.rto_address?.address || hub.address.address,
               return_state: hub.rto_address?.state || hub.address.state,
               return_country: 'India',
-              products_desc: firstOrderItem.name,
-              hsn_code: firstOrderItem.hsn || '0000',
+              products_desc: orderItems.map((item: any) => item.name).join(', '),
+              hsn_code: orderItems.map((item: any) => item.hsn).join(', '),
               cod_amount: codAmount,
               order_date: new Date().toISOString(),
               total_amount: order.total_amount,
               seller_add: hub.address.address,
               seller_name: hub.name,
               seller_inv: order.code,
-              quantity: firstOrderItem.units || 1,
+              quantity: orderItems.reduce((acc: number, item: any) => acc + Number(item.units || 1), 0),
               waybill: order.ewaybill || '',
               shipment_length: dimensions.length || 10,
               shipment_width: dimensions.width || 10,
@@ -292,6 +289,7 @@ export class DelhiveryVendor extends BaseVendor {
       );
 
       const delhiveryResponse = response.data?.packages?.[0];
+      console.log(JSON.stringify(delhiveryResponse), "delhiveryResponse")
 
       if (!delhiveryResponse?.status) {
         return {

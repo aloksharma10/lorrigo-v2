@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import {
   MapPin,
   Package,
@@ -38,6 +38,7 @@ import {
   SheetTitle,
   SheetTrigger,
   Checkbox,
+  toast,
 } from "@lorrigo/ui/components"
 import { CourierRate, useShippingOperations } from "@/lib/apis/shipment"
 import HoverCardToolTip from "@/components/hover-card-tooltip"
@@ -51,6 +52,7 @@ import { CourierLogo } from "@/components/courier-logo"
 import { RatingBadgeStart } from "@/components/rating-badge"
 
 export default function ShipOrderPage() {
+  const router = useRouter()
   const params = useParams()
   const orderId = (params?.orderId as string) || "ORD-12345"
   const [activeTab, setActiveTab] = useState("All")
@@ -70,9 +72,8 @@ export default function ShipOrderPage() {
     setIsShipping(carrierId)
     try {
       await shipOrder.mutateAsync({ order_id: orderId, courier_id: carrierId, schedule_pickup: autoScheduledPickup })
-      console.log(`Order shipped with ${courierName}`)
     } catch (error) {
-      console.error("Failed to ship order")
+      // console.error("Failed to ship order")
     } finally {
       setIsShipping(null)
     }
@@ -126,14 +127,9 @@ export default function ShipOrderPage() {
 
   // Error state
   if (error || !data) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-stone-900 p-4">
-        <Alert variant="destructive" className="max-w-md mx-auto mt-8">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>Failed to load shipping rates. Please try again.</AlertDescription>
-        </Alert>
-      </div>
-    )
+    toast.error("Failed to load shipping rates. Please try again.")
+    router.back()
+    return null
   }
 
   const filteredRates = sortCouriers(filterCouriersByTab(data.rates))

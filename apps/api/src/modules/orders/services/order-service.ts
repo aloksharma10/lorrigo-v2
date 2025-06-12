@@ -211,6 +211,14 @@ export class OrderService {
             phone: true,
             code: true,
             contact_person_name: true,
+            hub_config: {
+              select: { 
+                smart_ship_hub_code_express: true,
+                smart_ship_hub_code_surface: true,
+                is_cod_enabled: true,
+                is_prepaid_enabled: true,
+              }
+            },
             address: {
               select: {
                 pincode: true,

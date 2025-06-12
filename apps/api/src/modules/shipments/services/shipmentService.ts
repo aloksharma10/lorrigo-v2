@@ -33,11 +33,11 @@ export class ShipmentService {
   ) {
     this.fastify = fastify as ExtendedFastifyInstance;
     this.vendorService = new VendorService(fastify);
-    // this.fastify.redis.flushall().then(() => {
-    //   console.log('Redis flushed');
-    // }).catch((err) => {
-    //   console.error('Error flushing Redis', err);
-    // });
+    this.fastify.redis.flushall().then(() => {
+      console.log('Redis flushed');
+    }).catch((err) => {
+      console.error('Error flushing Redis', err);
+    });
   }
 
   /**
