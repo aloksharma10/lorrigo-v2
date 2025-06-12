@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import {
   Form,
-  Button,
   Card,
   CardContent,
   CardHeader,
@@ -25,6 +24,7 @@ import { PaymentMethodSelector } from './payment-method-selector';
 import { PackageDetailsForm } from './package-details-form';
 import { SellerDetailsForm } from './seller-details-form';
 
+import useFetchCityState from '@/lib/hooks/use-fetch-city-state';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { type OrderFormValues, orderFormSchema } from '../types';
@@ -120,6 +120,10 @@ export default function OrderForm() {
     },
   });
 
+  const { cityState, isTyping, loading: isPincodeLoading } = useFetchCityState(form.watch('deliveryDetails.pincode'))
+  const { cityState: sellerCityState, isTyping: isSellerTyping, loading: isSellerPincodeLoading } = useFetchCityState(form.watch('sellerDetails.pincode'))
+  const loading = isPincodeLoading || isTyping || isSellerPincodeLoading || isSellerTyping
+
   async function onSubmit(values: OrderFormValues) {
     try {
       const validatedData = orderFormSchema.parse(values);
@@ -128,7 +132,7 @@ export default function OrderForm() {
     } catch (error: any) {
       toast.error(
         error.response.data.message ||
-          'Failed to create order, Please Report to Support at support@lorrigo.in'
+        'Failed to create order, Please Report to Support at support@lorrigo.in'
       );
       if (error instanceof z.ZodError) {
         // Set form errors
@@ -189,6 +193,29 @@ export default function OrderForm() {
       router.push(redirectPath);
     }
   }, [isOrderCreated, order, redirectPath, router]);
+
+  useEffect(() => {
+    if (cityState) {
+      form.setValue('deliveryDetails.city', cityState.city)
+      form.setValue('deliveryDetails.state', cityState.state)
+    }
+    return () => {
+      form.setValue('deliveryDetails.city', '')
+      form.setValue('deliveryDetails.state', '')
+    }
+  }, [cityState])
+
+  useEffect(() => {
+    if (sellerCityState) {
+      form.setValue('sellerDetails.city', sellerCityState.city)
+      form.setValue('sellerDetails.state', sellerCityState.state)
+    }
+    return () => {
+      form.setValue('sellerDetails.city', '')
+      form.setValue('sellerDetails.state', '')
+    }
+  }, [sellerCityState])
+
 
   return (
     <div className="w-full">
@@ -316,7 +343,7 @@ export default function OrderForm() {
                 <CardTitle>Seller Details</CardTitle>
               </CardHeader>
               <CardContent>
-                <SellerDetailsForm control={form.control} watch={form.watch} />
+                <SellerDetailsForm control={form.control} watch={form.watch} isLoading={loading} />
               </CardContent>
             </Card>
 
@@ -328,7 +355,7 @@ export default function OrderForm() {
                 </p>
               </CardHeader>
               <CardContent>
-                <DeliveryDetailsForm control={form.control} watch={form.watch} />
+                <DeliveryDetailsForm control={form.control} watch={form.watch} isLoading={loading} />
               </CardContent>
             </Card>
 

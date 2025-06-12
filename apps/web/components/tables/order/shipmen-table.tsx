@@ -24,6 +24,7 @@ import { currencyFormatter, formatDateTimeSmart } from '@lorrigo/utils';
 import { Shipment, ShipmentParams } from '@/lib/type/response-types';
 import { useRouter } from 'next/navigation';
 import { useAuthToken } from '@/components/providers/token-provider';
+import { useDrawer } from '@/components/providers/drawer-provider';
 import { CopyBtn } from '@/components/copy-btn';
 
 interface ShipmentsTableProps {
@@ -51,9 +52,8 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
       to: new Date(),
     }
   );
-  const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
-
   const { isTokenReady } = useAuthToken();
+  const { openDrawer } = useDrawer();
   // Fetch shipments with React Query
   const { data, isLoading, isError, isFetching, error } = useQuery({
     queryKey: [
@@ -341,10 +341,24 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
-                  onClick={() => setIsDrawerOpen(true)}
+                  onClick={() => openDrawer('clone-order', { 
+                    order: row.original,
+                    size: 'greater-mid',
+                    side: 'right'
+                  })}
                   className='flex w-full items-center justify-start'
                 >
                   Clone Order
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => openDrawer('edit-order', { 
+                    order: row.original,
+                    size: 'greater-mid',
+                    side: 'right'
+                  })}
+                  className='flex w-full items-center justify-start'
+                >
+                  Edit Order
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => console.log('Track shipment:', row.original)}>
                   Track shipment

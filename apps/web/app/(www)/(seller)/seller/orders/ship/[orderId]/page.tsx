@@ -128,7 +128,7 @@ export default function ShipOrderPage() {
   // Error state
   if (error || !data) {
     toast.error("Failed to load shipping rates. Please try again.")
-    router.back()
+    // router.back()
     return null
   }
 

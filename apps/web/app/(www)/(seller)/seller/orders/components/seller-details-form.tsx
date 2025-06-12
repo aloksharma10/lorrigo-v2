@@ -16,9 +16,10 @@ import { type OrderFormValues } from '../types';
 interface SellerDetailsFormProps {
   control: Control<OrderFormValues>;
   watch: UseFormWatch<OrderFormValues>;
+  isLoading: boolean;
 }
 
-export function SellerDetailsForm({ control, watch }: SellerDetailsFormProps) {
+export function SellerDetailsForm({ control, watch, isLoading }: SellerDetailsFormProps) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -120,7 +121,7 @@ export function SellerDetailsForm({ control, watch }: SellerDetailsFormProps) {
                 <FormItem>
                   <FormLabel className="text-sm font-medium">City</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter the city" {...field} />
+                    <Input placeholder="Enter the city" {...field} isLoading={isLoading} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -134,7 +135,7 @@ export function SellerDetailsForm({ control, watch }: SellerDetailsFormProps) {
                 <FormItem>
                   <FormLabel className="text-sm font-medium">State</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter the state" {...field} />
+                    <Input placeholder="Enter the state" {...field} isLoading={isLoading} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

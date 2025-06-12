@@ -3,31 +3,24 @@
 import {
   Checkbox,
   Input,
-  Label,
-  Form,
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-  Collapsible,
-  CollapsibleTrigger,
-  Button,
-  CollapsibleContent,
 } from '@lorrigo/ui/components';
 import { OrderFormValues } from '@lorrigo/utils';
 import { useState, useEffect } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Control, UseFormWatch } from 'react-hook-form';
 
 interface DeliveryDetailsFormProps {
   control: Control<OrderFormValues>;
   watch: UseFormWatch<OrderFormValues>;
+  isLoading: boolean;
 }
 
-export function DeliveryDetailsForm({ control, watch }: DeliveryDetailsFormProps) {
+export function DeliveryDetailsForm({ control, watch, isLoading }: DeliveryDetailsFormProps) {
   const [billingIsSameAsDelivery, setBillingIsSameAsDelivery] = useState(true);
-  const [billingOpen, setBillingOpen] = useState(false);
 
   // Only sync billing details when checkbox is toggled, not on every field change
   const syncBillingWithDelivery = () => {
@@ -50,7 +43,7 @@ export function DeliveryDetailsForm({ control, watch }: DeliveryDetailsFormProps
       // Only sync when checkbox is checked, not continuously
       syncBillingWithDelivery();
     } else {
-      setBillingOpen(true);
+      // setBillingOpen(true);
     }
   }, [billingIsSameAsDelivery, control]);
 
@@ -209,6 +202,7 @@ export function DeliveryDetailsForm({ control, watch }: DeliveryDetailsFormProps
                   {...field}
                   placeholder="City"
                   className="h-8"
+                  isLoading={isLoading}
                   onChange={(e) => {
                     field.onChange(e);
                     if (billingIsSameAsDelivery) {
@@ -234,6 +228,7 @@ export function DeliveryDetailsForm({ control, watch }: DeliveryDetailsFormProps
                   {...field}
                   placeholder="State"
                   className="h-8"
+                  isLoading={isLoading}
                   onChange={(e) => {
                     field.onChange(e);
                     if (billingIsSameAsDelivery) {
@@ -262,7 +257,7 @@ export function DeliveryDetailsForm({ control, watch }: DeliveryDetailsFormProps
           )}
         />
       </div>
-      <div className="flex items-center space-x-2 pt-2">
+      {/* <div className="flex items-center space-x-2 pt-2">
         <Checkbox
           id="billing-same"
           checked={billingIsSameAsDelivery}
@@ -271,8 +266,8 @@ export function DeliveryDetailsForm({ control, watch }: DeliveryDetailsFormProps
         <Label htmlFor="billing-same" className="cursor-pointer text-sm">
           Billing same as delivery
         </Label>
-      </div>
-      {!billingIsSameAsDelivery && (
+      </div> */}
+      {/* {!billingIsSameAsDelivery && (
         <Collapsible open={billingOpen} onOpenChange={setBillingOpen}>
           <CollapsibleTrigger asChild>
             <Button variant="ghost" className="flex h-auto items-center gap-2 p-0 text-sm">
@@ -393,7 +388,7 @@ export function DeliveryDetailsForm({ control, watch }: DeliveryDetailsFormProps
             />
           </CollapsibleContent>
         </Collapsible>
-      )}
+      )} */}
     </div>
   );
 }

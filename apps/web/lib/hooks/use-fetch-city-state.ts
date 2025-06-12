@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { useSession } from 'next-auth/react';
 import { useEffect, useRef, useState } from 'react';
 import { getPincode } from '../actions/pincode';
 

@@ -12,6 +12,8 @@ import { ModalProvider } from '@/modal/modal-provider';
 import { LoadingBar } from './loading-bar';
 import { TokenProvider } from './token-provider';
 import { CSVUploadProvider } from './csv-upload-provider';
+import DrawerProvider from './drawer-provider';
+import { DrawerRegistry } from '@/drawer/drawer-registry';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = React.useState(
@@ -46,9 +48,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
             >
               <ModalProvider>
                 <ModalRegistry />
-                <LoadingBar />
-                <CSVUploadProvider>{children}</CSVUploadProvider>
-                <Toaster position="top-right" toastOptions={{ duration: 4000 }} richColors />
+                <DrawerProvider>
+                  <DrawerRegistry />
+                  <LoadingBar />
+                  <CSVUploadProvider>{children}</CSVUploadProvider>
+                  <Toaster position="top-right" toastOptions={{ duration: 4000 }} richColors />
+                </DrawerProvider>
               </ModalProvider>
             </NextThemesProvider>
           </TokenProvider>
