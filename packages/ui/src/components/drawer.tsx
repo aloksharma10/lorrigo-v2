@@ -68,8 +68,8 @@ function SheetRoot({
   size = "default",
   side = "right",
   ...rest
-}: { 
-  contentProps?: ContentProps; 
+}: {
+  contentProps?: ContentProps;
   nested?: boolean;
   size?: DrawerSize;
   side?: DrawerSide;
@@ -80,10 +80,8 @@ function SheetRoot({
   return (
     <RootComponent direction={side} handleOnly {...rest}>
       <Drawer.Portal>
-        <Drawer.Overlay
-          className="fixed inset-0 bg-black/20"
-          data-sheet-overlay
-        />
+        <Drawer.Overlay className="fixed inset-0 z-50 bg-neutral-50/15 bg-opacity-10 backdrop-blur-xs" />
+
         <Drawer.Content
           {...contentProps}
           onPointerDownOutside={(e) => {
@@ -97,21 +95,29 @@ function SheetRoot({
             contentProps?.onPointerDownOutside?.(e);
           }}
           className={cn(
-            "fixed z-10 flex outline-none",
+            'fixed z-50 flex flex-col',
+            'outline-none rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-stone-900',
             getDrawerPosition(side),
             getDrawerDimension(side),
             getDrawerWidth(size),
             contentProps?.className,
           )}
+          // className={cn(
+          //   "fixed z-10 flex outline-none",
+          //   getDrawerPosition(side),
+          //   getDrawerDimension(side),
+          //   getDrawerWidth(size),
+          //   contentProps?.className,
+          // )}
           style={
             {
               "--initial-transform": getDrawerTransform(side),
-              "user-select": "auto", // Override default user-select: none from Vaul
+              // "user-select": "auto", // Override default user-select: none from Vaul
               ...contentProps?.style,
             } as React.CSSProperties
           }
         >
-          <div className="scrollbar-hide flex size-full grow flex-col overflow-y-auto rounded-lg bg-white">
+          <div className="scrollbar-hide flex size-full grow flex-col overflow-y-auto rounded-lg  bg-white dark:bg-stone-900">
             {children}
           </div>
         </Drawer.Content>
@@ -123,7 +129,7 @@ function SheetRoot({
 function Title({ className, ...rest }: ComponentProps<typeof Drawer.Title>) {
   return (
     <Drawer.Title
-      className={cn("text-xl font-medium text-zinc-900", className)}
+      className={cn("text-xl font-medium text-zinc-900 dark:text-white", className)}
       {...rest}
     />
   );

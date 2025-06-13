@@ -72,6 +72,27 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
                       },
                     },
                   },
+                  productDetails: {
+                    type: 'object',
+                    properties: {
+                      products: {
+                        type: 'array',
+                        items: {
+                          type: 'object',
+                          properties: {
+                            id: { type: 'string' },
+                            name: { type: 'string' },
+                            sku: { type: 'string' },
+                            quantity: { type: 'number' },
+                            price: { type: 'number' },
+                            taxRate: { type: 'number' },
+                            hsnCode: { type: 'string' },
+                          },
+                        },
+                      },
+                      taxableValue: { type: 'number' },
+                    },
+                  },
                   status: { type: 'string' },
                   totalAmount: { type: 'number' },
                   packageDetails: {
@@ -99,6 +120,7 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
                   hub: {
                     type: 'object',
                     properties: {
+                      id: { type: 'string' },
                       lorrigoPickupId: { type: 'string' },
                       name: { type: 'string' },
                       address: { type: 'string' },
@@ -107,6 +129,9 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
                       pincode: { type: 'string' },
                     },
                   },
+                  orderInvoiceNumber: { type: 'string' },
+                  orderInvoiceDate: { type: 'string', format: 'date-time' },
+                  ewaybill: { type: 'string' },
                   paymentType: { type: 'string' },
                   amountToCollect: { type: 'number' },
                   pickupDate: { type: 'string', format: 'date-time' },

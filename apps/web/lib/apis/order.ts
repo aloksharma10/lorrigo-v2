@@ -165,7 +165,12 @@ export async function fetchOrders(params: any) {
           state: order.customer?.state || '',
           pincode: order.customer?.pincode || '',
         },
+        productDetails: {
+          products: order.productDetails?.products || [],
+          taxableValue: order.productDetails?.taxableValue || 0,
+        },
         hub: {
+          id: order.hub?.id || '',
           lorrigoPickupId: order.hub?.lorrigoPickupId || '',
           name: order.hub?.name || '',
           address: order.hub?.address || '',
@@ -180,6 +185,9 @@ export async function fetchOrders(params: any) {
           deadWeight: order.packageDetails.deadWeight,
           volumetricWeight: order.packageDetails.volumetricWeight,
         },
+        orderInvoiceNumber: order.orderInvoiceNumber,
+        orderInvoiceDate: order.orderInvoiceDate,
+        ewaybill: order.ewaybill,
         paymentType: order.paymentType,
         amountToCollect: order.amountToCollect,
         totalAmount: order.totalAmount,

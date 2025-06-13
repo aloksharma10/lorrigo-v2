@@ -39,6 +39,7 @@ export function PaymentMethodSelector({ control, watch }: PaymentMethodSelectorP
               <RadioGroup
                 onValueChange={field.onChange}
                 defaultValue={field.value}
+                value={field.value || 'prepaid'}
                 className="flex gap-4"
               >
                 <div className="flex items-center space-x-2 rounded-md border p-2">

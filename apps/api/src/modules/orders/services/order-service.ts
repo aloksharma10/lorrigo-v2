@@ -67,6 +67,7 @@ export class OrderService {
         include: {
           hub: {
             select: {
+              id: true,
               name: true,
               phone: true,
               code: true,
@@ -81,6 +82,7 @@ export class OrderService {
               },
             },
           },
+          items: true,
           package: {
             select: {
               length: true,
@@ -99,7 +101,7 @@ export class OrderService {
               courier: {
                 select: {
                   name: true,
-                  channel_config: { 
+                  channel_config: {
                     select: {
                       nickname: true,
                     }
@@ -139,7 +141,7 @@ export class OrderService {
       this.fastify.prisma.order.count({ where }),
     ]);
 
-    
+
     // Format orders for response
     const formatted_orders = orders.map((order) => ({
       id: order.id,
@@ -157,12 +159,25 @@ export class OrderService {
         pincode: order.customer.address?.pincode || '',
       },
       hub: {
+        id: order.hub?.id || '',
         name: order.hub?.name || '',
         lorrigoPickupId: order.hub?.code || '',
         address: order.hub?.address?.address || '',
         city: order.hub?.address?.city || '',
         state: order.hub?.address?.state || '',
         pincode: order.hub?.address?.pincode || '',
+      },
+      productDetails: {
+        products: order.items.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          sku: item.sku,
+          quantity: item.units,
+          price: item.selling_price,
+          taxRate: item.tax,
+          hsnCode: item.hsn,
+        })),
+        taxableValue: order.total_amount,
       },
       packageDetails: {
         length: order.package.length,
@@ -180,6 +195,9 @@ export class OrderService {
       pickupDate: order.shipment?.pickup_date,
       edd: order.shipment?.edd || '',
       pickupId: order.shipment?.pickup_id || '',
+      orderInvoiceNumber: order.order_invoice_number,
+      orderInvoiceDate: order.order_invoice_date,
+      ewaybill: order.ewaybill,
       createdAt: order.created_at,
       updatedAt: order.updated_at,
     }));
@@ -212,7 +230,7 @@ export class OrderService {
             code: true,
             contact_person_name: true,
             hub_config: {
-              select: { 
+              select: {
                 smart_ship_hub_code_express: true,
                 smart_ship_hub_code_surface: true,
                 is_cod_enabled: true,

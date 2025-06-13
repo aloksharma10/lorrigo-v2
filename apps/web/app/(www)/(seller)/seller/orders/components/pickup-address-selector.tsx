@@ -29,6 +29,7 @@ interface Address {
 interface PickupAddressSelectorProps {
   onAddressSelect: (address: Address | null) => void;
   error?: string;
+  initialAddressId?: string;
 }
 
 // Interface for form values
@@ -36,13 +37,14 @@ interface AddressFormValues {
   address: string;
 }
 
-export function PickupAddressSelector({ onAddressSelect, error }: PickupAddressSelectorProps) {
+export function PickupAddressSelector({ onAddressSelect, error, initialAddressId }: PickupAddressSelectorProps) {
   const { openModal } = useModal();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasInitiallyFetched, setHasInitiallyFetched] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const {
     getHubsQuery: { data, refetch },
@@ -66,13 +68,34 @@ export function PickupAddressSelector({ onAddressSelect, error }: PickupAddressS
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Initial fetch if initialAddressId is provided
   useEffect(() => {
-    const fetchHubs = async () => {
-      if (isOpen && (!data || data.length === 0)) {
+    const fetchInitialData = async () => {
+      if (initialAddressId && !hasInitiallyFetched && (!data || data.length === 0)) {
         setIsLoading(true);
         try {
-          const response = await refetch(); // fetch only once when opened
+          await refetch();
+          setHasInitiallyFetched(true);
+        } catch (error) {
+          console.error('Error fetching initial hubs:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchInitialData();
+  }, [initialAddressId, hasInitiallyFetched, data, refetch]);
+
+  // Fetch data when dropdown opens (only if no initial value or already fetched initially)
+  useEffect(() => {
+    const fetchHubs = async () => {
+      if (isOpen && (!data || data.length === 0) && !initialAddressId && !hasInitiallyFetched) {
+        setIsLoading(true);
+        try {
+          const response = await refetch();
           setAddresses(filterHubs(response.data ?? [], searchQuery));
+          setHasInitiallyFetched(true);
         } catch (error) {
           console.error('Error fetching hubs:', error);
         } finally {
@@ -82,13 +105,25 @@ export function PickupAddressSelector({ onAddressSelect, error }: PickupAddressS
     };
 
     fetchHubs();
-  }, [isOpen]);
+  }, [isOpen, initialAddressId, hasInitiallyFetched, data, refetch, searchQuery]);
 
   useEffect(() => {
     if (data) {
       setAddresses(filterHubs(data, searchQuery));
     }
   }, [searchQuery, data]);
+  
+  // Set initial selected address
+  useEffect(() => {
+    if (initialAddressId && data) {
+      const address = data.find((address: Address) => address.id === initialAddressId);
+      if (address && !selectedAddress) {
+        setSelectedAddress(address);
+        form.setValue('address', address.id);
+        onAddressSelect(address);
+      }
+    }
+  }, [initialAddressId, data, form, selectedAddress, onAddressSelect]);
 
   const handleAddressSelect = (address: Address) => {
     setSelectedAddress(address);
@@ -100,11 +135,6 @@ export function PickupAddressSelector({ onAddressSelect, error }: PickupAddressS
   function onSubmit(values: AddressFormValues) {
     console.log(values);
   }
-
-  // const handleConfirm = () => {
-  //   onConfirm();
-  //   onClose();
-  // };
 
   const handleOpenFormModal = () => {
     openModal('seller:add-pickup-location', {
@@ -160,9 +190,6 @@ export function PickupAddressSelector({ onAddressSelect, error }: PickupAddressS
               </FormItem>
             )}
           />
-          {/* <Button type="button" variant="outline" size="icon">
-            <Edit className="h-4 w-4" />
-          </Button> */}
           <Button type="button" variant="outline" size="icon" onClick={handleOpenFormModal}>
             <Plus className="h-4 w-4" />
           </Button>
@@ -186,14 +213,6 @@ export function PickupAddressSelector({ onAddressSelect, error }: PickupAddressS
                         <span className="text-muted-foreground"> | </span>
                         <span className="text-xs">{address.address.address}</span>
                       </div>
-                      {/* {address.verified && (
-                          <Badge
-                            variant={address.verified ? 'success' : 'destructive'}
-                            className="ml-2"
-                          >
-                            {address.verified ? 'Verified' : 'Unverified'}
-                          </Badge>
-                      )} */}
                     </div>
                   </li>
                 ))}

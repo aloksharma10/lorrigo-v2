@@ -27,6 +27,18 @@ export interface BackendOrder {
      state: string;
      pincode: string;
    };
+   productDetails: {
+     products: Array<{
+       id: string;
+       name: string;
+       sku: string;
+       quantity: number;
+       price: number;
+       taxRate: number;
+       hsnCode: string;
+     }>;
+     taxableValue: number;
+   };
    packageDetails: {
      length: number;
      breadth: number;
@@ -35,6 +47,7 @@ export interface BackendOrder {
      volumetricWeight: number;
    };
    hub?: {
+     id: string;
      name: string;
      lorrigoPickupId: string;
      address: string;
@@ -58,5 +71,8 @@ export interface BackendOrder {
    notes?: string;
    createdAt: string;
    updatedAt: string;
+   orderInvoiceNumber: string;
+   orderInvoiceDate: string;
+   ewaybill: string;
  }
  

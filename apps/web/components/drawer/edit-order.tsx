@@ -1,7 +1,12 @@
 "use client"
-import { Button, DrawerComponent, Input, Label, Textarea } from "@lorrigo/ui/components";
+import { Button, DrawerComponent } from "@lorrigo/ui/components";
 import { X } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { OrderForm } from "@/app/(www)/(seller)/seller/orders/components/reusable-order-form";
+import { DrawerSize, DrawerSide } from "@lorrigo/ui/components";
+import { z } from "zod";
+import { orderFormSchema } from "@/app/(www)/(seller)/seller/orders/types";
+import { toast } from "@lorrigo/ui/components";
 
 export default function EditOrder({
    order,
@@ -9,107 +14,60 @@ export default function EditOrder({
    isLoading = false,
    isOpen = false,
    drawerId,
+   size = "greater-mid", 
+   side = "right",
 }: {
    order?: any,
    onClose: () => void,
    isLoading?: boolean,
    isOpen?: boolean,
-   drawerId?: string
+   drawerId?: string,
+   size?: DrawerSize,
+   side?: DrawerSide
 }) {
-   const [orderData, setOrderData] = useState<any>(order || {});
-   
-   useEffect(() => {
-      if (order) {
-         setOrderData(order);
-      }
-   }, [order]);
+   const [submitting, setSubmitting] = useState(false);
 
-   const handleSubmit = () => {
-      // Handle edit order submission logic here
-      console.log("Updating order:", orderData);
-      onClose();
+   const handleSubmit = async (values: z.infer<typeof orderFormSchema>) => {
+      try {
+         setSubmitting(true);
+         // Here you would call your API to update the order
+         console.log("Updating order with values:", values);
+         
+         // Simulate API call
+         await new Promise((resolve) => setTimeout(resolve, 1000));
+         
+         toast.success('Order updated successfully');
+         onClose();
+      } catch (error: any) {
+         toast.error(error.message || 'Failed to update order');
+      } finally {
+         setSubmitting(false);
+      }
    };
 
    return (
-      <DrawerComponent open={isOpen} onOpenChange={onClose}>
-         <DrawerComponent.Title>Edit Order</DrawerComponent.Title>
-         <DrawerComponent.Close asChild>
-            <Button
-               variant="outline"
-               className="h-auto w-fit p-1"
-               icon={<X className="size-5" />}
-            >
-               Close
-            </Button>
-         </DrawerComponent.Close>
-         <DrawerComponent.Description>
-            <div className="flex flex-col gap-4">
-               <div className="flex flex-col gap-2">
-                  <Label>Order ID</Label>
-                  <Input 
-                     value={orderData.orderNumber || ""}
-                     onChange={(e) => setOrderData({...orderData, orderNumber: e.target.value})}
-                     disabled
-                  />
-               </div>
-               
-               {orderData.customer && (
-                  <>
-                     <div className="flex flex-col gap-2">
-                        <Label>Customer Name</Label>
-                        <Input 
-                           value={orderData.customer.name || ""}
-                           onChange={(e) => setOrderData({
-                              ...orderData, 
-                              customer: {...orderData.customer, name: e.target.value}
-                           })}
-                        />
-                     </div>
-                     
-                     <div className="flex flex-col gap-2">
-                        <Label>Customer Phone</Label>
-                        <Input 
-                           value={orderData.customer?.phone || ""}
-                           onChange={(e) => setOrderData({
-                              ...orderData, 
-                              customer: {...orderData.customer, phone: e.target.value}
-                           })}
-                        />
-                     </div>
-                     
-                     <div className="flex flex-col gap-2">
-                        <Label>Customer Email</Label>
-                        <Input 
-                           value={orderData.customer?.email || ""}
-                           onChange={(e) => setOrderData({
-                              ...orderData, 
-                              customer: {...orderData.customer, email: e.target.value}
-                           })}
-                        />
-                     </div>
-                     
-                     <div className="flex flex-col gap-2">
-                        <Label>Customer Address</Label>
-                        <Textarea 
-                           value={orderData.customer?.address || ""}
-                           onChange={(e) => setOrderData({
-                              ...orderData, 
-                              customer: {...orderData.customer, address: e.target.value}
-                           })}
-                        />
-                     </div>
-                  </>
-               )}
-               
-               <Button 
-                  onClick={handleSubmit}
-                  disabled={isLoading}
-                  className="mt-4"
+      <DrawerComponent open={isOpen} onOpenChange={onClose} size={size} side={side}>
+         <div className="sticky top-0 z-10 flex items-center justify-between border-b px-4 py-4 ">
+            <DrawerComponent.Title className="text-xl font-semibold">Edit Order</DrawerComponent.Title>
+            <DrawerComponent.Close asChild>
+               <Button
+                  variant="outline"
+                  className="h-auto w-fit p-1"
+                  size="icon"
                >
-                  {isLoading ? "Saving..." : "Update Order"}
+                  <X className="h-5 w-5" />
                </Button>
-            </div>
-         </DrawerComponent.Description>
+            </DrawerComponent.Close>
+         </div>
+         <div className="flex-1 overflow-auto p-4">
+            <OrderForm 
+               initialValues={order} 
+               onSubmit={handleSubmit} 
+               isSubmitting={submitting}
+               submitButtonText="Update Order"
+               mode="edit"
+            />
+         </div>
       </DrawerComponent>
    )
 } 
