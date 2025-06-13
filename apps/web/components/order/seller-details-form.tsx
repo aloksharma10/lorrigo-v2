@@ -11,7 +11,7 @@ import {
   FormMessage,
 } from '@lorrigo/ui/components';
 import { Control, UseFormWatch } from 'react-hook-form';
-import { type OrderFormValues } from '../types';
+import { type OrderFormValues } from '@lorrigo/utils/validations';
 
 interface SellerDetailsFormProps {
   control: Control<OrderFormValues>;

@@ -17,7 +17,7 @@ import {
 } from '@lorrigo/ui/components';
 
 import { Control, UseFormWatch } from 'react-hook-form';
-import { OrderFormValues } from '../types';
+import { OrderFormValues } from '@lorrigo/utils/validations';
 
 interface PackageDetailsFormProps {
   control: Control<OrderFormValues>;
@@ -53,9 +53,9 @@ export function PackageDetailsForm({ control, watch }: PackageDetailsFormProps) 
 
   return (
     <div className="space-y-3">
-      <Alert className="border-blue-200 bg-blue-50 py-2 dark:bg-blue-900">
-        <LightbulbIcon className="h-4 w-4 text-blue-500" />
-        <AlertDescription className="text-sm text-blue-700 dark:text-blue-400">
+      <Alert className="border-blue-200 bg-blue-50 py-2 dark:bg-blue-900 dark:border-blue-800">
+        <LightbulbIcon className="h-4 w-4 text-blue-500 dark:text-blue-200" />
+        <AlertDescription className="text-sm text-blue-700 dark:text-blue-200">
           Add correct values to avoid weight discrepancy
         </AlertDescription>
       </Alert>
@@ -96,6 +96,7 @@ export function PackageDetailsForm({ control, watch }: PackageDetailsFormProps) 
                     {...field}
                     value={volumetricWeight}
                     readOnly
+                    disabled
                     className="bg-muted h-8 rounded-r-none"
                   />
                 </FormControl>
@@ -165,14 +166,14 @@ export function PackageDetailsForm({ control, watch }: PackageDetailsFormProps) 
         </div>
         <p className="text-muted-foreground mt-1 text-[10px]">Min: 0.50 cm each</p>
       </div>
-      <div className="rounded-md border border-green-200 bg-green-50 p-2 dark:bg-green-800">
+      <div className="rounded-md border border-green-200 bg-green-50 p-2 dark:bg-green-800 dark:border-green-700">
         <Badge
           variant="outline"
-          className="border-green-300 bg-green-100 text-xs text-green-800 dark:bg-green-900 dark:text-green-400"
+          className="border-green-300 bg-green-100 text-xs text-green-800 dark:bg-green-900 dark:text-green-200 dark:border-green-700"
         >
           Applicable Weight: {applicableWeight} kg
         </Badge>
-        <p className="mt-1 text-xs text-green-700 dark:text-green-400">
+        <p className="mt-1 text-xs text-green-700 dark:text-green-200">
           Higher of dead weight or volumetric weight
         </p>
       </div>

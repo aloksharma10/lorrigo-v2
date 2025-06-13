@@ -497,7 +497,7 @@ model Shipment {
 // TrackingEvent Model
 model TrackingEvent {
   id          String         @id @default(cuid())
-  code        String         @unique // Custom ID - Format: TE-YYMM-XXXXX
+  code        String         // Custom ID - Format: TE-YYMM-XXXXX
   status      ShipmentStatus
   location    String?        @db.VarChar(100)
   description String?        @db.VarChar(255)
@@ -507,6 +507,7 @@ model TrackingEvent {
 
   @@index([shipment_id, timestamp])
   @@index([code])
+  @@unique([code, shipment_id])
 }
 
 model ChannelConfig {

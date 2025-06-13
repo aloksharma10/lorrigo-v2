@@ -24,6 +24,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@lorrigo/ui/components';
+import { signOut } from 'next-auth/react';
 
 export function NavUser({
   user,
@@ -86,7 +87,7 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/' })}>
               <IconLogout />
               Log out
             </DropdownMenuItem>

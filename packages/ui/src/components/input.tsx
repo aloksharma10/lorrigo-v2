@@ -4,7 +4,7 @@ import { cn } from '@lorrigo/ui/lib/utils';
 
 function Input({ className, isLoading, type, ...props }: React.ComponentProps<'input'> & { isLoading?: boolean }) {
   return (
-    <div className="relative">
+    <div className="relative w-full">
       <input
         type={type}
         data-slot="input"

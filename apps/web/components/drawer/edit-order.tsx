@@ -2,10 +2,10 @@
 import { Button, DrawerComponent } from "@lorrigo/ui/components";
 import { X } from "lucide-react";
 import { useState } from "react";
-import { OrderForm } from "@/app/(www)/(seller)/seller/orders/components/reusable-order-form";
+import { OrderForm } from "../order/order-form";
 import { DrawerSize, DrawerSide } from "@lorrigo/ui/components";
 import { z } from "zod";
-import { orderFormSchema } from "@/app/(www)/(seller)/seller/orders/types";
+import { orderFormSchema } from "@lorrigo/utils/validations";
 import { toast } from "@lorrigo/ui/components";
 
 export default function EditOrder({

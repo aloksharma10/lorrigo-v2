@@ -15,7 +15,7 @@ import {
 import { Info } from 'lucide-react';
 import { Control, useForm, UseFormWatch } from 'react-hook-form';
 import { useEffect } from 'react';
-import { OrderFormValues } from '../types';
+import { OrderFormValues } from '../../app/(www)/(seller)/seller/orders/types';
 
 // Create explicit interface for form values
 interface PaymentFormValues {

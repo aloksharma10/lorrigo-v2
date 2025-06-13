@@ -7,6 +7,7 @@ import { useSession, signOut } from 'next-auth/react';
 export function Navbar() {
   const pathname = usePathname();
   const { data: session, status } = useSession();
+  const role = session?.user.role;
   const isLoading = status === 'loading';
   const isAuthenticated = !!session;
 
@@ -31,7 +32,7 @@ export function Navbar() {
           {isAuthenticated && (
             <>
               <Link
-                href="/dashboard"
+                href={role === 'admin' ? '/admin/dashboard' : '/seller/dashboard'}
                 className={`text-sm font-medium ${
                   pathname === '/dashboard'
                     ? 'text-blue-600 dark:text-blue-500'
@@ -40,7 +41,7 @@ export function Navbar() {
               >
                 Dashboard
               </Link>
-              <Link
+              {/* <Link
                 href="/profile"
                 className={`text-sm font-medium ${
                   pathname === '/profile'
@@ -49,7 +50,7 @@ export function Navbar() {
                 }`}
               >
                 Profile
-              </Link>
+              </Link> */}
             </>
           )}
         </nav>

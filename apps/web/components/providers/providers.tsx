@@ -4,7 +4,7 @@ import * as React from 'react';
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
 import { AppProgressProvider as ProgressProvider, useProgress } from '@bprogress/next';
 
-import { SessionProvider } from 'next-auth/react';
+import { SessionProvider, signOut } from 'next-auth/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@lorrigo/ui/components';
 import { ModalRegistry } from '../../modal/modal-registry';
@@ -24,6 +24,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
             staleTime: 60 * 1000,
             refetchOnWindowFocus: false,
             retry: (failureCount, error) => {
+              if (error instanceof Error && error.message.includes('401')) {
+                signOut({ callbackUrl: '/auth/login' }); // Redirect to login page after sign-out
+                return false;
+              }
               if (error instanceof Error && error.message.includes('4')) {
                 return false;
               }

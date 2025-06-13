@@ -298,7 +298,7 @@ export class OrderService {
           const orderNumber = data.orderId;
 
           // OPTIMIZATION 1: Batch all validation and lookup queries
-          const [existingOrder, orderCount, lastOrder, existingCustomer] = await Promise.all([
+          const [existingOrder, orderCount, lastOrder, existingCustomer, shipmentCount] = await Promise.all([
             // Check order number uniqueness for this user
             tx.order.findUnique({
               where: {
@@ -330,6 +330,11 @@ export class OrderService {
               where: { phone: data.deliveryDetails.mobileNumber },
               select: { id: true },
             }),
+
+            // Get shipment count for current year
+            tx.shipment.count({
+              where: { user_id: userId, created_at: { gte: new Date(new Date().getFullYear(), 0, 1) } },
+            }),
           ]);
 
           if (existingOrder) {
@@ -354,6 +359,13 @@ export class OrderService {
             entityName: userName,
             lastUsedFinancialYear: financialYear,
             lastSequenceNumber: orderCount,
+          }).id;
+
+          const shipmentCode = generateId({
+            tableName: 'shipment',
+            entityName: userName,
+            lastUsedFinancialYear: financialYear,
+            lastSequenceNumber: shipmentCount,
           }).id;
 
           // OPTIMIZATION 3: Batch external API calls and independent DB operations
@@ -441,7 +453,7 @@ export class OrderService {
               status: 'NEW',
               shipment: {
                 create: {
-                  code: orderCode,
+                  code: shipmentCode,
                   user_id: userId,
                   tracking_events: {
                     create: [
@@ -526,6 +538,7 @@ export class OrderService {
         }
       );
     } catch (error: any) {
+      console.log(error);
       // Enhanced error handling
       if (error.message === 'Order number already exists. Please try another order number.') {
         throw error;

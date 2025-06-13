@@ -2,11 +2,12 @@
 import { Button, DrawerComponent } from "@lorrigo/ui/components";
 import { X } from "lucide-react";
 import { useState, useEffect } from "react";
-import { OrderForm } from "@/app/(www)/(seller)/seller/orders/components/reusable-order-form";
+import { OrderForm } from "../order/order-form";
 import { DrawerSize, DrawerSide } from "@lorrigo/ui/components";
 import { z } from "zod";
-import { orderFormSchema } from "@/app/(www)/(seller)/seller/orders/types";
+import { orderFormSchema, OrderFormValues } from "@lorrigo/utils/validations";
 import { toast } from "@lorrigo/ui/components";
+import { useOrderOperations } from "@/lib/apis/order";
 
 export default function CloneOrder({
    order,
@@ -25,29 +26,32 @@ export default function CloneOrder({
    size?: DrawerSize,
    side?: DrawerSide
 }) {
-   const [submitting, setSubmitting] = useState(false);
-
-   const handleSubmit = async (values: z.infer<typeof orderFormSchema>) => {
+   const {
+      createOrder: {
+        data: clonedOrder,
+        isPending: isCreatingOrder,
+        mutateAsync: createOrder,
+        isSuccess: isOrderCreated,
+      },
+    } = useOrderOperations();
+  
+    async function onSubmit(values: OrderFormValues) {
       try {
-         setSubmitting(true);
-         // Here you would call your API to create a cloned order
-         console.log("Cloning order with values:", values);
-         
-         // Simulate API call
-         await new Promise((resolve) => setTimeout(resolve, 1000));
-         
-         toast.success('Order cloned successfully');
-         onClose();
+        const validatedData = orderFormSchema.parse(values);
+        await createOrder(validatedData);
+        toast.success('Order created successfully');
       } catch (error: any) {
-         toast.error(error.message || 'Failed to clone order');
-      } finally {
-         setSubmitting(false);
+        toast.error(
+          error.response.data.message ||
+          'Failed to create order, Please Report to Support at support@lorrigo.in'
+        );
+        console.error('Validation error:', error);
       }
-   };
+    }
 
    return (
       <DrawerComponent open={isOpen} onOpenChange={onClose} size={size} side={side}>
-         <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-4 py-4">
+         <div className="sticky top-0 z-10 flex items-center justify-between border-b px-4 py-4">
             <DrawerComponent.Title className="text-xl font-semibold">Clone Order</DrawerComponent.Title>
             <DrawerComponent.Close asChild>
                <Button
@@ -59,11 +63,11 @@ export default function CloneOrder({
                </Button>
             </DrawerComponent.Close>
          </div>
-         <div className="flex-1 overflow-auto p-4">
+         <div className="flex-1 overflow-auto p-4 lg:py-0 lg:pt-4 ">
             <OrderForm 
                initialValues={order} 
-               onSubmit={handleSubmit} 
-               isSubmitting={submitting}
+               onSubmit={onSubmit} 
+               isSubmitting={isCreatingOrder}
                submitButtonText="Clone Order"
                mode="clone"
             />

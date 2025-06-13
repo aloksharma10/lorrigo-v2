@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, forwardRef, useImperativeHandle } from 'react';
 import {
   Form,
   Button,
@@ -15,6 +15,7 @@ import {
   FormLabel,
   Input,
   FormControl,
+  toast,
 } from '@lorrigo/ui/components';
 
 import { PickupAddressSelector } from './pickup-address-selector';
@@ -27,7 +28,7 @@ import { InvoiceDetailsForm } from './invoice-details-form';
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type OrderFormValues, orderFormSchema } from '../types';
+import { type OrderFormValues, orderFormSchema } from '@lorrigo/utils/validations';
 import { z } from 'zod';
 import { ORDER_CHANNELS } from '@/lib/order-channels';
 import useFetchCityState from '@/lib/hooks/use-fetch-city-state';
@@ -42,13 +43,18 @@ interface OrderFormProps {
   mode?: OrderFormMode;
 }
 
-export function OrderForm({
+export interface OrderFormRef {
+  submitForm: () => void;
+  getFormValues: () => OrderFormValues;
+}
+
+export const OrderForm = forwardRef<OrderFormRef, OrderFormProps>(({
   initialValues,
   onSubmit,
   isSubmitting = false,
-  submitButtonText = 'Submit Order',
+  submitButtonText = 'Create Order',
   mode = 'create',
-}: OrderFormProps) {
+}, ref) => {
   const isEditMode = mode === 'edit';
   const isCloneMode = mode === 'clone';
 
@@ -119,6 +125,14 @@ export function OrderForm({
       },
     },
   });
+
+  // Expose form methods to parent component
+  useImperativeHandle(ref, () => ({
+    submitForm: () => {
+      form.handleSubmit(handleSubmit)();
+    },
+    getFormValues: () => form.getValues(),
+  }));
 
   const { cityState, isTyping, loading: isPincodeLoading } = useFetchCityState(form.watch('deliveryDetails.pincode'))
   const { cityState: sellerCityState, isTyping: isSellerTyping, loading: isSellerPincodeLoading } = useFetchCityState(form.watch('sellerDetails.pincode'))
@@ -227,7 +241,11 @@ export function OrderForm({
     try {
       const validatedData = orderFormSchema.parse(values);
       await onSubmit(validatedData);
-    } catch (error) {
+    } catch (error: any) {
+      toast.error(
+        error.response.data.message ||
+        'Failed to create order, Please Report us at support@lorrigo.in'
+      );
       if (error instanceof z.ZodError) {
         // Set form errors
         error.errors.forEach((err) => {
@@ -237,8 +255,10 @@ export function OrderForm({
             message: err.message,
           });
         });
+
+        // Show error toast
+        toast.error('Please check all fields and try again');
       }
-      throw error;
     }
   }
 
@@ -383,7 +403,7 @@ export function OrderForm({
           </CardContent>
         </Card>
 
-        <div className="sticky bottom-0 flex justify-end bg-white/20 backdrop-blur-sm border-t border-neutral-200 dark:border-neutral-800">
+        <div className="sticky bottom-0 flex lg:py-3 justify-end backdrop-blur-xs border-t border-neutral-200 dark:border-neutral-800">
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? 'Processing...' : submitButtonText}
           </Button>
@@ -391,4 +411,6 @@ export function OrderForm({
       </form>
     </Form>
   );
-}
+});
+
+OrderForm.displayName = 'OrderForm';
