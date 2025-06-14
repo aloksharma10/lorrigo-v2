@@ -207,6 +207,7 @@ model KycDetails {
   business_type String?  @db.VarChar(50)
   pan           String?  @db.VarChar(10) // Fixed length for PAN
   adhaar        String?  @db.VarChar(12) // Fixed length for Aadhaar
+  gst_no        String?  @db.VarChar(15)
   submitted     Boolean  @default(false)
   verified      Boolean  @default(false)
   created_at    DateTime @default(now())
@@ -288,11 +289,11 @@ model Address {
 
   hub_primary Hub? @relation("HubPrimaryAddress")
   hub_rto     Hub? @relation("HubRTOAddress")
+  
+  order_seller_details OrderSellerDetails[]
 
-  orders Order[] @relation("BillingAddress") // Refers to the seller of the order
-
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  created_at         DateTime             @default(now())
+  updated_at         DateTime             @updatedAt
 
   @@index([customer_id, is_default])
   @@index([pincode, city])
@@ -410,23 +411,24 @@ model Order {
   hub_id      String?
   hub         Hub?     @relation("OrderHub", fields: [hub_id], references: [id])
 
-  billing_address_id String? // Refers to the seller of the order
-  billing_address    Address? @relation("BillingAddress", fields: [billing_address_id], references: [id])
+  seller_details_id String
+  seller_details    OrderSellerDetails @relation("OrderSellerDetails", fields: [seller_details_id], references: [id])
 
   package_id String  @unique
   package    Package @relation("OrderPackage", fields: [package_id], references: [id])
 
-  items          OrderItem[]
-  payments       Payment[]
-  invoice        Invoice?    @relation("OrderInvoice")
-  shipment       Shipment?   @relation("OrderShipment")
-  dispute        Dispute?    @relation("OrderDispute")
-  remittance     Remittance? @relation("OrderRemittances")
+  items      OrderItem[]
+  payments   Payment[]
+  invoice    Invoice?    @relation("OrderInvoice")
+  shipment   Shipment?   @relation("OrderShipment")
+  dispute    Dispute?    @relation("OrderDispute")
+  remittance Remittance? @relation("OrderRemittances")
+  billing    Billing[]
+
   // B2B Specific
-  freight_type   Int?        @default(0)
-  pickup_type    Int?        @default(0)
-  insurance_type Int?        @default(0)
-  billing        Billing[]
+  freight_type   Int?     @default(0)
+  pickup_type    Int?     @default(0)
+  insurance_type Int?     @default(0)
 
   @@unique([order_number, user_id])
   @@index([user_id, customer_id, status])
@@ -434,6 +436,23 @@ model Order {
   @@index([code])
   // Full text search across multiple fields
   @@index([order_number, order_reference_id, ewaybill], map: "order_global_search_idx")
+}
+
+model OrderSellerDetails {
+  id String @id @default(cuid())
+
+  seller_name    String? @db.VarChar(100)
+  gst_no         String? @db.VarChar(15)
+  contact_number String? @db.VarChar(15)
+
+  order Order[] @relation("OrderSellerDetails")
+
+  address_id String?
+  address    Address? @relation(fields: [address_id], references: [id])
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
 }
 
 // OrderItem Model
@@ -481,7 +500,7 @@ model Shipment {
 
   user_id         String
   user            User             @relation("UserShipments", fields: [user_id], references: [id], onDelete: Cascade)
-  courier_id      String?          
+  courier_id      String?
   courier         Courier?         @relation(fields: [courier_id], references: [id], onDelete: Cascade)
   tracking_events TrackingEvent[]
   pricing         ShipmentPricing?
@@ -497,7 +516,7 @@ model Shipment {
 // TrackingEvent Model
 model TrackingEvent {
   id          String         @id @default(cuid())
-  code        String         // Custom ID - Format: TE-YYMM-XXXXX
+  code        String // Custom ID - Format: TE-YYMM-XXXXX
   status      ShipmentStatus
   location    String?        @db.VarChar(100)
   description String?        @db.VarChar(255)
@@ -505,9 +524,9 @@ model TrackingEvent {
   shipment    Shipment       @relation(fields: [shipment_id], references: [id], onDelete: Cascade)
   timestamp   DateTime       @default(now())
 
+  @@unique([code, shipment_id])
   @@index([shipment_id, timestamp])
   @@index([code])
-  @@unique([code, shipment_id])
 }
 
 model ChannelConfig {
@@ -926,7 +945,7 @@ model ShipmentPricing {
   rto_increment_price Float
   flat_rto_charge     Float
 
-  courier_other_zone_pricing_id String?       @unique
+  courier_other_zone_pricing_id String?                      @unique
   courier_other_zone_pricing    ShipmentCourierZonePricing[] @relation("CourierOtherZonePricing")
 
   created_at DateTime @default(now())
@@ -945,7 +964,6 @@ model ShipmentCourierZonePricing {
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
-
 
   shipment_pricing_id String?
   shipment_pricing    ShipmentPricing? @relation("CourierOtherZonePricing", fields: [shipment_pricing_id], references: [id])

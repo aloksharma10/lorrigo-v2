@@ -117,6 +117,19 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
                       pincode: { type: 'string' },
                     },
                   },
+                  sellerDetails: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string' },
+                      name: { type: 'string' },
+                      gstNo: { type: 'string' },
+                      contactNumber: { type: 'string' },
+                      address: { type: 'string' },
+                      city: { type: 'string' },
+                      state: { type: 'string' },
+                      pincode: { type: 'string' },
+                    },
+                  },
                   hub: {
                     type: 'object',
                     properties: {

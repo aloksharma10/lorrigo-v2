@@ -67,7 +67,7 @@ export const OrderForm = forwardRef<OrderFormRef, OrderFormProps>(({
       orderType: 'domestic',
       pickupAddressId: '',
       sellerDetails: {
-        sellerName: '',
+        name: '',
         gstNo: '',
         address: '',
         contactNumber: '',
@@ -149,17 +149,7 @@ export const OrderForm = forwardRef<OrderFormRef, OrderFormProps>(({
         pickupAddressId: initialValues.pickupAddressId || initialValues.hub?.id || '',
 
         // Map other fields as needed based on your data structure
-        sellerDetails: initialValues.sellerDetails || {
-          sellerName: initialValues.hub?.name || '',
-          gstNo: initialValues.hub?.gstNo || '',
-          address: initialValues.hub?.address || '',
-          contactNumber: initialValues.hub?.contactNumber || '',
-          pincode: initialValues.hub?.pincode || '',
-          city: initialValues.hub?.city || '',
-          state: initialValues.hub?.state || '',
-          country: 'India',
-          isAddressAvailable: false,
-        },
+        sellerDetails: initialValues.sellerDetails,
 
         deliveryDetails: initialValues.deliveryDetails || {
           isBusiness: initialValues.customer?.isBusiness || false,

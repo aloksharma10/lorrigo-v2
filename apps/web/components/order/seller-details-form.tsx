@@ -25,7 +25,7 @@ export function SellerDetailsForm({ control, watch, isLoading }: SellerDetailsFo
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <FormField
           control={control}
-          name="sellerDetails.sellerName"
+          name="sellerDetails.name"
           render={({ field }) => (
             <FormItem>
               <FormLabel className="flex items-center text-sm font-medium">Seller Name</FormLabel>

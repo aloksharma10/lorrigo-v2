@@ -4,7 +4,7 @@ import { phoneRegex } from '../constants';
 // Seller Details Schema
 export const sellerDetailsSchema = z
   .object({
-    sellerName: z.string().min(1, 'Seller name is required'),
+    name: z.string().min(1, 'Seller name is required'),
     gstNo: z.string().optional(),
     isAddressAvailable: z.boolean(),
     address: z.string().optional(),
@@ -12,7 +12,7 @@ export const sellerDetailsSchema = z
     pincode: z.string().optional(),
     city: z.string().optional(),
     state: z.string().optional(),
-    country: z.string().min(1, 'Country is required'),
+    country: z.string().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.isAddressAvailable) {
@@ -226,6 +226,7 @@ export const orderFormSchema = z
 // Update Order Schema
 export const updateOrderFormSchema = z
   .object({
+    id: z.string().min(1, 'Order ID is required'),
     orderId: z.string().min(1, 'Order ID is required').optional(),
     orderChannel: z.string().min(1, 'Order Channel is required').optional(),
     orderType: z.enum(['domestic', 'international']).optional(),

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from './axios';
-import { BackendOrder, OrderFormValues } from '@lorrigo/utils';
+import { BackendOrder, OrderFormValues, UpdateOrderFormValues } from '@lorrigo/utils';
 import {
   ApiResponse,
   OrderQueryParams,
@@ -52,7 +52,7 @@ export const useOrderOperations = (queryParams: OrderQueryParams = {}, orderId?:
 
   // Update order status
   const updateOrder = useMutation({
-    mutationFn: (orderData: OrderFormValues) => api.patch(`/orders/${orderData.id}`, orderData),
+    mutationFn: (orderData: UpdateOrderFormValues) => api.patch(`/orders/${orderData.id}`, orderData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
@@ -163,6 +163,18 @@ export async function fetchOrders(params: any) {
           city: order.customer?.city || '',
           state: order.customer?.state || '',
           pincode: order.customer?.pincode || '',
+        },
+        sellerDetails: {
+          id: order.sellerDetails?.id || '',
+          name: order.sellerDetails?.name || '',
+          address: order.sellerDetails?.address || '',
+          city: order.sellerDetails?.city || '',
+          state: order.sellerDetails?.state || '',
+          pincode: order.sellerDetails?.pincode || '',
+          gstNo: order.sellerDetails?.gstNo || '',
+          contactNumber: order.sellerDetails?.contactNumber || '',
+          country: order.sellerDetails?.country || 'India',
+          isAddressAvailable: order.sellerDetails?.address? true : false,
         },
         productDetails: {
           products: order.productDetails?.products || [],

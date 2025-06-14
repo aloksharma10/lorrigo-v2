@@ -1,5 +1,6 @@
+import { calculateVolumetricWeight } from '@/utils/calculate-order-price';
 import { getPincodeDetails } from '@/utils/pincode';
-import { Prisma, prisma, ShipmentStatus } from '@lorrigo/db';
+import { Prisma, ShipmentStatus } from '@lorrigo/db';
 import { Channel, PaymentMethod } from '@lorrigo/db';
 import {
   generateId,
@@ -140,6 +141,11 @@ export class OrderService {
               },
             },
           },
+          seller_details: {
+            include: {
+              address: true,
+            }
+          },
         },
       }),
       this.fastify.prisma.order.count({ where }),
@@ -170,6 +176,16 @@ export class OrderService {
         city: order.hub?.address?.city || '',
         state: order.hub?.address?.state || '',
         pincode: order.hub?.address?.pincode || '',
+      },
+      sellerDetails: {
+        id: order.seller_details?.id || '',
+        name: order.seller_details?.seller_name || '',
+        gstNo: order.seller_details?.gst_no || '',
+        contactNumber: order.seller_details?.contact_number || '',
+        address: order.seller_details?.address?.address || '',
+        city: order.seller_details?.address?.city || '',
+        state: order.seller_details?.address?.state || '',
+        pincode: order.seller_details?.address?.pincode || '',
       },
       productDetails: {
         products: order.items.map((item: any) => ({
@@ -275,7 +291,11 @@ export class OrderService {
             },
           },
         },
-        billing_address: true,
+        seller_details: {
+          include: {
+            address: true,
+          },
+        },
         shipment: {
           include: {
             courier: {
@@ -346,12 +366,7 @@ export class OrderService {
           }
 
           // OPTIMIZATION 2: Pre-calculate all values
-          const volumetricWeight = Math.floor(
-            (Number(data.packageDetails.length) *
-              Number(data.packageDetails.breadth) *
-              Number(data.packageDetails.height)) /
-            5000
-          );
+          const volumetricWeight = calculateVolumetricWeight(Number(data?.packageDetails?.length), Number(data?.packageDetails?.breadth), Number(data?.packageDetails?.height), 'cm');
 
           const deadWeight = Number(data.packageDetails.deadWeight);
           const applicableWeight = Math.max(deadWeight, volumetricWeight);
@@ -373,7 +388,7 @@ export class OrderService {
           }).id;
 
           // OPTIMIZATION 3: Batch external API calls and independent DB operations
-          const [sellerPincode, customerPincode, package_record, billing_address] =
+          const [sellerPincode, customerPincode, package_record, seller_details] =
             await Promise.all([
               // External API calls (biggest bottleneck)
               getPincodeDetails(Number(data.sellerDetails.pincode || '000000')),
@@ -398,24 +413,27 @@ export class OrderService {
                 select: { id: true },
               }),
 
-              // Create billing address (seller address)
-              tx.address.create({
+              // Create seller address
+              tx.orderSellerDetails.create({
                 data: {
-                  name: data.sellerDetails.sellerName,
-                  country: data.sellerDetails.isAddressAvailable
-                    ? data.sellerDetails.country
-                    : 'India',
-                  address: data.sellerDetails.address || '',
-                  city: '', // Will update after pincode lookup
-                  state: '', // Will update after pincode lookup
-                  pincode: '', // Will update after pincode lookup
+                  seller_name: data.sellerDetails.name,
+                  gst_no: data.sellerDetails.gstNo,
+                  contact_number: data.sellerDetails.contactNumber,
+                  address: {
+                    create: {
+                      name: data.sellerDetails.name,
+                      address: data.sellerDetails.address || '',
+                      city: '',
+                      state: '',
+                      pincode: '',
+                    },
+                  },
                 },
-                select: { id: true },
               }),
             ]);
 
           // OPTIMIZATION 4: Handle customer creation/retrieval and address updates in parallel
-          const [customer, updated_billing_address] = await Promise.all([
+          const [customer, updated_seller_details] = await Promise.all([
             // Handle customer
             existingCustomer ||
             tx.customer.create({
@@ -423,13 +441,22 @@ export class OrderService {
                 name: data.deliveryDetails.fullName,
                 email: data.deliveryDetails.email,
                 phone: data.deliveryDetails.mobileNumber,
+                // address: {
+                //   create: {
+                //     name: data.deliveryDetails.fullName,
+                //     address: data.deliveryDetails.completeAddress,
+                //     city: data.deliveryDetails.city,
+                //     state: data.deliveryDetails.state,
+                //     pincode: data.deliveryDetails.pincode,
+                //   },
+                // },
               },
               select: { id: true },
             }),
 
             // Update billing address with pincode data
             tx.address.update({
-              where: { id: billing_address.id },
+              where: { id: seller_details.address_id || '' },
               data: {
                 city: sellerPincode?.city || '',
                 state: sellerPincode?.state || '',
@@ -481,8 +508,10 @@ export class OrderService {
               user_id: userId,
               customer_id: customer.id,
               package_id: package_record.id,
-              billing_address_id: updated_billing_address.id,
+              seller_details_id: seller_details.id,
               hub_id: data.pickupAddressId,
+              order_invoice_number: data.order_invoice_number,
+              order_invoice_date: data.order_invoice_date,
             },
             select: {
               id: true,
@@ -607,7 +636,11 @@ export class OrderService {
             include: {
               package: true,
               customer: true,
-              billing_address: true,
+              seller_details: {
+                include: {
+                  address: true,
+                },
+              },
               order_channel_config: true,
               shipment: true,
               items: true,
@@ -619,11 +652,11 @@ export class OrderService {
           }
 
           // Step 2: Pre-calculate values (e.g., volumetric weight)
-          const volumetricWeight = Math.floor(
-            (Number(data.packageDetails.length) *
-              Number(data.packageDetails.breadth) *
-              Number(data.packageDetails.height)) /
-            5000
+          const volumetricWeight = calculateVolumetricWeight(
+            Number(data?.packageDetails?.length),
+            Number(data?.packageDetails?.breadth),
+            Number(data?.packageDetails?.height),
+            'cm'
           );
           const deadWeight = Number(data.packageDetails.deadWeight);
           const applicableWeight = Math.max(deadWeight, volumetricWeight);
@@ -634,105 +667,147 @@ export class OrderService {
             getPincodeDetails(
               Number(
                 data.deliveryDetails.billingIsSameAsDelivery
-                  ? data.deliveryDetails.billingPincode
-                  : data.deliveryDetails.pincode
+                  ? data.deliveryDetails.pincode
+                  : data.deliveryDetails.billingPincode
               )
             ),
           ]);
 
-          // Step 4: Update customer if necessary
+          // Step 4: Update customer information
           const customerUpdates = await tx.customer.update({
             where: { id: existingOrder.customer_id },
             data: {
               name: data.deliveryDetails.fullName,
-              email: data.deliveryDetails.email,
+              email: data.deliveryDetails.email || undefined,
               phone: data.deliveryDetails.mobileNumber,
             },
-            select: { id: true },
           });
 
-          // Step 5: Update billing address
-          const billingAddressUpdates = existingOrder.billing_address_id && await tx.address.update({
-            where: { id: existingOrder.billing_address_id },
-            data: {
-              name: data.sellerDetails.sellerName,
-              country: data.sellerDetails.isAddressAvailable
-                ? data.sellerDetails.country
-                : 'India',
-              address: data.sellerDetails.address || '',
-              city: sellerPincode?.city || '',
-              state: sellerPincode?.state || '',
-              pincode: sellerPincode?.pincode || '',
-            },
-            select: { id: true },
+          // Step 5: Handle customer address
+          // First check if customer already has an address
+          const existingCustomerAddress = await tx.address.findFirst({
+            where: { customer_id: existingOrder.customer_id },
           });
 
-          // Step 6: Update delivery address if not the same as billing
-          if (!data.deliveryDetails.billingIsSameAsDelivery) {
-            const existingDeliveryAddress = await tx.address.findFirst({
-              where: { customer_id: existingOrder.customer_id },
+          if (existingCustomerAddress) {
+            // Update existing customer address
+            await tx.address.update({
+              where: { id: existingCustomerAddress.id },
+              data: {
+                name: data.deliveryDetails.fullName,
+                address: data.deliveryDetails.completeAddress,
+                address_2: data.deliveryDetails.landmark || undefined,
+                city: customerPincode?.city || data.deliveryDetails.city,
+                state: customerPincode?.state || data.deliveryDetails.state,
+                pincode: customerPincode?.pincode || data.deliveryDetails.pincode,
+                phone: data.deliveryDetails.mobileNumber,
+              },
             });
-
-            if (existingDeliveryAddress) {
-              await tx.address.update({
-                where: { id: existingDeliveryAddress.id },
-                data: {
-                  name: data.deliveryDetails.fullName,
-                  address: data.deliveryDetails.billingCompleteAddress || '',
-                  city: customerPincode?.city || '',
-                  state: customerPincode?.state || '',
-                  pincode: customerPincode?.pincode || '',
-                },
-              });
-            } else {
-              await tx.address.create({
-                data: {
-                  name: data.deliveryDetails.fullName,
-                  address: data.deliveryDetails.billingCompleteAddress || '',
-                  city: customerPincode?.city || '',
-                  state: customerPincode?.state || '',
-                  pincode: customerPincode?.pincode || '',
-                  customer_id: existingOrder.customer_id,
-                },
-              });
-            }
+          } else {
+            // Create new customer address if it doesn't exist
+            await tx.address.create({
+              data: {
+                name: data.deliveryDetails.fullName,
+                address: data.deliveryDetails.completeAddress,
+                address_2: data.deliveryDetails.landmark || undefined,
+                city: customerPincode?.city || data.deliveryDetails.city,
+                state: customerPincode?.state || data.deliveryDetails.state,
+                pincode: customerPincode?.pincode || data.deliveryDetails.pincode,
+                phone: data.deliveryDetails.mobileNumber,
+                customer_id: existingOrder.customer_id,
+              },
+            });
           }
 
-          // Step 7: Update package
-          const packageUpdates = await tx.package.update({
+          // Step 6: Update billing address (seller address)
+          if (existingOrder.seller_details_id) {
+            const sellerDetails = await tx.orderSellerDetails.update({
+              where: { id: existingOrder.seller_details_id },
+              data: {
+                seller_name: data.sellerDetails.name,
+                gst_no: data.sellerDetails.gstNo,
+                contact_number: data.sellerDetails.contactNumber,
+              },
+            });
+
+            await tx.address.upsert({
+              where: { id: sellerDetails.address_id || '' },
+              create: {
+                name: data.sellerDetails.name,
+                address: data.sellerDetails.address || '',
+                city: sellerPincode?.city || data.sellerDetails.city || '',
+                state: sellerPincode?.state || data.sellerDetails.state || '',
+                pincode: sellerPincode?.pincode || data.sellerDetails.pincode || '',
+                country: data.sellerDetails.country || 'India',
+                phone: data.sellerDetails.contactNumber || undefined,
+              },
+              update: {
+                name: data.sellerDetails.name,
+                address: data.sellerDetails.address || '',
+                city: sellerPincode?.city || data.sellerDetails.city || '',
+                state: sellerPincode?.state || data.sellerDetails.state || '',
+                pincode: sellerPincode?.pincode || data.sellerDetails.pincode || '',
+                country: data.sellerDetails.country || 'India',
+                phone: data.sellerDetails.contactNumber || undefined,
+              },
+            });
+
+
+          } else {
+            // Create billing address if it doesn't exist
+            const sellerDetails = await tx.orderSellerDetails.create({
+              data: {
+                seller_name: data.sellerDetails.name,
+                gst_no: data.sellerDetails.gstNo,
+                contact_number: data.sellerDetails.contactNumber,
+              },
+            });
+
+            // Update order with new seller details
+            await tx.order.update({
+              where: { id: existingOrder.id },
+              data: {
+                seller_details_id: sellerDetails.id,
+              },
+            });
+          }
+
+          // Step 7: Update package details
+          await tx.package.update({
             where: { id: existingOrder.package_id },
             data: {
-              weight: deadWeight,
+              weight: applicableWeight,
               dead_weight: deadWeight,
               volumetric_weight: volumetricWeight,
               length: Number(data.packageDetails.length),
               breadth: Number(data.packageDetails.breadth),
               height: Number(data.packageDetails.height),
             },
-            select: { id: true },
           });
 
           // Step 8: Update order channel config
-          const orderChannelConfigUpdates = await tx.orderChannelConfig.update({
+          await tx.orderChannelConfig.update({
             where: { id: existingOrder.order_channel_config_id },
             data: {
               channel: (data.orderChannel?.toUpperCase() as Channel) || 'CUSTOM',
+              channel_order_id: data.orderId || undefined,
             },
-            select: { id: true },
           });
 
-          // Step 9: Update order
+          // Step 9: Update order with all fields
           const orderUpdates = await tx.order.update({
             where: { id: existingOrder.id },
             data: {
-              payment_mode:
-                (data.paymentMethod.paymentMethod?.toUpperCase() as PaymentMethod) ||
-                'COD',
+              payment_mode: (data.paymentMethod.paymentMethod?.toUpperCase() as PaymentMethod) || 'COD',
               total_amount: data.productDetails.taxableValue,
               amount_to_collect: data.amountToCollect,
               applicable_weight: applicableWeight,
               ewaybill: data.ewaybill,
               hub_id: data.pickupAddressId,
+              type: data.orderType === 'domestic' ? 'B2C' : 'B2B',
+              order_invoice_number: data.order_invoice_number,
+              order_invoice_date: data.order_invoice_date ? new Date(data.order_invoice_date) : undefined,
+              order_reference_id: data.orderId,
             },
             select: {
               id: true,
@@ -743,8 +818,7 @@ export class OrderService {
             },
           });
 
-          // Step 10: Update order items
-          // Delete existing order items and create new ones to avoid conflicts
+          // Step 10: Update order items - Delete existing and create new
           await tx.orderItem.deleteMany({
             where: { order_id: existingOrder.id },
           });
@@ -761,6 +835,7 @@ export class OrderService {
             sku: item.sku,
             units: item.quantity,
             selling_price: item.price,
+            discount: 0, // Default value
             tax: item.taxRate,
             hsn: item.hsnCode,
             order_id: existingOrder.id,
@@ -770,6 +845,28 @@ export class OrderService {
             data: orderItems,
             skipDuplicates: true,
           });
+
+          // Step 11: Update shipment if it exists
+          if (existingOrder.shipment) {
+            await tx.shipment.update({
+              where: { id: existingOrder.shipment.id },
+              data: {
+                // Update any shipment fields if needed
+                cod_amount: data.paymentMethod.paymentMethod?.toUpperCase() === 'COD' ? data.amountToCollect : 0,
+              },
+            });
+
+            // Add a tracking event for the update
+            await tx.trackingEvent.create({
+              data: {
+                code: `UPDATE-${Date.now()}`,
+                status: existingOrder.shipment.status,
+                description: 'Order Updated',
+                shipment_id: existingOrder.shipment.id,
+                timestamp: new Date(),
+              },
+            });
+          }
 
           return orderUpdates;
         },
@@ -804,6 +901,7 @@ export class OrderService {
       );
     }
   }
+
   /**
    * Update an order status
    */

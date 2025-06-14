@@ -27,6 +27,18 @@ export interface BackendOrder {
      state: string;
      pincode: string;
    };
+   sellerDetails?: {
+     id: string;
+     name: string;
+     address: string;
+     city: string;
+     state: string;
+     pincode: string;
+     gstNo: string;
+     contactNumber: string;
+     country: string;
+     isAddressAvailable: boolean;
+   };
    productDetails: {
      products: Array<{
        id: string;
