@@ -50,6 +50,7 @@ const registerPlugins = async () => {
     await server.register(cors, {
       origin: APP_CONFIG.CORS.ORIGIN,
       credentials: APP_CONFIG.CORS.CREDENTIALS,
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     });
 
     // Authentication

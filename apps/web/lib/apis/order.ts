@@ -51,9 +51,8 @@ export const useOrderOperations = (queryParams: OrderQueryParams = {}, orderId?:
   });
 
   // Update order status
-  const updateOrderStatus = useMutation({
-    mutationFn: ({ id, status, notes }: { id: string; status: string; notes?: string }) =>
-      api.patch(`/orders/${id}/status`, { status, notes }),
+  const updateOrder = useMutation({
+    mutationFn: (orderData: OrderFormValues) => api.patch(`/orders/${orderData.id}`, orderData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
@@ -105,7 +104,7 @@ export const useOrderOperations = (queryParams: OrderQueryParams = {}, orderId?:
     ordersQuery,
     orderQuery,
     createOrder,
-    updateOrderStatus,
+    updateOrder,
     cancelOrder,
     bulkCancelOrders,
     getOrderStats,

@@ -57,7 +57,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
   // Fetch shipments with React Query
   const { data, isLoading, isError, isFetching, error } = useQuery({
     queryKey: [
-      'shipments',
+      'orders',
       pagination.pageIndex,
       pagination.pageSize,
       sorting,

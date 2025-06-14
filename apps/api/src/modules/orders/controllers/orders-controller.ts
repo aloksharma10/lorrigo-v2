@@ -125,6 +125,34 @@ export class OrderController {
     }
   }
 
+  async updateOrder(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+    try {
+      const { id } = request.params;
+      const data = orderFormSchema.parse(request.body);
+      const user_id = request.userPayload!.id;
+      const userName = request.userPayload!.name;
+      // @ts-ignore
+      const order_number = request?.body?.orderId || id;
+
+      const order = await this.orderService.updateOrder(order_number, data, user_id, userName);
+
+      return order;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return reply.code(400).send({
+          message: 'Validation error',
+          errors: error.errors,
+        });
+      }
+
+      request.log.error(error);
+      captureException(error as Error);
+
+      return reply.code(500).send({
+        message: error instanceof Error ? error.message : 'Internal server error',
+      });
+    }
+  }
   /**
    * Update an order status
    */

@@ -40,6 +40,7 @@ export default function CloneOrder({
         const validatedData = orderFormSchema.parse(values);
         await createOrder(validatedData);
         toast.success('Order created successfully');
+        onClose();
       } catch (error: any) {
         toast.error(
           error.response.data.message ||

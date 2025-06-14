@@ -40,11 +40,15 @@ export class OrderService {
       where.created_at = {};
 
       if (from_date) {
-        where.created_at.gte = new Date(from_date);
+        const startOfDay = new Date(from_date);
+        startOfDay.setHours(0, 0, 0, 0);
+        where.created_at.gte = startOfDay;
       }
 
       if (to_date) {
-        where.created_at.lte = new Date(to_date);
+        const endOfDay = new Date(to_date);
+        endOfDay.setHours(23, 59, 59, 999);
+        where.created_at.lte = endOfDay;
       }
     }
 
@@ -581,6 +585,224 @@ export class OrderService {
     // ]);
 
     return this.createOrder(data, userId, userName);
+  }
+
+  async updateOrder(
+    orderId: string,
+    data: OrderFormValues,
+    userId: string,
+    userName: string
+  ) {
+    try {
+      return await this.fastify.prisma.$transaction(
+        async (tx) => {
+          // Step 1: Verify order exists and belongs to the user
+          const existingOrder = await tx.order.findUnique({
+            where: {
+              order_number_user_id: {
+                order_number: orderId,
+                user_id: userId,
+              },
+            },
+            include: {
+              package: true,
+              customer: true,
+              billing_address: true,
+              order_channel_config: true,
+              shipment: true,
+              items: true,
+            },
+          });
+
+          if (!existingOrder) {
+            throw new Error('Order not found or does not belong to this user.');
+          }
+
+          // Step 2: Pre-calculate values (e.g., volumetric weight)
+          const volumetricWeight = Math.floor(
+            (Number(data.packageDetails.length) *
+              Number(data.packageDetails.breadth) *
+              Number(data.packageDetails.height)) /
+            5000
+          );
+          const deadWeight = Number(data.packageDetails.deadWeight);
+          const applicableWeight = Math.max(deadWeight, volumetricWeight);
+
+          // Step 3: Batch external API calls and lookups
+          const [sellerPincode, customerPincode] = await Promise.all([
+            getPincodeDetails(Number(data.sellerDetails.pincode || '000000')),
+            getPincodeDetails(
+              Number(
+                data.deliveryDetails.billingIsSameAsDelivery
+                  ? data.deliveryDetails.billingPincode
+                  : data.deliveryDetails.pincode
+              )
+            ),
+          ]);
+
+          // Step 4: Update customer if necessary
+          const customerUpdates = await tx.customer.update({
+            where: { id: existingOrder.customer_id },
+            data: {
+              name: data.deliveryDetails.fullName,
+              email: data.deliveryDetails.email,
+              phone: data.deliveryDetails.mobileNumber,
+            },
+            select: { id: true },
+          });
+
+          // Step 5: Update billing address
+          const billingAddressUpdates = existingOrder.billing_address_id && await tx.address.update({
+            where: { id: existingOrder.billing_address_id },
+            data: {
+              name: data.sellerDetails.sellerName,
+              country: data.sellerDetails.isAddressAvailable
+                ? data.sellerDetails.country
+                : 'India',
+              address: data.sellerDetails.address || '',
+              city: sellerPincode?.city || '',
+              state: sellerPincode?.state || '',
+              pincode: sellerPincode?.pincode || '',
+            },
+            select: { id: true },
+          });
+
+          // Step 6: Update delivery address if not the same as billing
+          if (!data.deliveryDetails.billingIsSameAsDelivery) {
+            const existingDeliveryAddress = await tx.address.findFirst({
+              where: { customer_id: existingOrder.customer_id },
+            });
+
+            if (existingDeliveryAddress) {
+              await tx.address.update({
+                where: { id: existingDeliveryAddress.id },
+                data: {
+                  name: data.deliveryDetails.fullName,
+                  address: data.deliveryDetails.billingCompleteAddress || '',
+                  city: customerPincode?.city || '',
+                  state: customerPincode?.state || '',
+                  pincode: customerPincode?.pincode || '',
+                },
+              });
+            } else {
+              await tx.address.create({
+                data: {
+                  name: data.deliveryDetails.fullName,
+                  address: data.deliveryDetails.billingCompleteAddress || '',
+                  city: customerPincode?.city || '',
+                  state: customerPincode?.state || '',
+                  pincode: customerPincode?.pincode || '',
+                  customer_id: existingOrder.customer_id,
+                },
+              });
+            }
+          }
+
+          // Step 7: Update package
+          const packageUpdates = await tx.package.update({
+            where: { id: existingOrder.package_id },
+            data: {
+              weight: deadWeight,
+              dead_weight: deadWeight,
+              volumetric_weight: volumetricWeight,
+              length: Number(data.packageDetails.length),
+              breadth: Number(data.packageDetails.breadth),
+              height: Number(data.packageDetails.height),
+            },
+            select: { id: true },
+          });
+
+          // Step 8: Update order channel config
+          const orderChannelConfigUpdates = await tx.orderChannelConfig.update({
+            where: { id: existingOrder.order_channel_config_id },
+            data: {
+              channel: (data.orderChannel?.toUpperCase() as Channel) || 'CUSTOM',
+            },
+            select: { id: true },
+          });
+
+          // Step 9: Update order
+          const orderUpdates = await tx.order.update({
+            where: { id: existingOrder.id },
+            data: {
+              payment_mode:
+                (data.paymentMethod.paymentMethod?.toUpperCase() as PaymentMethod) ||
+                'COD',
+              total_amount: data.productDetails.taxableValue,
+              amount_to_collect: data.amountToCollect,
+              applicable_weight: applicableWeight,
+              ewaybill: data.ewaybill,
+              hub_id: data.pickupAddressId,
+            },
+            select: {
+              id: true,
+              code: true,
+              order_number: true,
+              status: true,
+              created_at: true,
+            },
+          });
+
+          // Step 10: Update order items
+          // Delete existing order items and create new ones to avoid conflicts
+          await tx.orderItem.deleteMany({
+            where: { order_id: existingOrder.id },
+          });
+
+          const financialYear = getFinancialYear(existingOrder.created_at);
+          const orderItems = data.productDetails.products.map((item, idx) => ({
+            code: `${existingOrder.code}-${generateId({
+              tableName: 'order_item',
+              entityName: item.name,
+              lastUsedFinancialYear: financialYear,
+              lastSequenceNumber: idx,
+            }).id}`,
+            name: item.name,
+            sku: item.sku,
+            units: item.quantity,
+            selling_price: item.price,
+            tax: item.taxRate,
+            hsn: item.hsnCode,
+            order_id: existingOrder.id,
+          }));
+
+          await tx.orderItem.createMany({
+            data: orderItems,
+            skipDuplicates: true,
+          });
+
+          return orderUpdates;
+        },
+        {
+          maxWait: 5000,
+          timeout: 10000,
+          isolationLevel: 'ReadCommitted',
+        }
+      );
+    } catch (error: any) {
+      console.log(error);
+      if (error.message === 'Order not found or does not belong to this user.') {
+        throw error;
+      }
+
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        const errorMap = {
+          P2002: 'A conflict occurred: A record already exists.',
+          P2025: 'Required record not found: Customer, address, or hub does not exist.',
+          P2003: 'Foreign key constraint failed: Invalid reference to related record.',
+          P2034: 'Transaction failed due to a write conflict or deadlock. Please retry.',
+        };
+        throw new Error(
+          errorMap[error.code as keyof typeof errorMap] || `Database error: ${error.message}`
+        );
+      }
+
+      throw new Error(
+        error instanceof Error
+          ? `Failed to update order: ${error.message}`
+          : 'An unexpected error occurred while updating the order. Please try again.'
+      );
+    }
   }
   /**
    * Update an order status

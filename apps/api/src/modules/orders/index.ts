@@ -257,6 +257,43 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
     handler: (request, reply) => orderController.createOrder(request, reply),
   });
 
+  // Update an order
+  fastify.patch('/:id', {
+    schema: {
+      tags: ['Orders'],
+      summary: 'Update an order',
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: 'string' },
+        },
+      },
+      body: {
+        type: 'object',
+        required: [
+          'pickupAddressId',
+          'paymentMethod',
+          'deliveryDetails',
+          'sellerDetails',
+          'packageDetails',
+          'productDetails',
+        ],
+        properties: {
+          pickupAddressId: { type: 'string' },
+          paymentMethod: { type: 'object' },
+          deliveryDetails: { type: 'object' },
+          sellerDetails: { type: 'object' },
+          packageDetails: { type: 'object' },
+          productDetails: { type: 'object' },
+        },
+      },
+    },
+    handler: (request: FastifyRequest<{ Params: { id: string } }>, reply) =>
+      orderController.updateOrder(request, reply),
+  });
+
   // Update an order status
   fastify.patch('/:id/status', {
     schema: {

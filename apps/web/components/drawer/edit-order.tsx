@@ -7,6 +7,8 @@ import { DrawerSize, DrawerSide } from "@lorrigo/ui/components";
 import { z } from "zod";
 import { orderFormSchema } from "@lorrigo/utils/validations";
 import { toast } from "@lorrigo/ui/components";
+import { useOrderOperations } from "@/lib/apis/order";
+import { OrderFormValues } from "@lorrigo/utils";
 
 export default function EditOrder({
    order,
@@ -25,25 +27,29 @@ export default function EditOrder({
    size?: DrawerSize,
    side?: DrawerSide
 }) {
-   const [submitting, setSubmitting] = useState(false);
+   const {
+      updateOrder: {
+        data: updatedOrder,
+        isPending: isUpdatingOrder,
+        mutateAsync: updateOrder,
+        isSuccess: isOrderUpdated,
+      },
+    } = useOrderOperations();
 
-   const handleSubmit = async (values: z.infer<typeof orderFormSchema>) => {
+    async function onSubmit(values: OrderFormValues) {
       try {
-         setSubmitting(true);
-         // Here you would call your API to update the order
-         console.log("Updating order with values:", values);
-         
-         // Simulate API call
-         await new Promise((resolve) => setTimeout(resolve, 1000));
-         
-         toast.success('Order updated successfully');
-         onClose();
+        const validatedData = orderFormSchema.parse(values);
+        await updateOrder({...validatedData, id: order?.id});
+        toast.success('Order updated successfully');
+        onClose();
       } catch (error: any) {
-         toast.error(error.message || 'Failed to update order');
-      } finally {
-         setSubmitting(false);
+        toast.error(
+          error.response.data.message ||
+          'Failed to create order, Please Report to Support at support@lorrigo.in'
+        );
+        console.error('Validation error:', error);
       }
-   };
+    }
 
    return (
       <DrawerComponent open={isOpen} onOpenChange={onClose} size={size} side={side}>
@@ -62,8 +68,8 @@ export default function EditOrder({
          <div className="flex-1 overflow-auto p-4">
             <OrderForm 
                initialValues={order} 
-               onSubmit={handleSubmit} 
-               isSubmitting={submitting}
+               onSubmit={onSubmit} 
+               isSubmitting={isUpdatingOrder}
                submitButtonText="Update Order"
                mode="edit"
             />
