@@ -2,7 +2,7 @@ import { APP_CONFIG } from '@/config/app';
 import { APIs } from '@/config/api';
 import { CACHE_KEYS } from '@/config/cache';
 import { BaseVendor } from '../vendors/base-vendor';
-import { VendorRegistrationResult, VendorShipmentResult } from '@/types/vendor';
+import { VendorRegistrationResult, VendorServiceabilityResult, VendorShipmentResult } from '@/types/vendor';
 import querystring from 'querystring';
 import crypto from 'crypto';
 import { redis } from '@/lib/redis';
@@ -259,6 +259,40 @@ export class ShopifyVendor extends BaseVendor {
       success: false,
       message: 'Shipment creation not applicable for Shopify',
       data: null,
+    };
+  }
+
+  /**
+   * Check serviceability for Shopify
+   * Implementation of abstract method from BaseVendor
+   * @param pickupPincode Pickup pincode
+   * @param deliveryPincode Delivery pincode
+   * @param volumeWeight Volume weight in kg
+   * @param dimensions Package dimensions
+   * @param paymentType Payment type (0 for prepaid, 1 for COD)
+   * @param collectableAmount Collectable amount for COD
+   * @param couriers List of courier IDs to check
+   * @param isReverseOrder Whether this is a reverse order
+   * @param couriersData Additional courier data
+   * @returns Promise resolving to serviceability result
+   */
+  public async checkServiceability(
+    pickupPincode: string,
+    deliveryPincode: string,
+    volumeWeight: number,
+    dimensions: { length: number; width: number; height: number; weight: number },
+    paymentType: 0 | 1,
+    collectableAmount?: number,
+    couriers?: string[],
+    isReverseOrder?: boolean,
+    couriersData?: any
+  ): Promise<VendorServiceabilityResult> {
+    // Shopify doesn't provide direct serviceability check
+    // This is a placeholder implementation
+    return {
+      success: false,
+      message: 'Serviceability check not applicable for Shopify',
+      serviceableCouriers: [],
     };
   }
 }

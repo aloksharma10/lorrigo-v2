@@ -57,17 +57,63 @@ export class ShopifyController {
    * @param fastify Fastify instance
    */
   public static registerRoutes(fastify: FastifyInstance): void {
-    // Initiate OAuth flow
+    // Get auth URL (instead of direct redirect)
+    fastify.get('/auth/url', ShopifyController.getAuthUrl);
+
+    // Initiate OAuth flow (kept for backward compatibility)
     fastify.get('/auth', ShopifyController.initiateAuth);
 
     // OAuth callback
     fastify.get('/callback', ShopifyController.handleCallback);
+
+    // Get connection status
+    fastify.get('/connection', ShopifyController.getConnection);
+
+    // Disconnect Shopify
+    fastify.delete('/connection', ShopifyController.disconnectShopify);
 
     // Get orders
     fastify.get('/orders', ShopifyController.getOrders);
 
     // Get a specific order
     fastify.get('/orders/:id', ShopifyController.getOrder);
+  }
+
+  /**
+   * Get Shopify Auth URL without redirecting
+   * @param request Fastify request
+   * @param reply Fastify reply
+   */
+  private static async getAuthUrl(
+    request: FastifyRequest<ShopifyAuthRequest>,
+    reply: FastifyReply
+  ): Promise<void> {
+    try {
+      const { shop } = request.query;
+      console.log('Getting Shopify auth URL for shop:', shop);
+
+      if (!shop) {
+        reply.code(400).send({ error: 'Shop parameter is required' });
+        return;
+      }
+
+      // Get authenticated user from request
+      const user = request.userPayload;
+
+      if (!user) {
+        reply.code(401).send({ error: 'Authentication required' });
+        return;
+      }
+
+      // Generate auth URL
+      const authUrl = createShopifyAuthUrl(shop, user.id);
+
+      // Return the URL instead of redirecting
+      reply.send({ authUrl });
+    } catch (error) {
+      console.error('Error generating Shopify auth URL:', error);
+      reply.code(500).send({ error: 'Failed to generate Shopify authentication URL' });
+    }
   }
 
   /**
@@ -81,6 +127,7 @@ export class ShopifyController {
   ): Promise<void> {
     try {
       const { shop } = request.query;
+      console.log('Initiating Shopify auth for shop:', shop);
 
       if (!shop) {
         reply.code(400).send({ error: 'Shop parameter is required' });
@@ -125,7 +172,7 @@ export class ShopifyController {
       }
 
       // Get authenticated user from request
-      const user = (request as any).user;
+      const user = request.userPayload;
 
       if (!user) {
         reply.code(401).send({ error: 'Authentication required' });
@@ -143,12 +190,96 @@ export class ShopifyController {
       // Here you would typically store the connection in your database
       // This is just an example placeholder
       const savedConnection = await saveShopifyConnection(connection, user.id);
+      console.log('savedConnection', savedConnection, connection);
 
-      // Redirect to a success page or back to the app
-      reply.redirect('/shopify/success');
+      // Return success response with connection info
+      reply.send({
+        success: true,
+        connection: {
+          shop: savedConnection.shop,
+          scope: savedConnection.scope,
+          connected_at: new Date().toISOString(),
+          status: 'active',
+        }
+      });
     } catch (error) {
       console.error('Error handling Shopify callback:', error);
       reply.code(500).send({ error: 'Failed to complete Shopify authentication' });
+    }
+  }
+
+  /**
+   * Get Shopify connection status
+   * @param request Fastify request
+   * @param reply Fastify reply
+   */
+  private static async getConnection(
+    request: FastifyRequest,
+    reply: FastifyReply
+  ): Promise<void> {
+    try {
+      // Get authenticated user from request
+      const user = request.userPayload;
+
+      if (!user) {
+        reply.code(401).send({ error: 'Authentication required' });
+        return;
+      }
+
+      // Get user's Shopify connection from database
+      const connection = await getUserShopifyConnection(user.id);
+
+      if (!connection) {
+        reply.code(404).send({ error: 'Shopify connection not found' });
+        return;
+      }
+
+      // Return connection details (without sensitive data like access_token)
+      reply.send({
+        shop: connection.shop,
+        scope: connection.scope,
+        connected_at: new Date().toISOString(), // This should come from the database in a real implementation
+        status: 'active',
+      });
+    } catch (error) {
+      console.error('Error fetching Shopify connection:', error);
+      reply.code(500).send({ error: 'Failed to fetch Shopify connection' });
+    }
+  }
+
+  /**
+   * Disconnect Shopify store
+   * @param request Fastify request
+   * @param reply Fastify reply
+   */
+  private static async disconnectShopify(
+    request: FastifyRequest,
+    reply: FastifyReply
+  ): Promise<void> {
+    try {
+      // Get authenticated user from request
+      const user = request.userPayload;
+
+      if (!user) {
+        reply.code(401).send({ error: 'Authentication required' });
+        return;
+      }
+
+      // Delete user's Shopify connection from database
+      const success = await deleteShopifyConnection(user.id);
+
+      if (!success) {
+        reply.code(404).send({ error: 'Shopify connection not found' });
+        return;
+      }
+
+      reply.send({
+        success: true,
+        message: 'Shopify connection deleted successfully',
+      });
+    } catch (error) {
+      console.error('Error disconnecting Shopify:', error);
+      reply.code(500).send({ error: 'Failed to disconnect Shopify' });
     }
   }
 
@@ -165,7 +296,7 @@ export class ShopifyController {
       const { status, created_at_min, created_at_max, limit } = request.query;
 
       // Get authenticated user from request
-      const user = (request as any).user;
+      const user = request.userPayload;
 
       if (!user) {
         reply.code(401).send({ error: 'Authentication required' });
@@ -226,7 +357,7 @@ export class ShopifyController {
       const { id } = request.params;
 
       // Get authenticated user from request
-      const user = (request as any).user;
+      const user = request.userPayload;
 
       if (!user) {
         reply.code(401).send({ error: 'Authentication required' });
@@ -283,6 +414,16 @@ async function getUserShopifyConnection(userId: string): Promise<ShopifyConnecti
 
   // Return dummy connection for example purposes
   return null;
+}
+
+/**
+ * Placeholder function for deleting user's Shopify connection from database
+ * You should replace this with actual database operations
+ */
+async function deleteShopifyConnection(userId: string): Promise<boolean> {
+  // In a real implementation, you would delete this from your database
+  console.log('Deleting Shopify connection for user:', userId);
+  return true;
 }
 
 export default ShopifyController;
