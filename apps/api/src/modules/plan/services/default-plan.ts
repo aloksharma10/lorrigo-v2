@@ -83,11 +83,11 @@ export async function ensureDefaultPlan(fastify: FastifyInstance) {
         data: {
           plan_id: defaultPlan.id,
           courier_id: courier.id,
-          base_price: 0, // This is just a placeholder, actual pricing is in zonePricing
+          // base_price: 0, // This is just a placeholder, actual pricing is in zonePricing
           weight_slab: 0.5,
           increment_weight: 0.5,
           increment_price: 0,
-          zonePricing: defaultZonePricing,
+          // zonePricing: defaultZonePricing,
         },
       });
     }

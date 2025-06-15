@@ -21,6 +21,8 @@ import hubRoutes from '@/modules/pickup-address';
 import planRoutes from '@/modules/plan/routes';
 import productRoutes from '@/modules/products';
 import sellerRoutes from '@/modules/sellers';
+import { setupSellerHooks } from '@/modules/sellers/hooks';
+import { ensureDefaultPlan } from '@/modules/plan/services/default-plan';
 
 // Initialize Sentry
 initSentry();
@@ -63,6 +65,12 @@ const registerPlugins = async () => {
 
     // API Documentation
     await registerSwagger(server);
+
+    // Setup seller hooks for plan assignment
+    await setupSellerHooks(server);
+
+    // Ensure default plan exists
+    await ensureDefaultPlan(server);
 
     // Register API routes
     await server.register(

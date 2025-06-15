@@ -14,5 +14,5 @@ export default defineConfig({
   },
   outDir: 'dist',
   target: 'node18',
-  // onSuccess: 'tsc --noEmit && eslint src --ext .ts,.tsx',
+  onSuccess: 'tsc --noEmit',
 });
