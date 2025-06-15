@@ -55,8 +55,16 @@ export default function ChannelsPage() {
     setIsValidDomain(true);
     initiateAuth(domain, {
       onSuccess: (authUrl) => {
-        // Redirect to Shopify auth page
-        window.location.href = authUrl;
+        // Show loading state
+        toast.loading('Redirecting to Shopify...', {
+          id: 'shopify-redirect',
+        });
+        
+        // Redirect to Shopify auth page after a short delay
+        setTimeout(() => {
+          toast.dismiss('shopify-redirect');
+          window.location.href = authUrl;
+        }, 1000);
       },
       onError: (error) => {
         toast.error('Failed to connect to Shopify', {

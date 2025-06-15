@@ -22,8 +22,11 @@ interface ShopifyAuthRequest {
 interface ShopifyCallbackRequest {
   Querystring: {
     shop: string;
-    code: string;
-    state: string;
+    code?: string;
+    hmac: string;
+    host?: string;
+    timestamp: string;
+    state?: string;
   };
 }
 
@@ -164,10 +167,17 @@ export class ShopifyController {
     reply: FastifyReply
   ): Promise<void> {
     try {
-      const { shop, code } = request.query;
+      const { shop, code, hmac, timestamp, host } = request.query;
+      console.log('Handling Shopify callback with params:', { 
+        shop, 
+        code: code ? `${code.substring(0, 5)}...` : 'undefined', 
+        hmac: hmac ? `${hmac.substring(0, 5)}...` : 'undefined',
+        host: host || 'undefined',
+        timestamp 
+      });
 
-      if (!shop || !code) {
-        reply.code(400).send({ error: 'Shop and code parameters are required' });
+      if (!shop) {
+        reply.code(400).send({ error: 'Shop parameter is required' });
         return;
       }
 
@@ -179,32 +189,103 @@ export class ShopifyController {
         return;
       }
 
-      // Exchange code for token
-      const connection = await exchangeShopifyCodeForToken(shop, user.id, code);
-
-      if (!connection) {
-        reply.code(500).send({ error: 'Failed to exchange code for token' });
+      // Validate that the shop is a valid Shopify shop domain
+      if (!shop.match(/^[a-zA-Z0-9][a-zA-Z0-9\-]*\.myshopify\.com$/)) {
+        reply.code(400).send({ error: 'Invalid shop domain' });
         return;
       }
 
-      // Here you would typically store the connection in your database
-      // This is just an example placeholder
-      const savedConnection = await saveShopifyConnection(connection, user.id);
-      console.log('savedConnection', savedConnection, connection);
+      // If we don't have a code, this might be an app installation request
+      if (!code) {
+        console.log('No code provided, generating auth URL for shop:', shop);
+        // Generate a new authorization URL
+        const authUrl = createShopifyAuthUrl(shop, user.id);
+        
+        reply.send({
+          success: true,
+          authUrl,
+          message: 'Authorization URL generated'
+        });
+        return;
+      }
 
-      // Return success response with connection info
-      reply.send({
-        success: true,
-        connection: {
-          shop: savedConnection.shop,
-          scope: savedConnection.scope,
-          connected_at: new Date().toISOString(),
-          status: 'active',
+      // Exchange code for token
+      try {
+        console.log(`Attempting to exchange code for token for shop: ${shop} and user: ${user.id}`);
+        const connection = await exchangeShopifyCodeForToken(shop, user.id, code);
+
+        if (!connection) {
+          reply.code(500).send({ error: 'Failed to exchange code for token' });
+          return;
         }
-      });
-    } catch (error) {
+
+        // Here you would typically store the connection in your database
+        const savedConnection = await saveShopifyConnection(connection, user.id);
+        console.log('savedConnection', savedConnection);
+
+        // Return success response with connection info
+        reply.send({
+          success: true,
+          connection: {
+            shop: savedConnection.shop,
+            scope: savedConnection.scope,
+            connected_at: new Date().toISOString(),
+            status: 'active',
+          }
+        });
+      } catch (exchangeError: any) {
+        console.error('Error exchanging code for token:', exchangeError);
+        const errorMessage = exchangeError.message || 'Failed to exchange code for token';
+        
+        // Check if the error is due to the code already being used
+        const isCodeUsedError = 
+          exchangeError.response?.data?.includes('authorization code was not found or was already used') ||
+          errorMessage.includes('authorization code was not found or was already used');
+          
+        if (isCodeUsedError) {
+          // Check if we already have a connection for this shop and user
+          const existingConnection = await getUserShopifyConnectionByShop(user.id, shop);
+          
+          if (existingConnection) {
+            // If we already have a connection, consider this a success
+            console.log('Code already used but connection exists for shop:', shop);
+            reply.send({
+              success: true,
+              connection: {
+                shop: existingConnection.shop,
+                scope: existingConnection.scope,
+                connected_at: new Date().toISOString(),
+                status: 'active',
+              },
+              message: 'Connection already exists'
+            });
+            return;
+          } else {
+            // No existing connection, generate a new auth URL
+            console.log('Code already used and no connection exists, generating new auth URL');
+            const authUrl = createShopifyAuthUrl(shop, user.id);
+            
+            reply.send({
+              success: false,
+              authUrl,
+              error: 'Authorization code was already used. Please try again.',
+              needsReauthorization: true
+            });
+            return;
+          }
+        }
+        
+        reply.code(500).send({ 
+          error: errorMessage,
+          details: exchangeError.response?.data || {}
+        });
+      }
+    } catch (error: any) {
       console.error('Error handling Shopify callback:', error);
-      reply.code(500).send({ error: 'Failed to complete Shopify authentication' });
+      reply.code(500).send({ 
+        error: 'Failed to complete Shopify authentication',
+        message: error.message || 'Unknown error'
+      });
     }
   }
 
@@ -424,6 +505,25 @@ async function deleteShopifyConnection(userId: string): Promise<boolean> {
   // In a real implementation, you would delete this from your database
   console.log('Deleting Shopify connection for user:', userId);
   return true;
+}
+
+/**
+ * Placeholder function for getting user's Shopify connection from database by shop domain
+ * You should replace this with actual database operations
+ */
+async function getUserShopifyConnectionByShop(userId: string, shop: string): Promise<ShopifyConnection | null> {
+  // In a real implementation, you would fetch this from your database
+  console.log('Getting Shopify connection for user and shop:', userId, shop);
+
+  // For now, just call the generic function
+  const connection = await getUserShopifyConnection(userId);
+  
+  // Only return if the shop matches
+  if (connection && connection.shop === shop) {
+    return connection;
+  }
+  
+  return null;
 }
 
 export default ShopifyController;

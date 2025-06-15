@@ -93,15 +93,21 @@ export class ShopifyVendor extends BaseVendor {
    * @returns Authentication URL
    */
   public getAuthUrl(): string {
+    const nonce = crypto.randomBytes(16).toString('hex');
+    
     const params = {
       client_id: this.apiKey,
       scope: this.scopes,
       redirect_uri: this.redirectUri,
-      state: crypto.randomBytes(16).toString('hex'),
+      state: nonce,
       'grant_options[]': 'per-user',
     };
 
-    return `https://${this.shop}${APIs.SHOPIFY_OAUTH}?${querystring.stringify(params)}`;
+    console.log(`Generating auth URL for shop: ${this.shop} with redirect: ${this.redirectUri}`);
+    const authUrl = `https://${this.shop}/admin/oauth/authorize?${querystring.stringify(params)}`;
+    console.log(`Generated auth URL: ${authUrl}`);
+    
+    return authUrl;
   }
 
   /**
@@ -111,13 +117,27 @@ export class ShopifyVendor extends BaseVendor {
    */
   public async exchangeCodeForToken(code: string): Promise<ShopifyConnection | null> {
     try {
-      const response = await this.makeRequest(APIs.SHOPIFY_TOKEN, 'POST', {
+      console.log(`Exchanging code for token for shop: ${this.shop}`);
+      
+      const requestData = {
         client_id: this.apiKey,
         client_secret: this.apiSecret,
         code,
-      });
+      };
+      
+      // Use the full URL directly instead of relying on baseUrl + endpoint
+      const fullUrl = `https://${this.shop}/admin/oauth/access_token`;
+      console.log(`Making request to ${fullUrl}`);
+      console.log('Request data:', JSON.stringify(requestData));
+      
+      // Pass empty string as endpoint and use fullUrl as the auth_url parameter
+      const response = await this.makeRequest('', 'POST', requestData, undefined, fullUrl);
 
+      console.log('Token response status:', response.status);
+      
       if (response.data && response.data.access_token) {
+        console.log('Successfully obtained access token');
+        
         const connection: ShopifyConnection = {
           shop: this.shop,
           access_token: response.data.access_token,
@@ -134,11 +154,11 @@ export class ShopifyVendor extends BaseVendor {
         return connection;
       }
 
-      console.error('Failed to exchange code for token:', response.data);
+      console.error('Failed to exchange code for token. Response:', response.data);
       return null;
     } catch (error) {
-      console.error('Error exchanging code for token:', error);
-      return null;
+      // console.error('Error exchanging code for token:', error);
+      throw error; // Re-throw to allow proper error handling upstream
     }
   }
 

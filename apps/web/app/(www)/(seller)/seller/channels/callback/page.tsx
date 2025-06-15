@@ -12,24 +12,52 @@ export default function ShopifyCallbackPage() {
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
+  const [processed, setProcessed] = useState(false);
+
   useEffect(() => {
     const handleCallback = async () => {
       try {
+        // Only process the callback once
+        if (processed) return;
+        setProcessed(true);
+        
         const shop = searchParams.get('shop');
         const code = searchParams.get('code');
+        const hmac = searchParams.get('hmac');
+        const timestamp = searchParams.get('timestamp');
+        const host = searchParams.get('host');
         
-        if (!shop || !code) {
-          setError('Missing required parameters');
+        console.log('Callback received with params:', { 
+          shop, 
+          code: code ? `${code.substring(0, 5)}...` : 'undefined',
+          hmac: hmac ? `${hmac.substring(0, 5)}...` : 'undefined',
+          host: host || 'undefined',
+          timestamp
+        });
+        
+        if (!shop) {
+          setError('Missing shop parameter');
           setIsLoading(false);
           return;
         }
 
-        // Call the backend to exchange the code for a token
+        // Check if session is ready
+        if (!session?.user?.token) {
+          console.log('Session not ready yet, waiting...');
+          return; // Don't set error, just wait for session
+        }
+
+        console.log('Session ready, sending request to backend for shop:', shop);
+        
+        // Call the backend to handle the callback
         const response = await apiClient.get('/shopify/callback', {
           params: {
             shop,
-            code
+            code,
+            hmac,
+            timestamp,
+            host
           },
           headers: { 
             'Content-Type': 'application/json',
@@ -38,21 +66,37 @@ export default function ShopifyCallbackPage() {
         });
 
         if (response.data.success) {
-          // Redirect back to the channels page
-          router.push('/seller/channels?success=true');
+          console.log('Successfully connected to Shopify');
+          // Redirect to success page
+          router.push('/seller/channels/success');
+        } else if (response.data.needsReauthorization && response.data.authUrl) {
+          console.log('Need to re-authorize, redirecting to:', response.data.authUrl);
+          // Redirect to the new auth URL
+          window.location.href = response.data.authUrl;
+        } else if (response.data.authUrl) {
+          console.log('Got auth URL, redirecting to:', response.data.authUrl);
+          // Redirect to the auth URL
+          window.location.href = response.data.authUrl;
         } else {
-          setError('Failed to connect to Shopify');
+          setError(response.data.error || 'Failed to connect to Shopify');
           setIsLoading(false);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error handling Shopify callback:', err);
-        setError('An error occurred while connecting to Shopify');
+        const errorMessage = err.response?.data?.error || 'An error occurred while connecting to Shopify';
+        setError(errorMessage);
         setIsLoading(false);
       }
     };
 
-    handleCallback();
-  }, [searchParams, router]);
+    // Only run the callback handler when session is available
+    if (sessionStatus === 'authenticated' && session?.user?.token) {
+      handleCallback();
+    } else if (sessionStatus === 'unauthenticated') {
+      setError('Authentication required. Please log in and try again.');
+      setIsLoading(false);
+    }
+  }, [searchParams, router, session, sessionStatus, processed]);
 
   if (error) {
     return (
@@ -77,6 +121,9 @@ export default function ShopifyCallbackPage() {
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <h1 className="text-xl font-medium">Connecting to Shopify...</h1>
         <p className="text-muted-foreground">Please wait while we complete your connection</p>
+        {sessionStatus === 'loading' && (
+          <p className="text-sm text-muted-foreground">Waiting for authentication...</p>
+        )}
       </div>
     </div>
   );

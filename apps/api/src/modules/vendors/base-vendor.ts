@@ -66,20 +66,45 @@ export abstract class BaseVendor {
     headers?: Record<string, string>,
     auth_url?: string
   ): Promise<AxiosResponse> {
-    const config: AxiosRequestConfig = {
-      method,
-      url: auth_url ? auth_url : `${this.baseUrl}${endpoint}`,
-      headers: {
-        'Content-Type': 'application/json',
-        ...headers,
-      },
-    };
+    try {
+      // If auth_url is provided, use it directly; otherwise construct URL from baseUrl + endpoint
+      const url = auth_url || `${this.baseUrl}${endpoint}`;
+      
+      const config: AxiosRequestConfig = {
+        method,
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          ...headers,
+        },
+      };
 
-    if (data) {
-      config.data = data;
+      if (data) {
+        config.data = data;
+      }
+
+      console.log(`Making ${method} request to ${url}`);
+      const response = await axios(config);
+      return response;
+    } catch (error: any) {
+      console.error(`Error in ${method} request to ${auth_url || `${this.baseUrl}${endpoint}`}:`, error.message);
+      
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error('Response data:', error.response.data);
+        console.error('Response status:', error.response.status);
+        console.error('Response headers:', error.response.headers);
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error('No response received');
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error('Error setting up request:', error.message);
+      }
+      
+      throw error;
     }
-
-    return axios(config);
   }
 
   /**
