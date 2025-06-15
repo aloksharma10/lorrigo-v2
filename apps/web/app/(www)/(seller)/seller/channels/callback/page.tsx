@@ -51,7 +51,7 @@ export default function ShopifyCallbackPage() {
         console.log('Session ready, sending request to backend for shop:', shop);
         
         // Call the backend to handle the callback
-        const response = await apiClient.get('/shopify/callback', {
+        const response = await apiClient.get('/channels/shopify/callback', {
           params: {
             shop,
             code,

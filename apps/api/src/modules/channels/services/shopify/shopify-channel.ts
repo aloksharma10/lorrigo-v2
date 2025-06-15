@@ -1,11 +1,10 @@
 import { APP_CONFIG } from '@/config/app';
 import { APIs } from '@/config/api';
 import { CACHE_KEYS } from '@/config/cache';
-import { BaseVendor } from '../vendors/base-vendor';
-import { VendorRegistrationResult, VendorServiceabilityResult, VendorShipmentResult } from '@/types/vendor';
+import { BaseChannel } from '../base-channel';
+import { redis } from '@/lib/redis';
 import querystring from 'querystring';
 import crypto from 'crypto';
-import { redis } from '@/lib/redis';
 
 /**
  * Shopify order interface
@@ -55,18 +54,16 @@ export interface ShopifyConnection {
 }
 
 /**
- * Shopify vendor implementation
+ * Shopify channel implementation
  * Handles OAuth authentication and order fetching from Shopify
  */
-export class ShopifyVendor extends BaseVendor {
+export class ShopifyChannel extends BaseChannel {
   private shop: string;
-  protected apiKey: string;
   private apiSecret: string;
   private apiVersion: string;
   private scopes: string;
   private redirectUri: string;
   private accessToken: string | null;
-  private userId: string;
 
   constructor(shop: string, userId: string, accessToken?: string) {
     const shopifyConfig = APP_CONFIG.VENDOR.SHOPIFY;
@@ -75,17 +72,16 @@ export class ShopifyVendor extends BaseVendor {
       'Shopify',
       `https://${shop}`,
       shopifyConfig.API_KEY,
+      userId,
       `${CACHE_KEYS.SHOPIFY_TOKEN}:${shop}:${userId}`
     );
 
     this.shop = shop;
-    this.apiKey = shopifyConfig.API_KEY;
     this.apiSecret = shopifyConfig.API_SECRET;
     this.apiVersion = shopifyConfig.API_VERSION;
     this.scopes = shopifyConfig.SCOPES;
     this.redirectUri = shopifyConfig.REDIRECT_URI;
     this.accessToken = accessToken || null;
-    this.userId = userId;
   }
 
   /**
@@ -128,13 +124,12 @@ export class ShopifyVendor extends BaseVendor {
       // Use the full URL directly instead of relying on baseUrl + endpoint
       const fullUrl = `https://${this.shop}/admin/oauth/access_token`;
       console.log(`Making request to ${fullUrl}`);
-      console.log('Request data:', JSON.stringify(requestData));
       
       // Pass empty string as endpoint and use fullUrl as the auth_url parameter
       const response = await this.makeRequest('', 'POST', requestData, undefined, fullUrl);
 
       console.log('Token response status:', response.status);
-      
+
       if (response.data && response.data.access_token) {
         console.log('Successfully obtained access token');
         
@@ -157,8 +152,26 @@ export class ShopifyVendor extends BaseVendor {
       console.error('Failed to exchange code for token. Response:', response.data);
       return null;
     } catch (error) {
-      // console.error('Error exchanging code for token:', error);
       throw error; // Re-throw to allow proper error handling upstream
+    }
+  }
+
+  /**
+   * Disconnect/revoke Shopify access
+   * @returns Success status
+   */
+  public async disconnect(): Promise<boolean> {
+    try {
+      // Clear the token from cache
+      await redis.del(this.tokenCacheKey);
+      
+      // Note: Shopify doesn't have a specific endpoint to revoke tokens
+      // We just remove it from our system
+      
+      return true;
+    } catch (error) {
+      console.error('Error disconnecting Shopify:', error);
+      return false;
     }
   }
 
@@ -204,7 +217,7 @@ export class ShopifyVendor extends BaseVendor {
    * @param orderId Shopify order ID
    * @returns Promise resolving to order details
    */
-  public async getOrder(orderId: number): Promise<ShopifyOrder | null> {
+  public async getOrder(orderId: number | string): Promise<ShopifyOrder | null> {
     try {
       const token = await this.getAuthToken();
 
@@ -247,7 +260,7 @@ export class ShopifyVendor extends BaseVendor {
   }
 
   /**
-   * Generate authentication token (required by BaseVendor)
+   * Generate authentication token (required by BaseChannel)
    * @returns Promise resolving to cached token
    */
   protected async generateToken(): Promise<string | null> {
@@ -255,123 +268,4 @@ export class ShopifyVendor extends BaseVendor {
     // Tokens are obtained through OAuth flow
     return this.accessToken;
   }
-
-  /**
-   * Register hub (required by BaseVendor but not applicable for Shopify)
-   * @returns Promise resolving to registration result
-   */
-  public async registerHub(): Promise<VendorRegistrationResult> {
-    // Not applicable for Shopify
-    return {
-      success: false,
-      message: 'Hub registration not applicable for Shopify',
-      data: null,
-    };
-  }
-
-  /**
-   * Create shipment (required by BaseVendor but not applicable for Shopify)
-   * @returns Promise resolving to shipment result
-   */
-  public async createShipment(): Promise<VendorShipmentResult> {
-    // Not applicable for Shopify
-    return {
-      success: false,
-      message: 'Shipment creation not applicable for Shopify',
-      data: null,
-    };
-  }
-
-  /**
-   * Check serviceability for Shopify
-   * Implementation of abstract method from BaseVendor
-   * @param pickupPincode Pickup pincode
-   * @param deliveryPincode Delivery pincode
-   * @param volumeWeight Volume weight in kg
-   * @param dimensions Package dimensions
-   * @param paymentType Payment type (0 for prepaid, 1 for COD)
-   * @param collectableAmount Collectable amount for COD
-   * @param couriers List of courier IDs to check
-   * @param isReverseOrder Whether this is a reverse order
-   * @param couriersData Additional courier data
-   * @returns Promise resolving to serviceability result
-   */
-  public async checkServiceability(
-    pickupPincode: string,
-    deliveryPincode: string,
-    volumeWeight: number,
-    dimensions: { length: number; width: number; height: number; weight: number },
-    paymentType: 0 | 1,
-    collectableAmount?: number,
-    couriers?: string[],
-    isReverseOrder?: boolean,
-    couriersData?: any
-  ): Promise<VendorServiceabilityResult> {
-    // Shopify doesn't provide direct serviceability check
-    // This is a placeholder implementation
-    return {
-      success: false,
-      message: 'Serviceability check not applicable for Shopify',
-      serviceableCouriers: [],
-    };
-  }
-}
-
-/**
- * Get orders from Shopify for a specific user connection
- * @param shopifyConnection Shopify connection details
- * @param params Query parameters for fetching orders
- * @returns Promise resolving to array of orders
- */
-export async function getShopifyOrders(
-  shopifyConnection: ShopifyConnection,
-  params: Record<string, string | number> = {}
-): Promise<ShopifyOrder[]> {
-  const { shop, user_id, access_token } = shopifyConnection;
-
-  const shopifyVendor = new ShopifyVendor(shop, user_id, access_token);
-  return shopifyVendor.getOrders(params);
-}
-
-/**
- * Get a specific order from Shopify
- * @param shopifyConnection Shopify connection details
- * @param orderId Shopify order ID
- * @returns Promise resolving to order details
- */
-export async function getShopifyOrder(
-  shopifyConnection: ShopifyConnection,
-  orderId: number
-): Promise<ShopifyOrder | null> {
-  const { shop, user_id, access_token } = shopifyConnection;
-
-  const shopifyVendor = new ShopifyVendor(shop, user_id, access_token);
-  return shopifyVendor.getOrder(orderId);
-}
-
-/**
- * Create Shopify OAuth URL for a shop
- * @param shop Shopify shop domain (e.g., your-store.myshopify.com)
- * @param userId User ID for the connection
- * @returns OAuth URL
- */
-export function createShopifyAuthUrl(shop: string, userId: string): string {
-  const shopifyVendor = new ShopifyVendor(shop, userId);
-  return shopifyVendor.getAuthUrl();
-}
-
-/**
- * Exchange OAuth code for access token
- * @param shop Shopify shop domain
- * @param userId User ID for the connection
- * @param code OAuth authorization code
- * @returns Promise resolving to connection details
- */
-export async function exchangeShopifyCodeForToken(
-  shop: string,
-  userId: string,
-  code: string
-): Promise<ShopifyConnection | null> {
-  const shopifyVendor = new ShopifyVendor(shop, userId);
-  return shopifyVendor.exchangeCodeForToken(code);
-}
+} 

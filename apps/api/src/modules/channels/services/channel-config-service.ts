@@ -1,5 +1,4 @@
-import { FastifyInstance } from 'fastify';
-import { Prisma } from '@lorrigo/db';
+import { Prisma, prisma } from '@lorrigo/db';
 
 interface ChannelConfigData {
   name: string;
@@ -13,7 +12,7 @@ interface ErrorResponse {
 }
 
 export class ChannelConfigService {
-  constructor(private fastify: FastifyInstance) {}
+  constructor() {}
 
   /**
    * Get all channel configurations with pagination and search
@@ -41,7 +40,7 @@ export class ChannelConfigService {
 
     // Get channel configs with pagination
     const [channelConfigs, total] = await Promise.all([
-      this.fastify.prisma.channelConfig.findMany({
+      prisma.channelConfig.findMany({
         where: searchCondition,
         skip,
         take: limit,
@@ -62,7 +61,7 @@ export class ChannelConfigService {
           },
         },
       }),
-      this.fastify.prisma.channelConfig.count({ where: searchCondition }),
+      prisma.channelConfig.count({ where: searchCondition }),
     ]);
 
     const totalPages = Math.ceil(total / limit);
@@ -80,7 +79,7 @@ export class ChannelConfigService {
    * Get a single channel configuration by ID
    */
   async getChannelConfigById(id: string): Promise<any | ErrorResponse> {
-    const channelConfig = await this.fastify.prisma.channelConfig.findUnique({
+    const channelConfig = await prisma.channelConfig.findUnique({
       where: { id },
       include: {
         couriers: {
@@ -116,7 +115,7 @@ export class ChannelConfigService {
    * Get a channel configuration by name or nickname
    */
   async getChannelConfigByIdentifier(identifier: string): Promise<any | ErrorResponse> {
-    const channelConfig = await this.fastify.prisma.channelConfig.findFirst({
+    const channelConfig = await prisma.channelConfig.findFirst({
       where: {
         OR: [
           { name: { equals: identifier, mode: 'insensitive' as Prisma.QueryMode } },
@@ -153,7 +152,7 @@ export class ChannelConfigService {
   async createChannelConfig(data: ChannelConfigData): Promise<any | ErrorResponse> {
     try {
       // Check if name or nickname already exists
-      const existingConfig = await this.fastify.prisma.channelConfig.findFirst({
+      const existingConfig = await prisma.channelConfig.findFirst({
         where: {
           OR: [
             { name: { equals: data.name, mode: 'insensitive' as Prisma.QueryMode } },
@@ -172,7 +171,7 @@ export class ChannelConfigService {
         };
       }
 
-      const channelConfig = await this.fastify.prisma.channelConfig.create({
+      const channelConfig = await prisma.channelConfig.create({
         data: {
           name: data.name.trim(),
           nickname: data.nickname.trim().toUpperCase(),
@@ -226,7 +225,7 @@ export class ChannelConfigService {
   ): Promise<any | ErrorResponse> {
     try {
       // Check if channel config exists
-      const existingConfig = await this.fastify.prisma.channelConfig.findUnique({
+      const existingConfig = await prisma.channelConfig.findUnique({
         where: { id },
       });
 
@@ -239,7 +238,7 @@ export class ChannelConfigService {
 
       // Check for conflicts with name or nickname if they are being updated
       if (data.name || data.nickname) {
-        const conflictConfig = await this.fastify.prisma.channelConfig.findFirst({
+        const conflictConfig = await prisma.channelConfig.findFirst({
           where: {
             AND: [
               { id: { not: id } },
@@ -276,7 +275,7 @@ export class ChannelConfigService {
       }
 
       // Update the channel config
-      const channelConfig = await this.fastify.prisma.channelConfig.update({
+      const channelConfig = await prisma.channelConfig.update({
         where: { id },
         data: {
           ...(data.name && { name: data.name.trim() }),
@@ -327,7 +326,7 @@ export class ChannelConfigService {
    */
   async deleteChannelConfig(id: string): Promise<{ message: string } | ErrorResponse> {
     // Check if channel config exists
-    const channelConfig = await this.fastify.prisma.channelConfig.findUnique({
+    const channelConfig = await prisma.channelConfig.findUnique({
       where: { id },
       include: {
         _count: {
@@ -355,7 +354,7 @@ export class ChannelConfigService {
     }
 
     // Delete the channel config
-    await this.fastify.prisma.channelConfig.delete({
+    await prisma.channelConfig.delete({
       where: { id },
     });
 
@@ -368,7 +367,7 @@ export class ChannelConfigService {
    * Toggle the active status of a channel configuration
    */
   async toggleChannelConfigStatus(id: string): Promise<any | ErrorResponse> {
-    const channelConfig = await this.fastify.prisma.channelConfig.findUnique({
+    const channelConfig = await prisma.channelConfig.findUnique({
       where: { id },
     });
 
@@ -379,7 +378,7 @@ export class ChannelConfigService {
       };
     }
 
-    const updatedConfig = await this.fastify.prisma.channelConfig.update({
+    const updatedConfig = await prisma.channelConfig.update({
       where: { id },
       data: {
         is_active: !channelConfig.is_active,
@@ -407,7 +406,7 @@ export class ChannelConfigService {
    * Get active channel configurations (for dropdowns/selection)
    */
   async getActiveChannelConfigs() {
-    const channelConfigs = await this.fastify.prisma.channelConfig.findMany({
+    const channelConfigs = await prisma.channelConfig.findMany({
       where: { is_active: true },
       orderBy: { name: 'asc' },
       select: {

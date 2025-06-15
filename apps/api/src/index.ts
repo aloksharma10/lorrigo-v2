@@ -16,11 +16,12 @@ import authRoutes from '@/modules/auth';
 import customerRoutes from '@/modules/customers';
 import courierRoutes from '@/modules/couriers';
 import channelRoutes from '@/modules/channels';
-import shopifyRoutes from '@/modules/shopify/shopify.routes';
 import hubRoutes from '@/modules/pickup-address';
 import planRoutes from '@/modules/plan';
 import productRoutes from '@/modules/products';
 import sellerRoutes from '@/modules/sellers';
+
+// Hooks
 import { setupSellerHooks } from '@/modules/sellers/hooks';
 import { ensureDefaultPlan } from '@/modules/plan/services/default-plan';
 
@@ -88,9 +89,6 @@ const registerPlugins = async () => {
         fastify.register(planRoutes, { prefix: '/plans' });
         fastify.register(productRoutes, { prefix: '/products' });
         fastify.register(sellerRoutes, { prefix: '/sellers' });
-
-        // Register Shopify routes
-        fastify.register(shopifyRoutes, { prefix: '/shopify' });
 
         // Health check route
         fastify.get('/health', async () => {

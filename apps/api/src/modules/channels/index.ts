@@ -3,17 +3,22 @@ import { ChannelConfigController } from './controllers/channel-config-controller
 import { ChannelConfigService } from './services/channel-config-service';
 import { authorizeRoles } from '@/middleware/auth';
 import { Role } from '@lorrigo/db';
+import { ShopifyController } from './controllers/shopify-controller';
 
 /**
  * Channel Configuration module routes
  */
-export default async function channelRoutes(fastify: FastifyInstance) {
+export default async function channelRoutes(fastify: FastifyInstance): Promise<void> {
   // Initialize services and controllers
-  const channelConfigService = new ChannelConfigService(fastify);
+  const channelConfigService = new ChannelConfigService();
   const channelConfigController = new ChannelConfigController(channelConfigService);
+  const shopifyController = new ShopifyController();
 
   // All routes require authentication
   fastify.addHook('onRequest', fastify.authenticate);
+
+  // Register Shopify routes
+  shopifyController.registerRoutes(fastify);
 
   // Get all channel configurations with pagination and filtering
   fastify.get('/', {

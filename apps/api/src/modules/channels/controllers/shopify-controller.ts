@@ -1,92 +1,66 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import {
-  createShopifyAuthUrl,
-  exchangeShopifyCodeForToken,
-  getShopifyOrders,
-  getShopifyOrder,
-  ShopifyConnection,
-} from './order';
-import {
-  saveShopifyConnection,
-  getUserShopifyConnection,
-  deleteShopifyConnection,
-  getUserShopifyConnectionByShop,
-} from './shopify.model';
-import { prisma } from '@lorrigo/db';
+import { z } from 'zod';
+import { captureException } from '@/lib/sentry';
+import { ChannelConnectionService, Channel } from '../services/channel-connection-service';
+import { ShopifyChannel, ShopifyConnection } from '../services/shopify/shopify-channel';
 
-/**
- * Type for Shopify auth request params
- */
-interface ShopifyAuthRequest {
-  Querystring: {
-    shop: string;
-  };
-}
+// Validation schemas
+const shopifyAuthSchema = z.object({
+  shop: z.string().min(1, 'Shop parameter is required'),
+});
 
-/**
- * Type for Shopify callback request params
- */
-interface ShopifyCallbackRequest {
-  Querystring: {
-    shop: string;
-    code?: string;
-    hmac: string;
-    host?: string;
-    timestamp: string;
-    state?: string;
-  };
-}
+const shopifyCallbackSchema = z.object({
+  shop: z.string().min(1, 'Shop parameter is required'),
+  code: z.string().optional(),
+  hmac: z.string(),
+  timestamp: z.string(),
+  state: z.string().optional(),
+  host: z.string().optional(),
+});
 
-/**
- * Type for Shopify orders request params
- */
-interface ShopifyOrdersRequest {
-  Querystring: {
-    status?: string;
-    created_at_min?: string;
-    created_at_max?: string;
-    limit?: string;
-  };
-}
+const shopifyOrdersQuerySchema = z.object({
+  status: z.string().optional(),
+  created_at_min: z.string().optional(),
+  created_at_max: z.string().optional(),
+  limit: z.string().optional(),
+});
 
-/**
- * Type for Shopify order request params
- */
-interface ShopifyOrderRequest {
-  Params: {
-    id: string;
-  };
-}
+const shopifyOrderParamsSchema = z.object({
+  id: z.string().min(1, 'Order ID is required'),
+});
 
-/**
- * Shopify controller for handling Shopify API integration
- */
 export class ShopifyController {
+  private connectionService: ChannelConnectionService;
+
+  constructor() {
+    this.connectionService = new ChannelConnectionService();
+  }
+
   /**
    * Register Shopify routes
    * @param fastify Fastify instance
    */
-  public static registerRoutes(fastify: FastifyInstance): void {
-    // Get auth URL (instead of direct redirect)
-    fastify.get('/auth/url', ShopifyController.getAuthUrl);
+  public registerRoutes(fastify: FastifyInstance): void {
+    // Get auth URL
+    fastify.get('/shopify/auth/url', this.getAuthUrl.bind(this));
 
     // Initiate OAuth flow (kept for backward compatibility)
-    fastify.get('/auth', ShopifyController.initiateAuth);
+    fastify.get('/shopify/auth', this.initiateAuth.bind(this));
 
     // OAuth callback
-    fastify.get('/callback', ShopifyController.handleCallback);
+    fastify.get('/shopify/callback', this.handleCallback.bind(this));
 
     // Get connection status
-    fastify.get('/connection', ShopifyController.getConnection);
+    fastify.get('/shopify/connection', this.getConnection.bind(this));
 
     // Disconnect Shopify
-    fastify.delete('/connection', ShopifyController.disconnectShopify);
+    fastify.delete('/shopify/connection', this.disconnectShopify.bind(this));
 
     // Get orders
-    fastify.get('/orders', ShopifyController.getOrders);
+    fastify.get('/shopify/orders', this.getOrders.bind(this));
 
     // Get a specific order
-    fastify.get('/orders/:id', ShopifyController.getOrder);
+    fastify.get('/shopify/orders/:id', this.getOrder.bind(this));
   }
 
   /**
@@ -94,34 +68,41 @@ export class ShopifyController {
    * @param request Fastify request
    * @param reply Fastify reply
    */
-  private static async getAuthUrl(
-    request: FastifyRequest<ShopifyAuthRequest>,
+  private async getAuthUrl(
+    request: FastifyRequest,
     reply: FastifyReply
   ): Promise<void> {
     try {
-      const { shop } = request.query;
-      console.log('Getting Shopify auth URL for shop:', shop);
-
-      if (!shop) {
-        reply.code(400).send({ error: 'Shop parameter is required' });
-        return;
+      const result = shopifyAuthSchema.safeParse(request.query);
+      
+      if (!result.success) {
+        return reply.code(400).send({ 
+          error: 'Validation error', 
+          details: result.error.format() 
+        });
       }
+      
+      const { shop } = result.data;
+      console.log('Getting Shopify auth URL for shop:', shop);
 
       // Get authenticated user from request
       const user = request.userPayload;
 
       if (!user) {
-        reply.code(401).send({ error: 'Authentication required' });
-        return;
+        return reply.code(401).send({ error: 'Authentication required' });
       }
 
+      // Create Shopify channel instance
+      const shopifyChannel = new ShopifyChannel(shop, user.id);
+      
       // Generate auth URL
-      const authUrl = createShopifyAuthUrl(shop, user.id);
+      const authUrl = shopifyChannel.getAuthUrl();
 
       // Return the URL instead of redirecting
       reply.send({ authUrl });
     } catch (error) {
       console.error('Error generating Shopify auth URL:', error);
+      captureException(error as Error);
       reply.code(500).send({ error: 'Failed to generate Shopify authentication URL' });
     }
   }
@@ -131,35 +112,41 @@ export class ShopifyController {
    * @param request Fastify request
    * @param reply Fastify reply
    */
-  private static async initiateAuth(
-    request: FastifyRequest<ShopifyAuthRequest>,
+  private async initiateAuth(
+    request: FastifyRequest,
     reply: FastifyReply
   ): Promise<void> {
     try {
-      const { shop } = request.query;
+      const result = shopifyAuthSchema.safeParse(request.query);
+      
+      if (!result.success) {
+        return reply.code(400).send({ 
+          error: 'Validation error', 
+          details: result.error.format() 
+        });
+      }
+      
+      const { shop } = result.data;
       console.log('Initiating Shopify auth for shop:', shop);
 
-      if (!shop) {
-        reply.code(400).send({ error: 'Shop parameter is required' });
-        return;
-      }
-
       // Get authenticated user from request
-      // This assumes you have authentication middleware that adds user to request
       const user = request.userPayload;
 
       if (!user) {
-        reply.code(401).send({ error: 'Authentication required' });
-        return;
+        return reply.code(401).send({ error: 'Authentication required' });
       }
 
+      // Create Shopify channel instance
+      const shopifyChannel = new ShopifyChannel(shop, user.id);
+      
       // Generate auth URL
-      const authUrl = createShopifyAuthUrl(shop, user.id);
+      const authUrl = shopifyChannel.getAuthUrl();
 
       // Redirect to Shopify auth page
       reply.redirect(authUrl);
     } catch (error) {
       console.error('Error initiating Shopify auth:', error);
+      captureException(error as Error);
       reply.code(500).send({ error: 'Failed to initiate Shopify authentication' });
     }
   }
@@ -169,12 +156,21 @@ export class ShopifyController {
    * @param request Fastify request
    * @param reply Fastify reply
    */
-  private static async handleCallback(
-    request: FastifyRequest<ShopifyCallbackRequest>,
+  private async handleCallback(
+    request: FastifyRequest,
     reply: FastifyReply
   ): Promise<void> {
     try {
-      const { shop, code, hmac, timestamp, host } = request.query;
+      const result = shopifyCallbackSchema.safeParse(request.query);
+      
+      if (!result.success) {
+        return reply.code(400).send({ 
+          error: 'Validation error', 
+          details: result.error.format() 
+        });
+      }
+      
+      const { shop, code, hmac, timestamp, host } = result.data;
       console.log('Handling Shopify callback with params:', { 
         shop, 
         code: code ? `${code.substring(0, 5)}...` : 'undefined', 
@@ -183,30 +179,26 @@ export class ShopifyController {
         timestamp 
       });
 
-      if (!shop) {
-        reply.code(400).send({ error: 'Shop parameter is required' });
-        return;
-      }
-
       // Get authenticated user from request
       const user = request.userPayload;
 
       if (!user) {
-        reply.code(401).send({ error: 'Authentication required' });
-        return;
+        return reply.code(401).send({ error: 'Authentication required' });
       }
 
       // Validate that the shop is a valid Shopify shop domain
       if (!shop.match(/^[a-zA-Z0-9][a-zA-Z0-9\-]*\.myshopify\.com$/)) {
-        reply.code(400).send({ error: 'Invalid shop domain' });
-        return;
+        return reply.code(400).send({ error: 'Invalid shop domain' });
       }
+
+      // Create Shopify channel instance
+      const shopifyChannel = new ShopifyChannel(shop, user.id);
 
       // If we don't have a code, this might be an app installation request
       if (!code) {
         console.log('No code provided, generating auth URL for shop:', shop);
         // Generate a new authorization URL
-        const authUrl = createShopifyAuthUrl(shop, user.id);
+        const authUrl = shopifyChannel.getAuthUrl();
         
         reply.send({
           success: true,
@@ -219,7 +211,7 @@ export class ShopifyController {
       // Exchange code for token
       try {
         console.log(`Attempting to exchange code for token for shop: ${shop} and user: ${user.id}`);
-        const connection = await exchangeShopifyCodeForToken(shop, user.id, code);
+        const connection = await shopifyChannel.exchangeCodeForToken(code);
 
         if (!connection) {
           reply.code(500).send({ error: 'Failed to exchange code for token' });
@@ -227,8 +219,10 @@ export class ShopifyController {
         }
 
         // Save the connection to the database
-        const savedConnection = await saveShopifyConnection(connection);
-        console.log('Saved connection to database:', savedConnection);
+        const savedConnection = await this.connectionService.saveConnection({
+          ...connection,
+          channel: Channel.SHOPIFY
+        });
 
         // Return success response with connection info
         reply.send({
@@ -236,7 +230,7 @@ export class ShopifyController {
           connection: {
             shop: savedConnection.shop,
             scope: savedConnection.scope,
-            connected_at: new Date().toISOString(),
+            connected_at: savedConnection.connected_at,
             status: 'active',
           }
         });
@@ -251,7 +245,11 @@ export class ShopifyController {
           
         if (isCodeUsedError) {
           // Check if we already have a connection for this shop and user
-          const existingConnection = await getUserShopifyConnectionByShop(user.id, shop);
+          const existingConnection = await this.connectionService.getConnectionByShop(
+            user.id, 
+            shop, 
+            Channel.SHOPIFY
+          );
           
           if (existingConnection) {
             // If we already have a connection, consider this a success
@@ -261,7 +259,7 @@ export class ShopifyController {
               connection: {
                 shop: existingConnection.shop,
                 scope: existingConnection.scope,
-                connected_at: new Date().toISOString(),
+                connected_at: existingConnection.connected_at,
                 status: 'active',
               },
               message: 'Connection already exists'
@@ -270,7 +268,7 @@ export class ShopifyController {
           } else {
             // No existing connection, generate a new auth URL
             console.log('Code already used and no connection exists, generating new auth URL');
-            const authUrl = createShopifyAuthUrl(shop, user.id);
+            const authUrl = shopifyChannel.getAuthUrl();
             
             reply.send({
               success: false,
@@ -289,6 +287,7 @@ export class ShopifyController {
       }
     } catch (error: any) {
       console.error('Error handling Shopify callback:', error);
+      captureException(error as Error);
       reply.code(500).send({ 
         error: 'Failed to complete Shopify authentication',
         message: error.message || 'Unknown error'
@@ -301,7 +300,7 @@ export class ShopifyController {
    * @param request Fastify request
    * @param reply Fastify reply
    */
-  private static async getConnection(
+  private async getConnection(
     request: FastifyRequest,
     reply: FastifyReply
   ): Promise<void> {
@@ -310,39 +309,29 @@ export class ShopifyController {
       const user = request.userPayload;
 
       if (!user) {
-        reply.code(401).send({ error: 'Authentication required' });
-        return;
+        return reply.code(401).send({ error: 'Authentication required' });
       }
 
       // Get user's Shopify connection from database
-      const connection = await getUserShopifyConnection(user.id);
+      const connection = await this.connectionService.getConnectionByUserIdAndChannel(
+        user.id,
+        Channel.SHOPIFY
+      );
 
       if (!connection) {
-        reply.code(404).send({ error: 'Shopify connection not found' });
-        return;
+        return reply.code(404).send({ error: 'Shopify connection not found' });
       }
-
-      // Get connected_at date from database
-      const connectionDetails = await prisma.shopifyConnection.findUnique({
-        where: {
-          user_id: user.id,
-        },
-        select: {
-          connected_at: true,
-        },
-      });
-
-      const connectedAt = connectionDetails?.connected_at?.toISOString() || new Date().toISOString();
 
       // Return connection details (without sensitive data like access_token)
       reply.send({
         shop: connection.shop,
         scope: connection.scope,
-        connected_at: connectedAt,
+        connected_at: connection.connected_at,
         status: 'active',
       });
     } catch (error) {
       console.error('Error fetching Shopify connection:', error);
+      captureException(error as Error);
       reply.code(500).send({ error: 'Failed to fetch Shopify connection' });
     }
   }
@@ -352,7 +341,7 @@ export class ShopifyController {
    * @param request Fastify request
    * @param reply Fastify reply
    */
-  private static async disconnectShopify(
+  private async disconnectShopify(
     request: FastifyRequest,
     reply: FastifyReply
   ): Promise<void> {
@@ -361,16 +350,34 @@ export class ShopifyController {
       const user = request.userPayload;
 
       if (!user) {
-        reply.code(401).send({ error: 'Authentication required' });
-        return;
+        return reply.code(401).send({ error: 'Authentication required' });
       }
 
+      // Get the connection first to get the shop domain
+      const connection = await this.connectionService.getConnectionByUserIdAndChannel(
+        user.id,
+        Channel.SHOPIFY
+      );
+
+      if (!connection || !connection.shop) {
+        return reply.code(404).send({ error: 'Shopify connection not found' });
+      }
+
+      // Create Shopify channel instance to handle disconnection
+      const shopifyChannel = new ShopifyChannel(
+        connection.shop,
+        user.id,
+        connection.access_token
+      );
+
+      // Disconnect from Shopify (clear token from cache)
+      await shopifyChannel.disconnect();
+
       // Delete user's Shopify connection from database
-      const success = await deleteShopifyConnection(user.id);
+      const success = await this.connectionService.deleteConnection(user.id, Channel.SHOPIFY);
 
       if (!success) {
-        reply.code(404).send({ error: 'Shopify connection not found' });
-        return;
+        return reply.code(500).send({ error: 'Failed to disconnect Shopify' });
       }
 
       reply.send({
@@ -379,6 +386,7 @@ export class ShopifyController {
       });
     } catch (error) {
       console.error('Error disconnecting Shopify:', error);
+      captureException(error as Error);
       reply.code(500).send({ error: 'Failed to disconnect Shopify' });
     }
   }
@@ -388,28 +396,45 @@ export class ShopifyController {
    * @param request Fastify request
    * @param reply Fastify reply
    */
-  private static async getOrders(
-    request: FastifyRequest<ShopifyOrdersRequest>,
+  private async getOrders(
+    request: FastifyRequest,
     reply: FastifyReply
   ): Promise<void> {
     try {
-      const { status, created_at_min, created_at_max, limit } = request.query;
+      const result = shopifyOrdersQuerySchema.safeParse(request.query);
+      
+      if (!result.success) {
+        return reply.code(400).send({ 
+          error: 'Validation error', 
+          details: result.error.format() 
+        });
+      }
+      
+      const { status, created_at_min, created_at_max, limit } = result.data;
 
       // Get authenticated user from request
       const user = request.userPayload;
 
       if (!user) {
-        reply.code(401).send({ error: 'Authentication required' });
-        return;
+        return reply.code(401).send({ error: 'Authentication required' });
       }
 
       // Get user's Shopify connection from database
-      const connection = await getUserShopifyConnection(user.id);
+      const connection = await this.connectionService.getConnectionByUserIdAndChannel(
+        user.id,
+        Channel.SHOPIFY
+      );
 
-      if (!connection) {
-        reply.code(404).send({ error: 'Shopify connection not found' });
-        return;
+      if (!connection || !connection.shop) {
+        return reply.code(404).send({ error: 'Shopify connection not found' });
       }
+
+      // Create Shopify channel instance
+      const shopifyChannel = new ShopifyChannel(
+        connection.shop,
+        user.id,
+        connection.access_token
+      );
 
       // Build query params
       const params: Record<string, string | number> = {};
@@ -431,7 +456,7 @@ export class ShopifyController {
       }
 
       // Get orders from Shopify
-      const orders = await getShopifyOrders(connection, params);
+      const orders = await shopifyChannel.getOrders(params);
 
       reply.send({
         success: true,
@@ -440,6 +465,7 @@ export class ShopifyController {
       });
     } catch (error) {
       console.error('Error fetching Shopify orders:', error);
+      captureException(error as Error);
       reply.code(500).send({ error: 'Failed to fetch Shopify orders' });
     }
   }
@@ -449,35 +475,51 @@ export class ShopifyController {
    * @param request Fastify request
    * @param reply Fastify reply
    */
-  private static async getOrder(
-    request: FastifyRequest<ShopifyOrderRequest>,
+  private async getOrder(
+    request: FastifyRequest,
     reply: FastifyReply
   ): Promise<void> {
     try {
-      const { id } = request.params;
+      const result = shopifyOrderParamsSchema.safeParse(request.params);
+      
+      if (!result.success) {
+        return reply.code(400).send({ 
+          error: 'Validation error', 
+          details: result.error.format() 
+        });
+      }
+      
+      const { id } = result.data;
 
       // Get authenticated user from request
       const user = request.userPayload;
 
       if (!user) {
-        reply.code(401).send({ error: 'Authentication required' });
-        return;
+        return reply.code(401).send({ error: 'Authentication required' });
       }
 
       // Get user's Shopify connection from database
-      const connection = await getUserShopifyConnection(user.id);
+      const connection = await this.connectionService.getConnectionByUserIdAndChannel(
+        user.id,
+        Channel.SHOPIFY
+      );
 
-      if (!connection) {
-        reply.code(404).send({ error: 'Shopify connection not found' });
-        return;
+      if (!connection || !connection.shop) {
+        return reply.code(404).send({ error: 'Shopify connection not found' });
       }
 
+      // Create Shopify channel instance
+      const shopifyChannel = new ShopifyChannel(
+        connection.shop,
+        user.id,
+        connection.access_token
+      );
+
       // Get order from Shopify
-      const order = await getShopifyOrder(connection, parseInt(id, 10));
+      const order = await shopifyChannel.getOrder(parseInt(id, 10));
 
       if (!order) {
-        reply.code(404).send({ error: 'Order not found' });
-        return;
+        return reply.code(404).send({ error: 'Order not found' });
       }
 
       reply.send({
@@ -486,9 +528,8 @@ export class ShopifyController {
       });
     } catch (error) {
       console.error('Error fetching Shopify order:', error);
+      captureException(error as Error);
       reply.code(500).send({ error: 'Failed to fetch Shopify order' });
     }
   }
-}
-
-export default ShopifyController;
+} 
