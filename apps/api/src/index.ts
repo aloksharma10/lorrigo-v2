@@ -19,6 +19,8 @@ import channelRoutes from '@/modules/channels';
 import shopifyRoutes from '@/modules/shopify/shopify.routes';
 import hubRoutes from '@/modules/pickup-address';
 import planRoutes from '@/modules/plan/routes';
+import productRoutes from '@/modules/products';
+import sellerRoutes from '@/modules/sellers';
 
 // Initialize Sentry
 initSentry();
@@ -76,6 +78,8 @@ const registerPlugins = async () => {
         fastify.register(channelRoutes, { prefix: '/channels' });
         fastify.register(hubRoutes, { prefix: '/hubs' });
         fastify.register(planRoutes, { prefix: '/plans' });
+        fastify.register(productRoutes, { prefix: '/products' });
+        fastify.register(sellerRoutes, { prefix: '/sellers' });
 
         // Register Shopify routes
         fastify.register(shopifyRoutes, { prefix: '/shopify' });

@@ -54,6 +54,7 @@ function Button({
     type="button"
     data-slot="button"
     className={cn(
+      'cursor-pointer',
       buttonVariants({ variant, size, className }),
       isLoading && 'cursor-wait',
       icon && 'gap-2'

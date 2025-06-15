@@ -7,6 +7,7 @@ export interface BackendOrder {
    paymentType: string;
    amountToCollect: number;
    awb: string;
+   channel: string;
    courier: string;
    courierNickname: string;
    trackingEvents: Array<{

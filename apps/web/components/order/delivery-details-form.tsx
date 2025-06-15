@@ -8,10 +8,13 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  Badge,
 } from '@lorrigo/ui/components';
 import { OrderFormValues } from '@lorrigo/utils';
-import { useState, useEffect } from 'react';
-import { Control, UseFormWatch } from 'react-hook-form';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Control, UseFormWatch, useFormContext } from 'react-hook-form';
+import { searchCustomers, Customer } from '@/lib/apis/customers';
+import { PhoneIcon, User2 } from 'lucide-react';
 
 interface DeliveryDetailsFormProps {
   control: Control<OrderFormValues>;
@@ -21,31 +24,164 @@ interface DeliveryDetailsFormProps {
 
 export function DeliveryDetailsForm({ control, watch, isLoading }: DeliveryDetailsFormProps) {
   const [billingIsSameAsDelivery, setBillingIsSameAsDelivery] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [customerOptions, setCustomerOptions] = useState<Customer[]>([]);
+  const [isSearchLoading, setIsSearchLoading] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const { setValue } = useFormContext<OrderFormValues>();
 
   // Only sync billing details when checkbox is toggled, not on every field change
   const syncBillingWithDelivery = () => {
     const deliveryDetails = control._formValues.deliveryDetails;
 
-    control._formValues.deliveryDetails.billingMobileNumber = deliveryDetails.mobileNumber || '';
-    control._formValues.deliveryDetails.billingFullName = deliveryDetails.fullName || '';
-    control._formValues.deliveryDetails.billingCompleteAddress =
-      deliveryDetails.completeAddress || '';
-    control._formValues.deliveryDetails.billingLandmark = deliveryDetails.landmark || '';
-    control._formValues.deliveryDetails.billingPincode = deliveryDetails.pincode || '';
-    control._formValues.deliveryDetails.billingCity = deliveryDetails.city || '';
-    control._formValues.deliveryDetails.billingState = deliveryDetails.state || '';
+    setValue('deliveryDetails.billingMobileNumber', deliveryDetails.mobileNumber || '', {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+    setValue('deliveryDetails.billingFullName', deliveryDetails.fullName || '', {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+    setValue('deliveryDetails.billingCompleteAddress', deliveryDetails.completeAddress || '', {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+    setValue('deliveryDetails.billingLandmark', deliveryDetails.landmark || '', {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+    setValue('deliveryDetails.billingPincode', deliveryDetails.pincode || '', {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+    setValue('deliveryDetails.billingCity', deliveryDetails.city || '', {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+    setValue('deliveryDetails.billingState', deliveryDetails.state || '', {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
   };
 
   useEffect(() => {
-    control._formValues.billingIsSameAsDelivery = billingIsSameAsDelivery;
+    // setValue('deliveryDetails.billingIsSameAsDelivery', true, {
+    //   shouldValidate: true,
+    //   shouldDirty: true,
+    // });
 
     if (billingIsSameAsDelivery) {
       // Only sync when checkbox is checked, not continuously
       syncBillingWithDelivery();
-    } else {
-      // setBillingOpen(true);
     }
-  }, [billingIsSameAsDelivery, control]);
+  }, [billingIsSameAsDelivery]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const debouncedSearch = useCallback((query: string) => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (query.length < 2) {
+      setCustomerOptions([]);
+      setIsSearchLoading(false);
+      return;
+    }
+
+    setIsSearchLoading(true);
+    searchTimeoutRef.current = setTimeout(async () => {
+      // Cancel any ongoing request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+
+      // Create new abort controller for this request
+      abortControllerRef.current = new AbortController();
+
+      try {
+        const data = await searchCustomers(query, abortControllerRef.current.signal);
+        setCustomerOptions(data);
+      } catch (error) {
+        // Only log errors that aren't from aborting
+        if (!(error instanceof DOMException && error.name === 'AbortError')) {
+          console.error('Error fetching customers:', error);
+        }
+      } finally {
+        setIsSearchLoading(false);
+      }
+    }, 500); // 500ms debounce delay
+  }, []);
+
+  // Effect to handle search query changes
+  useEffect(() => {
+    if (isDropdownOpen) {
+      debouncedSearch(searchQuery);
+    }
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [searchQuery, isDropdownOpen, debouncedSearch]);
+
+  const handleCustomerSelect = (selectedCustomer: Customer) => {
+    // Fill in delivery details
+    setValue('deliveryDetails.mobileNumber', selectedCustomer.phone || '', {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+    setValue('deliveryDetails.fullName', selectedCustomer.name || '', {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+
+    // Fill in address if available
+    if (selectedCustomer.address) {
+      setValue('deliveryDetails.completeAddress', selectedCustomer.address.address || '', {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+      setValue('deliveryDetails.landmark', selectedCustomer.address.address_2 || '', {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+      setValue('deliveryDetails.pincode', selectedCustomer.address.pincode || '', {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+      setValue('deliveryDetails.city', selectedCustomer.address.city || '', {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+      setValue('deliveryDetails.state', selectedCustomer.address.state || '', {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+    }
+
+    // Sync billing details if needed
+    if (billingIsSameAsDelivery) {
+      syncBillingWithDelivery();
+    }
+
+    setIsDropdownOpen(false);
+  };
 
   return (
     <div className="space-y-3">
@@ -65,36 +201,86 @@ export function DeliveryDetailsForm({ control, watch, isLoading }: DeliveryDetai
         )}
       />
       <div className="grid grid-cols-2 gap-3">
-        <FormField
-          control={control}
-          name="deliveryDetails.mobileNumber"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Mobile Number</FormLabel>
-              <div className="flex">
-                <div className="bg-muted flex items-center justify-center rounded-l-md border px-2 text-xs">
-                  +91
+        <div className="relative" ref={dropdownRef}>
+          <FormField
+            control={control}
+            name="deliveryDetails.mobileNumber"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Mobile Number</FormLabel>
+                <div className="flex">
+                  <div className="bg-muted flex items-center justify-center rounded-l-md border px-2 text-xs">
+                    +91
+                  </div>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      autoComplete="off"
+                      placeholder="Mobile"
+                      maxLength={10}
+                      className="h-8 rounded-l-none text-sm"
+                      onChange={(e) => {
+                        field.onChange(e);
+                        setSearchQuery(e.target.value);
+                        if (!isDropdownOpen && e.target.value.length >= 2) {
+                          setIsDropdownOpen(true);
+                        }
+                        // Sync immediately if billing is same as delivery
+                        if (billingIsSameAsDelivery) {
+                          setValue('deliveryDetails.billingMobileNumber', e.target.value, {
+                            shouldValidate: true,
+                            shouldDirty: true,
+                          });
+                        }
+                      }}
+                      onClick={() => {
+                        if (field.value && field.value.length >= 2) {
+                          setSearchQuery(field.value);
+                          setIsDropdownOpen(true);
+                        }
+                      }}
+                    />
+                  </FormControl>
                 </div>
-                <FormControl>
-                  <Input
-                    {...field}
-                    placeholder="Mobile"
-                    maxLength={10}
-                    className="h-8 rounded-l-none text-sm"
-                    onChange={(e) => {
-                      field.onChange(e);
-                      // Sync immediately if billing is same as delivery
-                      if (billingIsSameAsDelivery) {
-                        control._formValues.deliveryDetails.billingMobileNumber = e.target.value;
-                      }
-                    }}
-                  />
-                </FormControl>
-              </div>
-              <FormMessage />
-            </FormItem>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          {isDropdownOpen && (
+            <div className="bg-background absolute z-10 mt-1 w-full rounded-md border shadow-lg">
+              {isSearchLoading ? (
+                <div className="text-muted-foreground p-4 text-center text-sm">Loading...</div>
+              ) : customerOptions.length > 0 ? (
+                <ul className="max-h-60 overflow-y-auto py-1">
+                  {customerOptions.map((option) => (
+                    <li
+                      key={option.id}
+                      className="hover:bg-muted cursor-pointer px-4 py-2"
+                      onClick={() => handleCustomerSelect(option)}
+                    >
+                      <div className="text-sm flex items-center justify-between font-medium">
+                        <Badge variant="outline"><User2 className="w-4 h-4" /> {option.name}</Badge> <Badge variant="outline" className="ml-2 text-xs text-muted-foreground"><PhoneIcon className="w-4 h-4" /> {option.phone}</Badge>
+                      </div>
+                      {option.address && (
+                        <div className="mt-2 text-muted-foreground text-xs truncate">
+                          {option.address.address}, {option.address.city}
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ) : searchQuery.length >= 2 ? (
+                <div className="text-muted-foreground p-4 text-center text-sm">
+                  No customers found
+                </div>
+              ) : (
+                <div className="text-muted-foreground p-4 text-center text-sm">
+                  Type at least 2 characters to search
+                </div>
+              )}
+            </div>
           )}
-        />
+        </div>
         <FormField
           control={control}
           name="deliveryDetails.fullName"
@@ -108,8 +294,21 @@ export function DeliveryDetailsForm({ control, watch, isLoading }: DeliveryDetai
                   className="h-8"
                   onChange={(e) => {
                     field.onChange(e);
+                    setSearchQuery(e.target.value);
+                    if (!isDropdownOpen && e.target.value.length >= 2) {
+                      setIsDropdownOpen(true);
+                    }
                     if (billingIsSameAsDelivery) {
-                      control._formValues.deliveryDetails.billingFullName = e.target.value;
+                      setValue('deliveryDetails.billingFullName', e.target.value, {
+                        shouldValidate: true,
+                        shouldDirty: true,
+                      });
+                    }
+                  }}
+                  onClick={() => {
+                    if (field.value && field.value.length >= 2) {
+                      setSearchQuery(field.value);
+                      setIsDropdownOpen(true);
                     }
                   }}
                 />
@@ -133,7 +332,10 @@ export function DeliveryDetailsForm({ control, watch, isLoading }: DeliveryDetai
                 onChange={(e) => {
                   field.onChange(e);
                   if (billingIsSameAsDelivery) {
-                    control._formValues.deliveryDetails.billingCompleteAddress = e.target.value;
+                    setValue('deliveryDetails.billingCompleteAddress', e.target.value, {
+                      shouldValidate: true,
+                      shouldDirty: true,
+                    });
                   }
                 }}
               />
@@ -159,7 +361,10 @@ export function DeliveryDetailsForm({ control, watch, isLoading }: DeliveryDetai
                   onChange={(e) => {
                     field.onChange(e);
                     if (billingIsSameAsDelivery) {
-                      control._formValues.deliveryDetails.billingLandmark = e.target.value;
+                      setValue('deliveryDetails.billingLandmark', e.target.value, {
+                        shouldValidate: true,
+                        shouldDirty: true,
+                      });
                     }
                   }}
                 />
@@ -182,7 +387,10 @@ export function DeliveryDetailsForm({ control, watch, isLoading }: DeliveryDetai
                   onChange={(e) => {
                     field.onChange(e);
                     if (billingIsSameAsDelivery) {
-                      control._formValues.deliveryDetails.billingPincode = e.target.value;
+                      setValue('deliveryDetails.billingPincode', e.target.value, {
+                        shouldValidate: true,
+                        shouldDirty: true,
+                      });
                     }
                   }}
                 />
@@ -206,7 +414,10 @@ export function DeliveryDetailsForm({ control, watch, isLoading }: DeliveryDetai
                   onChange={(e) => {
                     field.onChange(e);
                     if (billingIsSameAsDelivery) {
-                      control._formValues.deliveryDetails.billingCity = e.target.value;
+                      setValue('deliveryDetails.billingCity', e.target.value, {
+                        shouldValidate: true,
+                        shouldDirty: true,
+                      });
                     }
                   }}
                 />
@@ -232,7 +443,10 @@ export function DeliveryDetailsForm({ control, watch, isLoading }: DeliveryDetai
                   onChange={(e) => {
                     field.onChange(e);
                     if (billingIsSameAsDelivery) {
-                      control._formValues.deliveryDetails.billingState = e.target.value;
+                      setValue('deliveryDetails.billingState', e.target.value, {
+                        shouldValidate: true,
+                        shouldDirty: true,
+                      });
                     }
                   }}
                 />
@@ -257,138 +471,6 @@ export function DeliveryDetailsForm({ control, watch, isLoading }: DeliveryDetai
           )}
         />
       </div>
-      {/* <div className="flex items-center space-x-2 pt-2">
-        <Checkbox
-          id="billing-same"
-          checked={billingIsSameAsDelivery}
-          onCheckedChange={(checked) => setBillingIsSameAsDelivery(!!checked)}
-        />
-        <Label htmlFor="billing-same" className="cursor-pointer text-sm">
-          Billing same as delivery
-        </Label>
-      </div> */}
-      {/* {!billingIsSameAsDelivery && (
-        <Collapsible open={billingOpen} onOpenChange={setBillingOpen}>
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" className="flex h-auto items-center gap-2 p-0 text-sm">
-              Billing Details
-              {billingOpen ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="space-y-3 pt-3">
-            <div className="grid grid-cols-2 gap-3">
-              <FormField
-                control={control}
-                name="deliveryDetails.billingMobileNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Mobile Number</FormLabel>
-                    <div className="flex">
-                      <div className="bg-muted flex items-center justify-center rounded-l-md border px-2 text-xs">
-                        +91
-                      </div>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          placeholder="Mobile"
-                          className="h-8 rounded-l-none text-sm"
-                        />
-                      </FormControl>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={control}
-                name="deliveryDetails.billingFullName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Full Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Full Name" className="h-8" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <FormField
-              control={control}
-              name="deliveryDetails.billingCompleteAddress"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Complete Address</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Full address" className="h-8" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="grid grid-cols-3 gap-3">
-              <FormField
-                control={control}
-                name="deliveryDetails.billingLandmark"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-muted-foreground text-xs font-medium">
-                      Landmark (Optional)
-                    </FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Landmark" className="h-8" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={control}
-                name="deliveryDetails.billingPincode"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Pincode</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Pincode" className="h-8" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={control}
-                name="deliveryDetails.billingCity"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>City</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="City" className="h-8" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <FormField
-              control={control}
-              name="deliveryDetails.billingState"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>State</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="State" className="h-8" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CollapsibleContent>
-        </Collapsible>
-      )} */}
     </div>
   );
 }

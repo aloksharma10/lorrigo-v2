@@ -325,29 +325,29 @@ export default function ShippingChargesTab({ initialParams }: { initialParams: S
   ];
 
   // Handle pagination change
-  const handlePaginationChange = (newPagination: { pageIndex: number; pageSize: number }) => {
+  const handlePaginationChange = React.useCallback((newPagination: { pageIndex: number; pageSize: number }) => {
     setPagination(newPagination);
-  };
+  }, []);
 
   // Handle sorting change
-  const handleSortingChange = (newSorting: { id: string; desc: boolean }[]) => {
+  const handleSortingChange = React.useCallback((newSorting: { id: string; desc: boolean }[]) => {
     setSorting(newSorting);
-  };
+  }, []);
 
   // Handle filters change
-  const handleFiltersChange = (newFilters: { id: string; value: any }[]) => {
+  const handleFiltersChange = React.useCallback((newFilters: { id: string; value: any }[]) => {
     setFilters(newFilters);
-  };
+  }, []);
 
   // Handle global filter change
-  const handleGlobalFilterChange = (newGlobalFilter: string) => {
+  const handleGlobalFilterChange = React.useCallback((newGlobalFilter: string) => {
     setGlobalFilter(newGlobalFilter);
-  };
+  }, []);
 
   // Handle date range change
-  const handleDateRangeChange = (newDateRange: { from: Date; to: Date }) => {
+  const handleDateRangeChange = React.useCallback((newDateRange: { from: Date; to: Date }) => {
     setDateRange(newDateRange);
-  };
+  }, []);
 
   return (
     <div

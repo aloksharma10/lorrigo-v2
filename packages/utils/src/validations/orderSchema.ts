@@ -23,6 +23,8 @@ export const OrderQuerySchema = z.object({
   search: z.string().optional(),
   from_date: z.string().optional(),
   to_date: z.string().optional(),
+  sort: z.string().optional(),
+  sort_order: z.string().optional().default('desc'),
 });
 
 // Schema for order statistics query parameters

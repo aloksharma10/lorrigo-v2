@@ -116,6 +116,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
       enableHiding: false,
     },
     {
+      id: 'order_number',
       accessorKey: 'orderNumber',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Order Details" />,
       cell: ({ row }) => {
@@ -132,7 +133,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
             </div>
             <div className="mt-1 flex items-center">
               <Package className="text-muted-foreground mr-1 h-4 w-4" />
-              <span className="text-xs font-medium uppercase">CUSTOM</span>
+              <span className="text-xs font-medium uppercase">{shipment.channel}</span>
             </div>
             <Button
               variant="link"
@@ -148,6 +149,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
       enableHiding: true,
     },
     {
+      id: 'customer.name',
       accessorKey: 'customerName',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Customer Details" />,
       cell: ({ row }) => {
@@ -182,6 +184,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
       enableHiding: true,
     },
     {
+      id: 'package.weight',
       accessorKey: 'packageDetails',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Package Details" />,
       cell: ({ row }) => {
@@ -201,6 +204,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
       enableHiding: true,
     },
     {
+      id: 'total_amount',
       accessorKey: 'amount',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Payment" />,
       cell: ({ row }) => {
@@ -226,6 +230,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
       enableHiding: true,
     },
     {
+      id: 'hub.name',
       accessorKey: 'pickupAddress',
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Pickup / RTO Addresses" />
@@ -254,6 +259,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
       enableHiding: true,
     },
     {
+      id: 'awb',
       accessorKey: 'shippingService',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Shipping Details" />,
       cell: ({ row }) => {
@@ -273,6 +279,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
       enableHiding: true,
     },
     {
+      id: 'status',
       accessorKey: 'status',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
       cell: ({ row }) => {
@@ -341,7 +348,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
-                  onClick={() => openDrawer('clone-order', { 
+                  onClick={() => openDrawer('clone-order', {
                     order: row.original,
                     size: 'greater-mid',
                     side: 'right'
@@ -351,7 +358,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
                   Clone Order
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => openDrawer('edit-order', { 
+                  onClick={() => openDrawer('edit-order', {
                     order: row.original,
                     size: 'greater-mid',
                     side: 'right'
@@ -438,29 +445,29 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
   };
 
   // Handle pagination change
-  const handlePaginationChange = (newPagination: { pageIndex: number; pageSize: number }) => {
+  const handlePaginationChange = React.useCallback((newPagination: { pageIndex: number; pageSize: number }) => {
     setPagination(newPagination);
-  };
+  }, []);
 
   // Handle sorting change
-  const handleSortingChange = (newSorting: { id: string; desc: boolean }[]) => {
+  const handleSortingChange = React.useCallback((newSorting: { id: string; desc: boolean }[]) => {
     setSorting(newSorting);
-  };
+  }, []);
 
   // Handle filters change
-  const handleFiltersChange = (newFilters: { id: string; value: any }[]) => {
+  const handleFiltersChange = React.useCallback((newFilters: { id: string; value: any }[]) => {
     setFilters(newFilters);
-  };
+  }, []);
 
   // Handle global filter change
-  const handleGlobalFilterChange = (newGlobalFilter: string) => {
+  const handleGlobalFilterChange = React.useCallback((newGlobalFilter: string) => {
     setGlobalFilter(newGlobalFilter);
-  };
+  }, []);
 
   // Handle date range change
-  const handleDateRangeChange = (newDateRange: { from: Date; to: Date }) => {
+  const handleDateRangeChange = React.useCallback((newDateRange: { from: Date; to: Date }) => {
     setDateRange(newDateRange);
-  };
+  }, []);
 
   return (
     <>

@@ -1,6 +1,5 @@
 import { FastifyInstance } from 'fastify';
 import { Prisma } from '@lorrigo/db';
-import { generateId, getFinancialYear } from '@lorrigo/utils';
 
 interface CustomerData {
   name: string;
@@ -217,5 +216,49 @@ export class CustomerService {
     });
 
     return address;
+  }
+
+  async searchCustomers(query: string) {
+    // Search for customers by name, email, or phone
+    const customers = await this.fastify.prisma.customer.findMany({
+      where: {
+        OR: [
+          { name: { contains: query, mode: 'insensitive' as Prisma.QueryMode } },
+          { email: { contains: query, mode: 'insensitive' as Prisma.QueryMode } },
+          { phone: { contains: query, mode: 'insensitive' as Prisma.QueryMode } },
+        ],
+      },
+      take: 10,
+      include: {
+        address: true,
+      },
+      orderBy: [
+        { name: 'asc' },
+        { created_at: 'desc' }
+      ],
+      distinct: ['id'],
+    });
+
+    return customers.map(customer => {
+      const defaultAddress = customer.address?.address
+
+      console.log(defaultAddress, "defaultAddress")
+        
+      return {
+        id: customer.id,
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone,
+        address: {
+          address: defaultAddress,
+          address_2: customer.address?.address_2,
+          city: customer.address?.city,
+          state: customer.address?.state,
+          pincode: customer.address?.pincode,
+          country: customer.address?.country,
+          is_default: customer.address?.is_default,
+        },
+      };
+    });
   }
 }

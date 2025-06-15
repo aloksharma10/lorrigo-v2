@@ -25,8 +25,8 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
       querystring: {
         type: 'object',
         properties: {
-          sort: { type: 'string', default: 'createdAt' },
-          order: { type: 'string', default: 'desc' },
+          sort: { type: 'string', default: 'created_at' },
+          sort_order: { type: 'string', default: 'desc' },
           page: { type: 'integer', default: 1 },
           limit: { type: 'integer', default: 10 },
           status: {
@@ -60,6 +60,7 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
                   awb: { type: 'string' },
                   courier: { type: 'string' },
                   courierNickname: { type: 'string' },
+                  channel: { type: 'string' },
                   trackingEvents: {
                     type: 'array',
                     items: {

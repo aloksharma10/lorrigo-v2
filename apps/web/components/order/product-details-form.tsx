@@ -2,7 +2,7 @@
 
 import type React from 'react';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Info, Minus, Plus, Trash2 } from 'lucide-react';
 import {
   Button,
@@ -21,18 +21,13 @@ import {
   Alert,
   AlertTitle,
   AlertDescription,
+  Badge,
 } from '@lorrigo/ui/components';
 
 import { useFieldArray, Control, UseFormWatch, useFormContext } from 'react-hook-form';
 import { OrderFormValues } from '@lorrigo/utils/validations';
 import { currencyFormatter } from '@lorrigo/utils';
-
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  hsnCode?: string;
-}
+import { searchProducts, Product } from '@/lib/apis/products';
 
 interface ProductRowProps {
   index: number;
@@ -48,6 +43,8 @@ function ProductRow({ index, control, watch, remove, productsLength }: ProductRo
   const [productOptions, setProductOptions] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const { setValue } = useFormContext<OrderFormValues>();
 
   useEffect(() => {
@@ -60,22 +57,56 @@ function ProductRow({ index, control, watch, remove, productsLength }: ProductRo
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    const fetchProductOptions = async () => {
-      if (isDropdownOpen && searchQuery) {
-        setIsLoading(true);
-        try {
-          const data = await fetchProducts(searchQuery);
-          setProductOptions(data);
-        } catch (error) {
+  const debouncedSearch = useCallback((query: string) => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (query.length < 2) {
+      setProductOptions([]);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    searchTimeoutRef.current = setTimeout(async () => {
+      // Cancel any ongoing request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      
+      // Create new abort controller for this request
+      abortControllerRef.current = new AbortController();
+      
+      try {
+        const data = await searchProducts(query, abortControllerRef.current.signal);
+        setProductOptions(data);
+      } catch (error) {
+        // Only log errors that aren't from aborting
+        if (!(error instanceof DOMException && error.name === 'AbortError')) {
           console.error('Error fetching products:', error);
-        } finally {
-          setIsLoading(false);
         }
+      } finally {
+        setIsLoading(false);
+      }
+    }, 500); // 500ms debounce delay
+  }, []);
+
+  // Effect to handle search query changes
+  useEffect(() => {
+    if (isDropdownOpen) {
+      debouncedSearch(searchQuery);
+    }
+    
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
     };
-    fetchProductOptions();
-  }, [searchQuery, isDropdownOpen]);
+  }, [searchQuery, isDropdownOpen, debouncedSearch]);
 
   const handleProductSelect = (selectedProduct: Product) => {
     setValue(`productDetails.products.${index}.name`, selectedProduct.name, {
@@ -167,22 +198,26 @@ function ProductRow({ index, control, watch, remove, productsLength }: ProductRo
             {isLoading ? (
               <div className="text-muted-foreground p-4 text-center text-sm">Loading...</div>
             ) : productOptions.length > 0 ? (
-              <ul className="max-h-60 overflow-auto py-1">
+              <ul className="max-h-60 overflow-y-auto py-1">
                 {productOptions.map((option) => (
                   <li
                     key={option.id}
                     className="hover:bg-muted cursor-pointer px-4 py-2"
                     onClick={() => handleProductSelect(option)}
                   >
-                    <div className="font-medium">
-                      {option.id} - {option.name}
+                    <div className="text-sm flex items-center justify-between font-medium">
+                      {option.name} <Badge variant="outline" className="ml-2 text-xs text-muted-foreground">{option.id}</Badge>
                     </div>
                   </li>
                 ))}
               </ul>
-            ) : (
+            ) : searchQuery.length >= 2 ? (
               <div className="text-muted-foreground p-4 text-center text-sm">
                 No products found
+              </div>
+            ) : (
+              <div className="text-muted-foreground p-4 text-center text-sm">
+                Type at least 2 characters to search
               </div>
             )}
           </div>
@@ -422,19 +457,3 @@ export function ProductDetailsForm({ control, watch }: ProductDetailsFormProps) 
   );
 }
 
-// Mock API function
-async function fetchProducts(query: string): Promise<Product[]> {
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  return [
-    { id: '5J091710752', name: 'Vastu Product', price: 10 },
-    { id: 'test1', name: 'test product // - test product //', price: 15 },
-    { id: 'dummy1', name: 'dummy product - dummy product', price: 20 },
-    { id: 'prod13', name: 'Product 13 - Product 13', price: 25 },
-    { id: 'home25', name: 'Home & Kitchen - Product 25', price: 30 },
-  ].filter(
-    (product) =>
-      !query ||
-      product.name.toLowerCase().includes(query.toLowerCase()) ||
-      product.id.toLowerCase().includes(query.toLowerCase())
-  );
-}

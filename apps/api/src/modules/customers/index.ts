@@ -49,6 +49,52 @@ export default async function customerRoutes(fastify: FastifyInstance) {
     preHandler: fastify.authenticate,
     handler: (request, reply) => customerController.getAllCustomers(request, reply),
   });
+  
+  // Search customers
+  fastify.get('/search', {
+    schema: {
+      tags: ['Customers'],
+      summary: 'Search customers',
+      security: [{ bearerAuth: [] }],
+      querystring: {
+        type: 'object',
+        required: ['query'],
+        properties: {
+          query: { type: 'string', minLength: 2 },
+        },
+      },
+      response: {
+        200: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              name: { type: 'string' },
+              email: { type: 'string' },
+              phone: { type: 'string' },
+              address: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  address: { type: 'string' },
+                  address_2: { type: 'string' },
+                  city: { type: 'string' },
+                  state: { type: 'string' },
+                  pincode: { type: 'string' },
+                  country: { type: 'string' },
+                  is_default: { type: 'boolean' },
+                },
+                nullable: true,
+              },
+            },
+          },
+        },
+      },
+    },
+    preHandler: fastify.authenticate,
+    handler: (request, reply) => customerController.searchCustomers(request, reply),
+  });
 
   // Get a single customer by ID
   fastify.get('/:id', {

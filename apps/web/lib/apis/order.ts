@@ -140,7 +140,7 @@ export async function fetchOrders(params: any) {
       const sortField = params.sort[0].id;
       const sortOrder = params.sort[0].desc ? 'desc' : 'asc';
       queryParams.append('sort', sortField);
-      queryParams.append('order', sortOrder);
+      queryParams.append('sort_order', sortOrder);
     }
 
     const response = await api.get<OrdersApiResponse>(`/orders?${queryParams.toString()}`);
@@ -155,6 +155,7 @@ export async function fetchOrders(params: any) {
         amount: order.totalAmount,
         courier: order?.courier || '',
         courierNickname: order?.courierNickname || '',
+        channel: order?.channel || '',
         customer: {
           name: order.customer?.name || '',
           email: order.customer?.email || '',

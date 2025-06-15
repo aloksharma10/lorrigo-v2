@@ -6,6 +6,7 @@ import {
   generateId,
   getFinancialYear,
   OrderFormValues,
+  parseSortField,
   UpdateOrderFormValues,
 } from '@lorrigo/utils';
 import { FastifyInstance } from 'fastify';
@@ -22,30 +23,37 @@ export class OrderService {
    * Get all orders with pagination and filters
    */
   async getAllOrders(userId: string, queryParams: any) {
-    const { page = 1, limit = 10, status, search = '', from_date, to_date } = queryParams;
+    const {
+      page = 1,
+      limit = 10,
+      status,
+      search = '',
+      from_date,
+      to_date,
+      sort = 'created_at',
+      sort_order = 'desc',
+    } = queryParams;
 
     const skip = (page - 1) * limit;
 
-    // Build the where clause based on filters
+    // Build the where clause
     let where: any = {
       user_id: userId,
     };
 
-    // Add status filter if provided
+    // Add status filter
     if (status) {
       where.status = status;
     }
 
-    // Add date range filter if provided
+    // Date filters
     if (from_date || to_date) {
       where.created_at = {};
-
       if (from_date) {
         const startOfDay = new Date(from_date);
         startOfDay.setHours(0, 0, 0, 0);
         where.created_at.gte = startOfDay;
       }
-
       if (to_date) {
         const endOfDay = new Date(to_date);
         endOfDay.setHours(23, 59, 59, 999);
@@ -53,23 +61,60 @@ export class OrderService {
       }
     }
 
-    // Add search filter
+    // Search filter
     if (search) {
       where.OR = [
         { order_number: { contains: search, mode: 'insensitive' } },
-        { customer: { name: { contains: search, mode: 'insensitive' } } },
-        { customer: { email: { contains: search, mode: 'insensitive' } } },
+        {
+          shipment: {
+            is: {
+              pickup_id: { contains: search, mode: 'insensitive' },
+              awb: { contains: search, mode: 'insensitive' },
+            },
+          },
+        },
+        { order_invoice_number: { contains: search, mode: 'insensitive' } },
+        { order_reference_id: { contains: search, mode: 'insensitive' } },
+        {
+          customer: {
+            is: {
+              OR: [
+                { name: { contains: search, mode: 'insensitive' } },
+                { email: { contains: search, mode: 'insensitive' } },
+                { phone: { contains: search, mode: 'insensitive' } },
+              ],
+            },
+          },
+        },
+        {
+          seller_details: {
+            is: {
+              OR: [
+                { seller_name: { contains: search, mode: 'insensitive' } },
+                { gst_no: { contains: search, mode: 'insensitive' } },
+                { contact_number: { contains: search, mode: 'insensitive' } },
+              ],
+            },
+          },
+        },
       ];
     }
 
-    // Get orders with pagination
+    const orderBy = parseSortField({ field: sort, direction: sort_order });
+
+    // Now call Prisma
     const [orders, total] = await Promise.all([
       this.fastify.prisma.order.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { created_at: 'desc' },
+        orderBy,
         include: {
+          order_channel_config: {
+            select: {
+              channel: true,
+            },
+          },
           hub: {
             select: {
               id: true,
@@ -109,8 +154,8 @@ export class OrderService {
                   channel_config: {
                     select: {
                       nickname: true,
-                    }
-                  }
+                    },
+                  },
                 },
               },
               tracking_events: {
@@ -144,7 +189,7 @@ export class OrderService {
           seller_details: {
             include: {
               address: true,
-            }
+            },
           },
         },
       }),
@@ -159,6 +204,7 @@ export class OrderService {
       status: order.shipment?.tracking_events[0]?.status || order.status,
       courier: order.shipment?.courier?.name || '',
       courierNickname: order.shipment?.courier?.channel_config?.nickname || '',
+      channel: order.order_channel_config?.channel || '',
       customer: {
         name: order.customer.name,
         email: order.customer.email || '',
