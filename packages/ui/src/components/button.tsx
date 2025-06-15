@@ -51,20 +51,22 @@ function Button({
 
   return (
     <Comp
-    type="button"
-    data-slot="button"
-    className={cn(
-      'cursor-pointer',
-      buttonVariants({ variant, size, className }),
-      isLoading && 'cursor-wait',
-      icon && 'gap-2'
-    )}
-    {...props}
-  >
-    {icon && <span className="shrink-0">{icon}</span>}
+      type="button"
+      data-slot="button"
+      className={cn(
+        'cursor-pointer',
+        buttonVariants({ variant, size, className }),
+        isLoading && 'cursor-wait',
+        icon && 'gap-2'
+      )}
+      {...props}
+    >
+      <>
+        {icon && <span className="shrink-0">{icon}</span>}
 
-    {children}
-  </Comp>
+        {children}
+      </>
+    </Comp>
   );
 }
 

@@ -134,8 +134,8 @@ export default function ChannelsPage() {
                     size="sm"
                     className="flex-1"
                     onClick={() => window.open(`https://${connection.shop}/admin`, '_blank')}
+                    icon={<ExternalLink className="h-4 w-4 mr-2" />}
                   >
-                    <ExternalLink className="h-4 w-4 mr-2" />
                     Open Shopify Admin
                   </Button>
                   <Button 
@@ -195,8 +195,8 @@ export default function ChannelsPage() {
                 onClick={handleDisconnect} 
                 disabled={isDisconnecting}
                 className="w-full"
+                icon={<Unlink className="h-4 w-4 mr-2" />}
               >
-                <Unlink className="h-4 w-4 mr-2" />
                 {isDisconnecting ? 'Disconnecting...' : 'Disconnect Store'}
               </Button>
             ) : (
@@ -204,8 +204,8 @@ export default function ChannelsPage() {
                 onClick={handleConnect} 
                 disabled={isConnecting}
                 className="w-full"
+                icon={<LinkIcon className="h-4 w-4 mr-2" />}
               >
-                <LinkIcon className="h-4 w-4 mr-2" />
                 {isConnecting ? 'Connecting...' : 'Connect Shopify Store'}
               </Button>
             )}

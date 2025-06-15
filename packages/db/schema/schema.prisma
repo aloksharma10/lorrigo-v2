@@ -143,19 +143,20 @@ model User {
   margin        Float   @default(20)
 
   // Relations
-  kyc_details  KycDetails?
-  bank_details BankDetails?
-  wallet       Wallet?
-  invoices     Invoice[]     @relation("UserInvoices")
-  remittances  Remittance[]  @relation("UserRemittances")
-  transactions Transaction[] @relation("UserTransactions")
-  orders       Order[]       @relation("UserOrders")
-  shipments    Shipment[]    @relation("UserShipments")
-  hubs         Hub[]         @relation("UserHubs")
-  disputes     Dispute[]     @relation("UserDisputes")
-  api_requests ApiRequest[]
-  config       SellerConfig?
-  address      Address?
+  kyc_details        KycDetails?
+  bank_details       BankDetails?
+  wallet             Wallet?
+  invoices           Invoice[]          @relation("UserInvoices")
+  remittances        Remittance[]       @relation("UserRemittances")
+  transactions       Transaction[]      @relation("UserTransactions")
+  orders             Order[]            @relation("UserOrders")
+  shipments          Shipment[]         @relation("UserShipments")
+  hubs               Hub[]              @relation("UserHubs")
+  disputes           Dispute[]          @relation("UserDisputes")
+  api_requests       ApiRequest[]
+  config             SellerConfig?
+  address            Address?
+  shopify_connection ShopifyConnection?
 
   // Auth.js relations
   accounts Account[]
@@ -289,11 +290,11 @@ model Address {
 
   hub_primary Hub? @relation("HubPrimaryAddress")
   hub_rto     Hub? @relation("HubRTOAddress")
-  
+
   order_seller_details OrderSellerDetails[]
 
-  created_at         DateTime             @default(now())
-  updated_at         DateTime             @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   @@index([customer_id, is_default])
   @@index([pincode, city])
@@ -426,9 +427,9 @@ model Order {
   billing    Billing[]
 
   // B2B Specific
-  freight_type   Int?     @default(0)
-  pickup_type    Int?     @default(0)
-  insurance_type Int?     @default(0)
+  freight_type   Int? @default(0)
+  pickup_type    Int? @default(0)
+  insurance_type Int? @default(0)
 
   @@unique([order_number, user_id])
   @@index([user_id, customer_id, status])
@@ -452,7 +453,6 @@ model OrderSellerDetails {
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
-
 }
 
 // OrderItem Model
@@ -969,4 +969,19 @@ model ShipmentCourierZonePricing {
   shipment_pricing    ShipmentPricing? @relation("CourierOtherZonePricing", fields: [shipment_pricing_id], references: [id])
 
   @@index([zone])
+}
+
+// Shopify Connection Model
+model ShopifyConnection {
+  id           String   @id @default(cuid())
+  shop         String   @db.VarChar(255)
+  access_token String   @db.Text
+  scope        String   @db.Text
+  user_id      String   @unique
+  user         User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  connected_at DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@index([user_id])
+  @@index([shop])
 }

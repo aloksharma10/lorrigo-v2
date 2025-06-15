@@ -11,14 +11,14 @@ import { initSentry, captureException } from '@/lib/sentry';
 
 // Route modules
 import orderRoutes from '@/modules/orders';
-import {shipmentRoutes} from '@/modules/shipments/routes';
+import {shipmentRoutes} from '@/modules/shipments';
 import authRoutes from '@/modules/auth';
 import customerRoutes from '@/modules/customers';
 import courierRoutes from '@/modules/couriers';
 import channelRoutes from '@/modules/channels';
 import shopifyRoutes from '@/modules/shopify/shopify.routes';
 import hubRoutes from '@/modules/pickup-address';
-import planRoutes from '@/modules/plan/routes';
+import planRoutes from '@/modules/plan';
 import productRoutes from '@/modules/products';
 import sellerRoutes from '@/modules/sellers';
 import { setupSellerHooks } from '@/modules/sellers/hooks';

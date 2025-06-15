@@ -6,6 +6,13 @@ import {
   getShopifyOrder,
   ShopifyConnection,
 } from './order';
+import {
+  saveShopifyConnection,
+  getUserShopifyConnection,
+  deleteShopifyConnection,
+  getUserShopifyConnectionByShop,
+} from './shopify.model';
+import { prisma } from '@lorrigo/db';
 
 /**
  * Type for Shopify auth request params
@@ -219,9 +226,9 @@ export class ShopifyController {
           return;
         }
 
-        // Here you would typically store the connection in your database
-        const savedConnection = await saveShopifyConnection(connection, user.id);
-        console.log('savedConnection', savedConnection);
+        // Save the connection to the database
+        const savedConnection = await saveShopifyConnection(connection);
+        console.log('Saved connection to database:', savedConnection);
 
         // Return success response with connection info
         reply.send({
@@ -315,11 +322,23 @@ export class ShopifyController {
         return;
       }
 
+      // Get connected_at date from database
+      const connectionDetails = await prisma.shopifyConnection.findUnique({
+        where: {
+          user_id: user.id,
+        },
+        select: {
+          connected_at: true,
+        },
+      });
+
+      const connectedAt = connectionDetails?.connected_at?.toISOString() || new Date().toISOString();
+
       // Return connection details (without sensitive data like access_token)
       reply.send({
         shop: connection.shop,
         scope: connection.scope,
-        connected_at: new Date().toISOString(), // This should come from the database in a real implementation
+        connected_at: connectedAt,
         status: 'active',
       });
     } catch (error) {
@@ -470,60 +489,6 @@ export class ShopifyController {
       reply.code(500).send({ error: 'Failed to fetch Shopify order' });
     }
   }
-}
-
-/**
- * Placeholder function for saving Shopify connection to database
- * You should replace this with actual database operations
- */
-async function saveShopifyConnection(
-  connection: ShopifyConnection,
-  userId: string
-): Promise<ShopifyConnection> {
-  // In a real implementation, you would save this to your database
-  console.log('Saving Shopify connection:', connection);
-  return connection;
-}
-
-/**
- * Placeholder function for getting user's Shopify connection from database
- * You should replace this with actual database operations
- */
-async function getUserShopifyConnection(userId: string): Promise<ShopifyConnection | null> {
-  // In a real implementation, you would fetch this from your database
-  console.log('Getting Shopify connection for user:', userId);
-
-  // Return dummy connection for example purposes
-  return null;
-}
-
-/**
- * Placeholder function for deleting user's Shopify connection from database
- * You should replace this with actual database operations
- */
-async function deleteShopifyConnection(userId: string): Promise<boolean> {
-  // In a real implementation, you would delete this from your database
-  console.log('Deleting Shopify connection for user:', userId);
-  return true;
-}
-
-/**
- * Placeholder function for getting user's Shopify connection from database by shop domain
- * You should replace this with actual database operations
- */
-async function getUserShopifyConnectionByShop(userId: string, shop: string): Promise<ShopifyConnection | null> {
-  // In a real implementation, you would fetch this from your database
-  console.log('Getting Shopify connection for user and shop:', userId, shop);
-
-  // For now, just call the generic function
-  const connection = await getUserShopifyConnection(userId);
-  
-  // Only return if the shop matches
-  if (connection && connection.shop === shop) {
-    return connection;
-  }
-  
-  return null;
 }
 
 export default ShopifyController;
