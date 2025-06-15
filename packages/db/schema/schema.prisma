@@ -157,6 +157,7 @@ model User {
   config             SellerConfig?
   address            Address?
   shopify_connection ShopifyConnection?
+  bulk_operations    BulkOperation[]
 
   // Auth.js relations
   accounts Account[]
@@ -779,19 +780,25 @@ model ApiRequest {
 
 // BulkOperation Model
 model BulkOperation {
-  id              String   @id @default(cuid())
-  code            String   @unique // Custom ID - Format: BO-YYMM-XXXXX
-  type            String   @db.VarChar(50)
-  status          String   @db.VarChar(20)
+  id              String @id @default(cuid())
+  code            String @unique // Custom ID - Format: BO-YYMM-XXXXX
+  type            String @db.VarChar(50)
+  status          String @db.VarChar(20)
   total_count     Int
-  processed_count Int      @default(0)
-  success_count   Int      @default(0)
-  failed_count    Int      @default(0)
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
+  processed_count Int    @default(0)
+  success_count   Int    @default(0)
+  failed_count    Int    @default(0)
+
+  user_id String?
+  user    User?   @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   @@index([type, status, created_at])
   @@index([code])
+  @@index([user_id])
+  @@unique([code, user_id])
 }
 
 // Auth.js models

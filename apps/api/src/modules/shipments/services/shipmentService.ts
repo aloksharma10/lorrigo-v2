@@ -1,4 +1,4 @@
-import { ShipmentStatus, ZoneLabel } from '@lorrigo/db';
+import { ShipmentStatus } from '@lorrigo/db';
 import { z } from 'zod';
 import { FastifyInstance } from 'fastify';
 import { CreateShipmentSchema, UpdateShipmentSchema, AddTrackingEventSchema, formatDateAddDays, generateId, getFinancialYearStartDate, getFinancialYear } from '@lorrigo/utils';
@@ -33,11 +33,6 @@ export class ShipmentService {
   ) {
     this.fastify = fastify as ExtendedFastifyInstance;
     this.vendorService = new VendorService(fastify);
-    this.fastify.redis.flushall().then(() => {
-      console.log('Redis flushed');
-    }).catch((err) => {
-      console.error('Error flushing Redis', err);
-    });
   }
 
   /**
