@@ -353,7 +353,7 @@ export class ShipmentService {
         .$transaction(
           async (prisma) => {
             // Step 2: Perform database operations in parallel to save time
-            const [shipment, orderUpdate, walletUpdate] = await Promise.all([
+            const [shipment, orderUpdate] = await Promise.all([
               // Create shipment record
               prisma.shipment.update({
                 where: { order_id: data.order_id },
@@ -365,7 +365,7 @@ export class ShipmentService {
                     : ShipmentStatus.COURIER_ASSIGNED,
                   shipping_charge: shippingCost,
                   fw_charge: selectedCourierRate.pricing.fwCharges,
-                  cod_amount: order.payment_mode === 'COD' ? order.amount_to_collect : 0,
+                  cod_charge: selectedCourierRate.pricing.codCharges,
                   rto_charge: selectedCourierRate.pricing.rtoCharges,
                   order_zone: orderZone,
                   edd: selectedCourierRate.etd ? new Date(selectedCourierRate.etd) : null,
@@ -403,10 +403,10 @@ export class ShipmentService {
               }),
 
               // Deduct amount from wallet
-              prisma.userWallet.update({
-                where: { id: userWallet.id },
-                data: { balance: { decrement: shippingCost } },
-              }),
+              // prisma.userWallet.update({
+              //   where: { id: userWallet.id },
+              //   data: { balance: { decrement: shippingCost } },
+              // }),
             ]);
 
             // Step 3: Create additional records that depend on the shipment ID
@@ -730,14 +730,11 @@ export class ShipmentService {
         order_id: id, // id is the order_id
         user_id: userId,
         status: {
-          notIn: [
-            ShipmentStatus.DELIVERED,
-            ShipmentStatus.RETURNED,
-            ShipmentStatus.IN_TRANSIT,
-            cancelType === 'shipment'
-              ? ShipmentStatus.CANCELLED_SHIPMENT
-              : ShipmentStatus.CANCELLED_ORDER,
-            ShipmentStatus.CANCELLED_ORDER,
+          in: [
+            ShipmentStatus.NEW,
+            ShipmentStatus.COURIER_ASSIGNED,
+            ShipmentStatus.PICKUP_SCHEDULED,
+            ShipmentStatus.OUT_FOR_PICKUP,
           ],
         },
       },
@@ -759,12 +756,6 @@ export class ShipmentService {
     try {
       return await this.fastify.prisma.$transaction(
         async (prisma) => {
-          if (
-            shipment.status !== ShipmentStatus.NEW &&
-            (!shipment.courier || !shipment.courier.channel_config)
-          ) {
-            return { error: 'Shipment not found or cannot be cancelled' };
-          }
 
           const shipmentStatus =
             cancelType === 'shipment'
@@ -786,49 +777,30 @@ export class ShipmentService {
             }
           }
 
+
           // Determine refund amount based on shipment status
-          let refundAmount = 0;
-          let refundDescription = '';
+          // let refundAmount = 0;
+          // let refundDescription = '';
+          // if (
+          //   shipment.status === ShipmentStatus.NEW ||
+          //   shipment.status === ShipmentStatus.PICKUP_SCHEDULED
+          // ) {
+          // Full refund for shipments that haven't been picked up
+          // refundAmount =
+          //   (shipment.fw_charge || 0) +
+          //   (shipment.order.payment_mode === 'COD' ? shipment.cod_charge || 0 : 0);
+          // refundDescription = `Full refund for cancelled shipment: ${shipment.awb || 'No AWB'}`;
+          // }
 
-          if (
-            shipment.status === ShipmentStatus.NEW ||
-            shipment.status === ShipmentStatus.PICKUP_SCHEDULED
-          ) {
-            // Full refund for shipments that haven't been picked up
-            refundAmount =
-              (shipment.shipping_charge || 0) +
-              (shipment.fw_charge || 0) +
-              (shipment.order.payment_mode === 'COD' ? shipment.cod_amount || 0 : 0);
-            refundDescription = `Full refund for cancelled shipment: ${shipment.awb || 'No AWB'}`;
-          } else if (shipment.status === ShipmentStatus.PICKED_UP) {
-            // Partial refund for picked-up shipments (no COD refund)
-            refundAmount = (shipment.fw_charge || 0) * 0.5; // 50% of forward charge
-            refundDescription = `Partial refund for cancelled picked-up shipment: ${shipment.awb || 'No AWB'}`;
-          }
+          const refundAmount = (shipment.fw_charge || 0) +
+            (shipment.order.payment_mode === 'COD' ? shipment.cod_charge || 0 : 0);
+          const refundDescription = `Full refund for cancelled shipment: ${shipment.awb || 'No AWB'}`;
 
-          let walletId = '';
-          let newBalance = 0;
-
-          if (refundAmount > 0) {
-            // Find user wallet
-            const userWallet = await prisma.userWallet.findUnique({
-              where: { user_id: userId },
-            });
-
-            if (!userWallet) {
-              return { error: 'User wallet not found' };
-            }
-
-            walletId = userWallet.id;
-
-            // Credit refund amount to wallet
-            const updatedWallet = await prisma.userWallet.update({
-              where: { id: userWallet.id },
-              data: { balance: { increment: refundAmount } },
-            });
-
-            newBalance = updatedWallet.balance;
-          }
+          // else if (shipment.status === ShipmentStatus.IN_TRANSIT) {
+          // Partial refund for picked-up shipments (no COD refund)
+          //   refundAmount = (shipment.fw_charge || 0) * 0.5; // 50% of forward charge
+          //   refundDescription = `Partial refund for cancelled picked-up shipment: ${shipment.awb || 'No AWB'}`;
+          // }
 
           // Update shipment status
           await prisma.shipment.update({
@@ -839,11 +811,11 @@ export class ShipmentService {
               ...(cancelType === 'shipment' &&
                 shipment.status !== ShipmentStatus.NEW && {
                 is_reshipped: true,
-                courier_id: null,
+                courier: { disconnect: true },
                 awb: null,
                 shipping_charge: null,
                 fw_charge: null,
-                cod_amount: null,
+                cod_charge: null,
                 rto_charge: null,
                 order_zone: null,
                 edd: null,
@@ -854,7 +826,7 @@ export class ShipmentService {
             },
           });
 
-          await prisma.shipmentPricing.delete({
+          await prisma.shipmentPricing.deleteMany({
             where: { shipment_id: shipment.id },
           });
 

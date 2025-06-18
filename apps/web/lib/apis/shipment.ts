@@ -112,6 +112,8 @@ export const useShippingOperations = () => {
     }) => api.post(`/shipments`, { order_id, courier_id, is_schedule_pickup }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['shipments'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet', 'balance'] });
     },
     onError: (error: any) => {
       toast.error(error.response.data.error);
@@ -146,6 +148,7 @@ export const useShippingOperations = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['shipments'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet', 'balance'] });
       toast.success('Shipment cancelled successfully');
     },
     onError: (error: any) => {

@@ -26,7 +26,7 @@ enum ShipmentStatus {
   NEW
   COURIER_ASSIGNED
   PICKUP_SCHEDULED
-  PICKED_UP
+  OUT_FOR_PICKUP
   IN_TRANSIT
   OUT_FOR_DELIVERY
   DELIVERED
@@ -491,7 +491,7 @@ model Shipment {
 
   shipping_charge Float?     @default(0)
   fw_charge       Float?     @default(0)
-  cod_amount      Float?     @default(0)
+  cod_charge      Float?     @default(0)
   rto_charge      Float?     @default(0)
   order_zone      ZoneLabel?
   edd             DateTime?
