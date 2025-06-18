@@ -106,62 +106,6 @@ export class ShipmentController {
   }
 
   /**
-   * Update a shipment
-   */
-  async updateShipment(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
-    try {
-      // Check if user is authenticated
-      await checkAuth(request, reply);
-
-      const { id } = request.params;
-      const updateData = UpdateShipmentSchema.parse(request.body);
-      const user_id = request.userPayload!.id;
-
-      const result = await this.shipmentService.updateShipment(id, user_id, updateData);
-
-      if (result.error) {
-        return reply.code(404).send({ error: result.error });
-      }
-
-      return reply.send(result.shipment);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return reply.code(400).send({ error: error.errors });
-      }
-      request.log.error(error);
-      return reply.code(500).send({ error: 'Internal Server Error' });
-    }
-  }
-
-  /**
-   * Add a tracking event to a shipment
-   */
-  async addTrackingEvent(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
-    try {
-      // Check if user is authenticated
-      await checkAuth(request, reply);
-
-      const { id } = request.params;
-      const eventData = AddTrackingEventSchema.parse(request.body);
-      const user_id = request.userPayload!.id;
-
-      const result = await this.shipmentService.addTrackingEvent(id, user_id, eventData);
-
-      if (result.error) {
-        return reply.code(404).send({ error: result.error });
-      }
-
-      return reply.code(201).send(result.tracking_event);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return reply.code(400).send({ error: error.errors });
-      }
-      request.log.error(error);
-      return reply.code(500).send({ error: 'Internal Server Error' });
-    }
-  }
-
-  /**
    * Get tracking events for a shipment
    */
   async getTrackingEvents(
@@ -193,14 +137,12 @@ export class ShipmentController {
    */
   async cancelShipment(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
     try {
-      // Check if user is authenticated
-      await checkAuth(request, reply);
 
       const { id } = request.params;
-      const { reason } = request.body as { reason?: string };
+      const { reason, cancelType } = request.body as { reason?: string, cancelType: 'shipment' | 'order' };
       const user_id = request.userPayload!.id;
 
-      const result = await this.shipmentService.cancelShipment(id, user_id, reason);
+      const result = await this.shipmentService.cancelShipment(id, cancelType, user_id, reason);
 
       if (result.error) {
         return reply.code(400).send({ error: result.error });
@@ -264,12 +206,13 @@ export class ShipmentController {
     try {
       const { id: userId } = request.userPayload as { id: string };
       const body = request.body as {
-        shipments?: Array<z.infer<typeof CreateShipmentSchema>>;
+        order_ids?: string[];
+        courier_ids?: string[];
+        is_schedule_pickup?: boolean;
         filters?: {
           status?: string;
           dateRange?: [string, string];
         };
-        schedule_pickup?: boolean;
         pickup_date?: string;
       };
 
@@ -282,20 +225,11 @@ export class ShipmentController {
         ];
       }
 
-      // Validate shipments data if provided
-      let shipments = body.shipments || [];
-
-      // If schedule_pickup is true for bulk operation, add it to all shipments
-      if (body.schedule_pickup && shipments.length > 0) {
-        shipments = shipments.map(shipment => ({
-          ...shipment,
-          schedule_pickup: body.schedule_pickup,
-          pickup_date: body.pickup_date || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-        }));
-      }
-
       const result = await this.shipmentService.createShipmentBulk(
-        shipments,
+        body.order_ids || [],
+        body.courier_ids || [],
+        body.is_schedule_pickup || false,
+        body.pickup_date,
         userId,
         {
           status: body.filters?.status,
@@ -319,8 +253,9 @@ export class ShipmentController {
   async schedulePickupBulk(request: FastifyRequest, reply: FastifyReply) {
     try {
       const user_id = request.userPayload!.id;
-      const { shipments, filters } = request.body as {
-        shipments?: Array<{ shipment_id: string; pickup_date: string }>;
+      const { shipment_ids, pickup_date, filters } = request.body as {
+        shipment_ids?: string[];
+        pickup_date: string;
         filters?: {
           status?: string;
           dateRange?: [string, string];
@@ -339,7 +274,8 @@ export class ShipmentController {
         : undefined;
 
       const result = await this.shipmentService.schedulePickupBulk(
-        shipments || [],
+        shipment_ids || [],
+        pickup_date,
         user_id,
         processedFilters
       );
@@ -361,8 +297,9 @@ export class ShipmentController {
   async cancelShipmentBulk(request: FastifyRequest, reply: FastifyReply) {
     try {
       const user_id = request.userPayload!.id;
-      const { shipments, filters } = request.body as {
-        shipments?: Array<{ shipment_id: string; reason?: string }>;
+      const { shipment_ids, reason, filters } = request.body as {
+        shipment_ids?: string[];
+        reason: string;
         filters?: {
           status?: string;
           dateRange?: [string, string];
@@ -381,7 +318,8 @@ export class ShipmentController {
         : undefined;
 
       const result = await this.shipmentService.cancelShipmentBulk(
-        shipments || [],
+        shipment_ids || [],
+        reason,
         user_id,
         processedFilters
       );

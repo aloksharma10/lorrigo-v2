@@ -214,51 +214,6 @@ export class OrderController {
   }
 
   /**
-   * Cancel an order
-   */
-  async cancelOrder(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
-    try {
-      // Check if user is authenticated
-      await checkAuth(request, reply);
-
-      const { id } = request.params;
-      const { reason } = request.body as { reason?: string };
-      const user_id = request.userPayload!.id;
-
-      const result = await this.orderService.cancelOrder(id, user_id, reason);
-
-      if (result.error) {
-        return reply.code(400).send({
-          message: result.error,
-        });
-      }
-
-      // Add job to notification queue for order cancellation
-      await addJob(QueueNames.NOTIFICATION, 'order-cancelled', {
-        orderId: result.order?.id,
-        orderNumber: result.order?.order_number,
-        reason,
-        userId: user_id,
-        customerId: result.order?.customer_id,
-      });
-
-      return {
-        id: result.order?.id,
-        orderNumber: result.order?.order_number,
-        status: result.order?.status,
-        updatedAt: result.order?.updated_at,
-      };
-    } catch (error) {
-      request.log.error(error);
-      captureException(error as Error);
-
-      return reply.code(500).send({
-        message: 'Internal server error',
-      });
-    }
-  }
-
-  /**
    * Get order statistics
    */
   async getOrderStats(request: FastifyRequest, reply: FastifyReply) {

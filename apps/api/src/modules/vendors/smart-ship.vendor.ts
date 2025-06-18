@@ -5,7 +5,7 @@ import { CACHE_KEYS } from '@/config/cache';
 import { VendorRegistrationResult, VendorServiceabilityResult, VendorShipmentResult, VendorPickupResult, VendorCancellationResult } from '@/types/vendor';
 import { PickupAddress, VendorShipmentData } from '@lorrigo/utils';
 import { getPincodeDetails } from '@/utils/pincode';
-import { DeliveryType } from '@lorrigo/db';
+import { DeliveryType, prisma } from '@lorrigo/db';
 
 /**
  * SmartShip vendor implementation
@@ -53,7 +53,7 @@ export class SmartShipVendor extends BaseVendor {
       );
 
       if (response.data && response.data.access_token) {
-        return response.data.access_token;
+        return `Bearer ${response.data.access_token}`;
       }
 
       console.error('SmartShip token generation failed:', response.data);
@@ -97,7 +97,7 @@ export class SmartShipVendor extends BaseVendor {
       }
 
       const apiConfig = {
-        Authorization: `Bearer ${token}`,
+        Authorization: token,
       };
 
       const payload = {
@@ -182,7 +182,7 @@ export class SmartShipVendor extends BaseVendor {
       }
 
       const apiConfig = {
-        Authorization: `Bearer ${token}`,
+        Authorization: token,
       };
 
       const pincodeConfig = await getPincodeDetails(Number(hubData.pincode));
@@ -332,12 +332,11 @@ export class SmartShipVendor extends BaseVendor {
 
       const collectableAmount = paymentType ? order.total_amount : 0;
 
-      let clientOrderReferenceId = order.code || order.order_reference_id;
+      let clientOrderReferenceId = (order.code || order.order_reference_id)?.slice(6);
 
-      if (shipmentData.is_reshipped) {
-        const lastNumber = clientOrderReferenceId.match(/\d+$/)?.[0] || '';
-        const incrementedNumber = lastNumber ? (parseInt(lastNumber) + 1).toString() : '1';
-        clientOrderReferenceId = `${clientOrderReferenceId.replace(/\d+$/, '')}_R${incrementedNumber}`;
+      // AS0000025 -- AS0000025_R1
+      if (shipmentData.order.shipment.is_reshipped) {
+        clientOrderReferenceId = `${clientOrderReferenceId}_R`;
       }
 
       // Create shipment payload
@@ -398,7 +397,7 @@ export class SmartShipVendor extends BaseVendor {
       if (smartShipResponse?.status === '403') {
         return {
           success: false,
-          message: 'SmartShip credentials expired',
+          message: `Channel (${courier.channel_config.nickname}) credentials expired`,
           data: response.data,
         };
       }
@@ -406,13 +405,14 @@ export class SmartShipVendor extends BaseVendor {
       if (!smartShipResponse?.data?.total_success_orders) {
         return {
           success: false,
-          message: 'Courier not serviceable',
+          message: smartShipResponse?.data?.errors?.data_discrepancy.flatMap((error: any) => error.error.map((err: any) => err)).join(', ') || 'Courier not serviceable',
           data: response.data,
         };
       }
 
+      const response_data = smartShipResponse?.data?.success_order_details?.orders[0];
       // Extract AWB number from the response
-      const awb = smartShipResponse?.data?.success_order_details?.orders[0]?.awb_number;
+      const awb = response_data?.awb_number;
 
       if (!awb) {
         return {
@@ -422,11 +422,19 @@ export class SmartShipVendor extends BaseVendor {
         };
       }
 
+      await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          order_reference_id: clientOrderReferenceId,
+        },
+      });
+
       return {
         success: true,
         message: 'Shipment created successfully',
         awb,
-        data: response.data,
+        routingCode: response_data?.route_code,
+        data: response_data,
       };
     } catch (error: any) {
       console.error('Error creating shipment with SmartShip:', error);
@@ -460,6 +468,7 @@ export class SmartShipVendor extends BaseVendor {
           success: false,
           message: 'Failed to get SmartShip authentication token',
           data: null,
+          pickup_date: null,
         };
       }
 
@@ -467,7 +476,7 @@ export class SmartShipVendor extends BaseVendor {
 
       // Format the request body
       const requestBody = {
-        client_order_reference_ids: [shipment.order.order_reference_id || shipment.order.code],
+        client_order_reference_ids: [shipment.order.order_reference_id],
         preferred_pickup_date: pickupDate,
         shipment_type: shipment.order.is_reverse_order ? 2 : 1,
       };
@@ -477,8 +486,9 @@ export class SmartShipVendor extends BaseVendor {
         APIs.SMART_SHIP.ORDER_MANIFEST,
         'POST',
         requestBody,
-        { Authorization: `Bearer ${token}` }
+        { Authorization: token }
       );
+
 
       // Check for errors in the response
       if (response.data?.status === false || response.data?.status === "403") {
@@ -486,6 +496,7 @@ export class SmartShipVendor extends BaseVendor {
           success: false,
           message: response.data?.message || 'Failed to schedule pickup with SmartShip',
           data: response.data,
+          pickup_date: null,
         };
       }
 
@@ -494,6 +505,7 @@ export class SmartShipVendor extends BaseVendor {
           success: false,
           message: JSON.stringify(response.data?.data?.errors),
           data: response.data,
+          pickup_date: null,
         };
       }
 
@@ -503,13 +515,16 @@ export class SmartShipVendor extends BaseVendor {
           success: false,
           message: 'Incomplete route',
           data: response.data?.data,
+          pickup_date: null,
         };
       }
+
 
       return {
         success: true,
         message: 'Pickup scheduled successfully with SmartShip',
         data: response.data?.data,
+        pickup_date: response.data?.data?.pickup_date,
       };
     } catch (error: any) {
       console.error(`Error scheduling pickup with SmartShip:`, error);
@@ -518,6 +533,7 @@ export class SmartShipVendor extends BaseVendor {
         success: false,
         message: error.response?.data?.message || error.message || 'Failed to schedule pickup',
         data: null,
+        pickup_date: null,
       };
     }
   }
@@ -544,12 +560,14 @@ export class SmartShipVendor extends BaseVendor {
         };
       }
 
-      const { awb } = cancelData;
+      const { shipment } = cancelData;
 
       // Format the request body
       const requestBody = {
-        request_type: 'cancel',
-        awb_numbers: [awb]
+        request_info: {},
+        orders: {
+          client_order_reference_ids: [shipment.order.order_reference_id],
+        },
       };
 
       // Make the API request
@@ -557,11 +575,11 @@ export class SmartShipVendor extends BaseVendor {
         APIs.SMART_SHIP.CANCEL_SHIPMENT,
         'POST',
         requestBody,
-        { Authorization: `Bearer ${token}` }
+        { Authorization: token }
       );
 
       // Check for errors in the response
-      if (response.data?.status === false) {
+      if (!response.data?.status) {
         return {
           success: false,
           message: response.data?.message || 'Failed to cancel shipment with SmartShip',

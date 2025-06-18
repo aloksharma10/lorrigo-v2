@@ -1,16 +1,11 @@
-import { Queue, Worker, Job } from 'bullmq';
+import { Worker, Job } from 'bullmq';
 import { FastifyInstance } from 'fastify';
 import { ShipmentService } from '../services/shipmentService';
 import { z } from 'zod';
 import { CreateShipmentSchema } from '@lorrigo/utils';
+import { queues, QueueNames } from '@/lib/queue';
 
-// Queue names
-const SHIPMENT_QUEUE = 'shipment-queue';
-const BULK_OPERATION_QUEUE = 'bulk-operation-queue';
-
-/**
- * Job types for the shipment queue
- */
+// Job types for the shipment queue
 export enum JobType {
   CREATE_SHIPMENT = 'create-shipment',
   SCHEDULE_PICKUP = 'schedule-pickup',
@@ -47,61 +42,81 @@ interface BulkOperationResult {
  * @param shipmentService Shipment service instance
  */
 export function initShipmentQueue(fastify: FastifyInstance, shipmentService: ShipmentService) {
-  // Get Redis connection details from environment or config
-  const connection = {
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379'),
-    password: process.env.REDIS_PASSWORD || undefined
-  };
-
-  // Create the queue
-  const bulkOperationQueue = new Queue(BULK_OPERATION_QUEUE, {
-    connection,
-    defaultJobOptions: {
-      attempts: 3,
-      backoff: {
-        type: 'exponential',
-        delay: 5000
-      },
-      removeOnComplete: true,
-      removeOnFail: 1000 // Keep last 1000 failed jobs
+  try {
+    // Get the queue from the centralized queue.ts
+    const bulkOperationQueue = queues[QueueNames.BULK_OPERATION];
+    
+    if (!bulkOperationQueue) {
+      fastify.log.error('Bulk operation queue not initialized in queue.ts');
+      return { queue: null, worker: null };
     }
-  });
 
-  // Create the worker
-  const worker = new Worker(BULK_OPERATION_QUEUE, async (job: Job) => {
-    fastify.log.info(`Processing job ${job.id} of type ${job.name}`);
+    // Create the worker
+    const worker = new Worker(QueueNames.BULK_OPERATION, async (job: Job) => {
+      fastify.log.info(`Processing job ${job.id} of type ${job.name}`);
 
-    try {
-      switch (job.name) {
-        case JobType.BULK_CREATE_SHIPMENT:
-          return await processBulkCreateShipment(job, fastify, shipmentService);
-        case JobType.BULK_SCHEDULE_PICKUP:
-          return await processBulkSchedulePickup(job, fastify, shipmentService);
-        case JobType.BULK_CANCEL_SHIPMENT:
-          return await processBulkCancelShipment(job, fastify, shipmentService);
-        default:
-          throw new Error(`Unknown job type: ${job.name}`);
+      try {
+        switch (job.name) {
+          case JobType.BULK_CREATE_SHIPMENT:
+            return await processBulkCreateShipment(job, fastify, shipmentService);
+          case JobType.BULK_SCHEDULE_PICKUP:
+            return await processBulkSchedulePickup(job, fastify, shipmentService);
+          case JobType.BULK_CANCEL_SHIPMENT:
+            return await processBulkCancelShipment(job, fastify, shipmentService);
+          default:
+            throw new Error(`Unknown job type: ${job.name}`);
+        }
+      } catch (error) {
+        fastify.log.error(`Error processing job ${job.id}: ${error}`);
+        throw error;
       }
-    } catch (error) {
-      fastify.log.error(`Error processing job ${job.id}: ${error}`);
-      throw error;
+    }, { 
+      connection: bulkOperationQueue.opts.connection,
+      concurrency: 5, // Process up to 5 jobs concurrently
+      autorun: true, // Ensure worker starts automatically
+      lockDuration: 30000, // 30 seconds lock
+      lockRenewTime: 15000, // Renew lock every 15 seconds
+      stalledInterval: 30000, // Check for stalled jobs every 30 seconds
+      maxStalledCount: 3 // Allow 3 stalls before job is considered failed
     }
-  }, { connection });
+  );
+    // Handle worker events
+    worker.on('completed', (job) => {
+      fastify.log.info(`Job ${job.id} completed`);
+    });
 
-  // Handle worker events
-  worker.on('completed', (job) => {
-    fastify.log.info(`Job ${job.id} completed`);
-  });
+    worker.on('failed', (job, error) => {
+      fastify.log.error(`Job ${job?.id} failed: ${error}`);
+    });
 
-  worker.on('failed', (job, error) => {
-    fastify.log.error(`Job ${job?.id} failed: ${error}`);
-  });
+    // Handle connection errors
+    worker.on('error', (error) => {
+      fastify.log.error(`Worker connection error: ${error}`);
+    });
 
-  // Add the queue to the fastify instance for use in other parts of the application
-  (fastify as any).bulkOperationQueue = bulkOperationQueue;
+    worker.on('active', (job) => {
+      fastify.log.info(`Job ${job.id} has started processing`);
+    });
 
-  return { queue: bulkOperationQueue, worker };
+    worker.on('stalled', (jobId) => {
+      fastify.log.warn(`Job ${jobId} has stalled`);
+    });
+
+    fastify.log.info('Shipment queue worker initialized successfully');
+    
+    // Register a cleanup function for graceful shutdown
+    fastify.addHook('onClose', async () => {
+      fastify.log.info('Closing shipment queue worker');
+      await worker.close();
+    });
+
+    fastify.log.info('Shipment queue initialized successfully');
+    return { queue: bulkOperationQueue, worker };
+  } catch (error) {
+    fastify.log.error(`Failed to initialize shipment queue: ${error}`);
+    // Return empty objects to prevent errors elsewhere in the code
+    return { queue: null, worker: null };
+  }
 }
 
 /**
@@ -120,6 +135,7 @@ async function processBulkCreateShipment(
   let successCount = 0;
   let failedCount = 0;
 
+  console.log('chla chla data', data)
   // Process each shipment
   for (let i = 0; i < data.length; i++) {
     try {
@@ -314,7 +330,8 @@ async function processBulkCancelShipment(
     try {
       // Cancel the shipment
       const result = await shipmentService.cancelShipment(
-        data[i].shipmentId,
+        data[i].shipment_id,
+        'shipment',
         userId,
         data[i].reason
       );
@@ -322,14 +339,14 @@ async function processBulkCancelShipment(
       if (result.error) {
         failedCount++;
         results.push({
-          id: data[i].shipmentId,
+          id: data[i].shipment_id,
           success: false,
           message: result.error
         });
       } else {
         successCount++;
         results.push({
-          id: data[i].shipmentId,
+          id: data[i].shipment_id,
           success: true,
           message: 'Shipment cancelled successfully',
           data: result
@@ -351,7 +368,7 @@ async function processBulkCancelShipment(
     } catch (error) {
       failedCount++;
       results.push({
-        id: data[i].shipmentId || 'unknown',
+        id: data[i].shipment_id || 'unknown',
         success: false,
         message: error instanceof Error ? error.message : 'Unknown error'
       });

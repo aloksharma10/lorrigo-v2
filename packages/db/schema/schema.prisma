@@ -35,7 +35,8 @@ enum ShipmentStatus {
   UNDELIVERED
   RETURNED
   EXCEPTION
-  CANCELLED
+  CANCELLED_SHIPMENT
+  CANCELLED_ORDER
 }
 
 enum PaymentMethod {
@@ -492,6 +493,11 @@ model Shipment {
   edd             DateTime?
   pickup_date     DateTime?
   pickup_id       String?
+  routing_code    String?
+  cancel_reason   String?
+  is_reshipped    Boolean @default(false)
+
+  sr_shipment_id String? @db.VarChar(50)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -517,7 +523,6 @@ model Shipment {
 // TrackingEvent Model
 model TrackingEvent {
   id          String         @id @default(cuid())
-  code        String // Custom ID - Format: TE-YYMM-XXXXX
   status      ShipmentStatus
   location    String?        @db.VarChar(100)
   description String?        @db.VarChar(255)
@@ -525,9 +530,7 @@ model TrackingEvent {
   shipment    Shipment       @relation(fields: [shipment_id], references: [id], onDelete: Cascade)
   timestamp   DateTime       @default(now())
 
-  @@unique([code, shipment_id])
   @@index([shipment_id, timestamp])
-  @@index([code])
 }
 
 model ChannelConfig {
@@ -795,10 +798,10 @@ model BulkOperation {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
+  @@unique([code, user_id])
   @@index([type, status, created_at])
   @@index([code])
   @@index([user_id])
-  @@unique([code, user_id])
 }
 
 // Auth.js models

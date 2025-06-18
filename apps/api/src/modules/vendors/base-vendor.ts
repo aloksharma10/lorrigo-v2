@@ -83,7 +83,6 @@ export abstract class BaseVendor {
         config.data = data;
       }
 
-      console.log(`Making ${method} request to ${url}`);
       const response = await axios(config);
       return response;
     } catch (error: any) {
@@ -166,6 +165,7 @@ export abstract class BaseVendor {
       success: false,
       message: `Pickup scheduling not implemented for ${this.name}`,
       data: null,
+      pickup_date: null,
     };
   }
   

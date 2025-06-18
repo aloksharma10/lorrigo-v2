@@ -538,7 +538,6 @@ export class OrderService {
                         description: 'Order Created',
                         status: 'NEW',
                         timestamp: new Date(),
-                        code: 'NEW',
                       },
                     ],
                   },
@@ -905,7 +904,6 @@ export class OrderService {
             // Add a tracking event for the update
             await tx.trackingEvent.create({
               data: {
-                code: `UPDATE-${Date.now()}`,
                 status: existingOrder.shipment.status,
                 description: 'Order Updated',
                 shipment_id: existingOrder.shipment.id,
@@ -961,62 +959,8 @@ export class OrderService {
   }
 
   /**
-   * Cancel an order
-   */
-  async cancelOrder(id: string, user_id: string, reason?: string) {
-    // Check if order exists and belongs to the user
-    const existingOrder = await this.fastify.prisma.order.findUnique({
-      where: {
-        id,
-        user_id: user_id,
-      },
-      include: {
-        shipment: true,
-      },
-    });
-
-    if (!existingOrder) {
-      return { error: 'Order not found' };
-    }
-
-    // Check if order can be cancelled
-    if (!['CREATED', 'CONFIRMED'].includes(existingOrder.status)) {
-      return { error: 'Cannot cancel order at this stage' };
-    }
-
-    // Check if there are any shipments in progress
-    const hasShipmentsInProgress =
-      existingOrder.shipment && !['CREATED', 'CANCELLED'].includes(existingOrder.shipment.status);
-
-    if (hasShipmentsInProgress) {
-      return { error: 'Cannot cancel order with shipments in progress' };
-    }
-
-    // Update order status to CANCELLED and add reason to notes
-    const order = await this.fastify.prisma.order.update({
-      where: { id },
-      data: {
-        status: 'CANCELLED',
-      },
-    });
-
-    // Cancel any existing shipments in CREATED status
-    await this.fastify.prisma.shipment.updateMany({
-      where: {
-        order_id: id,
-        status: 'NEW',
-      },
-      data: {
-        status: 'CANCELLED',
-      },
-    });
-
-    return { order };
-  }
-
-  /**
-   * Get order statistics
-   */
+  * Get order statistics
+  */
   async getOrderStats(user_id: string, period: string) {
     // Calculate date range based on period
     const now = new Date();

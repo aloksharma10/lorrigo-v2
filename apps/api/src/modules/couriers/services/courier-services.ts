@@ -111,7 +111,7 @@ export class CourierService {
 
       const courierIds = courierPricings.map((pricing) => pricing.courier_id);
 
-      return await this.fastify.prisma.courier.findMany({
+      const couriers = await this.fastify.prisma.courier.findMany({
         where: {
           id: { in: courierIds },
           is_active: true,
@@ -119,18 +119,48 @@ export class CourierService {
         orderBy: {
           name: 'asc',
         },
+        include: {
+          channel_config: {
+            select: {
+              nickname: true,
+            },
+          },
+        },
       });
+
+      return couriers.map((courier) => ({
+        id: courier.id,
+        name: `${courier.name} (${courier.channel_config?.nickname})`,
+        is_active: courier.is_active,
+        is_reversed_courier: courier.is_reversed_courier,
+        weight_slab: courier.weight_slab,
+        increment_weight: courier.increment_weight,
+      }));
     }
 
     // For admins, show all couriers
-    return await this.fastify.prisma.courier.findMany({
+    const couriers = await this.fastify.prisma.courier.findMany({
       where: {
         is_active: true,
       },
       orderBy: {
         name: 'asc',
       },
+      include: {
+        channel_config: {
+          select: {
+            nickname: true,
+          },
+        },
+      },
     });
+
+    return couriers.map((courier) => ({
+      id: courier.id,
+      name: `${courier.name} (${courier.channel_config?.nickname})`,
+      is_active: courier.is_active,
+      is_reversed_courier: courier.is_reversed_courier,
+    }));
   }
 
   async getCourierById(id: string, userId: string, userRole: Role): Promise<any | ErrorResponse> {

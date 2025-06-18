@@ -55,9 +55,8 @@ export class PickupService {
       }
 
       const { city, state } = pincodeDetails;
-      const currentFinancialYear = getFinancialYear(new Date());
 
-      const [lastSequenceNumberHub, lastSequenceNumberAddress, b2bConfig] = await Promise.all([
+      const [lastSequenceNumberHub, lastSequenceNumberAddress, b2bConfig, lastHub] = await Promise.all([
         this.fastify.prisma.hub.count({
           where: {
             created_at: {
@@ -75,24 +74,22 @@ export class PickupService {
           },
         }),
         null,
+        this.fastify.prisma.hub.findFirst({
+          orderBy: {
+            created_at: 'desc',
+          },
+        }),
         // this.fastify.prisma.vendorConfig.findFirst({
         //   where: { vendorName: 'SHIPROCKET_B2B' },
         // }),
       ]);
 
-      console.log(lastSequenceNumberHub, 'lastSequenceNumberHub');
       const lorrigoPickupId = generateId({
-        entityName: sellerName.toUpperCase(),
-        tableName: 'hub',
-        lastUsedFinancialYear: currentFinancialYear,
+        tableName: 'HUB',
+        prefix: 'LS-HUB-',
+        entityName: sellerName,
+        lastUsedFinancialYear: getFinancialYear(lastHub?.created_at || new Date()),
         lastSequenceNumber: lastSequenceNumberHub,
-      }).id;
-
-      const lorrigoAddressId = generateId({
-        entityName: sellerName.toUpperCase(),
-        tableName: 'address',
-        lastUsedFinancialYear: currentFinancialYear,
-        lastSequenceNumber: lastSequenceNumberAddress,
       }).id;
 
       const vendorPayload = {
@@ -113,7 +110,7 @@ export class PickupService {
           smartShipVendor.registerHubWithBothDeliveryTypes(vendorPayload),
           shiprocketVendor.registerHub(
             vendorPayload,
-            `${lorrigoPickupId}-${vendorPayload.facilityName}`
+            lorrigoPickupId
           ),
           Promise.all(delhiveryVendors.map((vendor) => vendor.registerHub(vendorPayload))),
           null,

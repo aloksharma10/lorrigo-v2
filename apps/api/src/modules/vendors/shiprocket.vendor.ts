@@ -374,8 +374,8 @@ export class ShiprocketVendor extends BaseVendor {
         routingCode: wrapperData.routing_code || '',
         pickup_date: wrapperData.pickup_scheduled_date ?? "",
         data: {
-          shiprocket_order_id: wrapperData.order_id,
-          shiprocket_shipment_id: wrapperData.shipment_id,
+          sr_order_id: wrapperData.order_id,
+          sr_shipment_id: wrapperData.shipment_id,
           ...wrapperResponse.data,
         },
       };
@@ -404,6 +404,7 @@ export class ShiprocketVendor extends BaseVendor {
         return {
           success: false,
           message: 'Failed to get Shiprocket authentication token',
+          pickup_date: null,
           data: null,
         };
       }
@@ -417,7 +418,7 @@ export class ShiprocketVendor extends BaseVendor {
 
       // Format the request body
       const requestBody = {
-        shipment_id: [shipment.shiprocket_shipment_id || ''],
+        shipment_id: [shipment.sr_shipment_id || ''],
         pickup_date: [formattedDate],
       };
 
@@ -432,6 +433,7 @@ export class ShiprocketVendor extends BaseVendor {
       return {
         success: true,
         message: 'Pickup scheduled successfully with Shiprocket',
+        pickup_date: response.data.Booked_date || formattedDate || '',
         data: response.data,
       };
     } catch (error: any) {
@@ -440,6 +442,7 @@ export class ShiprocketVendor extends BaseVendor {
         return {
           success: true,
           message: 'Pickup already scheduled with Shiprocket',
+          pickup_date: null,
           data: error.response?.data,
         };
       }
@@ -449,6 +452,7 @@ export class ShiprocketVendor extends BaseVendor {
       return {
         success: false,
         message: error.response?.data?.message || error.message || 'Failed to schedule pickup',
+        pickup_date: null,
         data: null,
       };
     }
@@ -471,40 +475,21 @@ export class ShiprocketVendor extends BaseVendor {
         };
       }
 
-      const { awb, shipment } = cancelData;
+      const { awb } = cancelData;
 
-      // Shiprocket requires the order ID for cancellation
-      const orderId = shipment.order?.shiprocket_order_id || '';
-
-      if (!orderId) {
-        // If order ID is missing, try to cancel using the AWB instead
-        const response = await this.makeRequest(
-          APIs.SHIPROCKET.CANCEL_SHIPMENT,
-          'POST',
-          { awbs: [awb] },
-          { Authorization: token }
-        );
-
-        return {
-          success: true,
-          message: 'Shipment cancellation requested with Shiprocket using AWB',
-          data: response.data,
-        };
-      }
-
-      // Make the API request using order ID
       const response = await this.makeRequest(
-        `${APIs.SHIPROCKET.CANCEL_ORDER}/${orderId}`,
+        APIs.SHIPROCKET.CANCEL_SHIPMENT,
         'POST',
-        {},
+        { awbs: [awb] },
         { Authorization: token }
       );
 
       return {
         success: true,
-        message: 'Shipment cancelled successfully with Shiprocket',
+        message: 'Shipment cancellation requested with Shiprocket using AWB',
         data: response.data,
       };
+
     } catch (error: any) {
       console.error(`Error cancelling shipment with Shiprocket:`, error);
 

@@ -27,7 +27,6 @@ import { pickupAddressRegistrationSchema } from '@lorrigo/utils';
 import useFetchCityState from '@/lib/hooks/use-fetch-city-state';
 import { Loader2, X } from 'lucide-react';
 import { useHubOperations } from '@/lib/apis/hub';
-import { SubmitBtn } from '@/components/submit-btn';
 
 export const AddPickupLocationModal = () => {
   const router = useRouter();
@@ -167,7 +166,13 @@ export const AddPickupLocationModal = () => {
             >
               Reset
             </Button>
-            <SubmitBtn isLoading={isLoading} text="Add Pickup Location" />
+            <Button
+              isLoading={isLoading}
+              variant={'default'}
+              type="submit"
+            >
+              Add Pickup Location
+            </Button>
           </DialogFooter>
         </form>
       </Form>

@@ -313,6 +313,7 @@ export class DelhiveryVendor extends BaseVendor {
         success: true,
         message: `Shipment created with Delhivery ${this.weightCategory} kg`,
         awb,
+        routingCode: delhiveryResponse?.sort_code,
         data: response.data,
       };
     } catch (error: any) {
@@ -346,6 +347,7 @@ export class DelhiveryVendor extends BaseVendor {
         return {
           success: false,
           message: `Failed to get Delhivery ${this.weightCategory} kg authentication token`,
+          pickup_date: null,
           data: null,
         };
       }
@@ -373,6 +375,7 @@ export class DelhiveryVendor extends BaseVendor {
         return {
           success: false,
           message: response.data?.error || `Failed to schedule pickup with Delhivery ${this.weightCategory}`,
+          pickup_date: null,
           data: response.data,
         };
       }
@@ -380,6 +383,7 @@ export class DelhiveryVendor extends BaseVendor {
       return {
         success: true,
         message: `Pickup scheduled successfully with Delhivery ${this.weightCategory}`,
+        pickup_date: response.data.pickup_date,
         data: response.data,
       };
     } catch (error: any) {
@@ -388,6 +392,7 @@ export class DelhiveryVendor extends BaseVendor {
       return {
         success: false,
         message: error.response?.data?.message || error.message || 'Failed to schedule pickup',
+        pickup_date: null,
         data: null,
       };
     }
@@ -417,21 +422,20 @@ export class DelhiveryVendor extends BaseVendor {
 
       const { awb } = cancelData;
 
-      // Make the API request - Delhivery uses the waybill for cancellation
-      const endpoint = `/api/packages/json/edit/${awb}`;
       const requestBody = {
+        waybill: awb,
         cancellation: true
       };
       
       const response = await this.makeRequest(
-        endpoint,
+        APIs.DELHIVERY.CANCEL_ORDER,
         'POST',
         requestBody,
-        { Authorization: `Token ${token}` }
+        { Authorization: token }
       );
 
       // Check for errors in the response
-      if (!response.data?.success) {
+      if (!response.data?.status) {
         return {
           success: false,
           message: response.data?.error || `Failed to cancel shipment with Delhivery ${this.weightCategory}`,

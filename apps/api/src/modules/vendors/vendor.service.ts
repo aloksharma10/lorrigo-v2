@@ -443,6 +443,7 @@ export class VendorService {
   ): Promise<{
     success: boolean;
     message: string;
+    pickup_date: string | null;
     data?: any;
   }> {
     try {
@@ -451,6 +452,7 @@ export class VendorService {
         return {
           success: false,
           message: `Vendor ${vendorName} not found`,
+          pickup_date: null,
           data: null,
         };
       }
@@ -461,6 +463,7 @@ export class VendorService {
       return {
         success: result.success,
         message: result.message,
+        pickup_date: result.pickup_date || null,
         data: result.data
       };
     } catch (error: unknown) {
@@ -468,6 +471,7 @@ export class VendorService {
       return {
         success: false,
         message: error instanceof Error ? error.message : `Failed to schedule pickup with ${vendorName}`,
+        pickup_date: null,
         data: null,
       };
     }

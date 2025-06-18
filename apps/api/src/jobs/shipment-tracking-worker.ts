@@ -40,7 +40,6 @@ const shipmentTrackingWorker = new Worker(
           location,
           description,
           shipment_id: shipment_id,
-          code: 'ST-2505-00001',
           shipment: {
             connect: { id: shipment_id },
           },

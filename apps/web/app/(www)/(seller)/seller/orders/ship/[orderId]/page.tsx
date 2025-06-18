@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import {
   MapPin,
@@ -58,26 +58,34 @@ export default function ShipOrderPage() {
   const [activeTab, setActiveTab] = useState("All")
   const [sortBy, setSortBy] = useState("custom")
   const [searchQuery, setSearchQuery] = useState("")
-  const [isShipping, setIsShipping] = useState<string | null>(null)
   const [isOrderDetailsOpen, setIsOrderDetailsOpen] = useState(true)
   const [priceFilter, setPriceFilter] = useState("all")
   const [ratingFilter, setRatingFilter] = useState("all")
   const [showMobileOrderDetails, setShowMobileOrderDetails] = useState(false)
   const [autoScheduledPickup, setAutoScheduledPickup] = useState(false)
 
-  const { getShippingRates, shipOrder } = useShippingOperations()
+  const { getShippingRates, shipOrder: { mutateAsync: createShipment, isPending: isCreatingShipment, isSuccess: isShipmentCreated } } = useShippingOperations()
   const { data, isLoading, error } = getShippingRates(orderId)
 
   const handleShipOrder = async (carrierId: string, courierName: string) => {
-    setIsShipping(carrierId)
     try {
-      await shipOrder.mutateAsync({ order_id: orderId, courier_id: carrierId, schedule_pickup: autoScheduledPickup })
+      toast.promise(createShipment({ order_id: orderId, courier_id: carrierId, schedule_pickup: autoScheduledPickup }), {
+        loading: "Creating shipment...",
+        success: "Shipment created successfully",
+        error: "Failed to create shipment",
+      })
     } catch (error) {
-      // console.error("Failed to ship order")
+      console.error("Failed to ship order")
     } finally {
-      setIsShipping(null)
+      setAutoScheduledPickup(false)
     }
   }
+
+  useEffect(() => {
+    if (isShipmentCreated) {
+      router.push(`/seller/orders/forward-shipments/all`)
+    }
+  }, [isShipmentCreated])
 
   const filterCouriersByTab = (rates: CourierRate[]) => {
     if (!rates) return []
@@ -434,10 +442,10 @@ export default function ShipOrderPage() {
                           <td className="p-4">
                             <Button
                               onClick={() => handleShipOrder(rate.id, rate.name)}
-                              disabled={isShipping === rate.id}
+                              disabled={isCreatingShipment}
                               className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
                             >
-                              {isShipping === rate.id ? "Shipping..." : "Ship Now"}
+                              {isCreatingShipment ? "Shipping..." : "Ship Now"}
                             </Button>
                           </td>
                         </tr>
@@ -487,11 +495,12 @@ export default function ShipOrderPage() {
 
                     <Button
                       onClick={() => handleShipOrder(rate.id, rate.name)}
-                      disabled={isShipping === rate.id}
+                      disabled={isCreatingShipment}
+                      isLoading={isCreatingShipment}
                       className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
                       size="sm"
                     >
-                      {isShipping === rate.id ? (
+                      {isCreatingShipment ? (
                         <>
                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
                           Shipping...

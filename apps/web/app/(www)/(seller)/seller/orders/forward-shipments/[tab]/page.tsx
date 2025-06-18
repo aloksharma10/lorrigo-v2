@@ -1,13 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { Plus, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { SHIPMENT_TAB_ROUTES } from '@/lib/routes/nested-shipments';
 import { useParams, useSearchParams } from 'next/navigation';
 
 import ScrollableTabsProps from '@/components/client-tabs';
 import ShipmentsTable from '@/components/tables/order/shipmen-table';
-import OpenModalBtn from '@/components/open-modal-btn';
 
 import { Badge, Button } from '@lorrigo/ui/components';
 
@@ -57,14 +56,6 @@ export default function ShipmentsPage() {
           <Badge variant="outline" className="px-3 py-1">
             Domestic
           </Badge>
-          <Button variant="outline" size="sm" className="gap-1">
-            <RefreshCw className="h-4 w-4" />
-            Refresh
-          </Button>
-          {/* <Button variant="outline" size="sm" className="gap-1">
-            <Download className="h-4 w-4" />
-            Export
-          </Button> */}
         </div>
       </div>
 

@@ -103,12 +103,8 @@ export const SELLER_ROUTES = [
         url: '/seller/rate-card',
       },
       {
-        title: 'Bulk Actions',
-        url: '/seller/bulk-actions',
-      },
-      {
         title: 'Bulk Activity Log',
-        url: '/seller/bulk-activity-log',
+        url: '/seller/bulk-log',
       },
     ],
   },

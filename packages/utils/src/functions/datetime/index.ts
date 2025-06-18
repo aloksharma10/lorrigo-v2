@@ -6,3 +6,4 @@ export * from './get-datetime-local';
 export * from './get-days-difference';
 export * from './get-first-and-last-day';
 export * from './format-data-add-days';
+export * from './compare-dates';

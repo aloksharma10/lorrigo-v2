@@ -14,6 +14,7 @@ import { TokenProvider } from './token-provider';
 import { CSVUploadProvider } from './csv-upload-provider';
 import DrawerProvider from './drawer-provider';
 import { DrawerRegistry } from '@/drawer/drawer-registry';
+import { BulkOperationsProvider } from './bulk-operations-provider';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = React.useState(
@@ -53,10 +54,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
               <ModalProvider>
                 <ModalRegistry />
                 <DrawerProvider>
+                <BulkOperationsProvider>
                   <DrawerRegistry />
                   <LoadingBar />
                   <CSVUploadProvider>{children}</CSVUploadProvider>
                   <Toaster position="top-right" toastOptions={{ duration: 4000 }} richColors />
+                  </BulkOperationsProvider>
                 </DrawerProvider>
               </ModalProvider>
             </NextThemesProvider>

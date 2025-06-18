@@ -26,6 +26,8 @@ import { useRouter } from 'next/navigation';
 import { useAuthToken } from '@/components/providers/token-provider';
 import { useDrawer } from '@/components/providers/drawer-provider';
 import { CopyBtn } from '@/components/copy-btn';
+import { useBulkOperations } from '@/components/providers/bulk-operations-provider';
+import { useModalStore } from '@/modal/modal-store';
 
 interface ShipmentsTableProps {
   initialParams: ShipmentParams;
@@ -54,6 +56,9 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
   );
   const { isTokenReady } = useAuthToken();
   const { openDrawer } = useDrawer();
+  const { openBulkOperation } = useBulkOperations();
+  const { openModal } = useModalStore();
+
   // Fetch shipments with React Query
   const { data, isLoading, isError, isFetching, error } = useQuery({
     queryKey: [
@@ -308,7 +313,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
 
             {shipment.pickupDate && (
               <div className="mt-1 text-xs">
-                For {shipment.pickupDate.split(' ')[1]}, {shipment.pickupDate.split(' ')[2]}
+                For: {shipment.pickupDate.split('T')[0]}
               </div>
             )}
             {shipment.edd && <div className="mt-1 text-xs">EDD: {shipment.edd.split('T')[0]}</div>}
@@ -367,16 +372,32 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
                 >
                   Edit Order
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => console.log('Track shipment:', row.original)}>
+                <DropdownMenuItem
+                  onClick={() => {
+                    console.log('Track shipment:', row.original);
+                  }}
+                >
                   Track shipment
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => {
-                    console.log('Cancel order:', row.original);
-                    toast.success('Order cancellation initiated');
+                    openModal('pickup-schedule', { 
+                      shipmentId: row.original.id, 
+                      orderNumber: row.original.orderNumber,
+                      awb: row.original.awb
+                    });
                   }}
+                  className='flex w-full items-center justify-start'
                 >
-                  Cancel order
+                  Schedule Pickup
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    openModal('cancel-shipment', { shipmentId: row.original.id, orderNumber: row.original.orderNumber });
+                  }}
+                  className="flex w-full items-center justify-start text-red-600 hover:text-red-500"
+                >
+                  Cancel Shipment
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -388,6 +409,28 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
 
   // Define bulk actions
   const bulkActions = [
+    {
+      label: 'Create Shipments',
+      action: (selectedRows: Shipment[]) => {
+        openBulkOperation('create-shipment', selectedRows);
+      },
+      isLoading: false,
+    },
+    {
+      label: 'Schedule Pickup',
+      action: (selectedRows: Shipment[]) => {
+        openBulkOperation('schedule-pickup', selectedRows);
+      },
+      isLoading: false,
+    },
+    {
+      label: 'Cancel Shipments',
+      action: (selectedRows: Shipment[]) => {
+        openBulkOperation('cancel-shipment', selectedRows);
+      },
+      variant: 'destructive' as const,
+      isLoading: false,
+    },
     {
       label: 'Download Manifest',
       action: (selectedRows: Shipment[]) => {
@@ -402,15 +445,6 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
         console.log('Generate Labels for:', selectedRows);
         toast.success(`Generating labels for ${selectedRows.length} orders`);
       },
-      isLoading: false,
-    },
-    {
-      label: 'Cancel Orders',
-      action: (selectedRows: Shipment[]) => {
-        console.log('Cancel Orders:', selectedRows);
-        toast.success(`Cancelling ${selectedRows.length} orders`);
-      },
-      variant: 'destructive' as const,
       isLoading: false,
     },
   ];
@@ -514,3 +548,4 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
     </>
   );
 }
+

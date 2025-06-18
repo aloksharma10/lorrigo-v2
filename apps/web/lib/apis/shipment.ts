@@ -41,6 +41,48 @@ export interface ShippingRatesResponse {
   order: any;
 }
 
+export interface BulkOperation {
+  id: string;
+  code: string;
+  type: 'CREATE_SHIPMENT' | 'SCHEDULE_PICKUP' | 'CANCEL_SHIPMENT';
+  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  total_count: number;
+  processed_count: number;
+  success_count: number;
+  failed_count: number;
+  created_at: string;
+  updated_at: string;
+  progress?: number;
+  results?: Array<{
+    id: string;
+    success: boolean;
+    message: string;
+    data?: any;
+  }>;
+}
+
+export interface BulkOperationFilters {
+  status?: string;
+  dateRange?: [string | undefined, string | undefined];
+}
+
+export interface BulkOperationResponse {
+  success: boolean;
+  operation: BulkOperation;
+  message?: string;
+  error?: string;
+}
+
+export interface BulkOperationsListResponse {
+  data: BulkOperation[];
+  meta: {
+    total: number;
+    pageCount: number;
+    page: number;
+    pageSize: number;
+  };
+}
+
 export const useShippingOperations = () => {
   const { isTokenReady } = useAuthToken();
   const queryClient = useQueryClient();
@@ -69,8 +111,153 @@ export const useShippingOperations = () => {
     }
   });
 
+  // Schedule pickup for a shipment
+  const schedulePickup = useMutation({
+    mutationFn: ({ shipmentId, pickupDate }: { shipmentId: string; pickupDate: string }) => 
+      api.post(`/shipments/${shipmentId}/schedule-pickup`, { pickupDate }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['shipments'] });
+      toast.success('Pickup scheduled successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to schedule pickup');
+    }
+  });
+
+  // Cancel a shipment
+  const cancelShipment = useMutation({
+    mutationFn: ({ shipmentId, reason, cancelType }: { shipmentId: string; reason: string, cancelType: 'shipment' | 'order' }) => 
+      api.post(`/shipments/${shipmentId}/cancel`, { reason, cancelType }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['shipments'] });
+      toast.success('Shipment cancelled successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to cancel shipment');
+    }
+  });
+
+  // Bulk create shipments
+  const bulkCreateShipments = useMutation({
+    mutationFn: ({ 
+      order_ids, 
+      courier_ids,
+      is_schedule_pickup,
+      pickup_date,
+      filters
+    }: { 
+      order_ids?: string[];
+      courier_ids?: string[];
+      is_schedule_pickup?: boolean;
+      pickup_date?: string;
+      filters?: BulkOperationFilters;
+    }) => api.post('/shipments/bulk/create', { 
+      order_ids, 
+      courier_ids, 
+      is_schedule_pickup, 
+      pickup_date, 
+      filters 
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bulk-operations'] });
+      toast.success('Bulk shipment creation initiated');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to create bulk shipments');
+    }
+  });
+
+  // Bulk schedule pickup
+  const bulkSchedulePickup = useMutation({
+    mutationFn: ({ 
+      shipment_ids, 
+      pickup_date,
+      filters 
+    }: { 
+      shipment_ids?: string[];
+      pickup_date: string;
+      filters?: BulkOperationFilters;
+    }) => api.post('/shipments/bulk/schedule-pickup', { 
+      shipment_ids, 
+      pickup_date, 
+      filters 
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bulk-operations'] });
+      toast.success('Bulk pickup scheduling initiated');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to schedule bulk pickups');
+    }
+  });
+
+  // Bulk cancel shipments
+  const bulkCancelShipments = useMutation({
+    mutationFn: ({ 
+      shipment_ids, 
+      reason,
+      filters 
+    }: { 
+      shipment_ids?: string[];
+      reason: string;
+      filters?: BulkOperationFilters;
+    }) => api.post('/shipments/bulk/cancel', { 
+      shipment_ids, 
+      reason, 
+      filters 
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bulk-operations'] });
+      toast.success('Bulk shipment cancellation initiated');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to cancel bulk shipments');
+    }
+  });
+
+  // Get bulk operation status
+  const getBulkOperationStatus = (operationId: string) => {
+    return useQuery({
+      queryKey: ['bulk-operation', operationId],
+      queryFn: () => api.get<BulkOperationResponse>(`/shipments/bulk-operations/${operationId}`).then((res: any) => res.data),
+      enabled: !!operationId && isTokenReady,
+      refetchInterval: (query) => {
+        const data = query.state.data as BulkOperationResponse | undefined;
+        // Auto-refresh until operation is complete
+        return data?.operation?.status === 'COMPLETED' || data?.operation?.status === 'FAILED' 
+          ? false 
+          : 5000; // refresh every 5 seconds
+      },
+    });
+  };
+
+  // Get all bulk operations
+  const getAllBulkOperations = (params?: {
+    page?: number;
+    pageSize?: number;
+    type?: string;
+    status?: string;
+    dateRange?: [Date, Date];
+  }) => {
+    return useQuery({
+      queryKey: ['bulk-operations', params],
+      queryFn: () => api.get<BulkOperationsListResponse>('/shipments/bulk-operations', { params }).then((res: any) => res),
+      enabled: isTokenReady,
+      staleTime: 1000 * 60 * 2, // 2 minutes
+    });
+  };
+
   return {
     getShippingRates,
     shipOrder,
+    schedulePickup,
+    cancelShipment,
+    bulkCreateShipments,
+    bulkSchedulePickup,
+    bulkCancelShipments,
+    getBulkOperationStatus,
+    getAllBulkOperations,
   };
 };

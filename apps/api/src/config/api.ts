@@ -27,7 +27,7 @@ export const APIs = {
     UPDATE_ORDER: '/orders/update/adhoc',
     UPDATE_CUSTOMER: '/orders/update/customer',
     CREATE_RETURN_ORDER: '/orders/create/return',
-    GET_MANIFEST: '/manifests/generate',
+    GET_MANIFEST: '/courier/generate/pickup',
     CANCEL_ORDER: '/orders/cancel',
     CANCEL_SHIPMENT: '/orders/cancel/shipment/awbs',
     ORDER_STATUS: '/shipments/status',

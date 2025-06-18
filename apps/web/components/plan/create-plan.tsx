@@ -37,7 +37,6 @@ import {
 import { Plus, Trash2, Loader2, Package, Truck } from 'lucide-react';
 import { usePlanOperations } from '@/lib/apis/plans';
 import { useCourierOperations } from '@/lib/apis/couriers';
-import { SubmitBtn } from '../submit-btn';
 
 interface Courier {
   id: string;
@@ -206,14 +205,16 @@ export function CreatePlanForm() {
   const PlanSubmitBtn = () => {
     return (
       <div className="flex gap-4">
-        <SubmitBtn
+        <Button
           isLoading={isCreating}
           variant="default"
+          type="submit"
           onClick={() => {
             form.handleSubmit(handleSubmit)();
           }}
-          text="Create Plan"
-        />
+        >
+          Create Plan
+        </Button>
       </div>
     );
   };

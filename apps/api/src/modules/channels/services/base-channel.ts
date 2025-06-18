@@ -99,7 +99,6 @@ export abstract class BaseChannel {
         config.data = data;
       }
 
-      console.log(`Making ${method} request to ${url}`);
       const response = await axios(config);
       return response;
     } catch (error: any) {

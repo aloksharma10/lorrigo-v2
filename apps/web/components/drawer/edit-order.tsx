@@ -1,10 +1,8 @@
 "use client"
-import { Button, DrawerComponent } from "@lorrigo/ui/components";
+import { Badge, Button, DrawerComponent } from "@lorrigo/ui/components";
 import { X } from "lucide-react";
-import { useState } from "react";
 import { OrderForm } from "../order/order-form";
 import { DrawerSize, DrawerSide } from "@lorrigo/ui/components";
-import { z } from "zod";
 import { orderFormSchema } from "@lorrigo/utils/validations";
 import { toast } from "@lorrigo/ui/components";
 import { useOrderOperations } from "@/lib/apis/order";
@@ -54,7 +52,9 @@ export default function EditOrder({
    return (
       <DrawerComponent open={isOpen} onOpenChange={onClose} size={size} side={side}>
          <div className="sticky top-0 z-10 flex items-center justify-between border-b px-4 py-4 ">
-            <DrawerComponent.Title className="text-xl font-semibold">Edit Order</DrawerComponent.Title>
+            <DrawerComponent.Title className="flex items-center gap-2 text-xl font-semibold">
+               Edit Order <Badge className="block text-xs text-gray-500" variant="outline">{order?.orderNumber}</Badge>
+            </DrawerComponent.Title>
             <DrawerComponent.Close asChild>
                <Button
                   variant="outline"

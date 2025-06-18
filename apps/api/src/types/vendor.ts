@@ -32,6 +32,7 @@ export interface VendorShipmentResult {
 export interface VendorPickupResult {
   success: boolean;
   message: string;
+  pickup_date: string | null;
   data: any;
 }
 

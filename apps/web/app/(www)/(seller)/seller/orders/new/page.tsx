@@ -2,13 +2,13 @@
 
 import { useEffect, useState, useRef } from 'react';
 import {
+  Button,
   toast,
 } from '@lorrigo/ui/components';
 
 import { type OrderFormValues, orderFormSchema } from '@lorrigo/utils/validations';
 import { BackButton } from '@/components/back-btn';
 import { useOrderOperations } from '@/lib/apis/order';
-import { SubmitBtn } from '@/components/submit-btn';
 import { useRouter } from 'next/navigation';
 import { OrderForm, OrderFormRef } from '@/components/order/order-form';
 
@@ -53,17 +53,19 @@ export default function OrderFormPage() {
 
     return (
       <div className="flex gap-4">
-        <SubmitBtn
+        <Button
           isLoading={isCreatingOrder}
           onClick={handleCreateOrder}
-          text="Create Order"
           variant="secondary"
-        />
-        <SubmitBtn
+        >
+          Create Order
+        </Button>
+        <Button
           isLoading={isCreatingOrder}
           onClick={handleShipNow}
-          text="Ship Now"
-        />
+        >
+          Ship Now
+        </Button>
       </div>
     );
   };

@@ -12,6 +12,6 @@ export const CACHE_KEYS = {
  * Cache TTL in seconds for different items
  */
 export const CACHE_TTL = {
-  VENDOR_TOKEN: 4 * 60 * 60, // 23 hours (tokens usually expire in 24 hours)
+  VENDOR_TOKEN: 2 * 60 * 60, // 23 hours (tokens usually expire in 2 hours)
   PINCODE_DATA: 30 * 24 * 60 * 60, // 30 days
 };

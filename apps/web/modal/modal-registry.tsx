@@ -11,6 +11,8 @@ import { AddPickupLocationModal } from '@/components/modals/add-pickup-location'
 import { AssignPlanModal } from '@/components/modals/assign-plan-modal';
 import { CreateCourierModal } from '@/components/modals/create-courier-modal';
 import { CreateChannelModal } from '@/components/modals/create-channel-modal';
+import { CancelShipmentModal } from '@/components/modals/cancel-shipment-modal';
+import { PickupScheduleModal } from '@/components/modals/pickup-schedule-modal';
 
 // Store to track registered modals
 interface ModalRegistryState {
@@ -37,6 +39,8 @@ export function ModalRegistry() {
       registerModal('assign-plan', AssignPlanModal);
       registerModal('create-courier', CreateCourierModal);
       registerModal('create-channel', CreateChannelModal);
+      registerModal('cancel-shipment', CancelShipmentModal);
+      registerModal('pickup-schedule', PickupScheduleModal);
 
       setRegistered(true);
       console.log('Modal components registered successfully');

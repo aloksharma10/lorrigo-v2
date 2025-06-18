@@ -8,7 +8,9 @@ export type ModalType =
   | 'seller:add-pickup-location'
   | 'assign-plan'
   | 'create-courier'
-  | 'create-channel';
+  | 'create-channel'
+  | 'cancel-shipment'
+  | 'pickup-schedule';
 export type ModalProps = Record<string, unknown>;
 
 // export type ModalType = "wallet" | "addPickupLocation" | "payForInvoice" | "addSeller" | "addCustomer" | "schedulePickup" | "cancelOrder" | "cloneOrder" | "trackModal" | "editOrder" | "downloadLabel" | "downloadManifest" | "ndrOrder" | "ndrRTOrder" | "BulkHubUpload" | "BulkPincodeUpload" | 'downloadLabels'  | "BulkPickupUpdate" | 'cancelBulkOrder' | "downloadManifests" | "updateShopifyOrders" | "ViewUserDocsAdmin" | "ClientBillingUpload" | "adminRemittanceManage" | "cloneB2BOrder" | "editB2BOrder" | "addB2BCustomer" | "completeKyc" | 'downloadB2BLabel' | 'alert-kyc' | 'alert-payment' | "downloadB2BManifest" | "BulkShipNow" | "B2BClientBillingUpload" | "B2BShipNow" | "raiseDisputeManage" | "disputeDetails" | "DisputeUpload" | "bulkPickupSchedule" | "sellerRemittanceConfig";
@@ -49,6 +51,8 @@ export const useModalStore = create<ModalState>((set, get) => ({
     'assign-plan': undefined as unknown as ModalComponent,
     'create-courier': undefined as unknown as ModalComponent,
     'create-channel': undefined as unknown as ModalComponent,
+    'cancel-shipment': undefined as unknown as ModalComponent,
+    'pickup-schedule': undefined as unknown as ModalComponent,
   },
   registerModal: (type, component) =>
     set((state) => ({

@@ -3,7 +3,6 @@ import { OrderController } from './controllers/orders-controller';
 import { OrderService } from './services/order-service';
 import { authorizeRoles } from '@/middleware/auth';
 import { Role } from '@lorrigo/db';
-import { PlanService } from '../plan/services/plan.service';
 
 /**
  * Orders module routes
@@ -359,46 +358,6 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
       }>,
       reply
     ) => orderController.updateOrderStatus(request, reply),
-  });
-
-  // Cancel an order
-  fastify.post('/:id/cancel', {
-    schema: {
-      tags: ['Orders'],
-      summary: 'Cancel an order',
-      security: [{ bearerAuth: [] }],
-      params: {
-        type: 'object',
-        required: ['id'],
-        properties: {
-          id: { type: 'string' },
-        },
-      },
-      body: {
-        type: 'object',
-        properties: {
-          reason: { type: 'string' },
-        },
-      },
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            id: { type: 'string' },
-            orderNumber: { type: 'string' },
-            status: { type: 'string' },
-            updatedAt: { type: 'string', format: 'date-time' },
-          },
-        },
-      },
-    },
-    handler: (
-      request: FastifyRequest<{
-        Params: { id: string };
-        Body: { reason?: string };
-      }>,
-      reply
-    ) => orderController.cancelOrder(request, reply),
   });
 
   // Get order statistics
