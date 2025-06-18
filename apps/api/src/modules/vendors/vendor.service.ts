@@ -336,7 +336,6 @@ export class VendorService {
       awb?: string;
       shipmentCode: string;
       isSchedulePickup?: boolean;
-      isBulkShipment?: boolean;
     }
   ): Promise<{
     success: boolean;
@@ -357,7 +356,7 @@ export class VendorService {
       }
 
       // Prepare data for vendor API
-      const { order, courier, hub, awb, isSchedulePickup, isBulkShipment } = shipmentData;
+      const { order, courier, hub, awb, isSchedulePickup } = shipmentData;
 
       // Check if hub is valid
       if (!hub || !hub.address || !hub.address.pincode) {
@@ -410,7 +409,6 @@ export class VendorService {
         courier,
         seller_gst: userDetails?.gstin || '',
         isSchedulePickup,
-        isBulkShipment,
       };
 
       // Create shipment with vendor

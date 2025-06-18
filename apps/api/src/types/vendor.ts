@@ -57,7 +57,6 @@ export interface VendorShipmentData {
   seller_gst?: string;
   isSchedulePickup?: boolean;
   pickupDate?: string;
-  isBulkShipment?: boolean;
 }
 
 export interface ShipmentPickupData {

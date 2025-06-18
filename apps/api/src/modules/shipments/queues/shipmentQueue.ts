@@ -23,7 +23,6 @@ interface BulkOperationJobData {
   data: any[];
   userId: string;
   operationId: string;
-  isBulkShipment?: boolean;
 }
 
 /**
@@ -56,6 +55,8 @@ export function initShipmentQueue(fastify: FastifyInstance, shipmentService: Shi
       QueueNames.BULK_OPERATION,
       async (job: Job) => {
         fastify.log.info(`Processing job ${job.id} of type ${job.name}`);
+
+        console.log('chla chla job', job);
 
         try {
           switch (job.name) {
@@ -133,7 +134,7 @@ async function processBulkCreateShipment(
   fastify: FastifyInstance,
   shipmentService: ShipmentService
 ) {
-  const { data, userId, operationId, isBulkShipment } = job.data;
+  const { data, userId, operationId } = job.data;
   const results: BulkOperationResult[] = [];
   let successCount = 0;
   let failedCount = 0;
@@ -142,15 +143,14 @@ async function processBulkCreateShipment(
   // Process each shipment
   for (let i = 0; i < data.length; i++) {
     try {
+      const shipmentData = data[i];
+      console.log('chla chla shipmentData', shipmentData);
+
       // Validate the data
-      const shipmentData = {
-        ...data[i],
-        isBulkShipment: isBulkShipment || true, // Ensure bulk shipment flag is set
-      };
       const validatedData = CreateShipmentSchema.parse(shipmentData);
 
       // Create the shipment
-      const result = await shipmentService.createShipment(validatedData, userId);
+      // const result = await shipmentService.createShipment(validatedData, userId);
 
       if (result.error) {
         failedCount++;

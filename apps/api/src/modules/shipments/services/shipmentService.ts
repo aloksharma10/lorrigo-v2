@@ -243,7 +243,7 @@ export class ShipmentService {
    * Create a new shipment
    */
   async createShipment(
-    data: z.infer<typeof CreateShipmentSchema> & { isBulkShipment?: boolean },
+    data: z.infer<typeof CreateShipmentSchema>,
     userId: string
   ): Promise<{
     success?: boolean;
@@ -333,7 +333,6 @@ export class ShipmentService {
           awb: '',
           shipmentCode,
           isSchedulePickup,
-          isBulkShipment: data.isBulkShipment,
         }
       );
 
@@ -1026,11 +1025,12 @@ export class ShipmentService {
         courier_id?: string;
         schedule_pickup?: boolean;
         pickup_date?: string;
-        isBulkShipment?: boolean;
         index: number;
         error?: string;
         timestamp?: Date;
       }
+
+      console.log('processedOrderIds', processedOrderIds, orderIds, filters);
 
       const shipmentBatchData = await Promise.all(
         processedOrderIds.map(async (orderId, index): Promise<ShipmentDataItem> => {
@@ -1077,7 +1077,6 @@ export class ShipmentService {
             courier_id: selectedCourierId,
             schedule_pickup: isSchedulePickup,
             pickup_date: isSchedulePickup ? defaultPickupDate : undefined,
-            isBulkShipment: true,
             index,
           };
         })
@@ -1097,12 +1096,12 @@ export class ShipmentService {
       });
 
       // Prepare data for queue by removing index and error fields and ensuring courier_id is present
-      const queueData = validShipments
-        .filter((item) => item.courier_id) // Only include items with courier_id
-        .map(({ error, index, ...rest }) => ({
-          ...rest,
-          isBulkShipment: true,
-        }));
+      const queueData = validShipments.reduce((acc: any[], { courier_id, error, index, ...rest }) => {
+        if (courier_id) {
+          acc.push(rest);
+        }
+        return acc;
+      }, []);
 
       try {
         // Add job to the bulk operation queue using the queue.ts helper
@@ -1114,7 +1113,6 @@ export class ShipmentService {
             data: queueData,
             userId,
             operationId: bulkOperation.id,
-            isBulkShipment: true,
           },
           {
             attempts: 3,
@@ -1184,7 +1182,6 @@ export class ShipmentService {
                   courier_id: item.courier_id,
                   schedule_pickup: item.schedule_pickup,
                   pickup_date: item.pickup_date,
-                  isBulkShipment: true,
                 };
 
                 const result = await this.createShipment(shipmentData, userId);
