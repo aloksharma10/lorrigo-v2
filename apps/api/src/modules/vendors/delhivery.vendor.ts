@@ -3,7 +3,13 @@ import { BaseVendor } from './base-vendor';
 import { APIs } from '@/config/api';
 import { CACHE_KEYS } from '@/config/cache';
 import { formatPhoneNumber } from '@lorrigo/utils';
-import { VendorRegistrationResult, VendorServiceabilityResult, VendorShipmentResult, VendorPickupResult, VendorCancellationResult } from '@/types/vendor';
+import {
+  VendorRegistrationResult,
+  VendorServiceabilityResult,
+  VendorShipmentResult,
+  VendorPickupResult,
+  VendorCancellationResult,
+} from '@/types/vendor';
 
 /**
  * Delhivery vendor implementation
@@ -110,7 +116,9 @@ export class DelhiveryVendor extends BaseVendor {
 
       const isServiceable = Number(deliveryData.postal_code.pin) === Number(deliveryPincode);
 
-      const courierData = isServiceable ? couriersData.find((c: any) => c.courier.is_reversed_courier === isReverseOrder) : null;
+      const courierData = isServiceable
+        ? couriersData.find((c: any) => c.courier.is_reversed_courier === isReverseOrder)
+        : null;
 
       const serviceableCourier = {
         id: courierData?.courierId || `delhivery-${this.weightCategory}`,
@@ -256,7 +264,10 @@ export class DelhiveryVendor extends BaseVendor {
               seller_add: hub.address.address,
               seller_name: hub.name,
               seller_inv: order.code,
-              quantity: orderItems.reduce((acc: number, item: any) => acc + Number(item.units || 1), 0),
+              quantity: orderItems.reduce(
+                (acc: number, item: any) => acc + Number(item.units || 1),
+                0
+              ),
               waybill: order.ewaybill || '',
               shipment_length: dimensions.length || 10,
               shipment_width: dimensions.width || 10,
@@ -331,14 +342,12 @@ export class DelhiveryVendor extends BaseVendor {
    * @param pickupData Pickup data
    * @returns Promise resolving to pickup scheduling result
    */
-  public async schedulePickup(
-    pickupData: {
-      awb: string;
-      pickupDate: string;
-      hub: any;
-      shipment: any;
-    }
-  ): Promise<VendorPickupResult> {
+  public async schedulePickup(pickupData: {
+    awb: string;
+    pickupDate: string;
+    hub: any;
+    shipment: any;
+  }): Promise<VendorPickupResult> {
     try {
       const token = await this.getAuthToken();
 
@@ -358,22 +367,21 @@ export class DelhiveryVendor extends BaseVendor {
         pickup_location: hub.name,
         expected_package_count: 1,
         pickup_date: pickupDate,
-        pickup_time: "12:00:00",
+        pickup_time: '12:00:00',
       };
 
       // Make the API request
-      const response = await this.makeRequest(
-        APIs.DELHIVERY.MANIFEST_ORDER,
-        'POST',
-        requestBody,
-        { Authorization: `Token ${token}` }
-      );
+      const response = await this.makeRequest(APIs.DELHIVERY.MANIFEST_ORDER, 'POST', requestBody, {
+        Authorization: `Token ${token}`,
+      });
 
       // Check for errors in the response
       if (!response.data?.success) {
         return {
           success: false,
-          message: response.data?.error || `Failed to schedule pickup with Delhivery ${this.weightCategory}`,
+          message:
+            response.data?.error ||
+            `Failed to schedule pickup with Delhivery ${this.weightCategory}`,
           pickup_date: null,
           data: response.data,
         };
@@ -387,7 +395,7 @@ export class DelhiveryVendor extends BaseVendor {
       };
     } catch (error: any) {
       console.error(`Error scheduling pickup with Delhivery ${this.weightCategory}:`, error);
-      
+
       return {
         success: false,
         message: error.response?.data?.message || error.message || 'Failed to schedule pickup',
@@ -402,12 +410,10 @@ export class DelhiveryVendor extends BaseVendor {
    * @param cancelData Cancellation data
    * @returns Promise resolving to cancellation result
    */
-  public async cancelShipment(
-    cancelData: {
-      awb: string;
-      shipment: any;
-    }
-  ): Promise<VendorCancellationResult> {
+  public async cancelShipment(cancelData: {
+    awb: string;
+    shipment: any;
+  }): Promise<VendorCancellationResult> {
     try {
       const token = await this.getAuthToken();
 
@@ -423,21 +429,20 @@ export class DelhiveryVendor extends BaseVendor {
 
       const requestBody = {
         waybill: awb,
-        cancellation: true
+        cancellation: true,
       };
-      
-      const response = await this.makeRequest(
-        APIs.DELHIVERY.CANCEL_ORDER,
-        'POST',
-        requestBody,
-        { Authorization: token }
-      );
+
+      const response = await this.makeRequest(APIs.DELHIVERY.CANCEL_ORDER, 'POST', requestBody, {
+        Authorization: token,
+      });
 
       // Check for errors in the response
       if (!response.data?.status) {
         return {
           success: false,
-          message: response.data?.error || `Failed to cancel shipment with Delhivery ${this.weightCategory}`,
+          message:
+            response.data?.error ||
+            `Failed to cancel shipment with Delhivery ${this.weightCategory}`,
           data: response.data,
         };
       }
@@ -449,7 +454,7 @@ export class DelhiveryVendor extends BaseVendor {
       };
     } catch (error: any) {
       console.error(`Error cancelling shipment with Delhivery ${this.weightCategory}:`, error);
-      
+
       return {
         success: false,
         message: error.response?.data?.message || error.message || 'Failed to cancel shipment',

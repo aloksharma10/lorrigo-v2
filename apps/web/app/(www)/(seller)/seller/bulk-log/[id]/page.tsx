@@ -31,19 +31,20 @@ export default function BulkOperationDetailPage() {
   const operation = data?.data;
 
   // Calculate progress percentage
-  const progress = operation?.status === 'COMPLETED'
-    ? 100
-    : operation
-      ? Math.floor((operation.processed_count / operation.total_count) * 100) || 0
-      : 0;
+  const progress =
+    operation?.status === 'COMPLETED'
+      ? 100
+      : operation
+        ? Math.floor((operation.processed_count / operation.total_count) * 100) || 0
+        : 0;
 
   // Get status badge color
   const getStatusColor = (status: string) => {
     const statusColorMap: Record<string, string> = {
-      'PENDING': 'bg-yellow-100 text-yellow-800',
-      'PROCESSING': 'bg-blue-100 text-blue-800',
-      'COMPLETED': 'bg-green-100 text-green-800',
-      'FAILED': 'bg-red-100 text-red-800',
+      PENDING: 'bg-yellow-100 text-yellow-800',
+      PROCESSING: 'bg-blue-100 text-blue-800',
+      COMPLETED: 'bg-green-100 text-green-800',
+      FAILED: 'bg-red-100 text-red-800',
     };
     return statusColorMap[status] || '';
   };
@@ -51,9 +52,9 @@ export default function BulkOperationDetailPage() {
   // Get operation type label
   const getOperationTypeLabel = (type: string) => {
     const typeLabels: Record<string, string> = {
-      'CREATE_SHIPMENT': 'Create Shipments',
-      'SCHEDULE_PICKUP': 'Schedule Pickup',
-      'CANCEL_SHIPMENT': 'Cancel Shipments',
+      CREATE_SHIPMENT: 'Create Shipments',
+      SCHEDULE_PICKUP: 'Schedule Pickup',
+      CANCEL_SHIPMENT: 'Cancel Shipments',
     };
     return typeLabels[type] || type;
   };
@@ -61,11 +62,7 @@ export default function BulkOperationDetailPage() {
   return (
     <div className="container mx-auto py-10">
       <div className="mb-6 flex items-center justify-between">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => router.push('/seller/bulk-log')}
-        >
+        <Button variant="outline" size="sm" onClick={() => router.push('/seller/bulk-log')}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Back to Bulk Operations
         </Button>
 
@@ -91,16 +88,10 @@ export default function BulkOperationDetailPage() {
       ) : operation ? (
         <>
           <div className="mb-8">
-            <h1 className="text-3xl font-bold">
-              {getOperationTypeLabel(operation.type)}
-            </h1>
+            <h1 className="text-3xl font-bold">{getOperationTypeLabel(operation.type)}</h1>
             <div className="mt-2 flex items-center gap-4">
-              <Badge className={`${getStatusColor(operation.status)}`}>
-                {operation.status}
-              </Badge>
-              <span className="text-muted-foreground">
-                Operation Code: {operation.code}
-              </span>
+              <Badge className={`${getStatusColor(operation.status)}`}>{operation.status}</Badge>
+              <span className="text-muted-foreground">Operation Code: {operation.code}</span>
               <span className="text-muted-foreground">
                 Created: {format(new Date(operation.created_at), 'PPP p')}
               </span>
@@ -110,9 +101,7 @@ export default function BulkOperationDetailPage() {
           <Card className="mb-8">
             <CardHeader>
               <CardTitle>Progress</CardTitle>
-              <CardDescription>
-                Current status of the bulk operation
-              </CardDescription>
+              <CardDescription>Current status of the bulk operation</CardDescription>
             </CardHeader>
             <CardContent>
               <Progress value={progress} className="h-2" />
@@ -147,9 +136,7 @@ export default function BulkOperationDetailPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Operation Results</CardTitle>
-                <CardDescription>
-                  Detailed results for each processed item
-                </CardDescription>
+                <CardDescription>Detailed results for each processed item</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="max-h-[400px] overflow-y-auto">
@@ -183,10 +170,11 @@ export default function BulkOperationDetailPage() {
         </>
       ) : (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-12">
-          <AlertCircle className="mb-4 h-12 w-12 text-muted-foreground" />
+          <AlertCircle className="text-muted-foreground mb-4 h-12 w-12" />
           <h2 className="mb-2 text-xl font-medium">Operation Not Found</h2>
           <p className="text-muted-foreground">
-            The bulk operation you're looking for doesn't exist or you don't have permission to view it.
+            The bulk operation you're looking for doesn't exist or you don't have permission to view
+            it.
           </p>
           <Button
             variant="outline"
@@ -199,4 +187,4 @@ export default function BulkOperationDetailPage() {
       )}
     </div>
   );
-} 
+}

@@ -69,7 +69,7 @@ export const useShopify = () => {
   const initiateAuth = useMutation({
     mutationFn: async (shopDomain: string) => {
       const response = await apiClient.get<{ authUrl: string }>('/channels/shopify/auth/url', {
-        params: { shop: shopDomain }
+        params: { shop: shopDomain },
       });
       return response.data.authUrl;
     },
@@ -101,7 +101,7 @@ export const useShopify = () => {
       queryFn: async () => {
         const params: Record<string, string | number> = {
           limit,
-          page
+          page,
         };
 
         if (status) params.status = status;
@@ -118,7 +118,7 @@ export const useShopify = () => {
 
         return {
           orders: response.data.data,
-          total: response.data.count
+          total: response.data.count,
         };
       },
       enabled: status === 'authenticated' && isTokenReady,
@@ -162,9 +162,9 @@ export const useShopify = () => {
     connection,
     initiateAuth,
     disconnect,
-    
+
     // Order operations
     getOrders,
     getOrder,
   };
-}; 
+};

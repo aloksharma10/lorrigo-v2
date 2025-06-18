@@ -1,1536 +1,1538 @@
-[{
-  "_id": {
-    "$oid": "6630d18681f23821154bd113"
-  },
-  "name": "Bluedart surface 0.5kg",
-  "weightSlab": 0.5,
-  "weightUnit": "Kg",
-  "incrementWeight": 0.5,
-  "type": "surface",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 47,
-    "percent": 2.12
-  },
-  "withinCity": {
-    "basePrice": 69,
-    "incrementPrice": 59
-  },
-  "withinZone": {
-    "basePrice": 69,
-    "incrementPrice": 59
-  },
-  "withinMetro": {
-    "basePrice": 69,
-    "incrementPrice": 59
-  },
-  "withinRoi": {
-    "basePrice": 77,
-    "incrementPrice": 67
-  },
-  "northEast": {
-    "basePrice": 118,
-    "incrementPrice": 105
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "carrierID": 279,
-  "vendor_channel_id": {
-    "$oid": "6628abf579087bcaf24ef3da"
-  },
-  "isActive": true,
-  "isReversedCourier": false
-},
-{
-  "_id": {
-    "$oid": "6631eca4e7bf344f412fe4c9"
-  },
-  "name": "Xpressbees surface 0.5 kg",
-  "weightSlab": 0.5,
-  "weightUnit": "Kg",
-  "incrementWeight": 0.5,
-  "type": "surface",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 40,
-    "percent": 1.73
-  },
-  "withinCity": {
-    "basePrice": 54,
-    "incrementPrice": 48
-  },
-  "withinZone": {
-    "basePrice": 56,
-    "incrementPrice": 50
-  },
-  "withinMetro": {
-    "basePrice": 66,
-    "incrementPrice": 57
-  },
-  "withinRoi": {
-    "basePrice": 71,
-    "incrementPrice": 57
-  },
-  "northEast": {
-    "basePrice": 85,
-    "incrementPrice": 63
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "carrierID": 51,
-  "vendor_channel_id": {
-    "$oid": "6627acadabe95523ee592372"
-  },
-  "isActive": true,
-  "isReversedCourier": false
-},
-{
-  "_id": {
-    "$oid": "6633295ae7bf344f412fe4cb"
-  },
-  "name": "Ekart surface 0.5 kg",
-  "weightSlab": 0.5,
-  "weightUnit": "Kg",
-  "incrementWeight": 0.5,
-  "type": "surface",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 40,
-    "percent": 1.73
-  },
-  "withinCity": {
-    "basePrice": 54,
-    "incrementPrice": 48
-  },
-  "withinZone": {
-    "basePrice": 56,
-    "incrementPrice": 50
-  },
-  "withinMetro": {
-    "basePrice": 66,
-    "incrementPrice": 57
-  },
-  "withinRoi": {
-    "basePrice": 71,
-    "incrementPrice": 57
-  },
-  "northEast": {
-    "basePrice": 85,
-    "incrementPrice": 63
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "carrierID": 54,
-  "vendor_channel_id": {
-    "$oid": "6627acadabe95523ee592372"
-  },
-  "isActive": true,
-  "isReversedCourier": false
-},
-{
-  "_id": {
-    "$oid": "66332c24e7bf344f412fe4cc"
-  },
-  "name": "Amazon Prepaid surface 0.5 kg",
-  "weightSlab": 0.5,
-  "weightUnit": "Kg",
-  "incrementWeight": 0.5,
-  "type": "surface",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 40,
-    "percent": 1.73
-  },
-  "withinCity": {
-    "basePrice": 44,
-    "incrementPrice": 42
-  },
-  "withinZone": {
-    "basePrice": 46,
-    "incrementPrice": 44
-  },
-  "withinMetro": {
-    "basePrice": 56,
-    "incrementPrice": 51
-  },
-  "withinRoi": {
-    "basePrice": 61,
-    "incrementPrice": 51
-  },
-  "northEast": {
-    "basePrice": 75,
-    "incrementPrice": 57
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "carrierID": 142,
-  "vendor_channel_id": {
-    "$oid": "6627acadabe95523ee592372"
-  },
-  "isActive": true,
-  "isReversedCourier": false
-},
-{
-  "_id": {
-    "$oid": "66332cade7bf344f412fe4cd"
-  },
-  "name": "Amazon COD surface 0.5 kg",
-  "weightSlab": 0.5,
-  "weightUnit": "Kg",
-  "incrementWeight": 0.5,
-  "type": "surface",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 40,
-    "percent": 1.73
-  },
-  "withinCity": {
-    "basePrice": 54,
-    "incrementPrice": 48
-  },
-  "withinZone": {
-    "basePrice": 56,
-    "incrementPrice": 50
-  },
-  "withinMetro": {
-    "basePrice": 66,
-    "incrementPrice": 57
-  },
-  "withinRoi": {
-    "basePrice": 71,
-    "incrementPrice": 57
-  },
-  "northEast": {
-    "basePrice": 85,
-    "incrementPrice": 63
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "carrierID": 195,
-  "vendor_channel_id": {
-    "$oid": "6627acadabe95523ee592372"
-  },
-  "isActive": true,
-  "isReversedCourier": false
-},
-{
-  "_id": {
-    "$oid": "66332d04e7bf344f412fe4ce"
-  },
-  "name": "Delhivery air 0.5 kg",
-  "weightSlab": 0.5,
-  "weightUnit": "Kg",
-  "incrementWeight": 0.5,
-  "type": "surface",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 56,
-    "percent": 2.76
-  },
-  "withinCity": {
-    "basePrice": 58,
-    "incrementPrice": 48
-  },
-  "withinZone": {
-    "basePrice": 61,
-    "incrementPrice": 53
-  },
-  "withinMetro": {
-    "basePrice": 94,
-    "incrementPrice": 85
-  },
-  "withinRoi": {
-    "basePrice": 114,
-    "incrementPrice": 102
-  },
-  "northEast": {
-    "basePrice": 130,
-    "incrementPrice": 117
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "carrierID": 10,
-  "vendor_channel_id": {
-    "$oid": "6627acadabe95523ee592372"
-  },
-  "isActive": true,
-  "isReversedCourier": false
-},
-{
-  "_id": {
-    "$oid": "66596494ea09cc12380f0b87"
-  },
-  "name": "Delhivery surface 5 kg",
-  "weightSlab": 5,
-  "weightUnit": "Kg",
-  "incrementWeight": 1,
-  "type": "surface",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 53.1,
-    "percent": 2.59
-  },
-  "withinCity": {
-    "basePrice": 183.48,
-    "incrementPrice": 35.84
-  },
-  "withinZone": {
-    "basePrice": 196.33,
-    "incrementPrice": 37.27
-  },
-  "withinMetro": {
-    "basePrice": 212.03,
-    "incrementPrice": 40.12
-  },
-  "withinRoi": {
-    "basePrice": 240.59,
-    "incrementPrice": 45.83
-  },
-  "northEast": {
-    "basePrice": 286.28,
-    "incrementPrice": 52.97
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "vendor_channel_id": {
-    "$oid": "66595e59ea09cc12380f0b85"
-  },
-  "isActive": true,
-  "carrierID": 494,
-  "isReversedCourier": false
-},
-{
-  "_id": {
-    "$oid": "66596b9ae7ac2a637505b891"
-  },
-  "name": "Ecom air 1kg",
-  "weightSlab": 1,
-  "weightUnit": "Kg",
-  "incrementWeight": 1,
-  "type": "express",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 35,
-    "percent": 2
-  },
-  "withinCity": {
-    "basePrice": 75,
-    "incrementPrice": 73
-  },
-  "withinZone": {
-    "basePrice": 75,
-    "incrementPrice": 73
-  },
-  "withinMetro": {
-    "basePrice": 75,
-    "incrementPrice": 73
-  },
-  "withinRoi": {
-    "basePrice": 75,
-    "incrementPrice": 73
-  },
-  "northEast": {
-    "basePrice": 75,
-    "incrementPrice": 73
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "carrierID": 369,
-  "vendor_channel_id": {
-    "$oid": "6628abf579087bcaf24ef3da"
-  },
-  "isActive": true,
-  "isReversedCourier": false
-},
-{
-  "_id": {
-    "$oid": "66617a7ee7ac2a637505b8ad"
-  },
-  "name": "Ecom Express Surface 3 kg",
-  "weightSlab": 3,
-  "weightUnit": "Kg",
-  "incrementWeight": 1,
-  "type": "surface",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 44,
-    "percent": 2.36
-  },
-  "withinCity": {
-    "basePrice": 127.92,
-    "incrementPrice": 42.75
-  },
-  "withinZone": {
-    "basePrice": 146.1,
-    "incrementPrice": 49.24
-  },
-  "withinMetro": {
-    "basePrice": 165.57,
-    "incrementPrice": 54.43
-  },
-  "withinRoi": {
-    "basePrice": 183.74,
-    "incrementPrice": 60.92
-  },
-  "northEast": {
-    "basePrice": 203.21,
-    "incrementPrice": 66.12
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "carrierID": 19,
-  "vendor_channel_id": {
-    "$oid": "6627acadabe95523ee592372"
-  },
-  "isActive": true,
-  "isReversedCourier": false
-},
-{
-  "_id": {
-    "$oid": "6668b335e7ac2a637505b8bc"
-  },
-  "name": "Xpressbees Surface 1 kg",
-  "weightSlab": 1,
-  "weightUnit": "Kg",
-  "incrementWeight": 1,
-  "type": "surface",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 53.1,
-    "percent": 2.124
-  },
-  "withinCity": {
-    "basePrice": 104,
-    "incrementPrice": 25
-  },
-  "withinZone": {
-    "basePrice": 124,
-    "incrementPrice": 28
-  },
-  "withinMetro": {
-    "basePrice": 133,
-    "incrementPrice": 38
-  },
-  "withinRoi": {
-    "basePrice": 145,
-    "incrementPrice": 46
-  },
-  "northEast": {
-    "basePrice": 175,
-    "incrementPrice": 54
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "carrierID": 23,
-  "vendor_channel_id": {
-    "$oid": "6627acadabe95523ee592372"
-  },
-  "isActive": true,
-  "isReversedCourier": false
-},
-{
-  "_id": {
-    "$oid": "6668b420e7ac2a637505b8bd"
-  },
-  "name": "Xpressbees Surface 5 kg",
-  "weightSlab": 5,
-  "weightUnit": "Kg",
-  "incrementWeight": 1,
-  "type": "surface",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 53.1,
-    "percent": 2.124
-  },
-  "withinCity": {
-    "basePrice": 177,
-    "incrementPrice": 25
-  },
-  "withinZone": {
-    "basePrice": 205,
-    "incrementPrice": 28
-  },
-  "withinMetro": {
-    "basePrice": 248,
-    "incrementPrice": 32
-  },
-  "withinRoi": {
-    "basePrice": 269,
-    "incrementPrice": 35
-  },
-  "northEast": {
-    "basePrice": 297,
-    "incrementPrice": 40
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "carrierID": 25,
-  "vendor_channel_id": {
-    "$oid": "6627acadabe95523ee592372"
-  },
-  "isActive": true,
-  "isReversedCourier": false
-},
-{
-  "_id": {
-    "$oid": "66693b70e7ac2a637505b8be"
-  },
-  "name": "DTDC Air 0.5 kg",
-  "weightSlab": 0.5,
-  "weightUnit": "Kg",
-  "incrementWeight": 0.5,
-  "type": "surface",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 47.2,
-    "percent": 2.124
-  },
-  "withinCity": {
-    "basePrice": 45.24,
-    "incrementPrice": 34.15
-  },
-  "withinZone": {
-    "basePrice": 49.13,
-    "incrementPrice": 39.34
-  },
-  "withinMetro": {
-    "basePrice": 69.9,
-    "incrementPrice": 64.00999999999999
-  },
-  "withinRoi": {
-    "basePrice": 75.09,
-    "incrementPrice": 69.18
-  },
-  "northEast": {
-    "basePrice": 98.46,
-    "incrementPrice": 88.67
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "carrierID": 196,
-  "vendor_channel_id": {
-    "$oid": "6627acadabe95523ee592372"
-  },
-  "isActive": true,
-  "isReversedCourier": false
-},
-{
-  "_id": {
-    "$oid": "666a9844e7ac2a637505b8cb"
-  },
-  "name": "Bluedart surface 10kg",
-  "weightSlab": 10,
-  "weightUnit": "Kg",
-  "incrementWeight": 1,
-  "type": "surface",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 47,
-    "percent": 2.12
-  },
-  "withinCity": {
-    "basePrice": 280.47,
-    "incrementPrice": 35.21
-  },
-  "withinZone": {
-    "basePrice": 333.39,
-    "incrementPrice": 40.64
-  },
-  "withinMetro": {
-    "basePrice": 387.67,
-    "incrementPrice": 46.6
-  },
-  "withinRoi": {
-    "basePrice": 397.17,
-    "incrementPrice": 47.66
-  },
-  "northEast": {
-    "basePrice": 498.95,
-    "incrementPrice": 62.06
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "carrierID": 283,
-  "vendor_channel_id": {
-    "$oid": "6628abf579087bcaf24ef3da"
-  },
-  "isActive": true,
-  "isReversedCourier": false
-},
-{
-  "_id": {
-    "$oid": "666b04d2e7ac2a637505b8d0"
-  },
-  "name": "Delhivery RVP 5 kg  ",
-  "weightSlab": 5,
-  "weightUnit": "Kg",
-  "incrementWeight": 1,
-  "type": "surface",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 0,
-    "percent": 0
-  },
-  "withinCity": {
-    "basePrice": 199.7,
-    "incrementPrice": 28.96
-  },
-  "withinZone": {
-    "basePrice": 268,
-    "incrementPrice": 39
-  },
-  "withinMetro": {
-    "basePrice": 347,
-    "incrementPrice": 50
-  },
-  "withinRoi": {
-    "basePrice": 394.439,
-    "incrementPrice": 63
-  },
-  "northEast": {
-    "basePrice": 455,
-    "incrementPrice": 85
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "vendor_channel_id": {
-    "$oid": "66595e59ea09cc12380f0b85"
-  },
-  "isActive": true,
-  "carrierID": -494,
-  "isReversedCourier": true
-},
-{
-  "_id": {
-    "$oid": "666c2ff1e7ac2a637505b8d1"
-  },
-  "name": "Ecom Express Surface 2 kg",
-  "weightSlab": 2,
-  "weightUnit": "Kg",
-  "incrementWeight": 1,
-  "type": "surface",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 47.2,
-    "percent": 2.36
-  },
-  "withinCity": {
-    "basePrice": 73.64,
-    "incrementPrice": 22.15
-  },
-  "withinZone": {
-    "basePrice": 92.12,
-    "incrementPrice": 25.55
-  },
-  "withinMetro": {
-    "basePrice": 115.88,
-    "incrementPrice": 30.73
-  },
-  "withinRoi": {
-    "basePrice": 131.5,
-    "incrementPrice": 36
-  },
-  "northEast": {
-    "basePrice": 170.11,
-    "incrementPrice": 39.41
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "carrierID": 19,
-  "vendor_channel_id": {
-    "$oid": "6627acadabe95523ee592372"
-  },
-  "isActive": true,
-  "isReversedCourier": false
-},
-{
-  "_id": {
-    "$oid": "666c31eee7ac2a637505b8d2"
-  },
-  "name": "Delhivery surface 0.5 kg",
-  "weightSlab": 0.5,
-  "weightUnit": "Kg",
-  "incrementWeight": 0.5,
-  "type": "surface",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 53.1,
-    "percent": 2.59
-  },
-  "withinCity": {
-    "basePrice": 42.12,
-    "incrementPrice": 39.34
-  },
-  "withinZone": {
-    "basePrice": 47.83,
-    "incrementPrice": 44.54
-  },
-  "withinMetro": {
-    "basePrice": 62.11,
-    "incrementPrice": 48.43
-  },
-  "withinRoi": {
-    "basePrice": 70.68,
-    "incrementPrice": 52.32
-  },
-  "northEast": {
-    "basePrice": 90.67,
-    "incrementPrice": 67.9
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "vendor_channel_id": {
-    "$oid": "66695e2bc475271f3f11df4b"
-  },
-  "isActive": true,
-  "carrierID": 492,
-  "isReversedCourier": false
-},
-{
-  "_id": {
-    "$oid": "666c8c69e7ac2a637505b8d3"
-  },
-  "name": "Delhivery Surface RVP 0.5 kg",
-  "weightSlab": 0.5,
-  "weightUnit": "Kg",
-  "incrementWeight": 0.5,
-  "type": "surface",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 53.1,
-    "percent": 2.59
-  },
-  "withinCity": {
-    "basePrice": 80.02,
-    "incrementPrice": 70.89
-  },
-  "withinZone": {
-    "basePrice": 92.87,
-    "incrementPrice": 82.31
-  },
-  "withinMetro": {
-    "basePrice": 107.15,
-    "incrementPrice": 95.16
-  },
-  "withinRoi": {
-    "basePrice": 120,
-    "incrementPrice": 106.58
-  },
-  "northEast": {
-    "basePrice": 141.42,
-    "incrementPrice": 123.71
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "vendor_channel_id": {
-    "$oid": "66695e2bc475271f3f11df4b"
-  },
-  "isActive": true,
-  "carrierID": 493,
-  "isReversedCourier": true
-},
-{
-  "_id": {
-    "$oid": "666d27b7e7ac2a637505b8d4"
-  },
-  "name": "Shadowfax Surface RVP 0.5kg",
-  "weightSlab": 0.5,
-  "weightUnit": "Kg",
-  "incrementWeight": 0.5,
-  "type": "surface",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 47,
-    "percent": 2.12
-  },
-  "withinCity": {
-    "basePrice": 54.71,
-    "incrementPrice": 42.72
-  },
-  "withinZone": {
-    "basePrice": 66.14,
-    "incrementPrice": 51.93
-  },
-  "withinMetro": {
-    "basePrice": 80.67,
-    "incrementPrice": 63.62
-  },
-  "withinRoi": {
-    "basePrice": 82.88,
-    "incrementPrice": 65.3
-  },
-  "northEast": {
-    "basePrice": 105.08,
-    "incrementPrice": 82.96
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "carrierID": 998,
-  "vendor_channel_id": {
-    "$oid": "6627acadabe95523ee592372"
-  },
-  "isActive": true,
-  "isReversedCourier": true
-},
-{
-  "_id": {
-    "$oid": "666fe2ff30e6ee33c1b0d849"
-  },
-  "name": "Delhivery Surface RVP 10 kg",
-  "weightSlab": 10,
-  "weightUnit": "Kg",
-  "incrementWeight": 1,
-  "type": "surface",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 0,
-    "percent": 0
-  },
-  "withinCity": {
-    "basePrice": 445,
-    "incrementPrice": 49
-  },
-  "withinZone": {
-    "basePrice": 522,
-    "incrementPrice": 59
-  },
-  "withinMetro": {
-    "basePrice": 745,
-    "incrementPrice": 80
-  },
-  "withinRoi": {
-    "basePrice": 775,
-    "incrementPrice": 82
-  },
-  "northEast": {
-    "basePrice": 835,
-    "incrementPrice": 90
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "vendor_channel_id": {
-    "$oid": "66695e40c475271f3f11df4c"
-  },
-  "isActive": true,
-  "carrierID": 999,
-  "isReversedCourier": true
-},
-{
-  "_id": {
-    "$oid": "666fe32c30e6ee33c1b0d84a"
-  },
-  "name": "Delhivery Surface 10 kg",
-  "weightSlab": 10,
-  "weightUnit": "Kg",
-  "incrementWeight": 1,
-  "type": "surface",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 53.1,
-    "percent": 2.59
-  },
-  "withinCity": {
-    "basePrice": 277.72,
-    "incrementPrice": 33.269999999999996
-  },
-  "withinZone": {
-    "basePrice": 343.39,
-    "incrementPrice": 38.980000000000004
-  },
-  "withinMetro": {
-    "basePrice": 394.79,
-    "incrementPrice": 43.27
-  },
-  "withinRoi": {
-    "basePrice": 454,
-    "incrementPrice": 48.98
-  },
-  "northEast": {
-    "basePrice": 570.41,
-    "incrementPrice": 58.97
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "vendor_channel_id": {
-    "$oid": "66695e40c475271f3f11df4c"
-  },
-  "isActive": true,
-  "carrierID": -999,
-  "isReversedCourier": false
-},
-{
-  "_id": {
-    "$oid": "668506f9e7ac2a637505b8f4"
-  },
-  "name": "Bluedart air 0.5kg",
-  "weightSlab": 0.5,
-  "weightUnit": "Kg",
-  "incrementWeight": 0.5,
-  "type": "air",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 47.2,
-    "percent": 2.36
-  },
-  "withinCity": {
-    "basePrice": 67,
-    "incrementPrice": 48
-  },
-  "withinZone": {
-    "basePrice": 75,
-    "incrementPrice": 53
-  },
-  "withinMetro": {
-    "basePrice": 85,
-    "incrementPrice": 73
-  },
-  "withinRoi": {
-    "basePrice": 95,
-    "incrementPrice": 83
-  },
-  "northEast": {
-    "basePrice": 125,
-    "incrementPrice": 103
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "carrierID": 373,
-  "vendor_channel_id": {
-    "$oid": "6628abf579087bcaf24ef3da"
-  },
-  "isActive": true,
-  "isReversedCourier": false
-},
-{
-  "_id": {
-    "$oid": "66a3590d56bde3201c31bbbb"
-  },
-  "name": "Shree Maruti surface 0.5kg",
-  "weightSlab": 0.5,
-  "weightUnit": "Kg",
-  "incrementWeight": 0.5,
-  "type": "surface",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 47,
-    "percent": 2.12
-  },
-  "withinCity": {
-    "basePrice": 54,
-    "incrementPrice": 49
-  },
-  "withinZone": {
-    "basePrice": 54,
-    "incrementPrice": 49
-  },
-  "withinMetro": {
-    "basePrice": 54,
-    "incrementPrice": 49
-  },
-  "withinRoi": {
-    "basePrice": 61,
-    "incrementPrice": 54
-  },
-  "northEast": {
-    "basePrice": 99,
-    "incrementPrice": 91
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "carrierID": -7,
-  "vendor_channel_id": {
-    "$oid": "66a34cbc3d165482f1409477"
-  },
-  "isActive": true,
-  "isReversedCourier": false
-},
-{
-  "_id": {
-    "$oid": "66bc2fbf5853fe89e5895568"
-  },
-  "name": "DTDC surface 2 kg",
-  "weightSlab": 2,
-  "weightUnit": "Kg",
-  "incrementWeight": 1,
-  "type": "surface",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 33,
-    "percent": 1.73
-  },
-  "withinCity": {
-    "basePrice": 86.42,
-    "incrementPrice": 43.71
-  },
-  "withinZone": {
-    "basePrice": 102.7,
-    "incrementPrice": 49.14
-  },
-  "withinMetro": {
-    "basePrice": 128.49,
-    "incrementPrice": 50.5
-  },
-  "withinRoi": {
-    "basePrice": 137.99,
-    "incrementPrice": 62.71
-  },
-  "northEast": {
-    "basePrice": 193.62,
-    "incrementPrice": 70.85
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "carrierID": 82,
-  "vendor_channel_id": {
-    "$oid": "6627acadabe95523ee592372"
-  },
-  "isActive": true,
-  "isReversedCourier": false
-},
-{
-  "_id": {
-    "$oid": "66ea9951a99c44d605d53a5a"
-  },
-  "name": "Ekart Surface 5 kg",
-  "weightSlab": 5,
-  "weightUnit": "Kg",
-  "incrementWeight": 1,
-  "type": "surface",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 39.56,
-    "percent": 2.42
-  },
-  "withinCity": {
-    "basePrice": 142,
-    "incrementPrice": 25.43
-  },
-  "withinZone": {
-    "basePrice": 154.27,
-    "incrementPrice": 30.83
-  },
-  "withinMetro": {
-    "basePrice": 184.17,
-    "incrementPrice": 33.59
-  },
-  "withinRoi": {
-    "basePrice": 200,
-    "incrementPrice": 37.62
-  },
-  "northEast": {
-    "basePrice": 359,
-    "incrementPrice": 58.2
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "carrierID": 171,
-  "vendor_channel_id": {
-    "$oid": "6627acadabe95523ee592372"
-  },
-  "isActive": true,
-  "isReversedCourier": false
-},
-{
-  "_id": {
-    "$oid": "6784e90d6a0cd4373fa8c146"
-  },
-  "name": "Bluedart Surface 3 kg",
-  "weightSlab": 3,
-  "weightUnit": "Kg",
-  "incrementWeight": 1,
-  "type": "surface",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 50,
-    "percent": 2.48
-  },
-  "withinCity": {
-    "basePrice": 125,
-    "incrementPrice": 38
-  },
-  "withinZone": {
-    "basePrice": 155,
-    "incrementPrice": 43
-  },
-  "withinMetro": {
-    "basePrice": 185,
-    "incrementPrice": 58
-  },
-  "withinRoi": {
-    "basePrice": 205,
-    "incrementPrice": 63
-  },
-  "northEast": {
-    "basePrice": 305,
-    "incrementPrice": 83
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "carrierID": 603,
-  "vendor_channel_id": {
-    "$oid": "6627acadabe95523ee592372"
-  },
-  "isActive": true,
-  "isReversedCourier": false
-},
-{
-  "_id": {
-    "$oid": "678b3ac540f9b7f91a8b4c3f"
-  },
-  "name": "Bluedart air 0.5kg",
-  "weightSlab": 0.5,
-  "weightUnit": "Kg",
-  "incrementWeight": 0.5,
-  "type": "air",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 47.2,
-    "percent": 2.36
-  },
-  "withinCity": {
-    "basePrice": 67,
-    "incrementPrice": 48
-  },
-  "withinZone": {
-    "basePrice": 75,
-    "incrementPrice": 53
-  },
-  "withinMetro": {
-    "basePrice": 85,
-    "incrementPrice": 68
-  },
-  "withinRoi": {
-    "basePrice": 115,
-    "incrementPrice": 83
-  },
-  "northEast": {
-    "basePrice": 130,
-    "incrementPrice": 103
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "carrierID": 1,
-  "vendor_channel_id": {
-    "$oid": "6627acadabe95523ee592372"
-  },
-  "isActive": true,
-  "isReversedCourier": false
-},
-{
-  "_id": {
-    "$oid": "67a30c0bc0f32f279b8b5c88"
-  },
-  "name": "Bluedart Surface 0.5 kg",
-  "weightSlab": 0.5,
-  "weightUnit": "Kg",
-  "incrementWeight": 0.5,
-  "type": "surface",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 47.2,
-    "percent": 2.36
-  },
-  "withinCity": {
-    "basePrice": 55,
-    "incrementPrice": 48
-  },
-  "withinZone": {
-    "basePrice": 65,
-    "incrementPrice": 53
-  },
-  "withinMetro": {
-    "basePrice": 75,
-    "incrementPrice": 63
-  },
-  "withinRoi": {
-    "basePrice": 95,
-    "incrementPrice": 73
-  },
-  "northEast": {
-    "basePrice": 105,
-    "incrementPrice": 91
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "carrierID": 367,
-  "vendor_channel_id": {
-    "$oid": "6627acadabe95523ee592372"
-  },
-  "isActive": true,
-  "isReversedCourier": false
-},
-{
-  "_id": {
-    "$oid": "67c1dce4ec84abf517a537fc"
-  },
-  "name": "Xpressbees Surface 0.25 kg spl",
-  "weightSlab": 0.25,
-  "weightUnit": "Kg",
-  "incrementWeight": 0.25,
-  "type": "surface",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 47,
-    "percent": 2
-  },
-  "withinCity": {
-    "basePrice": 49,
-    "incrementPrice": 47
-  },
-  "withinZone": {
-    "basePrice": 49,
-    "incrementPrice": 47
-  },
-  "withinMetro": {
-    "basePrice": 49,
-    "incrementPrice": 47
-  },
-  "withinRoi": {
-    "basePrice": 49,
-    "incrementPrice": 47
-  },
-  "northEast": {
-    "basePrice": 49,
-    "incrementPrice": 47
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "carrierID": 244,
-  "vendor_channel_id": {
-    "$oid": "6627acadabe95523ee592372"
-  },
-  "isActive": true,
-  "isReversedCourier": false
-},
-{
-  "_id": {
-    "$oid": "67c2d928ec84abf517a537fd"
-  },
-  "name": "Amazon Surface 0.25 kg spl",
-  "weightSlab": 0.25,
-  "weightUnit": "Kg",
-  "incrementWeight": 0.25,
-  "type": "surface",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 47,
-    "percent": 2
-  },
-  "withinCity": {
-    "basePrice": 49,
-    "incrementPrice": 47
-  },
-  "withinZone": {
-    "basePrice": 49,
-    "incrementPrice": 47
-  },
-  "withinMetro": {
-    "basePrice": 49,
-    "incrementPrice": 47
-  },
-  "withinRoi": {
-    "basePrice": 49,
-    "incrementPrice": 47
-  },
-  "northEast": {
-    "basePrice": 49,
-    "incrementPrice": 47
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "carrierID": 312,
-  "vendor_channel_id": {
-    "$oid": "6627acadabe95523ee592372"
-  },
-  "isActive": true,
-  "isReversedCourier": false
-},
-{
-  "_id": {
-    "$oid": "67f7a38195960495efe49215"
-  },
-  "name": "Bluedart Surface 2 kg",
-  "weightSlab": 2,
-  "weightUnit": "Kg",
-  "incrementWeight": 1,
-  "type": "surface",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 50,
-    "percent": 2.48
-  },
-  "withinCity": {
-    "basePrice": 155,
-    "incrementPrice": 53
-  },
-  "withinZone": {
-    "basePrice": 155,
-    "incrementPrice": 53
-  },
-  "withinMetro": {
-    "basePrice": 155,
-    "incrementPrice": 53
-  },
-  "withinRoi": {
-    "basePrice": 155,
-    "incrementPrice": 63
-  },
-  "northEast": {
-    "basePrice": 195,
-    "incrementPrice": 83
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "carrierID": 603,
-  "vendor_channel_id": {
-    "$oid": "6627acadabe95523ee592372"
-  },
-  "isActive": true,
-  "isReversedCourier": false
-},
-{
-  "_id": {
-    "$oid": "683709d025ee6976e85e12ad"
-  },
-  "name": "Delhivery air 2 kg",
-  "weightSlab": 2,
-  "weightUnit": "Kg",
-  "incrementWeight": 1,
-  "type": "surface",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 56,
-    "percent": 2.76
-  },
-  "withinCity": {
-    "basePrice": 330,
-    "incrementPrice": 165
-  },
-  "withinZone": {
-    "basePrice": 330,
-    "incrementPrice": 165
-  },
-  "withinMetro": {
-    "basePrice": 330,
-    "incrementPrice": 165
-  },
-  "withinRoi": {
-    "basePrice": 330,
-    "incrementPrice": 165
-  },
-  "northEast": {
-    "basePrice": 330,
-    "incrementPrice": 165
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "carrierID": 10,
-  "vendor_channel_id": {
-    "$oid": "6627acadabe95523ee592372"
-  },
-  "isActive": true,
-  "isReversedCourier": false
-},
-{
-  "_id": {
-    "$oid": "68370a0f25ee6976e85e12ae"
-  },
-  "name": "Bluedart air 2kg",
-  "weightSlab": 2,
-  "weightUnit": "Kg",
-  "incrementWeight": 1,
-  "type": "air",
-  "pickupTime": "12:01:00",
-  "codCharge": {
-    "hard": 47.2,
-    "percent": 2.36
-  },
-  "withinCity": {
-    "basePrice": 330,
-    "incrementPrice": 165
-  },
-  "withinZone": {
-    "basePrice": 330,
-    "incrementPrice": 165
-  },
-  "withinMetro": {
-    "basePrice": 330,
-    "incrementPrice": 165
-  },
-  "withinRoi": {
-    "basePrice": 330,
-    "incrementPrice": 165
-  },
-  "northEast": {
-    "basePrice": 330,
-    "incrementPrice": 65
-  },
-  "createdAt": {
-    "$date": "2024-03-14T18:44:07.637Z"
-  },
-  "updatedAt": {
-    "$date": "2025-05-12T08:51:25.047Z"
-  },
-  "__v": 0,
-  "carrierID": 1,
-  "vendor_channel_id": {
-    "$oid": "6627acadabe95523ee592372"
-  },
-  "isActive": true,
-  "isReversedCourier": false
-}]
+[
+  {
+    "_id": {
+      "$oid": "6630d18681f23821154bd113"
+    },
+    "name": "Bluedart surface 0.5kg",
+    "weightSlab": 0.5,
+    "weightUnit": "Kg",
+    "incrementWeight": 0.5,
+    "type": "surface",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 47,
+      "percent": 2.12
+    },
+    "withinCity": {
+      "basePrice": 69,
+      "incrementPrice": 59
+    },
+    "withinZone": {
+      "basePrice": 69,
+      "incrementPrice": 59
+    },
+    "withinMetro": {
+      "basePrice": 69,
+      "incrementPrice": 59
+    },
+    "withinRoi": {
+      "basePrice": 77,
+      "incrementPrice": 67
+    },
+    "northEast": {
+      "basePrice": 118,
+      "incrementPrice": 105
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "carrierID": 279,
+    "vendor_channel_id": {
+      "$oid": "6628abf579087bcaf24ef3da"
+    },
+    "isActive": true,
+    "isReversedCourier": false
+  },
+  {
+    "_id": {
+      "$oid": "6631eca4e7bf344f412fe4c9"
+    },
+    "name": "Xpressbees surface 0.5 kg",
+    "weightSlab": 0.5,
+    "weightUnit": "Kg",
+    "incrementWeight": 0.5,
+    "type": "surface",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 40,
+      "percent": 1.73
+    },
+    "withinCity": {
+      "basePrice": 54,
+      "incrementPrice": 48
+    },
+    "withinZone": {
+      "basePrice": 56,
+      "incrementPrice": 50
+    },
+    "withinMetro": {
+      "basePrice": 66,
+      "incrementPrice": 57
+    },
+    "withinRoi": {
+      "basePrice": 71,
+      "incrementPrice": 57
+    },
+    "northEast": {
+      "basePrice": 85,
+      "incrementPrice": 63
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "carrierID": 51,
+    "vendor_channel_id": {
+      "$oid": "6627acadabe95523ee592372"
+    },
+    "isActive": true,
+    "isReversedCourier": false
+  },
+  {
+    "_id": {
+      "$oid": "6633295ae7bf344f412fe4cb"
+    },
+    "name": "Ekart surface 0.5 kg",
+    "weightSlab": 0.5,
+    "weightUnit": "Kg",
+    "incrementWeight": 0.5,
+    "type": "surface",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 40,
+      "percent": 1.73
+    },
+    "withinCity": {
+      "basePrice": 54,
+      "incrementPrice": 48
+    },
+    "withinZone": {
+      "basePrice": 56,
+      "incrementPrice": 50
+    },
+    "withinMetro": {
+      "basePrice": 66,
+      "incrementPrice": 57
+    },
+    "withinRoi": {
+      "basePrice": 71,
+      "incrementPrice": 57
+    },
+    "northEast": {
+      "basePrice": 85,
+      "incrementPrice": 63
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "carrierID": 54,
+    "vendor_channel_id": {
+      "$oid": "6627acadabe95523ee592372"
+    },
+    "isActive": true,
+    "isReversedCourier": false
+  },
+  {
+    "_id": {
+      "$oid": "66332c24e7bf344f412fe4cc"
+    },
+    "name": "Amazon Prepaid surface 0.5 kg",
+    "weightSlab": 0.5,
+    "weightUnit": "Kg",
+    "incrementWeight": 0.5,
+    "type": "surface",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 40,
+      "percent": 1.73
+    },
+    "withinCity": {
+      "basePrice": 44,
+      "incrementPrice": 42
+    },
+    "withinZone": {
+      "basePrice": 46,
+      "incrementPrice": 44
+    },
+    "withinMetro": {
+      "basePrice": 56,
+      "incrementPrice": 51
+    },
+    "withinRoi": {
+      "basePrice": 61,
+      "incrementPrice": 51
+    },
+    "northEast": {
+      "basePrice": 75,
+      "incrementPrice": 57
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "carrierID": 142,
+    "vendor_channel_id": {
+      "$oid": "6627acadabe95523ee592372"
+    },
+    "isActive": true,
+    "isReversedCourier": false
+  },
+  {
+    "_id": {
+      "$oid": "66332cade7bf344f412fe4cd"
+    },
+    "name": "Amazon COD surface 0.5 kg",
+    "weightSlab": 0.5,
+    "weightUnit": "Kg",
+    "incrementWeight": 0.5,
+    "type": "surface",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 40,
+      "percent": 1.73
+    },
+    "withinCity": {
+      "basePrice": 54,
+      "incrementPrice": 48
+    },
+    "withinZone": {
+      "basePrice": 56,
+      "incrementPrice": 50
+    },
+    "withinMetro": {
+      "basePrice": 66,
+      "incrementPrice": 57
+    },
+    "withinRoi": {
+      "basePrice": 71,
+      "incrementPrice": 57
+    },
+    "northEast": {
+      "basePrice": 85,
+      "incrementPrice": 63
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "carrierID": 195,
+    "vendor_channel_id": {
+      "$oid": "6627acadabe95523ee592372"
+    },
+    "isActive": true,
+    "isReversedCourier": false
+  },
+  {
+    "_id": {
+      "$oid": "66332d04e7bf344f412fe4ce"
+    },
+    "name": "Delhivery air 0.5 kg",
+    "weightSlab": 0.5,
+    "weightUnit": "Kg",
+    "incrementWeight": 0.5,
+    "type": "surface",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 56,
+      "percent": 2.76
+    },
+    "withinCity": {
+      "basePrice": 58,
+      "incrementPrice": 48
+    },
+    "withinZone": {
+      "basePrice": 61,
+      "incrementPrice": 53
+    },
+    "withinMetro": {
+      "basePrice": 94,
+      "incrementPrice": 85
+    },
+    "withinRoi": {
+      "basePrice": 114,
+      "incrementPrice": 102
+    },
+    "northEast": {
+      "basePrice": 130,
+      "incrementPrice": 117
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "carrierID": 10,
+    "vendor_channel_id": {
+      "$oid": "6627acadabe95523ee592372"
+    },
+    "isActive": true,
+    "isReversedCourier": false
+  },
+  {
+    "_id": {
+      "$oid": "66596494ea09cc12380f0b87"
+    },
+    "name": "Delhivery surface 5 kg",
+    "weightSlab": 5,
+    "weightUnit": "Kg",
+    "incrementWeight": 1,
+    "type": "surface",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 53.1,
+      "percent": 2.59
+    },
+    "withinCity": {
+      "basePrice": 183.48,
+      "incrementPrice": 35.84
+    },
+    "withinZone": {
+      "basePrice": 196.33,
+      "incrementPrice": 37.27
+    },
+    "withinMetro": {
+      "basePrice": 212.03,
+      "incrementPrice": 40.12
+    },
+    "withinRoi": {
+      "basePrice": 240.59,
+      "incrementPrice": 45.83
+    },
+    "northEast": {
+      "basePrice": 286.28,
+      "incrementPrice": 52.97
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "vendor_channel_id": {
+      "$oid": "66595e59ea09cc12380f0b85"
+    },
+    "isActive": true,
+    "carrierID": 494,
+    "isReversedCourier": false
+  },
+  {
+    "_id": {
+      "$oid": "66596b9ae7ac2a637505b891"
+    },
+    "name": "Ecom air 1kg",
+    "weightSlab": 1,
+    "weightUnit": "Kg",
+    "incrementWeight": 1,
+    "type": "express",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 35,
+      "percent": 2
+    },
+    "withinCity": {
+      "basePrice": 75,
+      "incrementPrice": 73
+    },
+    "withinZone": {
+      "basePrice": 75,
+      "incrementPrice": 73
+    },
+    "withinMetro": {
+      "basePrice": 75,
+      "incrementPrice": 73
+    },
+    "withinRoi": {
+      "basePrice": 75,
+      "incrementPrice": 73
+    },
+    "northEast": {
+      "basePrice": 75,
+      "incrementPrice": 73
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "carrierID": 369,
+    "vendor_channel_id": {
+      "$oid": "6628abf579087bcaf24ef3da"
+    },
+    "isActive": true,
+    "isReversedCourier": false
+  },
+  {
+    "_id": {
+      "$oid": "66617a7ee7ac2a637505b8ad"
+    },
+    "name": "Ecom Express Surface 3 kg",
+    "weightSlab": 3,
+    "weightUnit": "Kg",
+    "incrementWeight": 1,
+    "type": "surface",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 44,
+      "percent": 2.36
+    },
+    "withinCity": {
+      "basePrice": 127.92,
+      "incrementPrice": 42.75
+    },
+    "withinZone": {
+      "basePrice": 146.1,
+      "incrementPrice": 49.24
+    },
+    "withinMetro": {
+      "basePrice": 165.57,
+      "incrementPrice": 54.43
+    },
+    "withinRoi": {
+      "basePrice": 183.74,
+      "incrementPrice": 60.92
+    },
+    "northEast": {
+      "basePrice": 203.21,
+      "incrementPrice": 66.12
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "carrierID": 19,
+    "vendor_channel_id": {
+      "$oid": "6627acadabe95523ee592372"
+    },
+    "isActive": true,
+    "isReversedCourier": false
+  },
+  {
+    "_id": {
+      "$oid": "6668b335e7ac2a637505b8bc"
+    },
+    "name": "Xpressbees Surface 1 kg",
+    "weightSlab": 1,
+    "weightUnit": "Kg",
+    "incrementWeight": 1,
+    "type": "surface",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 53.1,
+      "percent": 2.124
+    },
+    "withinCity": {
+      "basePrice": 104,
+      "incrementPrice": 25
+    },
+    "withinZone": {
+      "basePrice": 124,
+      "incrementPrice": 28
+    },
+    "withinMetro": {
+      "basePrice": 133,
+      "incrementPrice": 38
+    },
+    "withinRoi": {
+      "basePrice": 145,
+      "incrementPrice": 46
+    },
+    "northEast": {
+      "basePrice": 175,
+      "incrementPrice": 54
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "carrierID": 23,
+    "vendor_channel_id": {
+      "$oid": "6627acadabe95523ee592372"
+    },
+    "isActive": true,
+    "isReversedCourier": false
+  },
+  {
+    "_id": {
+      "$oid": "6668b420e7ac2a637505b8bd"
+    },
+    "name": "Xpressbees Surface 5 kg",
+    "weightSlab": 5,
+    "weightUnit": "Kg",
+    "incrementWeight": 1,
+    "type": "surface",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 53.1,
+      "percent": 2.124
+    },
+    "withinCity": {
+      "basePrice": 177,
+      "incrementPrice": 25
+    },
+    "withinZone": {
+      "basePrice": 205,
+      "incrementPrice": 28
+    },
+    "withinMetro": {
+      "basePrice": 248,
+      "incrementPrice": 32
+    },
+    "withinRoi": {
+      "basePrice": 269,
+      "incrementPrice": 35
+    },
+    "northEast": {
+      "basePrice": 297,
+      "incrementPrice": 40
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "carrierID": 25,
+    "vendor_channel_id": {
+      "$oid": "6627acadabe95523ee592372"
+    },
+    "isActive": true,
+    "isReversedCourier": false
+  },
+  {
+    "_id": {
+      "$oid": "66693b70e7ac2a637505b8be"
+    },
+    "name": "DTDC Air 0.5 kg",
+    "weightSlab": 0.5,
+    "weightUnit": "Kg",
+    "incrementWeight": 0.5,
+    "type": "surface",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 47.2,
+      "percent": 2.124
+    },
+    "withinCity": {
+      "basePrice": 45.24,
+      "incrementPrice": 34.15
+    },
+    "withinZone": {
+      "basePrice": 49.13,
+      "incrementPrice": 39.34
+    },
+    "withinMetro": {
+      "basePrice": 69.9,
+      "incrementPrice": 64.00999999999999
+    },
+    "withinRoi": {
+      "basePrice": 75.09,
+      "incrementPrice": 69.18
+    },
+    "northEast": {
+      "basePrice": 98.46,
+      "incrementPrice": 88.67
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "carrierID": 196,
+    "vendor_channel_id": {
+      "$oid": "6627acadabe95523ee592372"
+    },
+    "isActive": true,
+    "isReversedCourier": false
+  },
+  {
+    "_id": {
+      "$oid": "666a9844e7ac2a637505b8cb"
+    },
+    "name": "Bluedart surface 10kg",
+    "weightSlab": 10,
+    "weightUnit": "Kg",
+    "incrementWeight": 1,
+    "type": "surface",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 47,
+      "percent": 2.12
+    },
+    "withinCity": {
+      "basePrice": 280.47,
+      "incrementPrice": 35.21
+    },
+    "withinZone": {
+      "basePrice": 333.39,
+      "incrementPrice": 40.64
+    },
+    "withinMetro": {
+      "basePrice": 387.67,
+      "incrementPrice": 46.6
+    },
+    "withinRoi": {
+      "basePrice": 397.17,
+      "incrementPrice": 47.66
+    },
+    "northEast": {
+      "basePrice": 498.95,
+      "incrementPrice": 62.06
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "carrierID": 283,
+    "vendor_channel_id": {
+      "$oid": "6628abf579087bcaf24ef3da"
+    },
+    "isActive": true,
+    "isReversedCourier": false
+  },
+  {
+    "_id": {
+      "$oid": "666b04d2e7ac2a637505b8d0"
+    },
+    "name": "Delhivery RVP 5 kg  ",
+    "weightSlab": 5,
+    "weightUnit": "Kg",
+    "incrementWeight": 1,
+    "type": "surface",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 0,
+      "percent": 0
+    },
+    "withinCity": {
+      "basePrice": 199.7,
+      "incrementPrice": 28.96
+    },
+    "withinZone": {
+      "basePrice": 268,
+      "incrementPrice": 39
+    },
+    "withinMetro": {
+      "basePrice": 347,
+      "incrementPrice": 50
+    },
+    "withinRoi": {
+      "basePrice": 394.439,
+      "incrementPrice": 63
+    },
+    "northEast": {
+      "basePrice": 455,
+      "incrementPrice": 85
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "vendor_channel_id": {
+      "$oid": "66595e59ea09cc12380f0b85"
+    },
+    "isActive": true,
+    "carrierID": -494,
+    "isReversedCourier": true
+  },
+  {
+    "_id": {
+      "$oid": "666c2ff1e7ac2a637505b8d1"
+    },
+    "name": "Ecom Express Surface 2 kg",
+    "weightSlab": 2,
+    "weightUnit": "Kg",
+    "incrementWeight": 1,
+    "type": "surface",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 47.2,
+      "percent": 2.36
+    },
+    "withinCity": {
+      "basePrice": 73.64,
+      "incrementPrice": 22.15
+    },
+    "withinZone": {
+      "basePrice": 92.12,
+      "incrementPrice": 25.55
+    },
+    "withinMetro": {
+      "basePrice": 115.88,
+      "incrementPrice": 30.73
+    },
+    "withinRoi": {
+      "basePrice": 131.5,
+      "incrementPrice": 36
+    },
+    "northEast": {
+      "basePrice": 170.11,
+      "incrementPrice": 39.41
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "carrierID": 19,
+    "vendor_channel_id": {
+      "$oid": "6627acadabe95523ee592372"
+    },
+    "isActive": true,
+    "isReversedCourier": false
+  },
+  {
+    "_id": {
+      "$oid": "666c31eee7ac2a637505b8d2"
+    },
+    "name": "Delhivery surface 0.5 kg",
+    "weightSlab": 0.5,
+    "weightUnit": "Kg",
+    "incrementWeight": 0.5,
+    "type": "surface",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 53.1,
+      "percent": 2.59
+    },
+    "withinCity": {
+      "basePrice": 42.12,
+      "incrementPrice": 39.34
+    },
+    "withinZone": {
+      "basePrice": 47.83,
+      "incrementPrice": 44.54
+    },
+    "withinMetro": {
+      "basePrice": 62.11,
+      "incrementPrice": 48.43
+    },
+    "withinRoi": {
+      "basePrice": 70.68,
+      "incrementPrice": 52.32
+    },
+    "northEast": {
+      "basePrice": 90.67,
+      "incrementPrice": 67.9
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "vendor_channel_id": {
+      "$oid": "66695e2bc475271f3f11df4b"
+    },
+    "isActive": true,
+    "carrierID": 492,
+    "isReversedCourier": false
+  },
+  {
+    "_id": {
+      "$oid": "666c8c69e7ac2a637505b8d3"
+    },
+    "name": "Delhivery Surface RVP 0.5 kg",
+    "weightSlab": 0.5,
+    "weightUnit": "Kg",
+    "incrementWeight": 0.5,
+    "type": "surface",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 53.1,
+      "percent": 2.59
+    },
+    "withinCity": {
+      "basePrice": 80.02,
+      "incrementPrice": 70.89
+    },
+    "withinZone": {
+      "basePrice": 92.87,
+      "incrementPrice": 82.31
+    },
+    "withinMetro": {
+      "basePrice": 107.15,
+      "incrementPrice": 95.16
+    },
+    "withinRoi": {
+      "basePrice": 120,
+      "incrementPrice": 106.58
+    },
+    "northEast": {
+      "basePrice": 141.42,
+      "incrementPrice": 123.71
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "vendor_channel_id": {
+      "$oid": "66695e2bc475271f3f11df4b"
+    },
+    "isActive": true,
+    "carrierID": 493,
+    "isReversedCourier": true
+  },
+  {
+    "_id": {
+      "$oid": "666d27b7e7ac2a637505b8d4"
+    },
+    "name": "Shadowfax Surface RVP 0.5kg",
+    "weightSlab": 0.5,
+    "weightUnit": "Kg",
+    "incrementWeight": 0.5,
+    "type": "surface",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 47,
+      "percent": 2.12
+    },
+    "withinCity": {
+      "basePrice": 54.71,
+      "incrementPrice": 42.72
+    },
+    "withinZone": {
+      "basePrice": 66.14,
+      "incrementPrice": 51.93
+    },
+    "withinMetro": {
+      "basePrice": 80.67,
+      "incrementPrice": 63.62
+    },
+    "withinRoi": {
+      "basePrice": 82.88,
+      "incrementPrice": 65.3
+    },
+    "northEast": {
+      "basePrice": 105.08,
+      "incrementPrice": 82.96
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "carrierID": 998,
+    "vendor_channel_id": {
+      "$oid": "6627acadabe95523ee592372"
+    },
+    "isActive": true,
+    "isReversedCourier": true
+  },
+  {
+    "_id": {
+      "$oid": "666fe2ff30e6ee33c1b0d849"
+    },
+    "name": "Delhivery Surface RVP 10 kg",
+    "weightSlab": 10,
+    "weightUnit": "Kg",
+    "incrementWeight": 1,
+    "type": "surface",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 0,
+      "percent": 0
+    },
+    "withinCity": {
+      "basePrice": 445,
+      "incrementPrice": 49
+    },
+    "withinZone": {
+      "basePrice": 522,
+      "incrementPrice": 59
+    },
+    "withinMetro": {
+      "basePrice": 745,
+      "incrementPrice": 80
+    },
+    "withinRoi": {
+      "basePrice": 775,
+      "incrementPrice": 82
+    },
+    "northEast": {
+      "basePrice": 835,
+      "incrementPrice": 90
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "vendor_channel_id": {
+      "$oid": "66695e40c475271f3f11df4c"
+    },
+    "isActive": true,
+    "carrierID": 999,
+    "isReversedCourier": true
+  },
+  {
+    "_id": {
+      "$oid": "666fe32c30e6ee33c1b0d84a"
+    },
+    "name": "Delhivery Surface 10 kg",
+    "weightSlab": 10,
+    "weightUnit": "Kg",
+    "incrementWeight": 1,
+    "type": "surface",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 53.1,
+      "percent": 2.59
+    },
+    "withinCity": {
+      "basePrice": 277.72,
+      "incrementPrice": 33.269999999999996
+    },
+    "withinZone": {
+      "basePrice": 343.39,
+      "incrementPrice": 38.980000000000004
+    },
+    "withinMetro": {
+      "basePrice": 394.79,
+      "incrementPrice": 43.27
+    },
+    "withinRoi": {
+      "basePrice": 454,
+      "incrementPrice": 48.98
+    },
+    "northEast": {
+      "basePrice": 570.41,
+      "incrementPrice": 58.97
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "vendor_channel_id": {
+      "$oid": "66695e40c475271f3f11df4c"
+    },
+    "isActive": true,
+    "carrierID": -999,
+    "isReversedCourier": false
+  },
+  {
+    "_id": {
+      "$oid": "668506f9e7ac2a637505b8f4"
+    },
+    "name": "Bluedart air 0.5kg",
+    "weightSlab": 0.5,
+    "weightUnit": "Kg",
+    "incrementWeight": 0.5,
+    "type": "air",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 47.2,
+      "percent": 2.36
+    },
+    "withinCity": {
+      "basePrice": 67,
+      "incrementPrice": 48
+    },
+    "withinZone": {
+      "basePrice": 75,
+      "incrementPrice": 53
+    },
+    "withinMetro": {
+      "basePrice": 85,
+      "incrementPrice": 73
+    },
+    "withinRoi": {
+      "basePrice": 95,
+      "incrementPrice": 83
+    },
+    "northEast": {
+      "basePrice": 125,
+      "incrementPrice": 103
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "carrierID": 373,
+    "vendor_channel_id": {
+      "$oid": "6628abf579087bcaf24ef3da"
+    },
+    "isActive": true,
+    "isReversedCourier": false
+  },
+  {
+    "_id": {
+      "$oid": "66a3590d56bde3201c31bbbb"
+    },
+    "name": "Shree Maruti surface 0.5kg",
+    "weightSlab": 0.5,
+    "weightUnit": "Kg",
+    "incrementWeight": 0.5,
+    "type": "surface",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 47,
+      "percent": 2.12
+    },
+    "withinCity": {
+      "basePrice": 54,
+      "incrementPrice": 49
+    },
+    "withinZone": {
+      "basePrice": 54,
+      "incrementPrice": 49
+    },
+    "withinMetro": {
+      "basePrice": 54,
+      "incrementPrice": 49
+    },
+    "withinRoi": {
+      "basePrice": 61,
+      "incrementPrice": 54
+    },
+    "northEast": {
+      "basePrice": 99,
+      "incrementPrice": 91
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "carrierID": -7,
+    "vendor_channel_id": {
+      "$oid": "66a34cbc3d165482f1409477"
+    },
+    "isActive": true,
+    "isReversedCourier": false
+  },
+  {
+    "_id": {
+      "$oid": "66bc2fbf5853fe89e5895568"
+    },
+    "name": "DTDC surface 2 kg",
+    "weightSlab": 2,
+    "weightUnit": "Kg",
+    "incrementWeight": 1,
+    "type": "surface",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 33,
+      "percent": 1.73
+    },
+    "withinCity": {
+      "basePrice": 86.42,
+      "incrementPrice": 43.71
+    },
+    "withinZone": {
+      "basePrice": 102.7,
+      "incrementPrice": 49.14
+    },
+    "withinMetro": {
+      "basePrice": 128.49,
+      "incrementPrice": 50.5
+    },
+    "withinRoi": {
+      "basePrice": 137.99,
+      "incrementPrice": 62.71
+    },
+    "northEast": {
+      "basePrice": 193.62,
+      "incrementPrice": 70.85
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "carrierID": 82,
+    "vendor_channel_id": {
+      "$oid": "6627acadabe95523ee592372"
+    },
+    "isActive": true,
+    "isReversedCourier": false
+  },
+  {
+    "_id": {
+      "$oid": "66ea9951a99c44d605d53a5a"
+    },
+    "name": "Ekart Surface 5 kg",
+    "weightSlab": 5,
+    "weightUnit": "Kg",
+    "incrementWeight": 1,
+    "type": "surface",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 39.56,
+      "percent": 2.42
+    },
+    "withinCity": {
+      "basePrice": 142,
+      "incrementPrice": 25.43
+    },
+    "withinZone": {
+      "basePrice": 154.27,
+      "incrementPrice": 30.83
+    },
+    "withinMetro": {
+      "basePrice": 184.17,
+      "incrementPrice": 33.59
+    },
+    "withinRoi": {
+      "basePrice": 200,
+      "incrementPrice": 37.62
+    },
+    "northEast": {
+      "basePrice": 359,
+      "incrementPrice": 58.2
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "carrierID": 171,
+    "vendor_channel_id": {
+      "$oid": "6627acadabe95523ee592372"
+    },
+    "isActive": true,
+    "isReversedCourier": false
+  },
+  {
+    "_id": {
+      "$oid": "6784e90d6a0cd4373fa8c146"
+    },
+    "name": "Bluedart Surface 3 kg",
+    "weightSlab": 3,
+    "weightUnit": "Kg",
+    "incrementWeight": 1,
+    "type": "surface",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 50,
+      "percent": 2.48
+    },
+    "withinCity": {
+      "basePrice": 125,
+      "incrementPrice": 38
+    },
+    "withinZone": {
+      "basePrice": 155,
+      "incrementPrice": 43
+    },
+    "withinMetro": {
+      "basePrice": 185,
+      "incrementPrice": 58
+    },
+    "withinRoi": {
+      "basePrice": 205,
+      "incrementPrice": 63
+    },
+    "northEast": {
+      "basePrice": 305,
+      "incrementPrice": 83
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "carrierID": 603,
+    "vendor_channel_id": {
+      "$oid": "6627acadabe95523ee592372"
+    },
+    "isActive": true,
+    "isReversedCourier": false
+  },
+  {
+    "_id": {
+      "$oid": "678b3ac540f9b7f91a8b4c3f"
+    },
+    "name": "Bluedart air 0.5kg",
+    "weightSlab": 0.5,
+    "weightUnit": "Kg",
+    "incrementWeight": 0.5,
+    "type": "air",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 47.2,
+      "percent": 2.36
+    },
+    "withinCity": {
+      "basePrice": 67,
+      "incrementPrice": 48
+    },
+    "withinZone": {
+      "basePrice": 75,
+      "incrementPrice": 53
+    },
+    "withinMetro": {
+      "basePrice": 85,
+      "incrementPrice": 68
+    },
+    "withinRoi": {
+      "basePrice": 115,
+      "incrementPrice": 83
+    },
+    "northEast": {
+      "basePrice": 130,
+      "incrementPrice": 103
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "carrierID": 1,
+    "vendor_channel_id": {
+      "$oid": "6627acadabe95523ee592372"
+    },
+    "isActive": true,
+    "isReversedCourier": false
+  },
+  {
+    "_id": {
+      "$oid": "67a30c0bc0f32f279b8b5c88"
+    },
+    "name": "Bluedart Surface 0.5 kg",
+    "weightSlab": 0.5,
+    "weightUnit": "Kg",
+    "incrementWeight": 0.5,
+    "type": "surface",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 47.2,
+      "percent": 2.36
+    },
+    "withinCity": {
+      "basePrice": 55,
+      "incrementPrice": 48
+    },
+    "withinZone": {
+      "basePrice": 65,
+      "incrementPrice": 53
+    },
+    "withinMetro": {
+      "basePrice": 75,
+      "incrementPrice": 63
+    },
+    "withinRoi": {
+      "basePrice": 95,
+      "incrementPrice": 73
+    },
+    "northEast": {
+      "basePrice": 105,
+      "incrementPrice": 91
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "carrierID": 367,
+    "vendor_channel_id": {
+      "$oid": "6627acadabe95523ee592372"
+    },
+    "isActive": true,
+    "isReversedCourier": false
+  },
+  {
+    "_id": {
+      "$oid": "67c1dce4ec84abf517a537fc"
+    },
+    "name": "Xpressbees Surface 0.25 kg spl",
+    "weightSlab": 0.25,
+    "weightUnit": "Kg",
+    "incrementWeight": 0.25,
+    "type": "surface",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 47,
+      "percent": 2
+    },
+    "withinCity": {
+      "basePrice": 49,
+      "incrementPrice": 47
+    },
+    "withinZone": {
+      "basePrice": 49,
+      "incrementPrice": 47
+    },
+    "withinMetro": {
+      "basePrice": 49,
+      "incrementPrice": 47
+    },
+    "withinRoi": {
+      "basePrice": 49,
+      "incrementPrice": 47
+    },
+    "northEast": {
+      "basePrice": 49,
+      "incrementPrice": 47
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "carrierID": 244,
+    "vendor_channel_id": {
+      "$oid": "6627acadabe95523ee592372"
+    },
+    "isActive": true,
+    "isReversedCourier": false
+  },
+  {
+    "_id": {
+      "$oid": "67c2d928ec84abf517a537fd"
+    },
+    "name": "Amazon Surface 0.25 kg spl",
+    "weightSlab": 0.25,
+    "weightUnit": "Kg",
+    "incrementWeight": 0.25,
+    "type": "surface",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 47,
+      "percent": 2
+    },
+    "withinCity": {
+      "basePrice": 49,
+      "incrementPrice": 47
+    },
+    "withinZone": {
+      "basePrice": 49,
+      "incrementPrice": 47
+    },
+    "withinMetro": {
+      "basePrice": 49,
+      "incrementPrice": 47
+    },
+    "withinRoi": {
+      "basePrice": 49,
+      "incrementPrice": 47
+    },
+    "northEast": {
+      "basePrice": 49,
+      "incrementPrice": 47
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "carrierID": 312,
+    "vendor_channel_id": {
+      "$oid": "6627acadabe95523ee592372"
+    },
+    "isActive": true,
+    "isReversedCourier": false
+  },
+  {
+    "_id": {
+      "$oid": "67f7a38195960495efe49215"
+    },
+    "name": "Bluedart Surface 2 kg",
+    "weightSlab": 2,
+    "weightUnit": "Kg",
+    "incrementWeight": 1,
+    "type": "surface",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 50,
+      "percent": 2.48
+    },
+    "withinCity": {
+      "basePrice": 155,
+      "incrementPrice": 53
+    },
+    "withinZone": {
+      "basePrice": 155,
+      "incrementPrice": 53
+    },
+    "withinMetro": {
+      "basePrice": 155,
+      "incrementPrice": 53
+    },
+    "withinRoi": {
+      "basePrice": 155,
+      "incrementPrice": 63
+    },
+    "northEast": {
+      "basePrice": 195,
+      "incrementPrice": 83
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "carrierID": 603,
+    "vendor_channel_id": {
+      "$oid": "6627acadabe95523ee592372"
+    },
+    "isActive": true,
+    "isReversedCourier": false
+  },
+  {
+    "_id": {
+      "$oid": "683709d025ee6976e85e12ad"
+    },
+    "name": "Delhivery air 2 kg",
+    "weightSlab": 2,
+    "weightUnit": "Kg",
+    "incrementWeight": 1,
+    "type": "surface",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 56,
+      "percent": 2.76
+    },
+    "withinCity": {
+      "basePrice": 330,
+      "incrementPrice": 165
+    },
+    "withinZone": {
+      "basePrice": 330,
+      "incrementPrice": 165
+    },
+    "withinMetro": {
+      "basePrice": 330,
+      "incrementPrice": 165
+    },
+    "withinRoi": {
+      "basePrice": 330,
+      "incrementPrice": 165
+    },
+    "northEast": {
+      "basePrice": 330,
+      "incrementPrice": 165
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "carrierID": 10,
+    "vendor_channel_id": {
+      "$oid": "6627acadabe95523ee592372"
+    },
+    "isActive": true,
+    "isReversedCourier": false
+  },
+  {
+    "_id": {
+      "$oid": "68370a0f25ee6976e85e12ae"
+    },
+    "name": "Bluedart air 2kg",
+    "weightSlab": 2,
+    "weightUnit": "Kg",
+    "incrementWeight": 1,
+    "type": "air",
+    "pickupTime": "12:01:00",
+    "codCharge": {
+      "hard": 47.2,
+      "percent": 2.36
+    },
+    "withinCity": {
+      "basePrice": 330,
+      "incrementPrice": 165
+    },
+    "withinZone": {
+      "basePrice": 330,
+      "incrementPrice": 165
+    },
+    "withinMetro": {
+      "basePrice": 330,
+      "incrementPrice": 165
+    },
+    "withinRoi": {
+      "basePrice": 330,
+      "incrementPrice": 165
+    },
+    "northEast": {
+      "basePrice": 330,
+      "incrementPrice": 65
+    },
+    "createdAt": {
+      "$date": "2024-03-14T18:44:07.637Z"
+    },
+    "updatedAt": {
+      "$date": "2025-05-12T08:51:25.047Z"
+    },
+    "__v": 0,
+    "carrierID": 1,
+    "vendor_channel_id": {
+      "$oid": "6627acadabe95523ee592372"
+    },
+    "isActive": true,
+    "isReversedCourier": false
+  }
+]

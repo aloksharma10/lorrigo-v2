@@ -2,9 +2,7 @@ import type React from 'react';
 import { create } from 'zustand';
 import { DrawerSize, DrawerSide } from '@lorrigo/ui/components';
 
-export type DrawerType =
-  | 'clone-order'
-  | 'edit-order';
+export type DrawerType = 'clone-order' | 'edit-order';
 
 export type DrawerProps = Record<string, unknown> & {
   size?: DrawerSize;
@@ -84,6 +82,8 @@ export const useDrawerStore = create<DrawerState>((set, get) => ({
   },
   setDrawerAnimationState: (id, animationState) =>
     set((state) => ({
-      drawers: state.drawers.map((drawer) => (drawer.id === id ? { ...drawer, animationState } : drawer)),
+      drawers: state.drawers.map((drawer) =>
+        drawer.id === id ? { ...drawer, animationState } : drawer
+      ),
     })),
-})); 
+}));

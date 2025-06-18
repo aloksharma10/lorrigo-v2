@@ -210,4 +210,4 @@ export default async function productRoutes(fastify: FastifyInstance) {
     preHandler: fastify.authenticate,
     handler: (request, reply) => productController.deleteProduct(request, reply),
   });
-} 
+}

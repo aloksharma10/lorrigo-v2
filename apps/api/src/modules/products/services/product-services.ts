@@ -18,7 +18,7 @@ export class ProductService {
 
   async getAllProducts(page: number, limit: number, search: string) {
     const skip = (page - 1) * limit;
-  
+
     // Search condition
     const searchFilter = search
       ? {
@@ -28,7 +28,7 @@ export class ProductService {
           },
         }
       : {};
-  
+
     // Group by 'name' and pick first product with that name
     const groupedProducts = await this.fastify.prisma.orderItem.groupBy({
       by: ['name'],
@@ -47,7 +47,7 @@ export class ProductService {
       skip,
       take: limit,
     });
-  
+
     // Count total unique names for pagination
     const allUnique = await this.fastify.prisma.orderItem.groupBy({
       by: ['name'],
@@ -56,7 +56,7 @@ export class ProductService {
 
     const total = allUnique.length;
     const totalPages = Math.ceil(total / limit);
-  
+
     // Map to return simplified product structure
     const products = groupedProducts.map((item) => ({
       name: item.name,
@@ -65,7 +65,7 @@ export class ProductService {
       hsn: item._min.hsn,
       created_at: item._min.created_at,
     }));
-  
+
     return {
       products,
       total,
@@ -90,24 +90,24 @@ export class ProductService {
     return product;
   }
 
-//   async createProduct(data: ProductData) {
-//     const product = await this.fastify.prisma.orderItem.create({
-//       data: {
-//         name: data.name,
-//         selling_price: data.price,
-//         hsn: data.hsnCode,
-//         code: data.code,
-//         order_id: data.order_id,
-//       },
-//     });
+  //   async createProduct(data: ProductData) {
+  //     const product = await this.fastify.prisma.orderItem.create({
+  //       data: {
+  //         name: data.name,
+  //         selling_price: data.price,
+  //         hsn: data.hsnCode,
+  //         code: data.code,
+  //         order_id: data.order_id,
+  //       },
+  //     });
 
-//     return {
-//       id: product.id,
-//       name: product.name,
-//       selling_price: product.selling_price,
-//       hsn: product.hsn,
-//     };
-//   }
+  //     return {
+  //       id: product.id,
+  //       name: product.name,
+  //       selling_price: product.selling_price,
+  //       hsn: product.hsn,
+  //     };
+  //   }
 
   async updateProduct(id: string, data: Partial<ProductData>): Promise<any | ErrorResponse> {
     // Find product to make sure it exists
@@ -177,19 +177,16 @@ export class ProductService {
         selling_price: true,
         hsn: true,
       },
-      orderBy: [
-        { name: 'asc' },
-        { created_at: 'desc' }
-      ],
+      orderBy: [{ name: 'asc' }, { created_at: 'desc' }],
       distinct: ['name'],
     });
 
     // Map to standardized format for frontend
-    return products.map(product => ({
+    return products.map((product) => ({
       id: product.id,
       name: product.name,
       price: product.selling_price,
       hsnCode: product.hsn,
     }));
   }
-} 
+}

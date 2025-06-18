@@ -59,10 +59,10 @@ export function BulkOperationsProvider({
  */
 export function useBulkOperations() {
   const context = useContext(BulkOperationsContext);
-  
+
   if (context === undefined) {
     throw new Error('useBulkOperations must be used within a BulkOperationsProvider');
   }
-  
+
   return context;
-} 
+}

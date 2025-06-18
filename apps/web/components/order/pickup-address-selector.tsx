@@ -37,7 +37,11 @@ interface AddressFormValues {
   address: string;
 }
 
-export function PickupAddressSelector({ onAddressSelect, error, initialAddressId }: PickupAddressSelectorProps) {
+export function PickupAddressSelector({
+  onAddressSelect,
+  error,
+  initialAddressId,
+}: PickupAddressSelectorProps) {
   const { openModal } = useModal();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -112,7 +116,7 @@ export function PickupAddressSelector({ onAddressSelect, error, initialAddressId
       setAddresses(filterHubs(data, searchQuery));
     }
   }, [searchQuery, data]);
-  
+
   // Set initial selected address
   useEffect(() => {
     if (initialAddressId && data) {

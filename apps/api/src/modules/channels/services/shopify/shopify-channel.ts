@@ -90,7 +90,7 @@ export class ShopifyChannel extends BaseChannel {
    */
   public getAuthUrl(): string {
     const nonce = crypto.randomBytes(16).toString('hex');
-    
+
     const params = {
       client_id: this.apiKey,
       scope: this.scopes,
@@ -102,7 +102,7 @@ export class ShopifyChannel extends BaseChannel {
     console.log(`Generating auth URL for shop: ${this.shop} with redirect: ${this.redirectUri}`);
     const authUrl = `https://${this.shop}/admin/oauth/authorize?${querystring.stringify(params)}`;
     console.log(`Generated auth URL: ${authUrl}`);
-    
+
     return authUrl;
   }
 
@@ -114,17 +114,17 @@ export class ShopifyChannel extends BaseChannel {
   public async exchangeCodeForToken(code: string): Promise<ShopifyConnection | null> {
     try {
       console.log(`Exchanging code for token for shop: ${this.shop}`);
-      
+
       const requestData = {
         client_id: this.apiKey,
         client_secret: this.apiSecret,
         code,
       };
-      
+
       // Use the full URL directly instead of relying on baseUrl + endpoint
       const fullUrl = `https://${this.shop}/admin/oauth/access_token`;
       console.log(`Making request to ${fullUrl}`);
-      
+
       // Pass empty string as endpoint and use fullUrl as the auth_url parameter
       const response = await this.makeRequest('', 'POST', requestData, undefined, fullUrl);
 
@@ -132,7 +132,7 @@ export class ShopifyChannel extends BaseChannel {
 
       if (response.data && response.data.access_token) {
         console.log('Successfully obtained access token');
-        
+
         const connection: ShopifyConnection = {
           shop: this.shop,
           access_token: response.data.access_token,
@@ -164,10 +164,10 @@ export class ShopifyChannel extends BaseChannel {
     try {
       // Clear the token from cache
       await redis.del(this.tokenCacheKey);
-      
+
       // Note: Shopify doesn't have a specific endpoint to revoke tokens
       // We just remove it from our system
-      
+
       return true;
     } catch (error) {
       console.error('Error disconnecting Shopify:', error);
@@ -268,4 +268,4 @@ export class ShopifyChannel extends BaseChannel {
     // Tokens are obtained through OAuth flow
     return this.accessToken;
   }
-} 
+}

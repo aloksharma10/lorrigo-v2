@@ -1,6 +1,6 @@
 // Backend order interface (matching your API response)
 
-import { BackendOrder } from "@lorrigo/utils";
+import { BackendOrder } from '@lorrigo/utils';
 
 // API response for orders list
 export interface OrdersApiResponse {

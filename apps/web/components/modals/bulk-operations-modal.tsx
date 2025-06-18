@@ -10,12 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@lorrigo/ui/components';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@lorrigo/ui/components';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@lorrigo/ui/components';
 import {
   Form,
   FormControl,
@@ -44,7 +39,6 @@ import * as z from 'zod';
 import { toast } from '@lorrigo/ui/components';
 import { useShippingOperations, BulkOperationResponse } from '@/lib/apis/shipment';
 import { useCourierOperations } from '@/lib/apis/couriers';
-import { useRouter } from 'next/navigation';
 import { Badge } from '@lorrigo/ui/components';
 
 // Define the operation types
@@ -66,7 +60,7 @@ interface CourierItem {
 
 // Form schemas
 const createShipmentSchema = z.object({
-  is_schedule_pickup: z.boolean().default(true),
+  is_schedule_pickup: z.boolean().optional(),
   pickup_date: z.date().optional(),
 });
 
@@ -95,15 +89,11 @@ export default function BulkOperationsModal({
   const [isLoading, setIsLoading] = useState(false);
   const [useFilters, setUseFilters] = useState(selectedRows.length === 0);
   const [selectedCouriers, setSelectedCouriers] = useState<CourierItem[]>([]);
-  const [courierToAdd, setCourierToAdd] = useState<string>("");
-  
-  const router = useRouter();
-  const { 
-    bulkCreateShipments, 
-    bulkSchedulePickup, 
-    bulkCancelShipments 
-  } = useShippingOperations();
-  
+  const [courierToAdd, setCourierToAdd] = useState<string>('');
+
+  // const router = useRouter();
+  const { bulkCreateShipments, bulkSchedulePickup, bulkCancelShipments } = useShippingOperations();
+
   const { getCouriersQuery } = useCourierOperations();
   const availableCouriers = getCouriersQuery.data || [];
 
@@ -146,20 +136,20 @@ export default function BulkOperationsModal({
         is_schedule_pickup: true,
         pickup_date: new Date(Date.now() + 24 * 60 * 60 * 1000),
       });
-      
+
       schedulePickupForm.reset({
         pickup_date: new Date(Date.now() + 24 * 60 * 60 * 1000),
       });
-      
+
       cancelShipmentForm.reset({
         reason: 'Cancelled by seller',
       });
-      
+
       filterForm.reset({
         status: undefined,
         dateRange: [undefined, undefined],
       });
-      
+
       setActiveTab(operationType);
       setUseFilters(selectedRows.length === 0);
       setSelectedCouriers([]);
@@ -169,33 +159,33 @@ export default function BulkOperationsModal({
   // Add courier to priority list
   const addCourier = () => {
     if (!courierToAdd) return;
-    
-    const courier = availableCouriers.find(c => c.id === courierToAdd);
-    if (courier && !selectedCouriers.some(c => c.id === courier.id)) {
+
+    const courier = availableCouriers.find((c: any) => c.id === courierToAdd);
+    if (courier && !selectedCouriers.some((c) => c.id === courier.id)) {
       setSelectedCouriers([...selectedCouriers, { id: courier.id, name: courier.name }]);
-      setCourierToAdd("");
+      setCourierToAdd('');
     }
   };
 
   // Remove courier from priority list
   const removeCourier = (id: string) => {
-    setSelectedCouriers(selectedCouriers.filter(c => c.id !== id));
+    setSelectedCouriers(selectedCouriers.filter((c) => c.id !== id));
   };
-  
+
   // Move courier up in priority
   const moveCourierUp = (index: number) => {
     if (index <= 0) return;
-    const newCouriers = [...selectedCouriers];
+    const newCouriers = [...selectedCouriers] as any[];
     const temp = newCouriers[index];
     newCouriers[index] = newCouriers[index - 1];
     newCouriers[index - 1] = temp;
     setSelectedCouriers(newCouriers);
   };
-  
+
   // Move courier down in priority
   const moveCourierDown = (index: number) => {
     if (index >= selectedCouriers.length - 1) return;
-    const newCouriers = [...selectedCouriers];
+    const newCouriers = [...selectedCouriers] as any[];
     const temp = newCouriers[index];
     newCouriers[index] = newCouriers[index + 1];
     newCouriers[index + 1] = temp;
@@ -205,35 +195,35 @@ export default function BulkOperationsModal({
   // Handle form submission
   const handleSubmit = async () => {
     setIsLoading(true);
-    
+
     try {
-      let result;
-      
+      let result: any;
+
       // Prepare filters if using them
-      const filters = useFilters ? {
-        status: filterForm.getValues('status'),
-        dateRange: filterForm.getValues('dateRange') ? 
-          [
-            filterForm.getValues('dateRange')?.[0]?.toISOString() || undefined,
-            filterForm.getValues('dateRange')?.[1]?.toISOString() || undefined
-          ] as [string | undefined, string | undefined]
-          : undefined,
-      } : undefined;
-      
+      const filters = useFilters
+        ? {
+            status: filterForm.getValues('status'),
+            dateRange: filterForm.getValues('dateRange')
+              ? ([
+                  filterForm.getValues('dateRange')?.[0]?.toISOString() || undefined,
+                  filterForm.getValues('dateRange')?.[1]?.toISOString() || undefined,
+                ] as [string | undefined, string | undefined])
+              : undefined,
+          }
+        : undefined;
+
       // Handle different operation types
       if (activeTab === 'create-shipment') {
         const { is_schedule_pickup, pickup_date } = createShipmentForm.getValues();
-        
+
         // Prepare order_ids array if we have selected rows
-        const order_ids = !useFilters && selectedRows.length > 0
-          ? selectedRows.map(row => row.id)
-          : undefined;
-          
+        const order_ids =
+          !useFilters && selectedRows.length > 0 ? selectedRows.map((row) => row.id) : undefined;
+
         // Use the prioritized courier_ids from the list
-        const courier_ids = selectedCouriers.length > 0
-          ? selectedCouriers.map(courier => courier.id)
-          : undefined;
-        
+        const courier_ids =
+          selectedCouriers.length > 0 ? selectedCouriers.map((courier) => courier.id) : undefined;
+
         result = await bulkCreateShipments.mutateAsync({
           order_ids,
           courier_ids,
@@ -241,40 +231,36 @@ export default function BulkOperationsModal({
           is_schedule_pickup,
           pickup_date: pickup_date ? format(pickup_date, 'yyyy-MM-dd') : undefined,
         });
-      } 
-      else if (activeTab === 'schedule-pickup') {
+      } else if (activeTab === 'schedule-pickup') {
         const { pickup_date } = schedulePickupForm.getValues();
-        
+
         // Prepare shipment_ids array if we have selected rows
-        const shipment_ids = !useFilters && selectedRows.length > 0
-          ? selectedRows.map(row => row.id)
-          : undefined;
-        
+        const shipment_ids =
+          !useFilters && selectedRows.length > 0 ? selectedRows.map((row) => row.id) : undefined;
+
         result = await bulkSchedulePickup.mutateAsync({
           shipment_ids,
           pickup_date: format(pickup_date, 'yyyy-MM-dd'),
           filters,
         });
-      } 
-      else if (activeTab === 'cancel-shipment') {
+      } else if (activeTab === 'cancel-shipment') {
         const { reason } = cancelShipmentForm.getValues();
-        
+
         // Prepare shipment_ids array if we have selected rows
-        const shipment_ids = !useFilters && selectedRows.length > 0
-          ? selectedRows.map(row => row.id)
-          : undefined;
-        
+        const shipment_ids =
+          !useFilters && selectedRows.length > 0 ? selectedRows.map((row) => row.id) : undefined;
+
         result = await bulkCancelShipments.mutateAsync({
           shipment_ids,
           reason,
           filters,
         });
       }
-      
+
       // Handle successful operation
       if (result && result.success) {
         onOperationComplete?.(result);
-        
+
         // Navigate to bulk operations log page
         toast.success(`${getOperationTitle(activeTab)} operation started successfully`);
         // router.push('/seller/bulk-log');
@@ -322,30 +308,26 @@ export default function BulkOperationsModal({
           <DialogTitle>{getOperationTitle(activeTab)}</DialogTitle>
           <DialogDescription>{getOperationDescription(activeTab)}</DialogDescription>
         </DialogHeader>
-        
+
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as BulkOperationType)}>
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="create-shipment">Create Shipments</TabsTrigger>
             <TabsTrigger value="schedule-pickup">Schedule Pickup</TabsTrigger>
             <TabsTrigger value="cancel-shipment">Cancel Shipments</TabsTrigger>
           </TabsList>
-          
+
           <div className="mt-4">
             {selectedRows.length > 0 && (
               <div className="mb-4 flex items-center justify-between rounded-md border border-blue-200 bg-blue-50 p-3">
                 <span>
                   {selectedRows.length} {selectedRows.length === 1 ? 'item' : 'items'} selected
                 </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setUseFilters(!useFilters)}
-                >
+                <Button variant="outline" size="sm" onClick={() => setUseFilters(!useFilters)}>
                   {useFilters ? 'Use Selected Items' : 'Use Filters Instead'}
                 </Button>
               </div>
             )}
-            
+
             {/* Filter Section (common for all tabs) */}
             {useFilters && (
               <div className="mb-6 rounded-md border p-4">
@@ -358,10 +340,7 @@ export default function BulkOperationsModal({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Status</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select status" />
@@ -378,7 +357,7 @@ export default function BulkOperationsModal({
                         </FormItem>
                       )}
                     />
-                    
+
                     <div className="grid grid-cols-2 gap-4">
                       <FormField
                         control={filterForm.control}
@@ -390,14 +369,14 @@ export default function BulkOperationsModal({
                               <PopoverTrigger asChild>
                                 <FormControl>
                                   <Button
-                                    variant={"outline"}
+                                    variant={'outline'}
                                     className={cn(
-                                      "w-full pl-3 text-left font-normal",
-                                      !field.value && "text-muted-foreground"
+                                      'w-full pl-3 text-left font-normal',
+                                      !field.value && 'text-muted-foreground'
                                     )}
                                   >
                                     {field.value ? (
-                                      format(field.value, "PPP")
+                                      format(field.value, 'PPP')
                                     ) : (
                                       <span>Pick a date</span>
                                     )}
@@ -419,7 +398,7 @@ export default function BulkOperationsModal({
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={filterForm.control}
                         name="dateRange.1"
@@ -430,14 +409,14 @@ export default function BulkOperationsModal({
                               <PopoverTrigger asChild>
                                 <FormControl>
                                   <Button
-                                    variant={"outline"}
+                                    variant={'outline'}
                                     className={cn(
-                                      "w-full pl-3 text-left font-normal",
-                                      !field.value && "text-muted-foreground"
+                                      'w-full pl-3 text-left font-normal',
+                                      !field.value && 'text-muted-foreground'
                                     )}
                                   >
                                     {field.value ? (
-                                      format(field.value, "PPP")
+                                      format(field.value, 'PPP')
                                     ) : (
                                       <span>Pick a date</span>
                                     )}
@@ -464,7 +443,7 @@ export default function BulkOperationsModal({
                 </Form>
               </div>
             )}
-            
+
             {/* Operation-specific forms */}
             <TabsContent value="create-shipment">
               <Form {...createShipmentForm}>
@@ -473,10 +452,11 @@ export default function BulkOperationsModal({
                   <div className="mb-6 rounded-md border p-4">
                     <h3 className="mb-3 text-sm font-medium">Courier Priority</h3>
                     <div className="space-y-3">
-                      <p className="text-sm text-muted-foreground">
-                        Select and arrange couriers in order of priority. The system will try to use the first courier, then fall back to others if needed.
+                      <p className="text-muted-foreground text-sm">
+                        Select and arrange couriers in order of priority. The system will try to use
+                        the first courier, then fall back to others if needed.
                       </p>
-                      
+
                       {/* Courier selector */}
                       <div className="flex gap-2">
                         <Select value={courierToAdd} onValueChange={setCourierToAdd}>
@@ -485,12 +465,16 @@ export default function BulkOperationsModal({
                           </SelectTrigger>
                           <SelectContent>
                             {getCouriersQuery.isLoading ? (
-                              <SelectItem value="loading" disabled>Loading couriers...</SelectItem>
+                              <SelectItem value="loading" disabled>
+                                Loading couriers...
+                              </SelectItem>
                             ) : availableCouriers.length === 0 ? (
-                              <SelectItem value="none" disabled>No couriers available</SelectItem>
+                              <SelectItem value="none" disabled>
+                                No couriers available
+                              </SelectItem>
                             ) : (
                               availableCouriers
-                                .filter((c: any) => !selectedCouriers.some(sc => sc.id === c.id))
+                                .filter((c: any) => !selectedCouriers.some((sc) => sc.id === c.id))
                                 .map((courier: any) => (
                                   <SelectItem key={courier.id} value={courier.id}>
                                     {courier.name}
@@ -499,22 +483,22 @@ export default function BulkOperationsModal({
                             )}
                           </SelectContent>
                         </Select>
-                        <Button 
-                          type="button" 
-                          variant="outline" 
+                        <Button
+                          type="button"
+                          variant="outline"
                           onClick={addCourier}
                           disabled={!courierToAdd}
                         >
-                          <Plus className="h-4 w-4 mr-1" /> Add
+                          <Plus className="mr-1 h-4 w-4" /> Add
                         </Button>
                       </div>
-                      
+
                       {/* Courier priority list */}
                       <div className="mt-3">
                         {selectedCouriers.length === 0 ? (
-                          <div className="text-center py-6 border rounded-md bg-gray-50">
-                            <p className="text-sm text-muted-foreground">No couriers selected</p>
-                            <p className="text-xs text-muted-foreground mt-1">
+                          <div className="rounded-md border bg-gray-50 py-6 text-center">
+                            <p className="text-muted-foreground text-sm">No couriers selected</p>
+                            <p className="text-muted-foreground mt-1 text-xs">
                               Add couriers to set priority order
                             </p>
                           </div>
@@ -522,33 +506,34 @@ export default function BulkOperationsModal({
                           <div>
                             <div className="mb-2">
                               <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                                {selectedCouriers.length} courier{selectedCouriers.length !== 1 ? 's' : ''} selected
+                                {selectedCouriers.length} courier
+                                {selectedCouriers.length !== 1 ? 's' : ''} selected
                               </Badge>
-                              <p className="text-xs text-muted-foreground mt-1">
+                              <p className="text-muted-foreground mt-1 text-xs">
                                 Use arrows to reorder priority (top = highest priority)
                               </p>
                             </div>
-                            <div className="space-y-2 max-h-60 overflow-y-auto">
+                            <div className="max-h-60 space-y-2 overflow-y-auto">
                               {selectedCouriers.map((courier, index) => (
-                                <div 
-                                  key={courier.id} 
-                                  className="flex items-center justify-between bg-white p-2 rounded border"
+                                <div
+                                  key={courier.id}
+                                  className="flex items-center justify-between rounded border bg-white p-2"
                                 >
                                   <span>{courier.name}</span>
                                   <div className="flex items-center gap-1">
-                                    <Button 
-                                      type="button" 
-                                      variant="ghost" 
-                                      size="sm" 
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
                                       onClick={() => moveCourierUp(index)}
                                       disabled={index === 0}
                                       className="h-8 w-8 p-0"
                                     >
                                       <ChevronUp className="h-4 w-4" />
                                     </Button>
-                                    <Button 
-                                      type="button" 
-                                      variant="ghost" 
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
                                       size="sm"
                                       onClick={() => moveCourierDown(index)}
                                       disabled={index === selectedCouriers.length - 1}
@@ -556,12 +541,12 @@ export default function BulkOperationsModal({
                                     >
                                       <ChevronDown className="h-4 w-4" />
                                     </Button>
-                                    <Button 
-                                      type="button" 
-                                      variant="ghost" 
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
                                       size="sm"
                                       onClick={() => removeCourier(courier.id)}
-                                      className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                      className="h-8 w-8 p-0 text-red-500 hover:bg-red-50 hover:text-red-700"
                                     >
                                       <X className="h-4 w-4" />
                                     </Button>
@@ -597,11 +582,10 @@ export default function BulkOperationsModal({
                       </FormItem>
                     )}
                   />
-                  
                 </form>
               </Form>
             </TabsContent>
-            
+
             <TabsContent value="schedule-pickup">
               <Form {...schedulePickupForm}>
                 <form className="space-y-4">
@@ -615,14 +599,14 @@ export default function BulkOperationsModal({
                           <PopoverTrigger asChild>
                             <FormControl>
                               <Button
-                                variant={"outline"}
+                                variant={'outline'}
                                 className={cn(
-                                  "w-full pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
+                                  'w-full pl-3 text-left font-normal',
+                                  !field.value && 'text-muted-foreground'
                                 )}
                               >
                                 {field.value ? (
-                                  format(field.value, "PPP")
+                                  format(field.value, 'PPP')
                                 ) : (
                                   <span>Pick a date</span>
                                 )}
@@ -647,7 +631,7 @@ export default function BulkOperationsModal({
                 </form>
               </Form>
             </TabsContent>
-            
+
             <TabsContent value="cancel-shipment">
               <Form {...cancelShipmentForm}>
                 <form className="space-y-4">
@@ -658,17 +642,18 @@ export default function BulkOperationsModal({
                       <FormItem>
                         <FormLabel>Cancellation Reason</FormLabel>
                         <FormControl>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <SelectTrigger>
                               <SelectValue placeholder="Select a reason" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Cancelled by seller">Cancelled by seller</SelectItem>
+                              <SelectItem value="Cancelled by seller">
+                                Cancelled by seller
+                              </SelectItem>
                               <SelectItem value="Out of stock">Out of stock</SelectItem>
-                              <SelectItem value="Customer requested cancellation">Customer requested cancellation</SelectItem>
+                              <SelectItem value="Customer requested cancellation">
+                                Customer requested cancellation
+                              </SelectItem>
                               <SelectItem value="Delivery issue">Delivery issue</SelectItem>
                               <SelectItem value="Other">Other</SelectItem>
                             </SelectContent>
@@ -683,7 +668,7 @@ export default function BulkOperationsModal({
             </TabsContent>
           </div>
         </Tabs>
-        
+
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={isLoading}>
             Cancel
@@ -696,4 +681,4 @@ export default function BulkOperationsModal({
       </DialogContent>
     </Dialog>
   );
-} 
+}

@@ -17,22 +17,23 @@ export default function ShopifySuccessPage() {
   }, [router]);
 
   return (
-    <div className="container py-12 flex flex-col items-center justify-center min-h-[60vh]">
-      <div className="flex flex-col items-center gap-4 text-center max-w-md">
-        <div className="h-16 w-16 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+    <div className="container flex min-h-[60vh] flex-col items-center justify-center py-12">
+      <div className="flex max-w-md flex-col items-center gap-4 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-50 dark:bg-green-900/30">
           <CheckCircle2 className="h-10 w-10 text-green-600" />
         </div>
         <h1 className="text-2xl font-bold">Shopify Connected Successfully!</h1>
         <p className="text-muted-foreground">
-          Your Shopify store has been connected to Lorrigo. You can now manage your Shopify orders directly from the Lorrigo dashboard.
+          Your Shopify store has been connected to Lorrigo. You can now manage your Shopify orders
+          directly from the Lorrigo dashboard.
         </p>
-        <button 
+        <button
           onClick={() => router.push('/seller/channels')}
-          className="mt-4 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+          className="bg-primary hover:bg-primary/90 mt-4 rounded-md px-4 py-2 text-white"
         >
           Return to Channels
         </button>
       </div>
     </div>
   );
-} 
+}

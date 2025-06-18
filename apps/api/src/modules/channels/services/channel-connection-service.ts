@@ -8,7 +8,7 @@ export enum Channel {
   INSTAGRAM = 'INSTAGRAM',
   FACEBOOK = 'FACEBOOK',
   EMAIL = 'EMAIL',
-  SHOPIFY = 'SHOPIFY'
+  SHOPIFY = 'SHOPIFY',
 }
 
 /**
@@ -257,4 +257,4 @@ export class ChannelConnectionService {
       return false;
     }
   }
-} 
+}

@@ -101,19 +101,26 @@ export const useShippingOperations = () => {
 
   // Ship order with selected courier
   const shipOrder = useMutation({
-    mutationFn: ({ order_id, courier_id, schedule_pickup }: { order_id: string; courier_id: string; schedule_pickup: boolean }) =>
-      api.post(`/shipments`, { order_id, courier_id, schedule_pickup }),
+    mutationFn: ({
+      order_id,
+      courier_id,
+      is_schedule_pickup,
+    }: {
+      order_id: string;
+      courier_id: string;
+      is_schedule_pickup: boolean;
+    }) => api.post(`/shipments`, { order_id, courier_id, is_schedule_pickup }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
     onError: (error: any) => {
-      toast.error(error.response.data.error)
-    }
+      toast.error(error.response.data.error);
+    },
   });
 
   // Schedule pickup for a shipment
   const schedulePickup = useMutation({
-    mutationFn: ({ shipmentId, pickupDate }: { shipmentId: string; pickupDate: string }) => 
+    mutationFn: ({ shipmentId, pickupDate }: { shipmentId: string; pickupDate: string }) =>
       api.post(`/shipments/${shipmentId}/schedule-pickup`, { pickupDate }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
@@ -122,13 +129,20 @@ export const useShippingOperations = () => {
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.error || 'Failed to schedule pickup');
-    }
+    },
   });
 
   // Cancel a shipment
   const cancelShipment = useMutation({
-    mutationFn: ({ shipmentId, reason, cancelType }: { shipmentId: string; reason: string, cancelType: 'shipment' | 'order' }) => 
-      api.post(`/shipments/${shipmentId}/cancel`, { reason, cancelType }),
+    mutationFn: ({
+      shipmentId,
+      reason,
+      cancelType,
+    }: {
+      shipmentId: string;
+      reason: string;
+      cancelType: 'shipment' | 'order';
+    }) => api.post(`/shipments/${shipmentId}/cancel`, { reason, cancelType }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['shipments'] });
@@ -136,98 +150,104 @@ export const useShippingOperations = () => {
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.error || 'Failed to cancel shipment');
-    }
+    },
   });
 
   // Bulk create shipments
   const bulkCreateShipments = useMutation({
-    mutationFn: ({ 
-      order_ids, 
+    mutationFn: ({
+      order_ids,
       courier_ids,
       is_schedule_pickup,
       pickup_date,
-      filters
-    }: { 
+      filters,
+    }: {
       order_ids?: string[];
       courier_ids?: string[];
       is_schedule_pickup?: boolean;
       pickup_date?: string;
       filters?: BulkOperationFilters;
-    }) => api.post('/shipments/bulk/create', { 
-      order_ids, 
-      courier_ids, 
-      is_schedule_pickup, 
-      pickup_date, 
-      filters 
-    }),
+    }) =>
+      api.post('/shipments/bulk/create', {
+        order_ids,
+        courier_ids,
+        is_schedule_pickup,
+        pickup_date,
+        filters,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bulk-operations'] });
       toast.success('Bulk shipment creation initiated');
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.error || 'Failed to create bulk shipments');
-    }
+    },
   });
 
   // Bulk schedule pickup
   const bulkSchedulePickup = useMutation({
-    mutationFn: ({ 
-      shipment_ids, 
+    mutationFn: ({
+      shipment_ids,
       pickup_date,
-      filters 
-    }: { 
+      filters,
+    }: {
       shipment_ids?: string[];
       pickup_date: string;
       filters?: BulkOperationFilters;
-    }) => api.post('/shipments/bulk/schedule-pickup', { 
-      shipment_ids, 
-      pickup_date, 
-      filters 
-    }),
+    }) =>
+      api.post('/shipments/bulk/schedule-pickup', {
+        shipment_ids,
+        pickup_date,
+        filters,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bulk-operations'] });
       toast.success('Bulk pickup scheduling initiated');
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.error || 'Failed to schedule bulk pickups');
-    }
+    },
   });
 
   // Bulk cancel shipments
   const bulkCancelShipments = useMutation({
-    mutationFn: ({ 
-      shipment_ids, 
+    mutationFn: ({
+      shipment_ids,
       reason,
-      filters 
-    }: { 
+      filters,
+    }: {
       shipment_ids?: string[];
       reason: string;
       filters?: BulkOperationFilters;
-    }) => api.post('/shipments/bulk/cancel', { 
-      shipment_ids, 
-      reason, 
-      filters 
-    }),
+    }) =>
+      api.post('/shipments/bulk/cancel', {
+        shipment_ids,
+        reason,
+        filters,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bulk-operations'] });
       toast.success('Bulk shipment cancellation initiated');
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.error || 'Failed to cancel bulk shipments');
-    }
+    },
   });
 
   // Get bulk operation status
   const getBulkOperationStatus = (operationId: string) => {
     return useQuery({
       queryKey: ['bulk-operation', operationId],
-      queryFn: () => api.get<BulkOperationResponse>(`/shipments/bulk-operations/${operationId}`).then((res: any) => res.data),
+      queryFn: () =>
+        api
+          .get<BulkOperationResponse>(`/shipments/bulk-operations/${operationId}`)
+          .then((res: any) => res.data),
       enabled: !!operationId && isTokenReady,
       refetchInterval: (query) => {
         const data = query.state.data as BulkOperationResponse | undefined;
         // Auto-refresh until operation is complete
-        return data?.operation?.status === 'COMPLETED' || data?.operation?.status === 'FAILED' 
-          ? false 
+        return data?.operation?.status === 'COMPLETED' || data?.operation?.status === 'FAILED'
+          ? false
           : 5000; // refresh every 5 seconds
       },
     });
@@ -243,7 +263,10 @@ export const useShippingOperations = () => {
   }) => {
     return useQuery({
       queryKey: ['bulk-operations', params],
-      queryFn: () => api.get<BulkOperationsListResponse>('/shipments/bulk-operations', { params }).then((res: any) => res),
+      queryFn: () =>
+        api
+          .get<BulkOperationsListResponse>('/shipments/bulk-operations', { params })
+          .then((res: any) => res),
       enabled: isTokenReady,
       staleTime: 1000 * 60 * 2, // 2 minutes
     });

@@ -166,11 +166,7 @@ export const AddPickupLocationModal = () => {
             >
               Reset
             </Button>
-            <Button
-              isLoading={isLoading}
-              variant={'default'}
-              type="submit"
-            >
+            <Button isLoading={isLoading} variant={'default'} type="submit">
               Add Pickup Location
             </Button>
           </DialogFooter>

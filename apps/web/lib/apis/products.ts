@@ -13,9 +13,12 @@ export const searchProducts = async (query: string, signal?: AbortSignal): Promi
   if (!query || query.length < 2) {
     return [];
   }
-  
+
   try {
-    const response = await api.get<Product[]>(`/products/search?query=${encodeURIComponent(query)}`, { signal });
+    const response = await api.get<Product[]>(
+      `/products/search?query=${encodeURIComponent(query)}`,
+      { signal }
+    );
     return response || [];
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
@@ -30,15 +33,16 @@ export const searchProducts = async (query: string, signal?: AbortSignal): Promi
 // React Query hooks for product operations
 export const useProductOperations = () => {
   // Fetch all products with pagination
-  const getProductsQuery = (page = 1, limit = 10, search = '') => 
+  const getProductsQuery = (page = 1, limit = 10, search = '') =>
     useQuery({
       queryKey: ['products', page, limit, search],
-      queryFn: () => api.get(`/products?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`),
+      queryFn: () =>
+        api.get(`/products?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`),
       staleTime: 1000 * 60 * 5, // 5 minutes: data is considered fresh
     });
 
   // Get product by ID
-  const getProductByIdQuery = (id: string) => 
+  const getProductByIdQuery = (id: string) =>
     useQuery({
       queryKey: ['product', id],
       queryFn: () => api.get(`/products/${id}`),

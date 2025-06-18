@@ -13,9 +13,8 @@ import {
   FormLabel,
 } from '@lorrigo/ui/components';
 import { Info } from 'lucide-react';
-import { Control, useForm, UseFormWatch } from 'react-hook-form';
-import { useEffect } from 'react';
-import { OrderFormValues } from '../../app/(www)/(seller)/seller/orders/types';
+import { Control, UseFormWatch } from 'react-hook-form';
+import { OrderFormValues } from '@lorrigo/utils';
 
 // Create explicit interface for form values
 interface PaymentFormValues {

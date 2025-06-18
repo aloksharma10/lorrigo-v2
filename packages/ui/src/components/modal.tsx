@@ -102,7 +102,7 @@ export function Modal({
         <Dialog.Overlay
           // for detecting when there's an active opened modal
           id="modal-backdrop"
-          className="animate-fade-in fixed inset-0 z-40 bg-neutral-50/15 backdrop-blur-xs"
+          className="animate-fade-in backdrop-blur-xs fixed inset-0 z-40 bg-neutral-50/15"
         />
         <Dialog.Content
           onOpenAutoFocus={(e) => e.preventDefault()}

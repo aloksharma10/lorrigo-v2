@@ -582,11 +582,11 @@ export class PlanService {
       );
       // Convert utility results back to original format
       const rates: RateCalculationResult[] = utilityResults.map((result) => ({
-        nickName: result.courier.nickname ?? "LORRIGO",
+        nickName: result.courier.nickname ?? 'LORRIGO',
         name: result.courier.name,
         minWeight: result.pricing.weight_slab ?? 0.5,
         isReversedCourier: result.courier.is_reversed_courier,
-        type: result.courier.type ?? "SURFACE", // Ensure type is always defined
+        type: result.courier.type ?? 'SURFACE', // Ensure type is always defined
         cod: result.cod_charges,
         charge: result.total_price,
         order_zone: result.zone,

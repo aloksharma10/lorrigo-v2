@@ -1,8 +1,8 @@
-import { auth } from "@/auth"
-import { Role } from "@lorrigo/db";
-import { NextResponse } from "next/server";
-import { checkAccessAndRedirect } from "./lib/routes/check-permission";
-import { getRoleBasedRedirect } from "./lib/routes/redirect";
+import { auth } from '@/auth';
+import { Role } from '@lorrigo/db';
+import { NextResponse } from 'next/server';
+import { checkAccessAndRedirect } from './lib/routes/check-permission';
+import { getRoleBasedRedirect } from './lib/routes/redirect';
 
 // Use explicit type annotation to fix the TypeScript error
 export const middleware: any = auth((request) => {
@@ -139,10 +139,10 @@ export const middleware: any = auth((request) => {
   }
 
   return NextResponse.next();
-})
+});
 
-export default middleware
+export default middleware;
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
-}
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+};

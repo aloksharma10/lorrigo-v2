@@ -49,7 +49,7 @@ export default async function customerRoutes(fastify: FastifyInstance) {
     preHandler: fastify.authenticate,
     handler: (request, reply) => customerController.getAllCustomers(request, reply),
   });
-  
+
   // Search customers
   fastify.get('/search', {
     schema: {

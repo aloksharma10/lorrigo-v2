@@ -44,12 +44,7 @@ export const useChannels = () => {
   const { isTokenReady } = useAuthToken();
 
   // Get all channel configurations with pagination and filtering
-  const getChannels = (
-    page = 1,
-    limit = 10,
-    search?: string,
-    is_active?: boolean
-  ) => {
+  const getChannels = (page = 1, limit = 10, search?: string, is_active?: boolean) => {
     return useQuery({
       queryKey: ['channels', 'configs', { page, limit, search, is_active }],
       queryFn: async () => {
@@ -59,7 +54,7 @@ export const useChannels = () => {
           search,
           is_active,
         };
-        
+
         const response = await apiClient.get('/channels', { params });
         return response.data;
       },
@@ -161,11 +156,11 @@ export const useChannels = () => {
     getActiveChannels,
     getChannelById,
     getChannelByIdentifier,
-    
+
     // Mutations
     createChannel,
     updateChannel,
     deleteChannel,
     toggleChannelStatus,
   };
-}; 
+};

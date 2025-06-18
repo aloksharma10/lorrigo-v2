@@ -36,14 +36,14 @@ export const channelRegistry: ChannelRegistryEntry[] = [
  * Get all enabled channels from the registry
  */
 export function getEnabledChannels(): ChannelRegistryEntry[] {
-  return channelRegistry.filter(channel => channel.enabled);
+  return channelRegistry.filter((channel) => channel.enabled);
 }
 
 /**
  * Get a specific channel by type
  */
 export function getChannelByType(type: ChannelType): ChannelRegistryEntry | undefined {
-  return channelRegistry.find(channel => channel.type === type);
+  return channelRegistry.find((channel) => channel.type === type);
 }
 
 /**
@@ -51,14 +51,12 @@ export function getChannelByType(type: ChannelType): ChannelRegistryEntry | unde
  */
 export function AllEnabledChannels() {
   const enabledChannels = getEnabledChannels();
-  
+
   return (
     <>
       {enabledChannels.map((channel) => (
-        <div key={channel.type}>
-          {channel.component()}
-        </div>
+        <div key={channel.type}>{channel.component()}</div>
       ))}
     </>
   );
-} 
+}

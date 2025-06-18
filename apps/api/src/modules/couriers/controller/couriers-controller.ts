@@ -64,7 +64,6 @@ export class CourierController {
 
   async getAllCouriers(request: FastifyRequest, reply: FastifyReply) {
     try {
-
       const userId = request.userPayload!.id;
       const userRole = request.userPayload!.role as Role;
       const couriers = await this.courierService.getAllCouriers(userId, userRole);
@@ -77,7 +76,6 @@ export class CourierController {
 
   async getCourierById(request: FastifyRequest, reply: FastifyReply) {
     try {
-
       const { id } = request.params as { id: string };
       const userId = request.userPayload!.id;
       const userRole = request.userPayload!.role as Role;
@@ -118,7 +116,6 @@ export class CourierController {
 
   async setCourierPricing(request: FastifyRequest, reply: FastifyReply) {
     try {
-
       const pricingData = courierPricingSchema.parse(request.body);
       const userId = request.userPayload!.id;
       const userRole = request.userPayload!.role as Role;
@@ -141,7 +138,6 @@ export class CourierController {
 
   async getCourierPricing(request: FastifyRequest, reply: FastifyReply) {
     try {
-
       const { courierId } = request.params as { courierId: string };
       const userId = request.userPayload!.id;
 

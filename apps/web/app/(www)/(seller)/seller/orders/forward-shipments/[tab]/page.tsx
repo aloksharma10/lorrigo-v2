@@ -38,13 +38,13 @@ export default function ShipmentsPage() {
     dateRange:
       dateFrom && dateTo
         ? {
-          from: new Date(dateFrom),
-          to: new Date(dateTo),
-        }
+            from: new Date(dateFrom),
+            to: new Date(dateTo),
+          }
         : {
-          from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-          to: new Date(),
-        },
+            from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+            to: new Date(),
+          },
     status: tab,
   };
 

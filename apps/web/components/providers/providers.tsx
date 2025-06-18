@@ -54,11 +54,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
               <ModalProvider>
                 <ModalRegistry />
                 <DrawerProvider>
-                <BulkOperationsProvider>
-                  <DrawerRegistry />
-                  <LoadingBar />
-                  <CSVUploadProvider>{children}</CSVUploadProvider>
-                  <Toaster position="top-right" toastOptions={{ duration: 4000 }} richColors />
+                  <BulkOperationsProvider>
+                    <DrawerRegistry />
+                    <LoadingBar />
+                    <CSVUploadProvider>{children}</CSVUploadProvider>
+                    <Toaster position="top-right" toastOptions={{ duration: 4000 }} richColors />
                   </BulkOperationsProvider>
                 </DrawerProvider>
               </ModalProvider>

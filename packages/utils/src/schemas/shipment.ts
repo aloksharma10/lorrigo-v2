@@ -7,7 +7,7 @@ import { ShipmentStatus } from '@lorrigo/db';
 export const CreateShipmentSchema = z.object({
   order_id: z.string().nonempty('Order ID is required'),
   courier_id: z.string().nonempty('Courier ID is required'),
-  schedule_pickup: z.boolean().optional(),
+  is_schedule_pickup: z.boolean().optional(),
 });
 
 /**
@@ -21,7 +21,7 @@ export const UpdateShipmentSchema = z.object({
   cod_amount: z.number().optional(),
   rto_charge: z.number().optional(),
   edd: z.date().optional(),
-  pickup_date: z.date().optional()
+  pickup_date: z.date().optional(),
 });
 
 /**
@@ -30,5 +30,5 @@ export const UpdateShipmentSchema = z.object({
 export const AddTrackingEventSchema = z.object({
   status: z.nativeEnum(ShipmentStatus),
   location: z.string().optional(),
-  description: z.string().optional()
-}); 
+  description: z.string().optional(),
+});

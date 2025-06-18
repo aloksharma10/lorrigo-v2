@@ -15,9 +15,7 @@ import { FastifyInstance } from 'fastify';
  * Order Service handles business logic related to orders
  */
 export class OrderService {
-  constructor(
-    private fastify: FastifyInstance,
-  ) { }
+  constructor(private fastify: FastifyInstance) {}
 
   /**
    * Get all orders with pagination and filters
@@ -196,7 +194,6 @@ export class OrderService {
       this.fastify.prisma.order.count({ where }),
     ]);
 
-
     // Format orders for response
     const formatted_orders = orders.map((order) => ({
       id: order.id,
@@ -301,7 +298,7 @@ export class OrderService {
                 smart_ship_hub_code_surface: true,
                 is_cod_enabled: true,
                 is_prepaid_enabled: true,
-              }
+              },
             },
             address: {
               select: {
@@ -368,51 +365,60 @@ export class OrderService {
           const orderNumber = data.orderId;
 
           // OPTIMIZATION 1: Batch all validation and lookup queries
-          const [existingOrder, orderCount, lastOrder, existingCustomer, shipmentCount] = await Promise.all([
-            // Check order number uniqueness for this user
-            tx.order.findUnique({
-              where: {
-                order_number_user_id: {
-                  order_number: orderNumber,
-                  user_id: userId,
+          const [existingOrder, orderCount, lastOrder, existingCustomer, shipmentCount] =
+            await Promise.all([
+              // Check order number uniqueness for this user
+              tx.order.findUnique({
+                where: {
+                  order_number_user_id: {
+                    order_number: orderNumber,
+                    user_id: userId,
+                  },
                 },
-              },
-              select: { id: true },
-            }),
+                select: { id: true },
+              }),
 
-            // Get order count for current year
-            tx.order.count({
-              where: {
-                user_id: userId,
-                created_at: { gte: new Date(new Date().getFullYear(), 0, 1) },
-              },
-            }),
+              // Get order count for current year
+              tx.order.count({
+                where: {
+                  user_id: userId,
+                  created_at: { gte: new Date(new Date().getFullYear(), 0, 1) },
+                },
+              }),
 
-            // Get last order timestamp
-            tx.order.findFirst({
-              where: { user_id: userId },
-              orderBy: { created_at: 'desc' },
-              select: { created_at: true },
-            }),
+              // Get last order timestamp
+              tx.order.findFirst({
+                where: { user_id: userId },
+                orderBy: { created_at: 'desc' },
+                select: { created_at: true },
+              }),
 
-            // Check existing customer
-            tx.customer.findUnique({
-              where: { phone: data.deliveryDetails.mobileNumber },
-              select: { id: true },
-            }),
+              // Check existing customer
+              tx.customer.findUnique({
+                where: { phone: data.deliveryDetails.mobileNumber },
+                select: { id: true },
+              }),
 
-            // Get shipment count for current year
-            tx.shipment.count({
-              where: { user_id: userId, created_at: { gte: new Date(new Date().getFullYear(), 0, 1) } },
-            }),
-          ]);
+              // Get shipment count for current year
+              tx.shipment.count({
+                where: {
+                  user_id: userId,
+                  created_at: { gte: new Date(new Date().getFullYear(), 0, 1) },
+                },
+              }),
+            ]);
 
           if (existingOrder) {
             throw new Error('Order Id already exists. Please try with another Order Id.');
           }
 
           // OPTIMIZATION 2: Pre-calculate all values
-          const volumetricWeight = calculateVolumetricWeight(Number(data?.packageDetails?.length), Number(data?.packageDetails?.breadth), Number(data?.packageDetails?.height), 'cm');
+          const volumetricWeight = calculateVolumetricWeight(
+            Number(data?.packageDetails?.length),
+            Number(data?.packageDetails?.breadth),
+            Number(data?.packageDetails?.height),
+            'cm'
+          );
 
           const deadWeight = Number(data.packageDetails.deadWeight);
           const applicableWeight = Math.max(deadWeight, volumetricWeight);
@@ -482,23 +488,23 @@ export class OrderService {
           const [customer, updated_seller_details] = await Promise.all([
             // Handle customer
             existingCustomer ||
-            tx.customer.create({
-              data: {
-                name: data.deliveryDetails.fullName,
-                email: data.deliveryDetails.email,
-                phone: data.deliveryDetails.mobileNumber,
-                // address: {
-                //   create: {
-                //     name: data.deliveryDetails.fullName,
-                //     address: data.deliveryDetails.completeAddress,
-                //     city: data.deliveryDetails.city,
-                //     state: data.deliveryDetails.state,
-                //     pincode: data.deliveryDetails.pincode,
-                //   },
-                // },
-              },
-              select: { id: true },
-            }),
+              tx.customer.create({
+                data: {
+                  name: data.deliveryDetails.fullName,
+                  email: data.deliveryDetails.email,
+                  phone: data.deliveryDetails.mobileNumber,
+                  // address: {
+                  //   create: {
+                  //     name: data.deliveryDetails.fullName,
+                  //     address: data.deliveryDetails.completeAddress,
+                  //     city: data.deliveryDetails.city,
+                  //     state: data.deliveryDetails.state,
+                  //     pincode: data.deliveryDetails.pincode,
+                  //   },
+                  // },
+                },
+                select: { id: true },
+              }),
 
             // Update billing address with pincode data
             tx.address.update({
@@ -569,13 +575,14 @@ export class OrderService {
 
           // OPTIMIZATION 7: Create order items in batch (final step)
           const orderItems = data.productDetails.products.map((item, idx) => ({
-            code: `${orderCode}-${generateId({
-              tableName: 'order_item',
-              entityName: item.name,
-              lastUsedFinancialYear: financialYear,
-              lastSequenceNumber: idx,
-            }).id
-              }`,
+            code: `${orderCode}-${
+              generateId({
+                tableName: 'order_item',
+                entityName: item.name,
+                lastUsedFinancialYear: financialYear,
+                lastSequenceNumber: idx,
+              }).id
+            }`,
             name: item.name,
             sku: item.sku,
             units: item.quantity,
@@ -660,12 +667,7 @@ export class OrderService {
     return this.createOrder(data, userId, userName);
   }
 
-  async updateOrder(
-    orderId: string,
-    data: OrderFormValues,
-    userId: string,
-    userName: string
-  ) {
+  async updateOrder(orderId: string, data: OrderFormValues, userId: string, userName: string) {
     try {
       return await this.fastify.prisma.$transaction(
         async (tx) => {
@@ -795,8 +797,6 @@ export class OrderService {
                 phone: data.sellerDetails.contactNumber || undefined,
               },
             });
-
-
           } else {
             // Create billing address if it doesn't exist
             const sellerDetails = await tx.orderSellerDetails.create({
@@ -842,7 +842,8 @@ export class OrderService {
           const orderUpdates = await tx.order.update({
             where: { id: existingOrder.id },
             data: {
-              payment_mode: (data.paymentMethod.paymentMethod?.toUpperCase() as PaymentMethod) || 'COD',
+              payment_mode:
+                (data.paymentMethod.paymentMethod?.toUpperCase() as PaymentMethod) || 'COD',
               total_amount: data.productDetails.taxableValue,
               amount_to_collect: data.amountToCollect,
               applicable_weight: applicableWeight,
@@ -850,7 +851,9 @@ export class OrderService {
               hub_id: data.pickupAddressId,
               type: data.orderType === 'domestic' ? 'B2C' : 'B2B',
               order_invoice_number: data.order_invoice_number,
-              order_invoice_date: data.order_invoice_date ? new Date(data.order_invoice_date) : undefined,
+              order_invoice_date: data.order_invoice_date
+                ? new Date(data.order_invoice_date)
+                : undefined,
               order_reference_id: data.orderId,
             },
             select: {
@@ -869,12 +872,14 @@ export class OrderService {
 
           const financialYear = getFinancialYear(existingOrder.created_at);
           const orderItems = data.productDetails.products.map((item, idx) => ({
-            code: `${existingOrder.code}-${generateId({
-              tableName: 'order_item',
-              entityName: item.name,
-              lastUsedFinancialYear: financialYear,
-              lastSequenceNumber: idx,
-            }).id}`,
+            code: `${existingOrder.code}-${
+              generateId({
+                tableName: 'order_item',
+                entityName: item.name,
+                lastUsedFinancialYear: financialYear,
+                lastSequenceNumber: idx,
+              }).id
+            }`,
             name: item.name,
             sku: item.sku,
             units: item.quantity,
@@ -896,7 +901,10 @@ export class OrderService {
               where: { id: existingOrder.shipment.id },
               data: {
                 // Update any shipment fields if needed
-                cod_amount: data.paymentMethod.paymentMethod?.toUpperCase() === 'COD' ? data.amountToCollect : 0,
+                cod_amount:
+                  data.paymentMethod.paymentMethod?.toUpperCase() === 'COD'
+                    ? data.amountToCollect
+                    : 0,
               },
             });
 
@@ -957,8 +965,8 @@ export class OrderService {
   }
 
   /**
-  * Get order statistics
-  */
+   * Get order statistics
+   */
   async getOrderStats(user_id: string, period: string) {
     // Calculate date range based on period
     const now = new Date();

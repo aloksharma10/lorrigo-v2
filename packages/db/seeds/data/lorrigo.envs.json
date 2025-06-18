@@ -1,50 +1,52 @@
-[{
-  "name": "SHIPROCKET",
-  "first_name": "API",
-  "last_name": "USER",
-  "nickName": "BDS"
-},
-{
-  "name": "SMARTSHIP",
-  "nickName": "SS"
-},
-{
-  "name": "SMARTR",
-  "nickName": "SMR"
-},
-{
-  "name": "DELHIVERY",
-  "first_name": "API",
-  "last_name": "USER",
-  "nickName": "DEL"
-},
-{
-  "name": "ECOMM",
-  "nickName": "ECOM"
-},
-{
-  "name": "DELHIVERY_0.5",
-  "first_name": "API",
-  "last_name": "USER",
-  "nickName": "DEL.0.5"
-},
-{
-  "name": "DELHIVERY_10",
-  "first_name": "API",
-  "last_name": "USER",
-  "nickName": "DEL.10"
-},
-{
-  "name": "ZOHO",
-  "nickName": "ZH"
-},
-{
-  "name": "MARUTI",
-  "nickName": "MRT"
-},
-{
-  "name": "SHIPROCKET_B2B",
-  "first_name": "API",
-  "last_name": "USER",
-  "nickName": "SR_B2B"
-}]
+[
+  {
+    "name": "SHIPROCKET",
+    "first_name": "API",
+    "last_name": "USER",
+    "nickName": "BDS"
+  },
+  {
+    "name": "SMARTSHIP",
+    "nickName": "SS"
+  },
+  {
+    "name": "SMARTR",
+    "nickName": "SMR"
+  },
+  {
+    "name": "DELHIVERY",
+    "first_name": "API",
+    "last_name": "USER",
+    "nickName": "DEL"
+  },
+  {
+    "name": "ECOMM",
+    "nickName": "ECOM"
+  },
+  {
+    "name": "DELHIVERY_0.5",
+    "first_name": "API",
+    "last_name": "USER",
+    "nickName": "DEL.0.5"
+  },
+  {
+    "name": "DELHIVERY_10",
+    "first_name": "API",
+    "last_name": "USER",
+    "nickName": "DEL.10"
+  },
+  {
+    "name": "ZOHO",
+    "nickName": "ZH"
+  },
+  {
+    "name": "MARUTI",
+    "nickName": "MRT"
+  },
+  {
+    "name": "SHIPROCKET_B2B",
+    "first_name": "API",
+    "last_name": "USER",
+    "nickName": "SR_B2B"
+  }
+]

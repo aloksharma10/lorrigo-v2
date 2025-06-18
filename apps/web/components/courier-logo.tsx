@@ -25,20 +25,19 @@ export function CourierLogoOld({ courierName, className = 'w-8 h-8' }: CourierLo
   );
 }
 
-
 export const CourierLogo = ({ courierName }: { courierName: string }) => {
   const getInitials = (name: string) => {
     return name
-      .split(" ")
+      .split(' ')
       .map((word) => word[0])
-      .join("")
+      .join('')
       .toUpperCase()
-      .slice(0, 2)
-  }
+      .slice(0, 2);
+  };
 
   return (
-    <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold text-xs md:text-sm">
+    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 text-xs font-semibold text-white md:h-10 md:w-10 md:text-sm">
       {getInitials(courierName)}
     </div>
-  )
-}
+  );
+};

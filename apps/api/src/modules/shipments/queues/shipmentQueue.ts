@@ -12,7 +12,7 @@ export enum JobType {
   CANCEL_SHIPMENT = 'cancel-shipment',
   BULK_CREATE_SHIPMENT = 'bulk-create-shipment',
   BULK_SCHEDULE_PICKUP = 'bulk-schedule-pickup',
-  BULK_CANCEL_SHIPMENT = 'bulk-cancel-shipment'
+  BULK_CANCEL_SHIPMENT = 'bulk-cancel-shipment',
 }
 
 /**
@@ -45,41 +45,44 @@ export function initShipmentQueue(fastify: FastifyInstance, shipmentService: Shi
   try {
     // Get the queue from the centralized queue.ts
     const bulkOperationQueue = queues[QueueNames.BULK_OPERATION];
-    
+
     if (!bulkOperationQueue) {
       fastify.log.error('Bulk operation queue not initialized in queue.ts');
       return { queue: null, worker: null };
     }
 
     // Create the worker
-    const worker = new Worker(QueueNames.BULK_OPERATION, async (job: Job) => {
-      fastify.log.info(`Processing job ${job.id} of type ${job.name}`);
+    const worker = new Worker(
+      QueueNames.BULK_OPERATION,
+      async (job: Job) => {
+        fastify.log.info(`Processing job ${job.id} of type ${job.name}`);
 
-      try {
-        switch (job.name) {
-          case JobType.BULK_CREATE_SHIPMENT:
-            return await processBulkCreateShipment(job, fastify, shipmentService);
-          case JobType.BULK_SCHEDULE_PICKUP:
-            return await processBulkSchedulePickup(job, fastify, shipmentService);
-          case JobType.BULK_CANCEL_SHIPMENT:
-            return await processBulkCancelShipment(job, fastify, shipmentService);
-          default:
-            throw new Error(`Unknown job type: ${job.name}`);
+        try {
+          switch (job.name) {
+            case JobType.BULK_CREATE_SHIPMENT:
+              return await processBulkCreateShipment(job, fastify, shipmentService);
+            case JobType.BULK_SCHEDULE_PICKUP:
+              return await processBulkSchedulePickup(job, fastify, shipmentService);
+            case JobType.BULK_CANCEL_SHIPMENT:
+              return await processBulkCancelShipment(job, fastify, shipmentService);
+            default:
+              throw new Error(`Unknown job type: ${job.name}`);
+          }
+        } catch (error) {
+          fastify.log.error(`Error processing job ${job.id}: ${error}`);
+          throw error;
         }
-      } catch (error) {
-        fastify.log.error(`Error processing job ${job.id}: ${error}`);
-        throw error;
+      },
+      {
+        connection: bulkOperationQueue.opts.connection,
+        concurrency: 5, // Process up to 5 jobs concurrently
+        autorun: true, // Ensure worker starts automatically
+        lockDuration: 30000, // 30 seconds lock
+        lockRenewTime: 15000, // Renew lock every 15 seconds
+        stalledInterval: 30000, // Check for stalled jobs every 30 seconds
+        maxStalledCount: 3, // Allow 3 stalls before job is considered failed
       }
-    }, { 
-      connection: bulkOperationQueue.opts.connection,
-      concurrency: 5, // Process up to 5 jobs concurrently
-      autorun: true, // Ensure worker starts automatically
-      lockDuration: 30000, // 30 seconds lock
-      lockRenewTime: 15000, // Renew lock every 15 seconds
-      stalledInterval: 30000, // Check for stalled jobs every 30 seconds
-      maxStalledCount: 3 // Allow 3 stalls before job is considered failed
-    }
-  );
+    );
     // Handle worker events
     worker.on('completed', (job) => {
       fastify.log.info(`Job ${job.id} completed`);
@@ -103,7 +106,7 @@ export function initShipmentQueue(fastify: FastifyInstance, shipmentService: Shi
     });
 
     fastify.log.info('Shipment queue worker initialized successfully');
-    
+
     // Register a cleanup function for graceful shutdown
     fastify.addHook('onClose', async () => {
       fastify.log.info('Closing shipment queue worker');
@@ -135,14 +138,14 @@ async function processBulkCreateShipment(
   let successCount = 0;
   let failedCount = 0;
 
-  console.log('chla chla data', data)
+  console.log('chla chla data', data);
   // Process each shipment
   for (let i = 0; i < data.length; i++) {
     try {
       // Validate the data
       const shipmentData = {
         ...data[i],
-        isBulkShipment: isBulkShipment || true // Ensure bulk shipment flag is set
+        isBulkShipment: isBulkShipment || true, // Ensure bulk shipment flag is set
       };
       const validatedData = CreateShipmentSchema.parse(shipmentData);
 
@@ -154,17 +157,17 @@ async function processBulkCreateShipment(
         results.push({
           id: shipmentData.order_id || 'unknown',
           success: false,
-          message: result.error
+          message: result.error,
         });
       } else {
         successCount++;
         results.push({
           id: shipmentData.order_id || 'unknown',
           success: true,
-          message: shipmentData.schedule_pickup 
-            ? 'Shipment created and pickup scheduled successfully' 
+          message: shipmentData.schedule_pickup
+            ? 'Shipment created and pickup scheduled successfully'
             : 'Shipment created successfully',
-          data: !result.error ? result : null
+          data: !result.error ? result : null,
         });
       }
 
@@ -177,15 +180,15 @@ async function processBulkCreateShipment(
         data: {
           processed_count: i + 1,
           success_count: successCount,
-          failed_count: failedCount
-        }
+          failed_count: failedCount,
+        },
       });
     } catch (error) {
       failedCount++;
       results.push({
         id: data[i].order_id || 'unknown',
         success: false,
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
 
       // Update job progress
@@ -197,8 +200,8 @@ async function processBulkCreateShipment(
         data: {
           processed_count: i + 1,
           success_count: successCount,
-          failed_count: failedCount
-        }
+          failed_count: failedCount,
+        },
       });
     }
   }
@@ -210,8 +213,8 @@ async function processBulkCreateShipment(
       status: 'COMPLETED',
       processed_count: data.length,
       success_count: successCount,
-      failed_count: failedCount
-    }
+      failed_count: failedCount,
+    },
   });
 
   return { success: true, results };
@@ -248,7 +251,7 @@ async function processBulkSchedulePickup(
         results.push({
           id: data[i].shipment_id,
           success: false,
-          message: result.error
+          message: result.error,
         });
       } else {
         successCount++;
@@ -256,7 +259,7 @@ async function processBulkSchedulePickup(
           id: data[i].shipment_id,
           success: true,
           message: 'Pickup scheduled successfully',
-          data: result
+          data: result,
         });
       }
 
@@ -269,15 +272,15 @@ async function processBulkSchedulePickup(
         data: {
           processed_count: i + 1,
           success_count: successCount,
-          failed_count: failedCount
-        }
+          failed_count: failedCount,
+        },
       });
     } catch (error) {
       failedCount++;
       results.push({
         id: data[i].shipment_id || 'unknown',
         success: false,
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
 
       // Update job progress
@@ -289,8 +292,8 @@ async function processBulkSchedulePickup(
         data: {
           processed_count: i + 1,
           success_count: successCount,
-          failed_count: failedCount
-        }
+          failed_count: failedCount,
+        },
       });
     }
   }
@@ -302,8 +305,8 @@ async function processBulkSchedulePickup(
       status: 'COMPLETED',
       processed_count: data.length,
       success_count: successCount,
-      failed_count: failedCount
-    }
+      failed_count: failedCount,
+    },
   });
 
   return { success: true, results };
@@ -341,7 +344,7 @@ async function processBulkCancelShipment(
         results.push({
           id: data[i].shipment_id,
           success: false,
-          message: result.error
+          message: result.error,
         });
       } else {
         successCount++;
@@ -349,7 +352,7 @@ async function processBulkCancelShipment(
           id: data[i].shipment_id,
           success: true,
           message: 'Shipment cancelled successfully',
-          data: result
+          data: result,
         });
       }
 
@@ -362,15 +365,15 @@ async function processBulkCancelShipment(
         data: {
           processed_count: i + 1,
           success_count: successCount,
-          failed_count: failedCount
-        }
+          failed_count: failedCount,
+        },
       });
     } catch (error) {
       failedCount++;
       results.push({
         id: data[i].shipment_id || 'unknown',
         success: false,
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
 
       // Update job progress
@@ -382,8 +385,8 @@ async function processBulkCancelShipment(
         data: {
           processed_count: i + 1,
           success_count: successCount,
-          failed_count: failedCount
-        }
+          failed_count: failedCount,
+        },
       });
     }
   }
@@ -395,9 +398,9 @@ async function processBulkCancelShipment(
       status: 'COMPLETED',
       processed_count: data.length,
       success_count: successCount,
-      failed_count: failedCount
-    }
+      failed_count: failedCount,
+    },
   });
 
   return { success: true, results };
-} 
+}

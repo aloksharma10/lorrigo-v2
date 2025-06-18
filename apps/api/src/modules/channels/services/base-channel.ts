@@ -85,7 +85,7 @@ export abstract class BaseChannel {
     try {
       // If auth_url is provided, use it directly; otherwise construct URL from baseUrl + endpoint
       const url = auth_url || `${this.baseUrl}${endpoint}`;
-      
+
       const config: AxiosRequestConfig = {
         method,
         url,
@@ -102,8 +102,11 @@ export abstract class BaseChannel {
       const response = await axios(config);
       return response;
     } catch (error: any) {
-      console.error(`Error in ${method} request to ${auth_url || `${this.baseUrl}${endpoint}`}:`, error.message);
-      
+      console.error(
+        `Error in ${method} request to ${auth_url || `${this.baseUrl}${endpoint}`}:`,
+        error.message
+      );
+
       if (error.response) {
         // The request was made and the server responded with a status code
         // that falls out of the range of 2xx
@@ -117,7 +120,7 @@ export abstract class BaseChannel {
         // Something happened in setting up the request that triggered an Error
         console.error('Error setting up request:', error.message);
       }
-      
+
       throw error;
     }
   }
@@ -160,4 +163,4 @@ export abstract class BaseChannel {
    * @returns Order details
    */
   public abstract getOrder(orderId: string | number): Promise<any | null>;
-} 
+}

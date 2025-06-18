@@ -3,7 +3,7 @@
  * A comprehensive utility for calculating shipping rates across different couriers
  */
 
-import { ZoneLabel } from "@lorrigo/db";
+import { ZoneLabel } from '@lorrigo/db';
 
 // ================================
 // TYPE DEFINITIONS
@@ -314,7 +314,11 @@ export function calculateExpectedPickup(pickupTime?: string): string {
 export function calculateEstimatedDelivery(estimatedDeliveryDays: number): string {
   const now = new Date();
   const deliveryDate = new Date(now.getTime() + estimatedDeliveryDays * 24 * 60 * 60 * 1000);
-  return deliveryDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  return deliveryDate.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  });
 }
 
 /**

@@ -11,7 +11,7 @@ import { initSentry, captureException } from '@/lib/sentry';
 
 // Route modules
 import orderRoutes from '@/modules/orders';
-import {shipmentRoutes} from '@/modules/shipments';
+import { shipmentRoutes } from '@/modules/shipments';
 import authRoutes from '@/modules/auth';
 import customerRoutes from '@/modules/customers';
 import courierRoutes from '@/modules/couriers';

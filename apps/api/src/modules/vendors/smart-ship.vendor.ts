@@ -2,7 +2,13 @@ import { APP_CONFIG } from '@/config/app';
 import { BaseVendor } from './base-vendor';
 import { APIs } from '@/config/api';
 import { CACHE_KEYS } from '@/config/cache';
-import { VendorRegistrationResult, VendorServiceabilityResult, VendorShipmentResult, VendorPickupResult, VendorCancellationResult } from '@/types/vendor';
+import {
+  VendorRegistrationResult,
+  VendorServiceabilityResult,
+  VendorShipmentResult,
+  VendorPickupResult,
+  VendorCancellationResult,
+} from '@/types/vendor';
 import { PickupAddress, VendorShipmentData } from '@lorrigo/utils';
 import { getPincodeDetails } from '@/utils/pincode';
 import { DeliveryType, prisma } from '@lorrigo/db';
@@ -79,7 +85,7 @@ export class SmartShipVendor extends BaseVendor {
     pickupPincode: string,
     deliveryPincode: string,
     volumeWeight: number,
-    dimensions: { length: number; width: number; height: number, weight: number },
+    dimensions: { length: number; width: number; height: number; weight: number },
     paymentType: 0 | 1,
     collectableAmount: number = 0,
     couriers: string[] = [],
@@ -102,7 +108,7 @@ export class SmartShipVendor extends BaseVendor {
 
       const payload = {
         order_info: {
-          email: "noreply@lorrigo.com",
+          email: 'noreply@lorrigo.com',
           source_pincode: pickupPincode,
           destination_pincode: deliveryPincode,
           order_weight: dimensions.weight.toString(),
@@ -115,7 +121,7 @@ export class SmartShipVendor extends BaseVendor {
           preferred_carriers: couriers,
         },
         request_info: { extra_info: true, cost_info: false },
-      }
+      };
 
       const response = await this.makeRequest(
         APIs.SMART_SHIP.RATE_CALCULATION,
@@ -134,19 +140,22 @@ export class SmartShipVendor extends BaseVendor {
       }
 
       // Extract serviceable couriers from the response
-      const serviceableCouriers = Object.values(response.data.data.carrier_info || {}).map((carrier: any) => ({
-        id: carrier.carrier_id.toString(),
-        name: carrier.carrier_name,
-        code: carrier.carrier_code || carrier.carrier_name.toLowerCase().replace(/\s+/g, '_'),
-        serviceability: true,
-        data: carrier,
-      }));
+      const serviceableCouriers = Object.values(response.data.data.carrier_info || {}).map(
+        (carrier: any) => ({
+          id: carrier.carrier_id.toString(),
+          name: carrier.carrier_name,
+          code: carrier.carrier_code || carrier.carrier_name.toLowerCase().replace(/\s+/g, '_'),
+          serviceability: true,
+          data: carrier,
+        })
+      );
 
       return {
         success: true,
-        message: serviceableCouriers.length > 0
-          ? 'Serviceable couriers found'
-          : 'No serviceable couriers found',
+        message:
+          serviceableCouriers.length > 0
+            ? 'Serviceable couriers found'
+            : 'No serviceable couriers found',
         serviceableCouriers,
       };
     } catch (error: any) {
@@ -320,13 +329,21 @@ export class SmartShipVendor extends BaseVendor {
 
       const isExpressCourier = [DeliveryType.EXPRESS, DeliveryType.AIR].includes(courier.type);
 
-      const hubCode = isExpressCourier ? hub.hub_config.smart_ship_hub_code_express : hub.hub_config.smart_ship_hub_code_surface;
+      const hubCode = isExpressCourier
+        ? hub.hub_config.smart_ship_hub_code_express
+        : hub.hub_config.smart_ship_hub_code_surface;
 
       const productValueWithTax = orderItems.reduce((acc: number, item: any) => {
-        return acc + (Number(item.selling_price || 0) + (Number(item.tax_rate || 0) / 100) * Number(item.selling_price || 0));
+        return (
+          acc +
+          (Number(item.selling_price || 0) +
+            (Number(item.tax_rate || 0) / 100) * Number(item.selling_price || 0))
+        );
       }, 0);
 
-      const totalOrderValue = productValueWithTax * Number(orderItems.reduce((acc: number, item: any) => acc + Number(item.units || 1), 0));
+      const totalOrderValue =
+        productValueWithTax *
+        Number(orderItems.reduce((acc: number, item: any) => acc + Number(item.units || 1), 0));
 
       const paymentType = paymentMethod === 'COD' ? 1 : 0;
 
@@ -405,7 +422,10 @@ export class SmartShipVendor extends BaseVendor {
       if (!smartShipResponse?.data?.total_success_orders) {
         return {
           success: false,
-          message: smartShipResponse?.data?.errors?.data_discrepancy.flatMap((error: any) => error.error.map((err: any) => err)).join(', ') || 'Courier not serviceable',
+          message:
+            smartShipResponse?.data?.errors?.data_discrepancy
+              .flatMap((error: any) => error.error.map((err: any) => err))
+              .join(', ') || 'Courier not serviceable',
           data: response.data,
         };
       }
@@ -452,14 +472,12 @@ export class SmartShipVendor extends BaseVendor {
    * @param pickupData Pickup data
    * @returns Promise resolving to pickup scheduling result
    */
-  public async schedulePickup(
-    pickupData: {
-      awb: string;
-      pickupDate: string;
-      hub: any;
-      shipment: any;
-    }
-  ): Promise<VendorPickupResult> {
+  public async schedulePickup(pickupData: {
+    awb: string;
+    pickupDate: string;
+    hub: any;
+    shipment: any;
+  }): Promise<VendorPickupResult> {
     try {
       const token = await this.getAuthToken();
 
@@ -482,16 +500,12 @@ export class SmartShipVendor extends BaseVendor {
       };
 
       // Make the API request
-      const response = await this.makeRequest(
-        APIs.SMART_SHIP.ORDER_MANIFEST,
-        'POST',
-        requestBody,
-        { Authorization: token }
-      );
-
+      const response = await this.makeRequest(APIs.SMART_SHIP.ORDER_MANIFEST, 'POST', requestBody, {
+        Authorization: token,
+      });
 
       // Check for errors in the response
-      if (response.data?.status === false || response.data?.status === "403") {
+      if (response.data?.status === false || response.data?.status === '403') {
         return {
           success: false,
           message: response.data?.message || 'Failed to schedule pickup with SmartShip',
@@ -519,7 +533,6 @@ export class SmartShipVendor extends BaseVendor {
         };
       }
 
-
       return {
         success: true,
         message: 'Pickup scheduled successfully with SmartShip',
@@ -543,12 +556,10 @@ export class SmartShipVendor extends BaseVendor {
    * @param cancelData Cancellation data
    * @returns Promise resolving to cancellation result
    */
-  public async cancelShipment(
-    cancelData: {
-      awb: string;
-      shipment: any;
-    }
-  ): Promise<VendorCancellationResult> {
+  public async cancelShipment(cancelData: {
+    awb: string;
+    shipment: any;
+  }): Promise<VendorCancellationResult> {
     try {
       const token = await this.getAuthToken();
 

@@ -186,12 +186,16 @@ export function SellerDetailsForm({ control, watch, isLoading }: SellerDetailsFo
                       className="hover:bg-muted cursor-pointer px-4 py-2"
                       onClick={() => handleSellerSelect(option)}
                     >
-                      <div className="text-sm flex items-center justify-between font-medium">
-                        <Badge variant="outline"><Package2 className="w-4 h-4" /> {option.name}</Badge>
-                        <Badge variant="outline" className="ml-2 text-xs text-muted-foreground"><span className="text-xs font-bold">GST:</span> {option.gstNo}</Badge>
+                      <div className="flex items-center justify-between text-sm font-medium">
+                        <Badge variant="outline">
+                          <Package2 className="h-4 w-4" /> {option.name}
+                        </Badge>
+                        <Badge variant="outline" className="text-muted-foreground ml-2 text-xs">
+                          <span className="text-xs font-bold">GST:</span> {option.gstNo}
+                        </Badge>
                       </div>
                       {option.address && (
-                        <div className="text-muted-foreground text-xs truncate">
+                        <div className="text-muted-foreground truncate text-xs">
                           {option.address}, {option.city}
                         </div>
                       )}

@@ -232,15 +232,12 @@ export class CustomerService {
       include: {
         address: true,
       },
-      orderBy: [
-        { name: 'asc' },
-        { created_at: 'desc' }
-      ],
+      orderBy: [{ name: 'asc' }, { created_at: 'desc' }],
       distinct: ['id'],
     });
 
-    return customers.map(customer => {
-      const defaultAddress = customer.address?.address
+    return customers.map((customer) => {
+      const defaultAddress = customer.address?.address;
 
       return {
         id: customer.id,

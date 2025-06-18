@@ -1,25 +1,25 @@
-"use client"
+'use client';
 
-import { Skeleton } from "@lorrigo/ui/components"
-import { Loader2, Menu } from "lucide-react"
-import { Button } from "@lorrigo/ui/components"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@lorrigo/ui/components"
+import { Skeleton } from '@lorrigo/ui/components';
+import { Loader2, Menu } from 'lucide-react';
+import { Button } from '@lorrigo/ui/components';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@lorrigo/ui/components';
 
 export default function ShipOrderPageSkeleton() {
   return (
     <div className="min-h-screen">
       <div className="flex flex-col md:flex-row">
         {/* Desktop Order Details Skeleton */}
-        <div className="hidden md:block w-80 h-screen sticky top-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-stone-900 overflow-y-auto">
-          <div className="p-6 space-y-6">
+        <div className="sticky top-0 hidden h-screen w-80 overflow-y-auto border-r border-gray-200 bg-white md:block dark:border-gray-800 dark:bg-stone-900">
+          <div className="space-y-6 p-6">
             {/* Order Details Header */}
-            <div className="flex justify-between items-center">
+            <div className="flex items-center justify-between">
               <Skeleton className="h-6 w-32" />
               <Skeleton className="h-5 w-5 rounded-full" />
             </div>
             {/* Order ID */}
-            <div className="p-3 rounded-lg">
-              <Skeleton className="h-4 w-20 mb-2" />
+            <div className="rounded-lg p-3">
+              <Skeleton className="mb-2 h-4 w-20" />
               <Skeleton className="h-5 w-40" />
             </div>
             {/* Pickup Location */}
@@ -28,7 +28,7 @@ export default function ShipOrderPageSkeleton() {
                 <Skeleton className="h-4 w-4 rounded-full" />
                 <Skeleton className="h-4 w-24" />
               </div>
-              <div className="pl-6 space-y-1">
+              <div className="space-y-1 pl-6">
                 <Skeleton className="h-5 w-48" />
                 <Skeleton className="h-4 w-32" />
               </div>
@@ -40,7 +40,7 @@ export default function ShipOrderPageSkeleton() {
                 <Skeleton className="h-4 w-4 rounded-full" />
                 <Skeleton className="h-4 w-24" />
               </div>
-              <div className="pl-6 space-y-1">
+              <div className="space-y-1 pl-6">
                 <Skeleton className="h-5 w-48" />
                 <Skeleton className="h-4 w-32" />
               </div>
@@ -80,7 +80,7 @@ export default function ShipOrderPageSkeleton() {
                 <Skeleton className="h-5 w-5 rounded-full" />
                 <Skeleton className="h-5 w-28" />
               </div>
-              <div className="p-2 rounded-lg">
+              <div className="rounded-lg p-2">
                 <div className="flex items-center gap-3">
                   <Skeleton className="h-8 w-8 rounded-full" />
                   <div className="flex-1 space-y-1">
@@ -96,14 +96,14 @@ export default function ShipOrderPageSkeleton() {
 
         {/* Main Content Skeleton */}
         <div className="flex-1 p-4 md:p-6">
-          <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
+          <div className="mx-auto max-w-7xl space-y-4 md:space-y-6">
             {/* Mobile Header with Order Details Sheet */}
-            <div className="md:hidden flex items-center justify-between">
+            <div className="flex items-center justify-between md:hidden">
               <Skeleton className="h-6 w-32" />
               <Sheet>
                 <SheetTrigger asChild>
                   <Button variant="outline" size="sm" disabled>
-                    <Menu className="h-4 w-4 mr-2" />
+                    <Menu className="mr-2 h-4 w-4" />
                     <Skeleton className="h-4 w-20" />
                   </Button>
                 </SheetTrigger>
@@ -114,43 +114,43 @@ export default function ShipOrderPageSkeleton() {
                     </SheetTitle>
                   </SheetHeader>
                   <div className="mt-6 space-y-4">
-                    <div className="p-3 bg-blue-50 rounded-lg">
-                      <Skeleton className="h-4 w-20 mb-2" />
+                    <div className="rounded-lg bg-blue-50 p-3">
+                      <Skeleton className="mb-2 h-4 w-20" />
                       <Skeleton className="h-5 w-40" />
                     </div>
                     <div className="space-y-3">
                       <div>
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="mb-1 flex items-center gap-2">
                           <Skeleton className="h-4 w-4 rounded-full" />
                           <Skeleton className="h-4 w-24" />
                         </div>
-                        <Skeleton className="pl-6 h-5 w-48" />
+                        <Skeleton className="h-5 w-48 pl-6" />
                       </div>
                       <div>
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="mb-1 flex items-center gap-2">
                           <Skeleton className="h-4 w-4 rounded-full" />
                           <Skeleton className="h-4 w-24" />
                         </div>
-                        <Skeleton className="pl-6 h-5 w-48" />
+                        <Skeleton className="h-5 w-48 pl-6" />
                       </div>
                     </div>
                     <Skeleton className="h-px w-full" />
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Skeleton className="h-4 w-20" />
-                        <Skeleton className="h-5 w-28 mt-1" />
+                        <Skeleton className="mt-1 h-5 w-28" />
                       </div>
                       <div>
                         <Skeleton className="h-4 w-16" />
-                        <Skeleton className="h-5 w-16 mt-1" />
+                        <Skeleton className="mt-1 h-5 w-16" />
                       </div>
                       <div>
                         <Skeleton className="h-4 w-16" />
-                        <Skeleton className="h-5 w-16 mt-1" />
+                        <Skeleton className="mt-1 h-5 w-16" />
                       </div>
                       <div>
                         <Skeleton className="h-4 w-20" />
-                        <Skeleton className="h-5 w-24 mt-1" />
+                        <Skeleton className="mt-1 h-5 w-24" />
                       </div>
                     </div>
                   </div>
@@ -159,33 +159,33 @@ export default function ShipOrderPageSkeleton() {
             </div>
 
             {/* Desktop Header */}
-            <div className="hidden md:flex items-center justify-between">
+            <div className="hidden items-center justify-between md:flex">
               <div>
                 <Skeleton className="h-7 w-48" />
-                <Skeleton className="h-4 w-64 mt-2" />
+                <Skeleton className="mt-2 h-4 w-64" />
               </div>
               <Skeleton className="h-5 w-5 rounded-full" />
             </div>
 
             {/* Mobile Order Summary */}
             <div className="md:hidden">
-              <div className="p-4 space-y-3 border rounded-lg">
+              <div className="space-y-3 rounded-lg border p-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Skeleton className="h-4 w-20" />
-                    <Skeleton className="h-5 w-28 mt-1" />
+                    <Skeleton className="mt-1 h-5 w-28" />
                   </div>
                   <div>
                     <Skeleton className="h-4 w-16" />
-                    <Skeleton className="h-5 w-16 mt-1" />
+                    <Skeleton className="mt-1 h-5 w-16" />
                   </div>
                   <div>
                     <Skeleton className="h-4 w-16" />
-                    <Skeleton className="h-5 w-24 mt-1" />
+                    <Skeleton className="mt-1 h-5 w-24" />
                   </div>
                   <div>
                     <Skeleton className="h-4 w-16" />
-                    <Skeleton className="h-5 w-24 mt-1" />
+                    <Skeleton className="mt-1 h-5 w-24" />
                   </div>
                 </div>
                 <Skeleton className="h-px w-full" />
@@ -209,8 +209,8 @@ export default function ShipOrderPageSkeleton() {
                 </div>
               </div>
               {/* Tabs and Sort */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="grid w-full grid-cols-3 sm:w-fit gap-2">
+              <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+                <div className="grid w-full grid-cols-3 gap-2 sm:w-fit">
                   <Skeleton className="h-9 w-full" />
                   <Skeleton className="h-9 w-full" />
                   <Skeleton className="h-9 w-full" />
@@ -226,7 +226,7 @@ export default function ShipOrderPageSkeleton() {
             </div>
 
             {/* Couriers Table - Desktop */}
-            <div className="hidden md:block border rounded-lg">
+            <div className="hidden rounded-lg border md:block">
               <div className="p-0">
                 <div className="overflow-x-auto">
                   <table className="w-full">
@@ -300,9 +300,9 @@ export default function ShipOrderPageSkeleton() {
                             <Skeleton className="h-5 w-12" />
                           </td>
                           <td className="p-4">
-                            <div className="text-right space-y-1">
-                              <Skeleton className="h-6 w-20 ml-auto" />
-                              <Skeleton className="h-4 w-24 ml-auto" />
+                            <div className="space-y-1 text-right">
+                              <Skeleton className="ml-auto h-6 w-20" />
+                              <Skeleton className="ml-auto h-4 w-24" />
                             </div>
                           </td>
                           <td className="p-4">
@@ -317,11 +317,11 @@ export default function ShipOrderPageSkeleton() {
             </div>
 
             {/* Couriers Cards - Mobile */}
-            <div className="md:hidden space-y-3">
+            <div className="space-y-3 md:hidden">
               {[...Array(3)].map((_, index) => (
-                <div key={index} className="border rounded-lg">
+                <div key={index} className="rounded-lg border">
                   <div className="p-4">
-                    <div className="flex items-start justify-between mb-3">
+                    <div className="mb-3 flex items-start justify-between">
                       <div className="flex items-center gap-3">
                         <Skeleton className="h-8 w-8 rounded-lg" />
                         <div className="space-y-1">
@@ -329,12 +329,12 @@ export default function ShipOrderPageSkeleton() {
                           <Skeleton className="h-3 w-20" />
                         </div>
                       </div>
-                      <div className="text-right space-y-1">
+                      <div className="space-y-1 text-right">
                         <Skeleton className="h-6 w-20" />
                         <Skeleton className="h-4 w-12" />
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="mb-4 grid grid-cols-2 gap-3">
                       <div className="flex items-center gap-2">
                         <Skeleton className="h-3 w-3 rounded-full" />
                         <Skeleton className="h-4 w-28" />
@@ -358,7 +358,7 @@ export default function ShipOrderPageSkeleton() {
             </div>
 
             {/* Auto-Scheduled Pickup Info */}
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 dark:bg-stone-900">
+            <div className="flex items-center gap-2 rounded-lg bg-blue-50 p-3 dark:bg-stone-900">
               <Skeleton className="h-2 w-2 rounded-full" />
               <Skeleton className="h-4 w-32" />
               <Skeleton className="h-4 w-40" />
@@ -367,5 +367,5 @@ export default function ShipOrderPageSkeleton() {
         </div>
       </div>
     </div>
-  )
+  );
 }

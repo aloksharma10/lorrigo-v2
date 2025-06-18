@@ -9,7 +9,7 @@ import { AllEnabledChannels } from '@/components/channels/channel-registry';
 export default function ChannelsPage() {
   const searchParams = useSearchParams();
   const shopify = useShopify();
-  
+
   // Check for success parameter from callback
   useEffect(() => {
     const success = searchParams.get('success');
@@ -21,7 +21,7 @@ export default function ChannelsPage() {
   }, [searchParams, shopify.connection]);
 
   return (
-    <div className="container py-6 space-y-8">
+    <div className="container space-y-8 py-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Sales Channels</h1>
       </div>

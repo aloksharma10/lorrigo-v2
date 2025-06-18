@@ -92,7 +92,8 @@ export const APP_CONFIG = {
       API_VERSION: process.env.SHOPIFY_API_VERSION || '2023-10',
       SCOPES: process.env.SHOPIFY_SCOPES || 'read_orders,read_products,read_customers',
       HOST: process.env.SHOPIFY_HOST || '',
-      REDIRECT_URI: process.env.SHOPIFY_REDIRECT_URI || 'http://localhost:3000/seller/channels/callback',
+      REDIRECT_URI:
+        process.env.SHOPIFY_REDIRECT_URI || 'http://localhost:3000/seller/channels/callback',
     },
   },
 };

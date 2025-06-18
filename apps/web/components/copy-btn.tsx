@@ -54,51 +54,41 @@ function CopyBtn({
 
   return (
     <div className="flex items-center gap-2">
-      <span
-        className={cn(
-          'text-sm font-medium text-gray-700',
-          labelClassName
-        )}
-      >
-        {label}
-      </span>
-      {label && label != "N/A" && <ActionTooltip label={copied ? successTooltipText : tooltipText}>
-        <Button
-          variant={variant}
-          size={size}
-          className={cn('disabled:opacity-100 w-6 h-6', className)}
-          onClick={handleCopy}
-          aria-label={copied ? successTooltipText : tooltipText}
-          disabled={copied}
-        >
-          <div
-            className={cn(
-              'transition-all duration-300 ease-in-out',
-              copied ? 'scale-100 opacity-100' : 'scale-0 opacity-0'
-            )}
+      <span className={cn('text-sm font-medium text-gray-700', labelClassName)}>{label}</span>
+      {label && label != 'N/A' && (
+        <ActionTooltip label={copied ? successTooltipText : tooltipText}>
+          <Button
+            variant={variant}
+            size={size}
+            className={cn('h-6 w-6 disabled:opacity-100', className)}
+            onClick={handleCopy}
+            aria-label={copied ? successTooltipText : tooltipText}
+            disabled={copied}
           >
-            <CheckIcon
-              className="stroke-emerald-500"
-              size={iconSize}
-              strokeWidth={strokeWidth}
-              aria-hidden="true"
-            />
-          </div>
-          <div
-            className={cn(
-              'absolute transition-all duration-300 ease-in-out',
-              copied ? 'scale-0 opacity-0' : 'scale-100 opacity-100'
-            )}
-          >
-            <CopyIcon
-              size={iconSize}
-              strokeWidth={strokeWidth}
-              aria-hidden="true"
-            />
-          </div>
-        </Button>
-      </ActionTooltip>}
-
+            <div
+              className={cn(
+                'transition-all duration-300 ease-in-out',
+                copied ? 'scale-100 opacity-100' : 'scale-0 opacity-0'
+              )}
+            >
+              <CheckIcon
+                className="stroke-emerald-500"
+                size={iconSize}
+                strokeWidth={strokeWidth}
+                aria-hidden="true"
+              />
+            </div>
+            <div
+              className={cn(
+                'absolute transition-all duration-300 ease-in-out',
+                copied ? 'scale-0 opacity-0' : 'scale-100 opacity-100'
+              )}
+            >
+              <CopyIcon size={iconSize} strokeWidth={strokeWidth} aria-hidden="true" />
+            </div>
+          </Button>
+        </ActionTooltip>
+      )}
     </div>
   );
 }

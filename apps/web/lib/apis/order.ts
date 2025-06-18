@@ -52,7 +52,8 @@ export const useOrderOperations = (queryParams: OrderQueryParams = {}, orderId?:
 
   // Update order status
   const updateOrder = useMutation({
-    mutationFn: (orderData: UpdateOrderFormValues) => api.patch(`/orders/${orderData.id}`, orderData),
+    mutationFn: (orderData: UpdateOrderFormValues) =>
+      api.patch(`/orders/${orderData.id}`, orderData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
@@ -175,7 +176,7 @@ export async function fetchOrders(params: any) {
           gstNo: order.sellerDetails?.gstNo || '',
           contactNumber: order.sellerDetails?.contactNumber || '',
           country: order.sellerDetails?.country || 'India',
-          isAddressAvailable: order.sellerDetails?.address? true : false,
+          isAddressAvailable: order.sellerDetails?.address ? true : false,
         },
         productDetails: {
           products: order.productDetails?.products || [],

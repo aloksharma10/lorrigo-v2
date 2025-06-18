@@ -1,7 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useShippingOperations, BulkOperation, BulkOperationsListResponse } from '@/lib/apis/shipment';
+import {
+  useShippingOperations,
+  BulkOperation,
+  BulkOperationsListResponse,
+} from '@/lib/apis/shipment';
 import { DataTable } from '@lorrigo/ui/components';
 import { DataTableColumnHeader } from '@lorrigo/ui/components';
 import { Badge } from '@lorrigo/ui/components';
@@ -11,7 +15,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from '@lorrigo/ui/components';
 import { MoreHorizontal, FileText, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
@@ -59,16 +63,12 @@ export default function BulkOperationsLogPage() {
       cell: ({ row }) => {
         const operation = row.original;
         const typeLabels: Record<string, string> = {
-          'CREATE_SHIPMENT': 'Create Shipments',
-          'SCHEDULE_PICKUP': 'Schedule Pickup',
-          'CANCEL_SHIPMENT': 'Cancel Shipments',
+          CREATE_SHIPMENT: 'Create Shipments',
+          SCHEDULE_PICKUP: 'Schedule Pickup',
+          CANCEL_SHIPMENT: 'Cancel Shipments',
         };
 
-        return (
-          <Badge variant="outline">
-            {typeLabels[operation.type] || operation.type}
-          </Badge>
-        );
+        return <Badge variant="outline">{typeLabels[operation.type] || operation.type}</Badge>;
       },
     },
     {
@@ -78,16 +78,14 @@ export default function BulkOperationsLogPage() {
       cell: ({ row }) => {
         const operation = row.original;
         const statusColorMap: Record<string, string> = {
-          'PENDING': 'bg-yellow-100 text-yellow-800',
-          'PROCESSING': 'bg-blue-100 text-blue-800',
-          'COMPLETED': 'bg-green-100 text-green-800',
-          'FAILED': 'bg-red-100 text-red-800',
+          PENDING: 'bg-yellow-100 text-yellow-800',
+          PROCESSING: 'bg-blue-100 text-blue-800',
+          COMPLETED: 'bg-green-100 text-green-800',
+          FAILED: 'bg-red-100 text-red-800',
         };
 
         return (
-          <Badge className={`${statusColorMap[operation.status]} w-fit`}>
-            {operation.status}
-          </Badge>
+          <Badge className={`${statusColorMap[operation.status]} w-fit`}>{operation.status}</Badge>
         );
       },
     },
@@ -97,9 +95,10 @@ export default function BulkOperationsLogPage() {
       header: ({ column }) => <DataTableColumnHeader column={column} title="Progress" />,
       cell: ({ row }) => {
         const operation = row.original;
-        const progress = operation.status === 'COMPLETED'
-          ? 100
-          : Math.floor((operation.processed_count / operation.total_count) * 100) || 0;
+        const progress =
+          operation.status === 'COMPLETED'
+            ? 100
+            : Math.floor((operation.processed_count / operation.total_count) * 100) || 0;
 
         return (
           <div className="w-full">
@@ -171,9 +170,7 @@ export default function BulkOperationsLogPage() {
     <div className="mx-auto w-full space-y-6 p-4">
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Bulk Operations Log</h1>
-        <p className="text-muted-foreground mt-2">
-          Track and manage your bulk shipment operations
-        </p>
+        <p className="text-muted-foreground mt-2">Track and manage your bulk shipment operations</p>
       </div>
 
       <DataTable
@@ -190,4 +187,4 @@ export default function BulkOperationsLogPage() {
       />
     </div>
   );
-} 
+}

@@ -23,9 +23,12 @@ export const searchCustomers = async (query: string, signal?: AbortSignal): Prom
   if (!query || query.length < 2) {
     return [];
   }
-  
+
   try {
-    const response = await api.get<Customer[]>(`/customers/search?query=${encodeURIComponent(query)}`, { signal });
+    const response = await api.get<Customer[]>(
+      `/customers/search?query=${encodeURIComponent(query)}`,
+      { signal }
+    );
     return response || [];
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
@@ -40,15 +43,16 @@ export const searchCustomers = async (query: string, signal?: AbortSignal): Prom
 // React Query hooks for customer operations
 export const useCustomerOperations = () => {
   // Fetch all customers with pagination
-  const getCustomersQuery = (page = 1, limit = 10, search = '') => 
+  const getCustomersQuery = (page = 1, limit = 10, search = '') =>
     useQuery({
       queryKey: ['customers', page, limit, search],
-      queryFn: () => api.get(`/customers?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`),
+      queryFn: () =>
+        api.get(`/customers?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`),
       staleTime: 1000 * 60 * 5, // 5 minutes: data is considered fresh
     });
 
   // Get customer by ID
-  const getCustomerByIdQuery = (id: string) => 
+  const getCustomerByIdQuery = (id: string) =>
     useQuery({
       queryKey: ['customer', id],
       queryFn: () => api.get(`/customers/${id}`),
@@ -72,7 +76,8 @@ export const useCustomerOperations = () => {
 
   // Add address to customer
   const addCustomerAddress = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => api.post(`/customers/${id}/addresses`, data),
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      api.post(`/customers/${id}/addresses`, data),
   });
 
   return {

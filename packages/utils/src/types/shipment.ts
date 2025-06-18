@@ -142,4 +142,4 @@ export interface VendorShipmentData {
   courier: any;
   seller_gst?: string;
   is_reshipped?: boolean;
-} 
+}

@@ -2,8 +2,22 @@ import { APP_CONFIG } from '@/config/app';
 import { BaseVendor } from './base-vendor';
 import { APIs } from '@/config/api';
 import { CACHE_KEYS } from '@/config/cache';
-import { formatAddress, formatPhoneNumber, formatShiprocketAddress, PickupAddress } from '@lorrigo/utils';
-import { VendorRegistrationResult, VendorServiceabilityResult, VendorShipmentResult, VendorPickupResult, VendorCancellationResult, VendorShipmentData, ShipmentPickupData, ShipmentCancelData } from '@/types/vendor';
+import {
+  formatAddress,
+  formatPhoneNumber,
+  formatShiprocketAddress,
+  PickupAddress,
+} from '@lorrigo/utils';
+import {
+  VendorRegistrationResult,
+  VendorServiceabilityResult,
+  VendorShipmentResult,
+  VendorPickupResult,
+  VendorCancellationResult,
+  VendorShipmentData,
+  ShipmentPickupData,
+  ShipmentCancelData,
+} from '@/types/vendor';
 import { getPincodeDetails } from '@/utils/pincode';
 
 /**
@@ -69,7 +83,7 @@ export class ShiprocketVendor extends BaseVendor {
     pickupPincode: string,
     deliveryPincode: string,
     volumetricWeight: number,
-    dimensions: { length: number; width: number; height: number, weight: number },
+    dimensions: { length: number; width: number; height: number; weight: number },
     paymentType: 0 | 1,
     collectableAmount?: number,
     couriers?: string[]
@@ -94,7 +108,11 @@ export class ShiprocketVendor extends BaseVendor {
 
       const response = await this.makeRequest(endpoint, 'GET', null, apiConfig);
 
-      if (!response.data || !response.data.data || !response.data.data.available_courier_companies) {
+      if (
+        !response.data ||
+        !response.data.data ||
+        !response.data.data.available_courier_companies
+      ) {
         return {
           success: false,
           message: 'No serviceable couriers found',
@@ -115,15 +133,17 @@ export class ShiprocketVendor extends BaseVendor {
       }));
 
       // Filter by provided courier IDs if applicable
-      const filteredCouriers = couriers && couriers.length > 0
-        ? serviceableCouriers.filter((c: { id: string }) => couriers.includes(c.id))
-        : serviceableCouriers;
+      const filteredCouriers =
+        couriers && couriers.length > 0
+          ? serviceableCouriers.filter((c: { id: string }) => couriers.includes(c.id))
+          : serviceableCouriers;
 
       return {
         success: true,
-        message: filteredCouriers.length > 0
-          ? 'Serviceable couriers found'
-          : 'No matching serviceable couriers found',
+        message:
+          filteredCouriers.length > 0
+            ? 'Serviceable couriers found'
+            : 'No matching serviceable couriers found',
         serviceableCouriers: filteredCouriers,
       };
     } catch (error: any) {
@@ -257,7 +277,8 @@ export class ShiprocketVendor extends BaseVendor {
         Authorization: token,
       };
 
-      const { order, hub, orderItems, paymentMethod, dimensions, isSchedulePickup, pickupDate } = shipmentData;
+      const { order, hub, orderItems, paymentMethod, dimensions, isSchedulePickup, pickupDate } =
+        shipmentData;
 
       // Extract customer name components safely
       const customerName = order.customer?.name || 'Customer';
@@ -340,8 +361,9 @@ export class ShiprocketVendor extends BaseVendor {
       // Add COD specific fields if applicable
       if (isCOD) {
         wrapperPayload.cod_amount = order.total_amount || 0;
-        wrapperPayload.partial_cod_payment_mode = "Credit points";
-        wrapperPayload.partial_cod_collected = Number(order.total_amount) - Number(order.amount_to_collect);
+        wrapperPayload.partial_cod_payment_mode = 'Credit points';
+        wrapperPayload.partial_cod_collected =
+          Number(order.total_amount) - Number(order.amount_to_collect);
       }
 
       // Add ewaybill if provided and order value is high
@@ -357,7 +379,6 @@ export class ShiprocketVendor extends BaseVendor {
         apiConfig
       );
 
-      // Handle wrapper API response
       const wrapperData = wrapperResponse.data.payload;
       if (!wrapperData?.order_id || !wrapperData?.shipment_id) {
         return {
@@ -369,17 +390,18 @@ export class ShiprocketVendor extends BaseVendor {
 
       return {
         success: true,
-        message: isSchedulePickup ? 'Shipment created and scheduled successfully' : 'Shipment created successfully',
+        message: isSchedulePickup
+          ? 'Shipment created and scheduled successfully'
+          : 'Shipment created successfully',
         awb: wrapperData.awb_code || '',
         routingCode: wrapperData.routing_code || '',
-        pickup_date: wrapperData.pickup_scheduled_date ?? "",
+        pickup_date: wrapperData.pickup_scheduled_date ?? '',
         data: {
           sr_order_id: wrapperData.order_id,
           sr_shipment_id: wrapperData.shipment_id,
           ...wrapperResponse.data,
         },
       };
-
     } catch (error: any) {
       console.error('Error creating shipment with Shiprocket:', error);
 
@@ -423,12 +445,9 @@ export class ShiprocketVendor extends BaseVendor {
       };
 
       // Make the API request
-      const response = await this.makeRequest(
-        APIs.SHIPROCKET.GET_MANIFEST,
-        'POST',
-        requestBody,
-        { Authorization: token }
-      );
+      const response = await this.makeRequest(APIs.SHIPROCKET.GET_MANIFEST, 'POST', requestBody, {
+        Authorization: token,
+      });
 
       return {
         success: true,
@@ -438,7 +457,7 @@ export class ShiprocketVendor extends BaseVendor {
       };
     } catch (error: any) {
       // Check if error is due to already scheduled pickup
-      if (error?.response?.data?.message?.includes("Already in Pickup Queue")) {
+      if (error?.response?.data?.message?.includes('Already in Pickup Queue')) {
         return {
           success: true,
           message: 'Pickup already scheduled with Shiprocket',
@@ -489,7 +508,6 @@ export class ShiprocketVendor extends BaseVendor {
         message: 'Shipment cancellation requested with Shiprocket using AWB',
         data: response.data,
       };
-
     } catch (error: any) {
       console.error(`Error cancelling shipment with Shiprocket:`, error);
 

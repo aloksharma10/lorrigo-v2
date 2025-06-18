@@ -2,7 +2,12 @@ import * as React from 'react';
 
 import { cn } from '@lorrigo/ui/lib/utils';
 
-function Input({ className, isLoading, type, ...props }: React.ComponentProps<'input'> & { isLoading?: boolean }) {
+function Input({
+  className,
+  isLoading,
+  type,
+  ...props
+}: React.ComponentProps<'input'> & { isLoading?: boolean }) {
   return (
     <div className="relative w-full">
       <input
@@ -20,7 +25,7 @@ function Input({ className, isLoading, type, ...props }: React.ComponentProps<'i
       />
       {isLoading && (
         <div className="absolute right-3 top-1/2 -translate-y-1/2">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent"></div>
+          <div className="border-muted-foreground h-4 w-4 animate-spin rounded-full border-2 border-t-transparent"></div>
         </div>
       )}
     </div>

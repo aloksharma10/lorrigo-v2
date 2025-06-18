@@ -53,7 +53,7 @@ export function PackageDetailsForm({ control, watch }: PackageDetailsFormProps) 
 
   return (
     <div className="space-y-3">
-      <Alert className="border-blue-200 bg-blue-50 py-2 dark:bg-blue-900 dark:border-blue-800">
+      <Alert className="border-blue-200 bg-blue-50 py-2 dark:border-blue-800 dark:bg-blue-900">
         <LightbulbIcon className="h-4 w-4 text-blue-500 dark:text-blue-200" />
         <AlertDescription className="text-sm text-blue-700 dark:text-blue-200">
           Add correct values to avoid weight discrepancy
@@ -166,10 +166,10 @@ export function PackageDetailsForm({ control, watch }: PackageDetailsFormProps) 
         </div>
         <p className="text-muted-foreground mt-1 text-[10px]">Min: 0.50 cm each</p>
       </div>
-      <div className="rounded-md border border-green-200 bg-green-50 p-2 dark:bg-green-800 dark:border-green-700">
+      <div className="rounded-md border border-green-200 bg-green-50 p-2 dark:border-green-700 dark:bg-green-800">
         <Badge
           variant="outline"
-          className="border-green-300 bg-green-100 text-xs text-green-800 dark:bg-green-900 dark:text-green-200 dark:border-green-700"
+          className="border-green-300 bg-green-100 text-xs text-green-800 dark:border-green-700 dark:bg-green-900 dark:text-green-200"
         >
           Applicable Weight: {applicableWeight} kg
         </Badge>

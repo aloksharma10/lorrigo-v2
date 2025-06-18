@@ -128,7 +128,13 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
         const shipment = row.original;
         return (
           <div className="flex flex-col">
-            <CopyBtn label={shipment.orderNumber} className='text-blue-600' labelClassName='text-blue-600 hover:underline underline-offset-2' tooltipText='Copy Order Number' text={shipment.orderNumber} />
+            <CopyBtn
+              label={shipment.orderNumber}
+              className="text-blue-600"
+              labelClassName="text-blue-600 hover:underline underline-offset-2"
+              tooltipText="Copy Order Number"
+              text={shipment.orderNumber}
+            />
             <div className="text-muted-foreground text-sm">
               {new Date(shipment.createdAt).toLocaleDateString()} |{' '}
               {new Date(shipment.createdAt).toLocaleTimeString([], {
@@ -160,13 +166,23 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
       cell: ({ row }) => {
         const shipment = row.original;
         return (
-          <HoverCardToolTip className="w-80" label={shipment?.hub?.name}
+          <HoverCardToolTip
+            className="w-80"
+            label={shipment?.hub?.name}
             triggerComponent={
               <div className="flex flex-col">
                 <div className="font-medium">{shipment.customer?.name}</div>
                 <div className="text-muted-foreground text-sm">
-                  <CopyBtn label={shipment.customer?.phone} tooltipText='Copy Phone' text={shipment.customer?.phone || ""} />
-                  <CopyBtn label={shipment.customer?.email} tooltipText='Copy Email' text={shipment.customer?.email || ""} />
+                  <CopyBtn
+                    label={shipment.customer?.phone}
+                    tooltipText="Copy Phone"
+                    text={shipment.customer?.phone || ''}
+                  />
+                  <CopyBtn
+                    label={shipment.customer?.email}
+                    tooltipText="Copy Email"
+                    text={shipment.customer?.email || ''}
+                  />
                 </div>
               </div>
             }
@@ -181,7 +197,10 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
                 <span>{shipment?.customer?.phone}</span>
               </div>
             </div>
-            <div className="text-muted-foreground text-sm">{shipment.customer?.address}, {shipment.customer?.city}, {shipment.customer?.state}, {shipment.customer?.pincode}</div>
+            <div className="text-muted-foreground text-sm">
+              {shipment.customer?.address}, {shipment.customer?.city}, {shipment.customer?.state},{' '}
+              {shipment.customer?.pincode}
+            </div>
           </HoverCardToolTip>
         );
       },
@@ -255,7 +274,10 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
                   {shipment?.hub?.lorrigoPickupId}
                 </div>
               </div>
-              <div className="text-muted-foreground mt-1 text-xs">{shipment?.hub?.address}, {shipment?.hub?.city}, {shipment?.hub?.state}, {shipment?.hub?.pincode}</div>
+              <div className="text-muted-foreground mt-1 text-xs">
+                {shipment?.hub?.address}, {shipment?.hub?.city}, {shipment?.hub?.state},{' '}
+                {shipment?.hub?.pincode}
+              </div>
             </HoverCardToolTip>
           </div>
         );
@@ -272,7 +294,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
         return (
           <div className="flex flex-col">
             <div className="text-sm">
-              AWB #  <CopyBtn label={shipment.awb} tooltipText='Copy AWB' text={shipment.awb} />
+              AWB # <CopyBtn label={shipment.awb} tooltipText="Copy AWB" text={shipment.awb} />
               <div className="text-muted-foreground text-xs">
                 {shipment.courier} {shipment.courierNickname}
               </div>
@@ -293,7 +315,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
         // Status badge color mapping
         const statusColorMap: Record<string, string> = {
           New: 'bg-blue-100 text-blue-800 hover:bg-blue-100',
-          'Pending': 'bg-blue-100 text-blue-800 hover:bg-blue-100',
+          Pending: 'bg-blue-100 text-blue-800 hover:bg-blue-100',
           'Courier Assigned': 'bg-blue-100 text-blue-800 hover:bg-blue-100',
           'Pickup Scheduled': 'bg-green-100 text-green-800 hover:bg-green-100',
           'In Transit': 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100',
@@ -312,9 +334,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
             </div>
 
             {shipment.pickupDate && (
-              <div className="mt-1 text-xs">
-                For: {shipment.pickupDate.split('T')[0]}
-              </div>
+              <div className="mt-1 text-xs">For: {shipment.pickupDate.split('T')[0]}</div>
             )}
             {shipment.edd && <div className="mt-1 text-xs">EDD: {shipment.edd.split('T')[0]}</div>}
             {shipment.pickupId && (
@@ -353,22 +373,26 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
-                  onClick={() => openDrawer('clone-order', {
-                    order: row.original,
-                    size: 'greater-mid',
-                    side: 'right'
-                  })}
-                  className='flex w-full items-center justify-start'
+                  onClick={() =>
+                    openDrawer('clone-order', {
+                      order: row.original,
+                      size: 'greater-mid',
+                      side: 'right',
+                    })
+                  }
+                  className="flex w-full items-center justify-start"
                 >
                   Clone Order
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => openDrawer('edit-order', {
-                    order: row.original,
-                    size: 'greater-mid',
-                    side: 'right'
-                  })}
-                  className='flex w-full items-center justify-start'
+                  onClick={() =>
+                    openDrawer('edit-order', {
+                      order: row.original,
+                      size: 'greater-mid',
+                      side: 'right',
+                    })
+                  }
+                  className="flex w-full items-center justify-start"
                 >
                   Edit Order
                 </DropdownMenuItem>
@@ -381,19 +405,22 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => {
-                    openModal('pickup-schedule', { 
-                      shipmentId: row.original.id, 
+                    openModal('pickup-schedule', {
+                      shipmentId: row.original.id,
                       orderNumber: row.original.orderNumber,
-                      awb: row.original.awb
+                      awb: row.original.awb,
                     });
                   }}
-                  className='flex w-full items-center justify-start'
+                  className="flex w-full items-center justify-start"
                 >
                   Schedule Pickup
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => {
-                    openModal('cancel-shipment', { shipmentId: row.original.id, orderNumber: row.original.orderNumber });
+                    openModal('cancel-shipment', {
+                      shipmentId: row.original.id,
+                      orderNumber: row.original.orderNumber,
+                    });
                   }}
                   className="flex w-full items-center justify-start text-red-600 hover:text-red-500"
                 >
@@ -479,9 +506,12 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
   };
 
   // Handle pagination change
-  const handlePaginationChange = React.useCallback((newPagination: { pageIndex: number; pageSize: number }) => {
-    setPagination(newPagination);
-  }, []);
+  const handlePaginationChange = React.useCallback(
+    (newPagination: { pageIndex: number; pageSize: number }) => {
+      setPagination(newPagination);
+    },
+    []
+  );
 
   // Handle sorting change
   const handleSortingChange = React.useCallback((newSorting: { id: string; desc: boolean }[]) => {
@@ -548,4 +578,3 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
     </>
   );
 }
-

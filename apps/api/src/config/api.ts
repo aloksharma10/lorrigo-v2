@@ -32,7 +32,7 @@ export const APIs = {
     CANCEL_SHIPMENT: '/orders/cancel/shipment/awbs',
     ORDER_STATUS: '/shipments/status',
     ORDER_NDR: '/courier/track',
-    
+
     CREATE_ORDER: '/orders/create/adhoc',
     GENRATE_AWB: '/courier/assign/awb',
 

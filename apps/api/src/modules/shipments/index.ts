@@ -8,7 +8,6 @@ export async function shipmentRoutes(fastify: FastifyInstance) {
   // Initialize services and controllers
   fastify.addHook('onRequest', fastify.authenticate);
 
-
   const orderService = new OrderService(fastify);
   const shipmentService = new ShipmentService(fastify, orderService);
   const shipmentController = new ShipmentController(shipmentService);
@@ -24,17 +23,9 @@ export async function shipmentRoutes(fastify: FastifyInstance) {
   );
 
   // Single shipment operations
-  fastify.post(
-    '',
-    { preHandler },
-    shipmentController.createShipment.bind(shipmentController)
-  );
+  fastify.post('', { preHandler }, shipmentController.createShipment.bind(shipmentController));
 
-  fastify.get(
-    '',
-    { preHandler },
-    shipmentController.getAllShipments.bind(shipmentController)
-  );
+  fastify.get('', { preHandler }, shipmentController.getAllShipments.bind(shipmentController));
 
   fastify.get<{ Params: { id: string } }>(
     '/:id',
@@ -48,21 +39,17 @@ export async function shipmentRoutes(fastify: FastifyInstance) {
     (request, reply) => {
       const { pickupDate } = request.body as { pickupDate: string };
       const { id } = request.params as { id: string };
-      
+
       // Attach the pickupDate to the request
       (request as any).body = { id, pickupDate };
-      
+
       return shipmentController.schedulePickup(request as any, reply);
     }
   );
 
-  fastify.post<{ Params: { id: string } }>(
-    '/:id/cancel',
-    { preHandler },
-    (request, reply) => {
-      return shipmentController.cancelShipment(request as any, reply);
-    }
-  );
+  fastify.post<{ Params: { id: string } }>('/:id/cancel', { preHandler }, (request, reply) => {
+    return shipmentController.cancelShipment(request as any, reply);
+  });
 
   fastify.get<{ Params: { id: string } }>(
     '/:id/tracking-events',
@@ -96,60 +83,61 @@ export async function shipmentRoutes(fastify: FastifyInstance) {
   );
 
   // Add a new route to get all bulk operations
-  fastify.get(
-    '/bulk-operations',
-    { preHandler },
-    async (request, reply) => {
-      try {
-        const { page = 1, pageSize = 10, type, status } = request.query as {
-          page?: number;
-          pageSize?: number;
-          type?: string;
-          status?: string;
-        };
+  fastify.get('/bulk-operations', { preHandler }, async (request, reply) => {
+    try {
+      const {
+        page = 1,
+        pageSize = 10,
+        type,
+        status,
+      } = request.query as {
+        page?: number;
+        pageSize?: number;
+        type?: string;
+        status?: string;
+      };
 
-        const userId = request.userPayload!.id;
-        
-        // Build the where clause
-        const where: any = { user_id: userId };
-        
-        if (type) {
-          where.type = type;
-        }
-        
-        if (status) {
-          where.status = status;
-        }
-        
-        // Get total count for pagination
-        const total = await fastify.prisma.bulkOperation.count({ where });
-        
-        // Get paginated results
-        const operations = await fastify.prisma.bulkOperation.findMany({
-          where,
-          orderBy: { created_at: 'desc' },
-          skip: (page - 1) * pageSize,
-          take: parseInt(pageSize.toString(), 10),
-        });
+      const userId = request.userPayload!.id;
 
-        // Calculate page count
-        const pageCount = Math.ceil(total / pageSize);
-        
-        return reply.send({
-          data: operations,
-          meta: {
-            total,
-            page,
-            pageSize,
-            pageCount,
-          }
-        });
-      } catch (error) {
-        request.log.error(error);
-        return reply.code(500).send({ error: 'Internal Server Error' });
+      // Build the where clause
+      const where: any = { user_id: userId };
+
+      if (type) {
+        where.type = type;
       }
+
+      if (status) {
+        where.status = status;
+      }
+
+      // Get total count for pagination
+      const total = await fastify.prisma.bulkOperation.count({ where });
+
+      // Get paginated results
+      const operations = await fastify.prisma.bulkOperation.findMany({
+        where,
+        orderBy: { created_at: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: parseInt(pageSize.toString(), 10),
+      });
+
+      // Calculate page count
+      const pageCount = Math.ceil(total / pageSize);
+
+      return reply.send({
+        data: operations,
+        meta: {
+          total,
+          page,
+          pageSize,
+          pageCount,
+        },
+      });
+    } catch (error) {
+      request.log.error(error);
+      return reply.code(500).send({ error: 'Internal Server Error' });
     }
-  );
+  });
 
   // Shipment statistics
   fastify.get(
@@ -157,4 +145,4 @@ export async function shipmentRoutes(fastify: FastifyInstance) {
     { preHandler },
     shipmentController.getShipmentStats.bind(shipmentController)
   );
-} 
+}

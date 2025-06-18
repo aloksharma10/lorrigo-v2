@@ -10,7 +10,7 @@ import { ShipmentStatus } from '@lorrigo/db';
  * Controller for shipment-related API endpoints
  */
 export class ShipmentController {
-  constructor(private shipmentService: ShipmentService) { }
+  constructor(private shipmentService: ShipmentService) {}
   /**
    * Get rates for an order
    */
@@ -137,9 +137,11 @@ export class ShipmentController {
    */
   async cancelShipment(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
     try {
-
       const { id } = request.params;
-      const { reason, cancelType } = request.body as { reason?: string, cancelType: 'shipment' | 'order' };
+      const { reason, cancelType } = request.body as {
+        reason?: string;
+        cancelType: 'shipment' | 'order';
+      };
       const user_id = request.userPayload!.id;
 
       const result = await this.shipmentService.cancelShipment(id, cancelType, user_id, reason);
@@ -219,10 +221,7 @@ export class ShipmentController {
       // Process date range if provided
       let dateRange: [Date, Date] | undefined;
       if (body.filters?.dateRange) {
-        dateRange = [
-          new Date(body.filters.dateRange[0]),
-          new Date(body.filters.dateRange[1]),
-        ];
+        dateRange = [new Date(body.filters.dateRange[0]), new Date(body.filters.dateRange[1])];
       }
 
       const result = await this.shipmentService.createShipmentBulk(
@@ -265,12 +264,12 @@ export class ShipmentController {
       // Convert date strings to Date objects if provided
       const processedFilters = filters
         ? {
-          ...filters,
-          status: filters.status as ShipmentStatus,
-          dateRange: filters.dateRange
-            ? [new Date(filters.dateRange[0]), new Date(filters.dateRange[1])] as [Date, Date]
-            : undefined,
-        }
+            ...filters,
+            status: filters.status as ShipmentStatus,
+            dateRange: filters.dateRange
+              ? ([new Date(filters.dateRange[0]), new Date(filters.dateRange[1])] as [Date, Date])
+              : undefined,
+          }
         : undefined;
 
       const result = await this.shipmentService.schedulePickupBulk(
@@ -309,12 +308,12 @@ export class ShipmentController {
       // Convert date strings to Date objects if provided
       const processedFilters = filters
         ? {
-          ...filters,
-          status: filters.status as ShipmentStatus,
-          dateRange: filters.dateRange
-            ? [new Date(filters.dateRange[0]), new Date(filters.dateRange[1])] as [Date, Date]
-            : undefined,
-        }
+            ...filters,
+            status: filters.status as ShipmentStatus,
+            dateRange: filters.dateRange
+              ? ([new Date(filters.dateRange[0]), new Date(filters.dateRange[1])] as [Date, Date])
+              : undefined,
+          }
         : undefined;
 
       const result = await this.shipmentService.cancelShipmentBulk(

@@ -18,9 +18,11 @@ export const searchSellers = async (query: string, signal?: AbortSignal): Promis
   if (!query || query.length < 2) {
     return [];
   }
-  
+
   try {
-    const response = await api.get<Seller[]>(`/sellers/search?query=${encodeURIComponent(query)}`, { signal });
+    const response = await api.get<Seller[]>(`/sellers/search?query=${encodeURIComponent(query)}`, {
+      signal,
+    });
     return response || [];
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
@@ -35,15 +37,16 @@ export const searchSellers = async (query: string, signal?: AbortSignal): Promis
 // React Query hooks for seller operations
 export const useSellerOperations = () => {
   // Fetch all sellers with pagination
-  const getSellersQuery = (page = 1, limit = 10, search = '') => 
+  const getSellersQuery = (page = 1, limit = 10, search = '') =>
     useQuery({
       queryKey: ['sellers', page, limit, search],
-      queryFn: () => api.get(`/sellers?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`),
+      queryFn: () =>
+        api.get(`/sellers?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`),
       staleTime: 1000 * 60 * 5, // 5 minutes: data is considered fresh
     });
 
   // Get seller by ID
-  const getSellerByIdQuery = (id: string) => 
+  const getSellerByIdQuery = (id: string) =>
     useQuery({
       queryKey: ['seller', id],
       queryFn: () => api.get(`/sellers/${id}`),

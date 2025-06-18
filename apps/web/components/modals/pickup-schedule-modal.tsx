@@ -28,7 +28,7 @@ import { useShippingOperations } from '@/lib/apis/shipment';
 
 const pickupDateSchema = z.object({
   pickupDate: z.date({
-    required_error: "Please select a pickup date",
+    required_error: 'Please select a pickup date',
   }),
 });
 
@@ -40,9 +40,9 @@ export const PickupScheduleModal = () => {
   const modal_props = modals.filter((modal) => modal.type === 'pickup-schedule')[0];
   const modal_id = modal_props!.id;
   const { shipmentId, orderNumber, awb } = modal_props?.props as {
-    shipmentId: string,
-    orderNumber: string,
-    awb: string
+    shipmentId: string;
+    orderNumber: string;
+    awb: string;
   };
 
   // Use the schedulePickup mutation from the hook
@@ -67,7 +67,7 @@ export const PickupScheduleModal = () => {
       const formattedDate = format(values.pickupDate, 'yyyy-MM-dd');
       await schedulePickup.mutateAsync({
         shipmentId,
-        pickupDate: formattedDate
+        pickupDate: formattedDate,
       });
       handleClose();
       router.refresh();
@@ -89,7 +89,9 @@ export const PickupScheduleModal = () => {
       <div className="flex items-center justify-between px-6 py-4">
         <h2 className="text-xl font-semibold">
           Schedule Your Pick Up
-          <Badge className="ml-2 text-xs" variant="outline">{orderNumber}</Badge>
+          <Badge className="ml-2 text-xs" variant="outline">
+            {orderNumber}
+          </Badge>
         </h2>
         <button onClick={handleClose} className="rounded-full p-1 hover:bg-neutral-100">
           <X className="h-5 w-5 text-neutral-500" />
@@ -98,9 +100,11 @@ export const PickupScheduleModal = () => {
 
       <div className="px-6">
         {awb && (
-          <div className="flex items-center gap-2 rounded-md bg-green-50 p-4 text-green-800 mb-4">
+          <div className="mb-4 flex items-center gap-2 rounded-md bg-green-50 p-4 text-green-800">
             <CheckCircle2 className="h-5 w-5" />
-            <p>Your package has been assigned to <strong>AWB {awb}</strong></p>
+            <p>
+              Your package has been assigned to <strong>AWB {awb}</strong>
+            </p>
           </div>
         )}
 
@@ -122,11 +126,11 @@ export const PickupScheduleModal = () => {
                     <FormControl>
                       <Button
                         variant="outline"
-                        className={`w-full pl-3 text-left font-normal ${!field.value && "text-muted-foreground"}`}
+                        className={`w-full pl-3 text-left font-normal ${!field.value && 'text-muted-foreground'}`}
                         disabled={isSubmitting}
                       >
                         {field.value ? (
-                          format(field.value, "PPP")
+                          format(field.value, 'PPP')
                         ) : (
                           <span>Please select a date</span>
                         )}
@@ -139,11 +143,7 @@ export const PickupScheduleModal = () => {
                       mode="single"
                       selected={field.value}
                       onSelect={field.onChange}
-                      disabled={(date) =>
-                        date < tomorrow ||
-                        date > maxDate ||
-                        date.getDay() === 0
-                      }
+                      disabled={(date) => date < tomorrow || date > maxDate || date.getDay() === 0}
                       initialFocus
                     />
                   </PopoverContent>
@@ -155,17 +155,15 @@ export const PickupScheduleModal = () => {
 
           <div className="mt-4">
             <div className="rounded-md bg-blue-50 p-4 text-sm text-blue-800">
-              <p>In case you schedule the pick up for today, you will not be able to reschedule this pick up.</p>
+              <p>
+                In case you schedule the pick up for today, you will not be able to reschedule this
+                pick up.
+              </p>
             </div>
           </div>
 
           <DialogFooter className="mt-6 flex justify-between py-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-              disabled={isSubmitting}
-            >
+            <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
               I'll do it later
             </Button>
             <Button
@@ -173,7 +171,7 @@ export const PickupScheduleModal = () => {
               disabled={isSubmitting}
               className="bg-indigo-600 hover:bg-indigo-700"
             >
-              {isSubmitting ? "Scheduling..." : "Schedule Pick Up"}
+              {isSubmitting ? 'Scheduling...' : 'Schedule Pick Up'}
             </Button>
           </DialogFooter>
         </form>

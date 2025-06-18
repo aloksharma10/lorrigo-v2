@@ -74,10 +74,10 @@ function ProductRow({ index, control, watch, remove, productsLength }: ProductRo
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
-      
+
       // Create new abort controller for this request
       abortControllerRef.current = new AbortController();
-      
+
       try {
         const data = await searchProducts(query, abortControllerRef.current.signal);
         setProductOptions(data);
@@ -97,7 +97,7 @@ function ProductRow({ index, control, watch, remove, productsLength }: ProductRo
     if (isDropdownOpen) {
       debouncedSearch(searchQuery);
     }
-    
+
     return () => {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
@@ -145,7 +145,7 @@ function ProductRow({ index, control, watch, remove, productsLength }: ProductRo
   };
 
   return (
-    <div className="space-y-2 p-4 border rounded-lg">
+    <div className="space-y-2 rounded-lg border p-4">
       {/* Header Row with Product Name and Delete Button */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -205,16 +205,17 @@ function ProductRow({ index, control, watch, remove, productsLength }: ProductRo
                     className="hover:bg-muted cursor-pointer px-4 py-2"
                     onClick={() => handleProductSelect(option)}
                   >
-                    <div className="text-sm flex items-center justify-between font-medium">
-                      {option.name} <Badge variant="outline" className="ml-2 text-xs text-muted-foreground">{option.id}</Badge>
+                    <div className="flex items-center justify-between text-sm font-medium">
+                      {option.name}{' '}
+                      <Badge variant="outline" className="text-muted-foreground ml-2 text-xs">
+                        {option.id}
+                      </Badge>
                     </div>
                   </li>
                 ))}
               </ul>
             ) : searchQuery.length >= 2 ? (
-              <div className="text-muted-foreground p-4 text-center text-sm">
-                No products found
-              </div>
+              <div className="text-muted-foreground p-4 text-center text-sm">No products found</div>
             ) : (
               <div className="text-muted-foreground p-4 text-center text-sm">
                 Type at least 2 characters to search
@@ -225,7 +226,7 @@ function ProductRow({ index, control, watch, remove, productsLength }: ProductRo
       </div>
 
       {/* Price, Quantity, Tax Rate Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {/* Unit Price */}
         <div>
           <FormField
@@ -247,7 +248,7 @@ function ProductRow({ index, control, watch, remove, productsLength }: ProductRo
                         const value = e.target.value === '' ? 0 : Number.parseFloat(e.target.value);
                         field.onChange(value);
                       }}
-                      className="rounded-l-none flex-1"
+                      className="flex-1 rounded-l-none"
                     />
                   </FormControl>
                 </div>
@@ -284,7 +285,7 @@ function ProductRow({ index, control, watch, remove, productsLength }: ProductRo
                         const value = e.target.value === '' ? 1 : Number.parseInt(e.target.value);
                         field.onChange(Math.max(1, value));
                       }}
-                      className="h-9 rounded-none text-center flex-1 min-w-0"
+                      className="h-9 min-w-0 flex-1 rounded-none text-center"
                     />
                   </FormControl>
                   <Button
@@ -321,7 +322,7 @@ function ProductRow({ index, control, watch, remove, productsLength }: ProductRo
                         const value = e.target.value === '' ? 0 : Number.parseFloat(e.target.value);
                         field.onChange(value);
                       }}
-                      className="rounded-r-none flex-1"
+                      className="flex-1 rounded-r-none"
                     />
                   </FormControl>
                   <span className="bg-muted text-muted-foreground flex h-9 w-10 items-center justify-center rounded-r-md border border-l-0 text-sm">
@@ -338,7 +339,7 @@ function ProductRow({ index, control, watch, remove, productsLength }: ProductRo
       {/* HSN Code Section - Only show if product name is filled */}
       {watch(`productDetails.products.${index}.name`) &&
         watch(`productDetails.products.${index}.name`).length > 0 && (
-          <div className="pt-2 border-t">
+          <div className="border-t pt-2">
             <FormField
               control={control}
               name={`productDetails.products.${index}.hsnCode`}
@@ -438,14 +439,14 @@ export function ProductDetailsForm({ control, watch }: ProductDetailsFormProps) 
               hsnCode: '',
             })
           }
-          className="text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+          className="border-indigo-200 text-indigo-600 hover:bg-indigo-50"
         >
           <Plus className="mr-2 h-4 w-4" />
           Add Another Product
         </Button>
       </div>
 
-      <Alert className="bg-gray-50 border-gray-200 dark:bg-stone-800 dark:border-stone-700">
+      <Alert className="border-gray-200 bg-gray-50 dark:border-stone-700 dark:bg-stone-800">
         <AlertTitle className="text-lg font-semibold">
           Total Order Value: {currencyFormatter(totalAmount)}
         </AlertTitle>
@@ -456,4 +457,3 @@ export function ProductDetailsForm({ control, watch }: ProductDetailsFormProps) 
     </div>
   );
 }
-

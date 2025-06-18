@@ -1,4 +1,4 @@
-import { Star } from "lucide-react";
+import { Star } from 'lucide-react';
 
 interface RatingBadgeProps {
   rating: number;
@@ -25,12 +25,11 @@ export function RatingBadgeCircle({ rating, className = '' }: RatingBadgeProps) 
   );
 }
 
-
 export const RatingBadgeStart = ({ rating }: { rating: number }) => {
   return (
     <div className="flex items-center gap-1">
-      <Star className="h-3 w-3 md:h-4 md:w-4 fill-yellow-400 text-yellow-400" />
-      <span className="font-medium text-xs md:text-sm">{rating.toFixed(1)}</span>
+      <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 md:h-4 md:w-4" />
+      <span className="text-xs font-medium md:text-sm">{rating.toFixed(1)}</span>
     </div>
-  )
-}
+  );
+};

@@ -117,13 +117,13 @@ export class ProductController {
   async searchProducts(request: FastifyRequest, reply: FastifyReply) {
     try {
       const { query = '' } = request.query as { query?: string };
-      
+
       if (!query || query.length < 2) {
-        return reply.code(400).send({ 
-          message: 'Search query must be at least 2 characters long' 
+        return reply.code(400).send({
+          message: 'Search query must be at least 2 characters long',
         });
       }
-      
+
       const products = await this.productService.searchProducts(query);
       return products;
     } catch (error) {
@@ -132,4 +132,4 @@ export class ProductController {
       return reply.code(500).send({ message: 'Internal server error' });
     }
   }
-} 
+}

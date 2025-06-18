@@ -29,7 +29,6 @@ export const formatPhoneNumber = (phone: number): string => {
   return phoneStr.padStart(10, '0');
 };
 
-
 export const formatShiprocketAddress = (address = '') => {
   const fullAddress = `0-/, ${address || ''}`;
   return fullAddress.length > 150 ? fullAddress.slice(0, 150) : fullAddress;

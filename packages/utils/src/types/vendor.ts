@@ -84,4 +84,4 @@ export interface CourierServiceabilityData {
     delivery_performance?: number;
     zone?: string;
   };
-} 
+}

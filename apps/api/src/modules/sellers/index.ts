@@ -228,4 +228,4 @@ export default async function sellerRoutes(fastify: FastifyInstance) {
     preHandler: fastify.authenticate,
     handler: (request, reply) => sellerController.searchSellers(request, reply),
   });
-} 
+}

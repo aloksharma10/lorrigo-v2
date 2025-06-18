@@ -50,4 +50,4 @@ export async function setupSellerHooks(fastify: FastifyInstance) {
       };
     }
   });
-} 
+}

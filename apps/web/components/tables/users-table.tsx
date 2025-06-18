@@ -383,9 +383,12 @@ export default function UsersTable({ initialParams }: UsersTableProps) {
   };
 
   // Handle pagination change
-  const handlePaginationChange = React.useCallback((newPagination: { pageIndex: number; pageSize: number }) => {
-    setPagination(newPagination);
-  }, []);
+  const handlePaginationChange = React.useCallback(
+    (newPagination: { pageIndex: number; pageSize: number }) => {
+      setPagination(newPagination);
+    },
+    []
+  );
 
   // Handle sorting change
   const handleSortingChange = React.useCallback((newSorting: { id: string; desc: boolean }[]) => {

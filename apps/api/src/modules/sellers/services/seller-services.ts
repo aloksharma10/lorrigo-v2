@@ -166,7 +166,7 @@ export class SellerService {
         ],
       },
       take: 10,
-      include: { 
+      include: {
         address: {
           select: {
             address: true,
@@ -178,10 +178,7 @@ export class SellerService {
           },
         },
       },
-      orderBy: [
-        { seller_name: 'asc' },
-        { created_at: 'desc' }
-      ],
+      orderBy: [{ seller_name: 'asc' }, { created_at: 'desc' }],
       distinct: ['seller_name'],
     });
 
@@ -197,7 +194,7 @@ export class SellerService {
         city: seller.address?.city,
         state: seller.address?.state,
         country: seller.address?.country,
-      }
+      };
     });
-  } 
+  }
 }

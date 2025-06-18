@@ -56,33 +56,34 @@ export class PickupService {
 
       const { city, state } = pincodeDetails;
 
-      const [lastSequenceNumberHub, lastSequenceNumberAddress, b2bConfig, lastHub] = await Promise.all([
-        this.fastify.prisma.hub.count({
-          where: {
-            created_at: {
-              gte: new Date(new Date().getFullYear(), 0, 1),
-              lte: new Date(new Date().getFullYear(), 11, 31),
+      const [lastSequenceNumberHub, lastSequenceNumberAddress, b2bConfig, lastHub] =
+        await Promise.all([
+          this.fastify.prisma.hub.count({
+            where: {
+              created_at: {
+                gte: new Date(new Date().getFullYear(), 0, 1),
+                lte: new Date(new Date().getFullYear(), 11, 31),
+              },
             },
-          },
-        }),
-        this.fastify.prisma.address.count({
-          where: {
-            created_at: {
-              gte: new Date(new Date().getFullYear(), 0, 1),
-              lte: new Date(new Date().getFullYear(), 11, 31),
+          }),
+          this.fastify.prisma.address.count({
+            where: {
+              created_at: {
+                gte: new Date(new Date().getFullYear(), 0, 1),
+                lte: new Date(new Date().getFullYear(), 11, 31),
+              },
             },
-          },
-        }),
-        null,
-        this.fastify.prisma.hub.findFirst({
-          orderBy: {
-            created_at: 'desc',
-          },
-        }),
-        // this.fastify.prisma.vendorConfig.findFirst({
-        //   where: { vendorName: 'SHIPROCKET_B2B' },
-        // }),
-      ]);
+          }),
+          null,
+          this.fastify.prisma.hub.findFirst({
+            orderBy: {
+              created_at: 'desc',
+            },
+          }),
+          // this.fastify.prisma.vendorConfig.findFirst({
+          //   where: { vendorName: 'SHIPROCKET_B2B' },
+          // }),
+        ]);
 
       const lorrigoPickupId = generateId({
         tableName: 'HUB',
@@ -108,10 +109,7 @@ export class PickupService {
       const [smartShipResult, shiprocketResult, delhiveryResults, shiprocketB2BResult] =
         await Promise.all([
           smartShipVendor.registerHubWithBothDeliveryTypes(vendorPayload),
-          shiprocketVendor.registerHub(
-            vendorPayload,
-            lorrigoPickupId
-          ),
+          shiprocketVendor.registerHub(vendorPayload, lorrigoPickupId),
           Promise.all(delhiveryVendors.map((vendor) => vendor.registerHub(vendorPayload))),
           null,
           // (b2bConfig?.token && b2bConfig?.clientId)

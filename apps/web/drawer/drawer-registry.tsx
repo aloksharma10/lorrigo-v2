@@ -38,4 +38,4 @@ export function DrawerRegistry() {
   }, [isRegistered, registerDrawer, setRegistered]);
 
   return null;
-} 
+}

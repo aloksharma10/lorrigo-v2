@@ -1,10 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import {
-  Button,
-  toast,
-} from '@lorrigo/ui/components';
+import { Button, toast } from '@lorrigo/ui/components';
 
 import { type OrderFormValues, orderFormSchema } from '@lorrigo/utils/validations';
 import { BackButton } from '@/components/back-btn';
@@ -34,7 +31,7 @@ export default function OrderFormPage() {
     } catch (error: any) {
       toast.error(
         error.response.data.message ||
-        'Failed to create order, Please Report to Support at support@lorrigo.in'
+          'Failed to create order, Please Report to Support at support@lorrigo.in'
       );
       console.error('Validation error:', error);
     }
@@ -53,17 +50,10 @@ export default function OrderFormPage() {
 
     return (
       <div className="flex gap-4">
-        <Button
-          isLoading={isCreatingOrder}
-          onClick={handleCreateOrder}
-          variant="secondary"
-        >
+        <Button isLoading={isCreatingOrder} onClick={handleCreateOrder} variant="secondary">
           Create Order
         </Button>
-        <Button
-          isLoading={isCreatingOrder}
-          onClick={handleShipNow}
-        >
+        <Button isLoading={isCreatingOrder} onClick={handleShipNow}>
           Ship Now
         </Button>
       </div>

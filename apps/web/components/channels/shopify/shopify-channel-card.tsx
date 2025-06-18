@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { Store, LinkIcon, AlertCircle, CheckCircle2, ShoppingCart, ExternalLink, Unlink } from 'lucide-react';
+import {
+  Store,
+  LinkIcon,
+  AlertCircle,
+  CheckCircle2,
+  ShoppingCart,
+  ExternalLink,
+  Unlink,
+} from 'lucide-react';
 import {
   Button,
   Input,
@@ -15,10 +23,16 @@ import { useShopify } from '@/lib/apis/channels/shopify';
 export function ShopifyChannelCard() {
   const [shopDomain, setShopDomain] = useState('');
   const [isValidDomain, setIsValidDomain] = useState(true);
-  
+
   // Use our shopify hook
   const shopify = useShopify();
-  const { data: connection, isLoading: isLoadingConnection, isError, error, refetch } = shopify.connection;
+  const {
+    data: connection,
+    isLoading: isLoadingConnection,
+    isError,
+    error,
+    refetch,
+  } = shopify.connection;
   const { mutate: initiateAuth, isPending: isConnecting } = shopify.initiateAuth;
   const { mutate: disconnect, isPending: isDisconnecting } = shopify.disconnect;
 
@@ -42,7 +56,7 @@ export function ShopifyChannelCard() {
         toast.loading('Redirecting to Shopify...', {
           id: 'shopify-redirect',
         });
-        
+
         // Redirect to Shopify auth page after a short delay
         setTimeout(() => {
           toast.dismiss('shopify-redirect');
@@ -77,7 +91,7 @@ export function ShopifyChannelCard() {
         <div className="space-y-3">
           <Skeleton className="h-5 w-full" />
           <Skeleton className="h-5 w-3/4" />
-          <Skeleton className="h-10 w-full mt-4" />
+          <Skeleton className="mt-4 h-10 w-full" />
         </div>
       );
     }
@@ -85,37 +99,32 @@ export function ShopifyChannelCard() {
     if (connection) {
       return (
         <div className="space-y-4">
-          <div className="flex items-start gap-3 bg-green-50 dark:bg-green-950/30 p-3 rounded-md">
-            <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
+          <div className="flex items-start gap-3 rounded-md bg-green-50 p-3 dark:bg-green-950/30">
+            <CheckCircle2 className="mt-0.5 h-5 w-5 text-green-600" />
             <div>
-              <h4 className="font-medium text-sm">Connected to Shopify</h4>
-              <p className="text-sm text-muted-foreground mt-1">
+              <h4 className="text-sm font-medium">Connected to Shopify</h4>
+              <p className="text-muted-foreground mt-1 text-sm">
                 Store: <span className="font-medium">{connection.shop}</span>
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 Connected on {new Date(connection.connected_at).toLocaleDateString()}
               </p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
               className="flex-1"
               onClick={() => window.open(`https://${connection.shop}/admin`, '_blank')}
-              icon={<ExternalLink className="h-4 w-4 mr-2" />}
+              icon={<ExternalLink className="mr-2 h-4 w-4" />}
             >
               Open Shopify Admin
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              className="flex-1"
-              asChild
-            >
+            <Button variant="outline" size="sm" className="flex-1" asChild>
               <a href="/seller/orders">
-                <ShoppingCart className="h-4 w-4 mr-2" />
+                <ShoppingCart className="mr-2 h-4 w-4" />
                 View Orders
               </a>
             </Button>
@@ -135,12 +144,12 @@ export function ShopifyChannelCard() {
             </AlertDescription>
           </Alert>
         )}
-        
+
         <div>
-          <label htmlFor="shop-domain" className="text-sm font-medium mb-1.5 block">
+          <label htmlFor="shop-domain" className="mb-1.5 block text-sm font-medium">
             Shopify Store Domain
           </label>
-          <div className="flex gap-2 items-center">
+          <div className="flex items-center gap-2">
             <Input
               id="shop-domain"
               placeholder="your-store"
@@ -149,12 +158,12 @@ export function ShopifyChannelCard() {
                 setShopDomain(e.target.value);
                 setIsValidDomain(true);
               }}
-              className={!isValidDomain ? "border-red-500" : ""}
+              className={!isValidDomain ? 'border-red-500' : ''}
             />
-            <span className="text-sm text-muted-foreground whitespace-nowrap">.myshopify.com</span>
+            <span className="text-muted-foreground whitespace-nowrap text-sm">.myshopify.com</span>
           </div>
           {!isValidDomain && (
-            <p className="text-red-500 text-xs mt-1">Please enter a valid store name</p>
+            <p className="mt-1 text-xs text-red-500">Please enter a valid store name</p>
           )}
         </div>
       </div>
@@ -164,12 +173,12 @@ export function ShopifyChannelCard() {
   const renderFooter = () => {
     if (connection) {
       return (
-        <Button 
-          variant="outline" 
-          onClick={handleDisconnect} 
+        <Button
+          variant="outline"
+          onClick={handleDisconnect}
           disabled={isDisconnecting}
           className="w-full"
-          icon={<Unlink className="h-4 w-4 mr-2" />}
+          icon={<Unlink className="mr-2 h-4 w-4" />}
         >
           {isDisconnecting ? 'Disconnecting...' : 'Disconnect Store'}
         </Button>
@@ -177,11 +186,11 @@ export function ShopifyChannelCard() {
     }
 
     return (
-      <Button 
-        onClick={handleConnect} 
+      <Button
+        onClick={handleConnect}
         disabled={isConnecting}
         className="w-full"
-        icon={<LinkIcon className="h-4 w-4 mr-2" />}
+        icon={<LinkIcon className="mr-2 h-4 w-4" />}
       >
         {isConnecting ? 'Connecting...' : 'Connect Shopify Store'}
       </Button>
@@ -200,4 +209,4 @@ export function ShopifyChannelCard() {
       {renderContent()}
     </ChannelCard>
   );
-} 
+}

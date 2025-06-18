@@ -1,7 +1,13 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { redis } from '@/lib/redis';
 import { CACHE_TTL } from '@/config/cache';
-import { VendorRegistrationResult, VendorServiceabilityResult, VendorShipmentResult, VendorPickupResult, VendorCancellationResult } from '@/types/vendor';
+import {
+  VendorRegistrationResult,
+  VendorServiceabilityResult,
+  VendorShipmentResult,
+  VendorPickupResult,
+  VendorCancellationResult,
+} from '@/types/vendor';
 
 /**
  * Base class for all vendor implementations
@@ -69,7 +75,7 @@ export abstract class BaseVendor {
     try {
       // If auth_url is provided, use it directly; otherwise construct URL from baseUrl + endpoint
       const url = auth_url || `${this.baseUrl}${endpoint}`;
-      
+
       const config: AxiosRequestConfig = {
         method,
         url,
@@ -86,8 +92,11 @@ export abstract class BaseVendor {
       const response = await axios(config);
       return response;
     } catch (error: any) {
-      console.error(`Error in ${method} request to ${auth_url || `${this.baseUrl}${endpoint}`}:`, error.message);
-      
+      console.error(
+        `Error in ${method} request to ${auth_url || `${this.baseUrl}${endpoint}`}:`,
+        error.message
+      );
+
       if (error.response) {
         // The request was made and the server responded with a status code
         // that falls out of the range of 2xx
@@ -101,7 +110,7 @@ export abstract class BaseVendor {
         // Something happened in setting up the request that triggered an Error
         console.error('Error setting up request:', error.message);
       }
-      
+
       throw error;
     }
   }
@@ -137,30 +146,28 @@ export abstract class BaseVendor {
    * @returns Promise resolving to serviceability result
    */
   public abstract checkServiceability(
-    pickupPincode: string, 
-    deliveryPincode: string, 
-    volumeWeight: number, 
-    dimensions: { length: number; width: number; height: number, weight: number }, 
-    paymentType: 0 | 1, 
+    pickupPincode: string,
+    deliveryPincode: string,
+    volumeWeight: number,
+    dimensions: { length: number; width: number; height: number; weight: number },
+    paymentType: 0 | 1,
     collectableAmount?: number,
     couriers?: string[],
     isReverseOrder?: boolean,
     couriersData?: any
   ): Promise<VendorServiceabilityResult>;
-  
+
   /**
    * Schedule pickup for a shipment
    * @param pickupData Pickup data including AWB, pickup date, and related info
    * @returns Promise resolving to pickup scheduling result
    */
-  public async schedulePickup(
-    pickupData: {
-      awb: string;
-      pickupDate: string;
-      hub: any;
-      shipment: any;
-    }
-  ): Promise<VendorPickupResult> {
+  public async schedulePickup(pickupData: {
+    awb: string;
+    pickupDate: string;
+    hub: any;
+    shipment: any;
+  }): Promise<VendorPickupResult> {
     return {
       success: false,
       message: `Pickup scheduling not implemented for ${this.name}`,
@@ -168,18 +175,16 @@ export abstract class BaseVendor {
       pickup_date: null,
     };
   }
-  
+
   /**
    * Cancel a shipment
    * @param cancelData Cancellation data including AWB and shipment details
    * @returns Promise resolving to cancellation result
    */
-  public async cancelShipment(
-    cancelData: {
-      awb: string;
-      shipment: any;
-    }
-  ): Promise<VendorCancellationResult> {
+  public async cancelShipment(cancelData: {
+    awb: string;
+    shipment: any;
+  }): Promise<VendorCancellationResult> {
     return {
       success: false,
       message: `Shipment cancellation not implemented for ${this.name}`,

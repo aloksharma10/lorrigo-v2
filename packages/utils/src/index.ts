@@ -10,7 +10,7 @@ export * from './types';
 export {
   CreateShipmentSchema,
   UpdateShipmentSchema,
-  AddTrackingEventSchema
+  AddTrackingEventSchema,
 } from './schemas/shipment';
 
 // Export all functions

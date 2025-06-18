@@ -21,13 +21,13 @@ export default function ShopifyCallbackPage() {
         // Only process the callback once
         if (processed) return;
         setProcessed(true);
-        
+
         const shop = searchParams.get('shop');
         const code = searchParams.get('code');
         const hmac = searchParams.get('hmac');
         const timestamp = searchParams.get('timestamp');
         const host = searchParams.get('host');
-        
+
         if (!shop) {
           setError('Missing shop parameter');
           setIsLoading(false);
@@ -46,12 +46,12 @@ export default function ShopifyCallbackPage() {
             code,
             hmac,
             timestamp,
-            host
+            host,
           },
-          headers: { 
+          headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.user?.token}`
-          }
+            Authorization: `Bearer ${session?.user?.token}`,
+          },
         });
 
         if (response.data.success) {
@@ -69,7 +69,8 @@ export default function ShopifyCallbackPage() {
         }
       } catch (err: any) {
         console.error('Error handling Shopify callback:', err);
-        const errorMessage = err.response?.data?.error || 'An error occurred while connecting to Shopify';
+        const errorMessage =
+          err.response?.data?.error || 'An error occurred while connecting to Shopify';
         setError(errorMessage);
         setIsLoading(false);
       }
@@ -86,14 +87,14 @@ export default function ShopifyCallbackPage() {
 
   if (error) {
     return (
-      <div className="container py-12 flex flex-col items-center justify-center">
+      <div className="container flex flex-col items-center justify-center py-12">
         <Alert variant="destructive" className="max-w-lg">
           <AlertTitle>Connection Error</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
-        <button 
+        <button
           onClick={() => router.push('/seller/channels')}
-          className="mt-4 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+          className="bg-primary hover:bg-primary/90 mt-4 rounded-md px-4 py-2 text-white"
         >
           Return to Channels
         </button>
@@ -102,15 +103,15 @@ export default function ShopifyCallbackPage() {
   }
 
   return (
-    <div className="container py-12 flex flex-col items-center justify-center">
+    <div className="container flex flex-col items-center justify-center py-12">
       <div className="flex flex-col items-center gap-4">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="text-primary h-8 w-8 animate-spin" />
         <h1 className="text-xl font-medium">Connecting to Shopify...</h1>
         <p className="text-muted-foreground">Please wait while we complete your connection</p>
         {sessionStatus === 'loading' && (
-          <p className="text-sm text-muted-foreground">Waiting for authentication...</p>
+          <p className="text-muted-foreground text-sm">Waiting for authentication...</p>
         )}
       </div>
     </div>
   );
-} 
+}

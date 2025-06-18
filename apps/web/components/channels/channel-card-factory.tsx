@@ -40,16 +40,14 @@ export function ChannelCard({
         </div>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
-      
-      <CardContent className="pt-6">
-        {children}
-      </CardContent>
-      
+
+      <CardContent className="pt-6">{children}</CardContent>
+
       {footer && (
-        <CardFooter className="flex justify-between border-t bg-muted/50 px-6 py-4">
+        <CardFooter className="bg-muted/50 flex justify-between border-t px-6 py-4">
           {footer}
         </CardFooter>
       )}
     </Card>
   );
-} 
+}
