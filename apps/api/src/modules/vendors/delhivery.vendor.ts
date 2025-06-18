@@ -289,7 +289,6 @@ export class DelhiveryVendor extends BaseVendor {
       );
 
       const delhiveryResponse = response.data?.packages?.[0];
-      console.log(JSON.stringify(delhiveryResponse), "delhiveryResponse")
 
       if (!delhiveryResponse?.status) {
         return {

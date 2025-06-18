@@ -242,8 +242,6 @@ export class CustomerService {
     return customers.map(customer => {
       const defaultAddress = customer.address?.address
 
-      console.log(defaultAddress, "defaultAddress")
-        
       return {
         id: customer.id,
         name: customer.name,

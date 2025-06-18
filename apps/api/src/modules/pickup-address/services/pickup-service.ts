@@ -192,7 +192,6 @@ export class PickupService {
             });
           })
           .catch((error) => {
-            console.log(error, 'error');
             throw error;
           });
       } catch (error: any) {

@@ -616,7 +616,6 @@ export class OrderService {
         }
       );
     } catch (error: any) {
-      console.log(error);
       // Enhanced error handling
       if (error.message === 'Order number already exists. Please try another order number.') {
         throw error;
@@ -921,7 +920,6 @@ export class OrderService {
         }
       );
     } catch (error: any) {
-      console.log(error);
       if (error.message === 'Order not found or does not belong to this user.') {
         throw error;
       }

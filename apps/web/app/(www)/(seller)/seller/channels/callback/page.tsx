@@ -28,14 +28,6 @@ export default function ShopifyCallbackPage() {
         const timestamp = searchParams.get('timestamp');
         const host = searchParams.get('host');
         
-        console.log('Callback received with params:', { 
-          shop, 
-          code: code ? `${code.substring(0, 5)}...` : 'undefined',
-          hmac: hmac ? `${hmac.substring(0, 5)}...` : 'undefined',
-          host: host || 'undefined',
-          timestamp
-        });
-        
         if (!shop) {
           setError('Missing shop parameter');
           setIsLoading(false);
@@ -44,12 +36,9 @@ export default function ShopifyCallbackPage() {
 
         // Check if session is ready
         if (!session?.user?.token) {
-          console.log('Session not ready yet, waiting...');
           return; // Don't set error, just wait for session
         }
 
-        console.log('Session ready, sending request to backend for shop:', shop);
-        
         // Call the backend to handle the callback
         const response = await apiClient.get('/channels/shopify/callback', {
           params: {
@@ -66,15 +55,12 @@ export default function ShopifyCallbackPage() {
         });
 
         if (response.data.success) {
-          console.log('Successfully connected to Shopify');
           // Redirect to success page
           router.push('/seller/channels/success');
         } else if (response.data.needsReauthorization && response.data.authUrl) {
-          console.log('Need to re-authorize, redirecting to:', response.data.authUrl);
           // Redirect to the new auth URL
           window.location.href = response.data.authUrl;
         } else if (response.data.authUrl) {
-          console.log('Got auth URL, redirecting to:', response.data.authUrl);
           // Redirect to the auth URL
           window.location.href = response.data.authUrl;
         } else {

@@ -195,7 +195,6 @@ export const OrderForm = forwardRef<OrderFormRef, OrderFormProps>(({
         },
       };
 
-      console.log(mappedValues, "mappedValues", initialValues.packageDetails)
       // Set values in the form
       Object.entries(mappedValues).forEach(([key, value]) => {
         if (value !== undefined) {
