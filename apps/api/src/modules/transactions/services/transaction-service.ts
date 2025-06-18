@@ -64,7 +64,7 @@ export class TransactionService {
   constructor(fastify: FastifyInstance) {
     this.fastify = fastify;
     this.prisma = fastify.prisma;
-    
+
     // Try to get the queue from fastify instance if available
     if ((fastify as any).queues && (fastify as any).queues[QueueNames.BULK_OPERATION]) {
       this.transactionQueue = (fastify as any).queues[QueueNames.BULK_OPERATION];
@@ -486,13 +486,13 @@ export class TransactionService {
       // Import PhonePe service dynamically to avoid circular dependencies
       const { PhonePeService } = await import('./phonepe-service');
       const phonePeService = new PhonePeService(this.fastify);
-      
+
       // Generate payment link using PhonePe
       const paymentResult = await phonePeService.generatePaymentLink(
         amount,
         merchantTransactionId,
         userId,
-        redirectUrl
+        `${redirectUrl}/${merchantTransactionId}`
       );
 
       if (!paymentResult.success) {
@@ -550,15 +550,15 @@ export class TransactionService {
       // Import PhonePe service dynamically to avoid circular dependencies
       const { PhonePeService } = await import('./phonepe-service');
       const phonePeService = new PhonePeService(this.fastify);
-      
+
       // Verify payment status with PhonePe
       const verificationResult = await phonePeService.checkPaymentStatus(merchantTransactionId);
-      
+
       // If verification fails, use the provided status
-      const finalPaymentStatus = verificationResult.success 
-        ? verificationResult.paymentStatus 
+      const finalPaymentStatus = verificationResult.success
+        ? verificationResult.paymentStatus
         : paymentStatus;
-      
+
       // Process the transaction based on payment status
       if (finalPaymentStatus === 'SUCCESS') {
         // Update transaction status
@@ -1016,10 +1016,10 @@ export class TransactionService {
       });
 
       if (failedTransactions.length === 0) {
-        return { 
-          success: true, 
-          message: 'No failed transactions found', 
-          transactions: [] 
+        return {
+          success: true,
+          message: 'No failed transactions found',
+          transactions: []
         };
       }
 
@@ -1031,10 +1031,10 @@ export class TransactionService {
         // Import PhonePe service dynamically to avoid circular dependencies
         const { PhonePeService } = await import('./phonepe-service');
         const phonePeService = new PhonePeService(this.fastify);
-        
+
         // Check payment status with PhonePe
         const statusResult = await phonePeService.checkPaymentStatus(transaction.merchant_transaction_id);
-        
+
         if (!statusResult.success) continue;
 
         if (statusResult.paymentStatus === 'SUCCESS') {
@@ -1140,9 +1140,9 @@ export class TransactionService {
       // Import PhonePe service dynamically to avoid circular dependencies
       const { PhonePeService } = await import('./phonepe-service');
       const phonePeService = new PhonePeService(this.fastify);
-      
+
       // Generate payment link using PhonePe
-      const redirectUrl = `${origin}/seller/billing/invoice/callback/${invoiceId}`;
+      const redirectUrl = `${origin}/seller/invoice/callback/${invoiceId}`;
       const paymentResult = await phonePeService.generatePaymentLink(
         amount,
         merchantTransactionId,
@@ -1186,7 +1186,7 @@ export class TransactionService {
     try {
       // Find the pending transaction
       const transaction = await this.prisma.invoiceTransaction.findFirst({
-        where: { 
+        where: {
           merchant_transaction_id: merchantTransactionId,
           invoice_id: invoiceId,
           user_id: userId
@@ -1214,14 +1214,14 @@ export class TransactionService {
       // Import PhonePe service dynamically to avoid circular dependencies
       const { PhonePeService } = await import('./phonepe-service');
       const phonePeService = new PhonePeService(this.fastify);
-      
+
       // Verify payment status with PhonePe
       const verificationResult = await phonePeService.checkPaymentStatus(merchantTransactionId);
-      
+
       if (!verificationResult.success) {
         return { success: false, error: 'Failed to verify payment status' };
       }
-      
+
       // Process the transaction based on payment status
       if (verificationResult.paymentStatus === 'SUCCESS') {
         // Update transaction and invoice status
@@ -1233,7 +1233,7 @@ export class TransactionService {
               status: TransactionStatus.COMPLETED,
             },
           }),
-          
+
           // Update invoice status
           this.prisma.invoice.update({
             where: { id: invoiceId },

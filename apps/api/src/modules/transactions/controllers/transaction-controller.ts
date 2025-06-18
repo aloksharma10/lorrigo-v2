@@ -195,7 +195,7 @@ export class TransactionController {
       const { amount, origin, redirectUrl } = request.body as z.infer<typeof RechargeWalletSchema>;
 
       // Use origin from request body if provided, otherwise use redirectUrl
-      const finalRedirectUrl = redirectUrl || `${origin}/seller/billing/wallet/callback`;
+      const finalRedirectUrl = `${origin}/seller/wallet/callback`;
 
       const result = await this.transactionService.rechargeWallet(userId, amount, finalRedirectUrl);
 
@@ -234,8 +234,8 @@ export class TransactionController {
       // The service will handle checking the payment status with PhonePe
       const result = await this.transactionService.verifyWalletRecharge(
         merchantTransactionId,
-        undefined, // Let the service determine the payment status
-        undefined  // Let the service determine the gateway reference
+        undefined as any, // Let the service determine the payment status
+        undefined as any  // Let the service determine the gateway reference
       );
 
       if (!result.success) {

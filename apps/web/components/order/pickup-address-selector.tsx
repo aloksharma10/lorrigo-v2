@@ -137,7 +137,7 @@ export function PickupAddressSelector({
   };
 
   function onSubmit(values: AddressFormValues) {
-    console.log(values);
+    // console.log(values);
   }
 
   const handleOpenFormModal = () => {

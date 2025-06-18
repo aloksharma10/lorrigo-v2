@@ -49,6 +49,7 @@ export class PhonePeService {
         merchantUserId: userId,
         amount: amount * 100, // PhonePe expects amount in paise
         redirectUrl,
+        callbackUrl: redirectUrl,
         redirectMode: 'REDIRECT',
         paymentInstrument: {
           type: 'PAY_PAGE',
@@ -127,7 +128,7 @@ export class PhonePeService {
 
       // Check response
       if (response.data.success) {
-        const paymentStatus = response.data.data.paymentInstrument.status;
+        const paymentStatus = response.data.data.responseCode;
         const gatewayReference = response.data.data.transactionId;
         
         return {

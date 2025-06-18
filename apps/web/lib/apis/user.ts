@@ -84,8 +84,6 @@ export const useWalletOperations = () => {
   const verifyWalletRecharge = useMutation({
     mutationFn: async (data: { 
       merchantTransactionId: string; 
-      paymentStatus?: 'SUCCESS' | 'FAILURE';
-      gatewayReference?: string;
     }) => {
       // Using GET with query params like in the old code
       const response = await apiClient.get(`/transactions/wallet/verify`, {
