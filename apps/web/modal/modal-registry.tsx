@@ -13,6 +13,7 @@ import { CreateCourierModal } from '@/components/modals/create-courier-modal';
 import { CreateChannelModal } from '@/components/modals/create-channel-modal';
 import { CancelShipmentModal } from '@/components/modals/cancel-shipment-modal';
 import { PickupScheduleModal } from '@/components/modals/pickup-schedule-modal';
+import { RechargeWalletModal } from '@/components/modals/recharge-wallet-modal';
 
 // Store to track registered modals
 interface ModalRegistryState {
@@ -41,6 +42,7 @@ export function ModalRegistry() {
       registerModal('create-channel', CreateChannelModal);
       registerModal('cancel-shipment', CancelShipmentModal);
       registerModal('pickup-schedule', PickupScheduleModal);
+      registerModal('recharge-wallet', RechargeWalletModal);
 
       setRegistered(true);
       console.log('Modal components registered successfully');

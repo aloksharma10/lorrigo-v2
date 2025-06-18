@@ -1,17 +1,31 @@
+"use client";
 import { Button } from '@lorrigo/ui/components';
 import { Input } from '@lorrigo/ui/components';
 import { Separator } from '@lorrigo/ui/components';
 import { SidebarTrigger } from '@lorrigo/ui/components';
-import { IndianRupee, Search, Bell } from 'lucide-react';
+import { IndianRupee, Search, Bell, Plus } from 'lucide-react';
 import { ModeToggle } from './mode-toggle';
-import ActionTooltip from '../action-tooltip';
 import HoverCardToolTip from '../hover-card-tooltip';
+import { useWalletOperations } from '@/lib/apis/user';
+import { useModalStore } from '@/modal/modal-store';
 
-interface SiteHeaderProps {
-  walletBalance?: number;
-}
+export function SiteHeader() {
+  const { getWalletBalance } = useWalletOperations();
+  const { openModal } = useModalStore();
+  
+  // Get wallet balance from API
+  const { data: walletData, isLoading } = getWalletBalance;
+  const walletBalance = walletData?.balance || 0;
+  
+  // Open recharge wallet modal
+  const handleRechargeWallet = () => {
+    openModal('recharge-wallet', {
+      onSuccess: () => {
+        // Wallet balance will be automatically refreshed due to query invalidation
+      }
+    });
+  };
 
-export function SiteHeader({ walletBalance = 5000 }: SiteHeaderProps) {
   return (
     <header className="h-(--header-height) group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height) flex shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear">
       <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
@@ -30,27 +44,39 @@ export function SiteHeader({ walletBalance = 5000 }: SiteHeaderProps) {
             <span className="sr-only">Search</span>
           </Button>
 
-          {/* Wallet balance with INR symbol */}
-          <HoverCardToolTip
-            triggerComponent={
-              <div className="bg-secondary/50 flex items-center rounded-md border px-3 py-1">
-                <IndianRupee className="text-muted-foreground mr-1.5 h-3.5 w-3.5" />
-                <span className="text-secondary-foreground text-sm font-medium">
-                  {walletBalance.toLocaleString('en-IN')}
-                </span>
+          {/* Wallet balance with INR symbol and recharge button */}
+          <div className="flex items-center gap-2">
+            <HoverCardToolTip
+              triggerComponent={
+                <div className="bg-secondary/50 flex items-center rounded-md border px-3 py-1">
+                  <IndianRupee className="text-muted-foreground mr-1.5 h-3.5 w-3.5" />
+                  <span className="text-secondary-foreground text-sm font-medium">
+                    {isLoading ? "Loading..." : walletBalance.toLocaleString('en-IN')}
+                  </span>
+                </div>
+              }
+              className="w-64 text-center text-sm"
+            >
+              <div className="grid grid-cols-2 gap-2">
+                <p>Usable Amount:</p>
+                <p>₹{walletBalance.toLocaleString('en-IN')}</p>
+                <p>Total Amount:</p>
+                <p>₹{walletBalance.toLocaleString('en-IN')}</p>
+                <p>Hold Amount:</p>
+                <p>₹0.00</p>
               </div>
-            }
-            className="w-64 text-center text-sm"
-          >
-            <div className="grid grid-cols-2 gap-2">
-              <p>Usable Amount:</p>
-              <p>₹-50,156.59</p>
-              <p>Total Amount:</p>
-              <p>₹-50,156.59</p>
-              <p>Hold Amount:</p>
-              <p>₹59729.78</p>
-            </div>
-          </HoverCardToolTip>
+            </HoverCardToolTip>
+            
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-8 px-2 py-0 flex items-center gap-1"
+              onClick={handleRechargeWallet}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span className="text-xs">Recharge</span>
+            </Button>
+          </div>
 
           <Button variant="secondary" size="icon" className="group/toggle size-8">
             <Bell size={16} />

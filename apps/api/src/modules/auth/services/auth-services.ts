@@ -71,7 +71,7 @@ export class AuthService {
       },
     });
 
-    const lastWalletSequenceNumber = await this.prisma.wallet.count({
+    const lastWalletSequenceNumber = await this.prisma.userWallet.count({
       where: {
         created_at: {
           gte: new Date(new Date().getFullYear(), 0, 1),
@@ -81,7 +81,7 @@ export class AuthService {
     });
 
     // Create wallet for user
-    await this.prisma.wallet.create({
+    await this.prisma.userWallet.create({
       data: {
         code: generateId({
           tableName: 'wallet',

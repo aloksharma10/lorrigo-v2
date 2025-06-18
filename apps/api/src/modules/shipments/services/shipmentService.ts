@@ -1,15 +1,12 @@
-import { ShipmentStatus } from '@lorrigo/db';
+import { ShipmentStatus, TransactionStatus } from '@lorrigo/db';
 import { z } from 'zod';
 import { FastifyInstance } from 'fastify';
 import {
   CreateShipmentSchema,
-  UpdateShipmentSchema,
-  AddTrackingEventSchema,
   formatDateAddDays,
   generateId,
   getFinancialYearStartDate,
   getFinancialYear,
-  getDaysDifference,
   compareDates,
 } from '@lorrigo/utils';
 import { OrderService } from '@/modules/orders/services/order-service';
@@ -27,6 +24,7 @@ import { normalizeCourierRate } from '@/utils/normalize';
 import { addJob, QueueNames } from '@/lib/queue';
 import { queues } from '@/lib/queue';
 import { format } from 'date-fns';
+import { TransactionService, TransactionType, TransactionEntityType } from '@/modules/transactions/services/transaction-service';
 
 // Define the interface for the extended FastifyInstance
 interface ExtendedFastifyInstance extends FastifyInstance {
@@ -44,6 +42,7 @@ interface ExtendedFastifyInstance extends FastifyInstance {
 export class ShipmentService {
   private vendorService: VendorService;
   private fastify: ExtendedFastifyInstance;
+  private transactionService: TransactionService;
 
   constructor(
     fastify: FastifyInstance,
@@ -51,6 +50,7 @@ export class ShipmentService {
   ) {
     this.fastify = fastify as ExtendedFastifyInstance;
     this.vendorService = new VendorService(fastify);
+    this.transactionService = new TransactionService(fastify);
 
     // this.fastify.redis.flushall().then(() => {
     //   this.fastify.log.info('Redis flushed successfully');
@@ -290,7 +290,7 @@ export class ShipmentService {
             created_at: { gte: getFinancialYearStartDate(new Date().getFullYear().toString()) },
           },
         }),
-        this.fastify.prisma.wallet.findUnique({
+        this.fastify.prisma.userWallet.findUnique({
           where: { user_id: userId },
         }),
         this.fastify.prisma.courier.findUnique({
@@ -301,6 +301,10 @@ export class ShipmentService {
 
       if (!userWallet) {
         return { error: 'User wallet not found' };
+      }
+
+      if (userWallet.balance < shippingCost) {
+        return { error: 'Insufficient wallet balance' };
       }
 
       if (!courier || !courier.channel_config) {
@@ -349,7 +353,7 @@ export class ShipmentService {
         .$transaction(
           async (prisma) => {
             // Step 2: Perform database operations in parallel to save time
-            const [shipment, orderUpdate, walletUpdate, transactionRecord] = await Promise.all([
+            const [shipment, orderUpdate, walletUpdate] = await Promise.all([
               // Create shipment record
               prisma.shipment.update({
                 where: { order_id: data.order_id },
@@ -399,23 +403,9 @@ export class ShipmentService {
               }),
 
               // Deduct amount from wallet
-              prisma.wallet.update({
+              prisma.userWallet.update({
                 where: { id: userWallet.id },
                 data: { balance: { decrement: shippingCost } },
-              }),
-
-              // Record transaction
-              prisma.transaction.create({
-                data: {
-                  code: `TR-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
-                  amount: shippingCost,
-                  type: 'DEBIT',
-                  description: `Shipping charges for AWB: ${awb}`,
-                  status: 'COMPLETED',
-                  currency: 'INR',
-                  wallet_id: userWallet.id,
-                  user_id: userId,
-                },
               }),
             ]);
 
@@ -476,6 +466,24 @@ export class ShipmentService {
             maxWait: 15000, // Increase max wait time to 15 seconds
           }
         )
+        .then(async (result) => {
+          // Create transaction record for the shipment after the transaction is complete
+          await this.transactionService.createTransaction(
+            TransactionEntityType.SHIPMENT,
+            {
+              amount: shippingCost,
+              type: TransactionType.DEBIT,
+              description: `Shipping charges for AWB: ${awb}`,
+              userId: userId,
+              shipmentId: result.shipment.id,
+              awb: awb,
+              srShipmentId: vendorResult.data?.sr_shipment_id?.toString(),
+              status: TransactionStatus.COMPLETED,
+              currency: 'INR',
+            }
+          );
+          return result;
+        })
         .catch((error) => {
           console.error('Error creating shipment:', error);
           throw error;
@@ -798,9 +806,12 @@ export class ShipmentService {
             refundDescription = `Partial refund for cancelled picked-up shipment: ${shipment.awb || 'No AWB'}`;
           }
 
+          let walletId = '';
+          let newBalance = 0;
+
           if (refundAmount > 0) {
             // Find user wallet
-            const userWallet = await prisma.wallet.findUnique({
+            const userWallet = await prisma.userWallet.findUnique({
               where: { user_id: userId },
             });
 
@@ -808,25 +819,15 @@ export class ShipmentService {
               return { error: 'User wallet not found' };
             }
 
+            walletId = userWallet.id;
+
             // Credit refund amount to wallet
-            await prisma.wallet.update({
+            const updatedWallet = await prisma.userWallet.update({
               where: { id: userWallet.id },
               data: { balance: { increment: refundAmount } },
             });
 
-            // Record transaction
-            await prisma.transaction.create({
-              data: {
-                code: `TR-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
-                amount: refundAmount,
-                type: 'CREDIT',
-                description: refundDescription,
-                status: 'COMPLETED',
-                currency: 'INR',
-                wallet_id: userWallet.id,
-                user_id: userId,
-              },
-            });
+            newBalance = updatedWallet.balance;
           }
 
           // Update shipment status
@@ -837,19 +838,19 @@ export class ShipmentService {
               cancel_reason: reason,
               ...(cancelType === 'shipment' &&
                 shipment.status !== ShipmentStatus.NEW && {
-                  is_reshipped: true,
-                  courier_id: null,
-                  awb: null,
-                  shipping_charge: null,
-                  fw_charge: null,
-                  cod_amount: null,
-                  rto_charge: null,
-                  order_zone: null,
-                  edd: null,
-                  pickup_date: null,
-                  pickup_id: null,
-                  routing_code: null,
-                }),
+                is_reshipped: true,
+                courier_id: null,
+                awb: null,
+                shipping_charge: null,
+                fw_charge: null,
+                cod_amount: null,
+                rto_charge: null,
+                order_zone: null,
+                edd: null,
+                pickup_date: null,
+                pickup_id: null,
+                routing_code: null,
+              }),
             },
           });
 
@@ -877,6 +878,14 @@ export class ShipmentService {
             success: true,
             message: 'Shipment cancelled successfully',
             refundAmount: refundAmount > 0 ? refundAmount : undefined,
+            // Return additional data for transaction creation
+            _transactionData: refundAmount > 0 ? {
+              amount: refundAmount,
+              description: refundDescription,
+              shipmentId: shipment.id,
+              awb: shipment.awb,
+              srShipmentId: shipment.sr_shipment_id,
+            } : undefined,
           };
         },
         {
@@ -884,7 +893,30 @@ export class ShipmentService {
           timeout: 10000,
           isolationLevel: 'ReadCommitted',
         }
-      );
+      ).then(async (result) => {
+        // Create transaction record after the transaction is complete
+        if (result.success && result._transactionData) {
+          await this.transactionService.createTransaction(
+            TransactionEntityType.SHIPMENT,
+            {
+              amount: result._transactionData.amount,
+              type: TransactionType.CREDIT,
+              description: result._transactionData.description,
+              userId: userId,
+              shipmentId: result._transactionData.shipmentId,
+              awb: result._transactionData.awb || undefined,
+              srShipmentId: result._transactionData.srShipmentId || undefined,
+              status: TransactionStatus.COMPLETED,
+              currency: 'INR',
+            }
+          );
+
+          // Remove the internal transaction data before returning
+          const { _transactionData, ...cleanResult } = result;
+          return cleanResult;
+        }
+        return result;
+      });
     } catch (error) {
       this.fastify.log.error(`Error cancelling shipment for order ${id}: ${error}`);
       return { error: 'Failed to cancel shipment' };

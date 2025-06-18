@@ -50,6 +50,14 @@ export const APP_CONFIG = {
     CREDENTIALS: process.env.CORS_CREDENTIALS === 'true',
   },
 
+  // PhonePe settings
+  PHONEPE: {
+    MERCHANT_ID: process.env.PHONEPE_MERCHANT_ID || 'LORRIGO',
+    SALT_KEY: process.env.PHONEPE_SALT_KEY || 'test-salt-key',
+    SALT_INDEX: process.env.PHONEPE_SALT_INDEX || '1',
+    API_BASEURL: process.env.PHONEPE_API_BASEURL || 'https://api.phonepe.com/apis/hermes',
+  },
+
   // Vendor settings
   VENDOR: {
     SMART_SHIP: {

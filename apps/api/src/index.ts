@@ -20,6 +20,7 @@ import hubRoutes from '@/modules/pickup-address';
 import planRoutes from '@/modules/plan';
 import productRoutes from '@/modules/products';
 import sellerRoutes from '@/modules/sellers';
+import transactionRoutes from '@/modules/transactions';
 
 // Hooks
 import { setupSellerHooks } from '@/modules/sellers/hooks';
@@ -89,6 +90,7 @@ const registerPlugins = async () => {
         fastify.register(planRoutes, { prefix: '/plans' });
         fastify.register(productRoutes, { prefix: '/products' });
         fastify.register(sellerRoutes, { prefix: '/sellers' });
+        fastify.register(transactionRoutes, { prefix: '/transactions' });
 
         // Health check route
         fastify.get('/health', async () => {

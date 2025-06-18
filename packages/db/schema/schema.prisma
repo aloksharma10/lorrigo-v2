@@ -5,8 +5,6 @@ datasource db {
 
 generator client {
   provider        = "prisma-client-js"
-  // output          = "../node_modules/.prisma/client"
-  // Add preview features for better performance with PostgreSQL
   previewFeatures = ["fullTextSearchPostgres"]
 }
 
@@ -53,6 +51,12 @@ enum TransactionStatus {
   COMPLETED
   FAILED
   REFUNDED
+}
+
+enum TransactionType {
+  SHIPMENT
+  INVOICE
+  WALLET_RECHARGE
 }
 
 enum DisputeStatus {
@@ -144,21 +148,23 @@ model User {
   margin        Float   @default(20)
 
   // Relations
-  kyc_details        KycDetails?
-  bank_details       BankDetails?
-  wallet             Wallet?
-  invoices           Invoice[]          @relation("UserInvoices")
-  remittances        Remittance[]       @relation("UserRemittances")
-  transactions       Transaction[]      @relation("UserTransactions")
-  orders             Order[]            @relation("UserOrders")
-  shipments          Shipment[]         @relation("UserShipments")
-  hubs               Hub[]              @relation("UserHubs")
-  disputes           Dispute[]          @relation("UserDisputes")
-  api_requests       ApiRequest[]
-  config             SellerConfig?
-  address            Address?
-  shopify_connection ShopifyConnection?
-  bulk_operations    BulkOperation[]
+  kyc_details           KycDetails?
+  bank_details          BankDetails?
+  wallet                UserWallet?
+  invoices              Invoice[]                   @relation("UserInvoices")
+  remittances           Remittance[]                @relation("UserRemittances")
+  shipment_transactions ShipmentTransaction[]       @relation("UserShipmentTransactions")
+  invoice_transactions  InvoiceTransaction[]        @relation("UserInvoiceTransactions")
+  wallet_transactions   WalletRechargeTransaction[] @relation("UserWalletTransactions")
+  orders                Order[]                     @relation("UserOrders")
+  shipments             Shipment[]                  @relation("UserShipments")
+  hubs                  Hub[]                       @relation("UserHubs")
+  disputes              Dispute[]                   @relation("UserDisputes")
+  api_requests          ApiRequest[]
+  config                SellerConfig?
+  address               Address?
+  shopify_connection    ShopifyConnection?
+  bulk_operations       BulkOperation[]
 
   // Auth.js relations
   accounts Account[]
@@ -311,7 +317,6 @@ model HubConfig {
   is_cod_enabled              Boolean @default(true)
   is_prepaid_enabled          Boolean @default(true)
   is_primary                  Boolean @default(false)
-  // delivery_type       DeliveryType @default(SURFACE)
   smart_ship_hub_code_surface String  @unique @db.VarChar(50)
   smart_ship_hub_code_express String  @unique @db.VarChar(50)
 
@@ -437,7 +442,6 @@ model Order {
   @@index([user_id, customer_id, status])
   @@index([created_at(sort: Desc)]) // For partitioning
   @@index([code])
-  // Full text search across multiple fields
   @@index([order_number, order_reference_id, ewaybill], map: "order_global_search_idx")
 }
 
@@ -495,9 +499,8 @@ model Shipment {
   pickup_id       String?
   routing_code    String?
   cancel_reason   String?
-  is_reshipped    Boolean @default(false)
-
-  sr_shipment_id String? @db.VarChar(50)
+  is_reshipped    Boolean    @default(false)
+  sr_shipment_id  String?    @db.VarChar(50)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -505,18 +508,19 @@ model Shipment {
   order_id String @unique
   order    Order  @relation("OrderShipment", fields: [order_id], references: [id], onDelete: Cascade)
 
-  user_id         String
-  user            User             @relation("UserShipments", fields: [user_id], references: [id], onDelete: Cascade)
-  courier_id      String?
-  courier         Courier?         @relation(fields: [courier_id], references: [id], onDelete: Cascade)
-  tracking_events TrackingEvent[]
-  pricing         ShipmentPricing?
+  user_id               String
+  user                  User                  @relation("UserShipments", fields: [user_id], references: [id], onDelete: Cascade)
+  courier_id            String?
+  courier               Courier?              @relation(fields: [courier_id], references: [id], onDelete: Cascade)
+  tracking_events       TrackingEvent[]
+  pricing               ShipmentPricing?
+  shipment_transactions ShipmentTransaction[]
 
   @@index([order_id, user_id, courier_id, status, created_at])
   @@index([awb])
   @@index([code])
-  @@index([created_at(sort: Desc)]) // For partitioning
-  // Regular index, Gin index will be added manually in a migration
+  @@index([sr_shipment_id])
+  @@index([created_at(sort: Desc)])
   @@index([awb], map: "shipment_awb_search_idx")
 }
 
@@ -580,25 +584,95 @@ model Courier {
   @@index([code])
 }
 
-// Wallet Model
-model Wallet {
-  id           String        @id @default(cuid())
-  code         String        @unique // Custom ID - Format: WL-YYMM-XXXXX
-  balance      Float         @default(0)
-  user_id      String        @unique
-  user         User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  transactions Transaction[]
-  created_at   DateTime      @default(now())
-  updated_at   DateTime      @updatedAt
+// UserWallet Model
+model UserWallet {
+  id                    String                      @id @default(cuid())
+  code                  String                      @unique // Custom ID - Format: WL-YYMM-XXXXX
+  balance               Float                       @default(0)
+  user_id               String                      @unique
+  user                  User                        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  shipment_transactions ShipmentTransaction[]
+  invoice_transactions  InvoiceTransaction[]
+  wallet_transactions   WalletRechargeTransaction[]
+  created_at            DateTime                    @default(now())
+  updated_at            DateTime                    @updatedAt
 
   @@index([user_id])
   @@index([code])
 }
 
-// Transaction Model
-model Transaction {
+// ShipmentTransaction Model
+model ShipmentTransaction {
   id                      String            @id @default(cuid())
-  code                    String            @unique // Custom ID - Format: TR-YYMM-XXXXX
+  code                    String            @unique // Custom ID - Format: ST-YYMM-XXXXX
+  amount                  Float
+  type                    String            @db.VarChar(20) // CREDIT, DEBIT
+  description             String            @db.VarChar(255)
+  status                  TransactionStatus @default(PENDING)
+  merchant_transaction_id String?           @unique @db.VarChar(50)
+  currency                String            @default("INR") @db.VarChar(3)
+  awb                     String?           @db.VarChar(50)
+  sr_shipment_id          String?           @db.VarChar(50)
+  created_at              DateTime          @default(now())
+  updated_at              DateTime          @updatedAt
+
+  wallet_id String
+  wallet    UserWallet @relation(fields: [wallet_id], references: [id], onDelete: Cascade)
+
+  user_id String
+  user    User   @relation("UserShipmentTransactions", fields: [user_id], references: [id], onDelete: Cascade)
+
+  shipment_id String
+  shipment    Shipment @relation(fields: [shipment_id], references: [id], onDelete: Cascade)
+
+  payment_id String?
+  payment    Payment? @relation(fields: [payment_id], references: [id])
+
+  @@index([wallet_id, user_id, status, created_at])
+  @@index([merchant_transaction_id])
+  @@index([awb])
+  @@index([sr_shipment_id])
+  @@index([code])
+  @@index([created_at(sort: Desc)])
+}
+
+// InvoiceTransaction Model
+model InvoiceTransaction {
+  id                      String            @id @default(cuid())
+  code                    String            @unique // Custom ID - Format: IT-YYMM-XXXXX
+  amount                  Float
+  type                    String            @db.VarChar(20) // CREDIT, DEBIT
+  description             String            @db.VarChar(255)
+  status                  TransactionStatus @default(PENDING)
+  merchant_transaction_id String?           @unique @db.VarChar(50)
+  currency                String            @default("INR") @db.VarChar(3)
+  invoice_number          String?           @db.VarChar(50)
+  created_at              DateTime          @default(now())
+  updated_at              DateTime          @updatedAt
+
+  wallet_id String
+  wallet    UserWallet @relation(fields: [wallet_id], references: [id], onDelete: Cascade)
+
+  user_id String
+  user    User   @relation("UserInvoiceTransactions", fields: [user_id], references: [id], onDelete: Cascade)
+
+  invoice_id String
+  invoice    Invoice @relation(fields: [invoice_id], references: [id], onDelete: Cascade)
+
+  payment_id String?
+  payment    Payment? @relation(fields: [payment_id], references: [id])
+
+  @@index([wallet_id, user_id, status, created_at])
+  @@index([merchant_transaction_id])
+  @@index([invoice_number])
+  @@index([code])
+  @@index([created_at(sort: Desc)])
+}
+
+// WalletRechargeTransaction Model
+model WalletRechargeTransaction {
+  id                      String            @id @default(cuid())
+  code                    String            @unique // Custom ID - Format: WT-YYMM-XXXXX
   amount                  Float
   type                    String            @db.VarChar(20) // CREDIT, DEBIT
   description             String            @db.VarChar(255)
@@ -609,18 +683,18 @@ model Transaction {
   updated_at              DateTime          @updatedAt
 
   wallet_id String
-  wallet    Wallet @relation(fields: [wallet_id], references: [id], onDelete: Cascade)
+  wallet    UserWallet @relation(fields: [wallet_id], references: [id], onDelete: Cascade)
+
+  user_id String
+  user    User   @relation("UserWalletTransactions", fields: [user_id], references: [id], onDelete: Cascade)
 
   payment_id String?
   payment    Payment? @relation(fields: [payment_id], references: [id])
 
-  user_id String
-  user    User   @relation("UserTransactions", fields: [user_id], references: [id], onDelete: Cascade)
-
   @@index([wallet_id, user_id, status, created_at])
   @@index([merchant_transaction_id])
   @@index([code])
-  @@index([created_at(sort: Desc)]) // For partitioning
+  @@index([created_at(sort: Desc)])
 }
 
 // Payment Model
@@ -637,7 +711,9 @@ model Payment {
   order_id String
   order    Order  @relation(fields: [order_id], references: [id], onDelete: Cascade)
 
-  transactions Transaction[]
+  shipment_transactions ShipmentTransaction[]
+  invoice_transactions  InvoiceTransaction[]
+  wallet_transactions   WalletRechargeTransaction[]
 
   @@index([order_id, status])
   @@index([code])
@@ -647,7 +723,7 @@ model Payment {
 // Invoice Model
 model Invoice {
   id             String    @id @default(cuid())
-  code           String // Custom ID - Format: INV-YYMM-XXXXX
+  code           String    @unique // Custom ID - Format: INV-YYMM-XXXXX
   invoice_number String    @db.VarChar(50)
   amount         Float
   tax_amount     Float?    @default(0)
@@ -661,15 +737,17 @@ model Invoice {
   order_id String @unique
   order    Order  @relation("OrderInvoice", fields: [order_id], references: [id], onDelete: Cascade)
 
+  invoice_transactions InvoiceTransaction[]
+
   @@unique([order_id, invoice_number])
-  @@unique([code, invoice_number])
   @@index([user_id, invoice_number, created_at])
-  @@index([created_at(sort: Desc)]) // For partitioning
+  @@index([code])
+  @@index([created_at(sort: Desc)])
 }
 
 model Billing {
   id       String @id @default(cuid())
-  code     String // Custom ID - Format: BL-YYMM-XXXXX
+  code     String @unique // Custom ID - Format: BL-YYMM-XXXXX
   order_id String
   order    Order  @relation(fields: [order_id], references: [id], onDelete: Cascade)
 
@@ -697,7 +775,7 @@ model Billing {
 // Dispute Model
 model Dispute {
   id          String        @id @default(cuid())
-  code        String // Custom ID - Format: DS-YYMM-XXXXX
+  code        String        @unique // Custom ID - Format: DS-YYMM-XXXXX
   reason      String        @db.VarChar(255)
   description String        @db.Text
   status      DisputeStatus @default(OPENED)
@@ -872,7 +950,6 @@ model Plan {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  // Relations
   plan_courier_pricings PlanCourierPricing[]
   users                 User[]
 
@@ -898,7 +975,6 @@ model PlanCourierPricing {
 
   zone_pricing ZonePricing[]
 
-  // Relations
   plan_id    String
   plan       Plan    @relation(fields: [plan_id], references: [id], onDelete: Cascade)
   courier_id String
