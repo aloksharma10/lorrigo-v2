@@ -25,6 +25,7 @@ import transactionRoutes from '@/modules/transactions';
 // Hooks
 import { setupSellerHooks } from '@/modules/sellers/hooks';
 import { ensureDefaultPlan } from '@/modules/plan/services/default-plan';
+import { queues } from '@/lib/queue';
 
 // Initialize Sentry
 initSentry();
@@ -47,6 +48,7 @@ const server = Fastify({
 // Attach prisma client to fastify instance
 server.decorate('prisma', prisma);
 server.decorate('redis', redis);
+server.decorate('queues', queues);
 
 // Register plugins
 const registerPlugins = async () => {

@@ -3,6 +3,7 @@ import fp from 'fastify-plugin';
 import { FastifyRequest } from 'fastify';
 import { prisma } from '@lorrigo/db';
 import redis from '@/lib/redis';
+import { queues } from '@/lib/queue';
 
 // Define our custom user type
 interface UserPayload {
@@ -28,6 +29,7 @@ declare module 'fastify' {
     ) => (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
     prisma: typeof prisma;
     redis: typeof redis;
+    queues: typeof queues;
   }
 }
 

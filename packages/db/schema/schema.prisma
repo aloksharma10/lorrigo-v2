@@ -861,25 +861,28 @@ model ApiRequest {
 
 // BulkOperation Model
 model BulkOperation {
-  id              String @id @default(cuid())
-  code            String @unique // Custom ID - Format: BO-YYMM-XXXXX
-  type            String @db.VarChar(50)
-  status          String @db.VarChar(20)
+  id              String   @id @default(cuid())
+  code            String   @unique // Custom ID - Format: BO-YYMM-XXXXX
+  type            String   @db.VarChar(50)
+  status          String   @db.VarChar(20)
   total_count     Int
-  processed_count Int    @default(0)
-  success_count   Int    @default(0)
-  failed_count    Int    @default(0)
+  processed_count Int      @default(0)
+  success_count   Int      @default(0)
+  failed_count    Int      @default(0)
+  results         String?  @db.Text // JSON string of operation results
+  error_message   String?  @db.Text // Error message if operation failed
+  report_path     String?  @db.VarChar(255) // Path to CSV report
+  file_path       String?  @db.VarChar(255) // Path to generated file (e.g., PDF)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
 
   user_id String?
   user    User?   @relation(fields: [user_id], references: [id], onDelete: SetNull)
 
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-
-  @@unique([code, user_id])
-  @@index([type, status, created_at])
   @@index([code])
+  @@index([type, status, created_at])
   @@index([user_id])
+  @@unique([code, user_id])
 }
 
 // Auth.js models

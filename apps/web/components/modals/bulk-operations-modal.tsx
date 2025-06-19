@@ -30,7 +30,7 @@ import {
 import { Button } from '@lorrigo/ui/components';
 import { Calendar } from '@lorrigo/ui/components';
 import { Popover, PopoverContent, PopoverTrigger } from '@lorrigo/ui/components';
-import { CalendarIcon, Loader2, ChevronUp, ChevronDown, X, Plus } from 'lucide-react';
+import { CalendarIcon, Loader2, ChevronUp, ChevronDown, X, Plus, Download } from 'lucide-react';
 import { cn } from '@lorrigo/ui/lib/utils';
 import { format } from 'date-fns';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -92,7 +92,7 @@ export default function BulkOperationsModal({
   const [courierToAdd, setCourierToAdd] = useState<string>('');
 
   // const router = useRouter();
-  const { bulkCreateShipments, bulkSchedulePickup, bulkCancelShipments } = useShippingOperations();
+  const { bulkCreateShipments, bulkSchedulePickup, bulkCancelShipments, downloadBulkOperationFile } = useShippingOperations();
 
   const { getCouriersQuery } = useCourierOperations();
   const availableCouriers = getCouriersQuery.data || [];
@@ -270,6 +270,38 @@ export default function BulkOperationsModal({
       toast.error(error.message || 'Operation failed');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Handle file download
+  const handleDownload = async (operationId: string, type: 'report' | 'file') => {
+    try {
+      const response = await downloadBulkOperationFile(operationId, type);
+      
+      // Create a blob from the response data
+      const blob = new Blob([response.data], { 
+        type: type === 'report' ? 'text/csv' : 'application/pdf' 
+      });
+      
+      // Create a URL for the blob
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a temporary link element to trigger the download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `bulk_operation_${type === 'report' ? 'report.csv' : 'file.pdf'}`;
+      document.body.appendChild(link);
+      
+      // Trigger the download
+      link.click();
+      
+      // Clean up
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+      
+      toast.success(`${type === 'report' ? 'Report' : 'File'} downloaded successfully`);
+    } catch (error: any) {
+      toast.error(`Failed to download ${type}: ${error.message || 'Unknown error'}`);
     }
   };
 

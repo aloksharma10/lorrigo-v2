@@ -275,6 +275,14 @@ export const useShippingOperations = () => {
     });
   };
 
+  // Download bulk operation report or file
+  const downloadBulkOperationFile = (operationId: string, type: 'report' | 'file') => {
+    return api.get(`/shipments/bulk-operations/${operationId}/download`, {
+      params: { type },
+      responseType: 'blob',
+    });
+  };
+
   return {
     getShippingRates,
     shipOrder,
@@ -285,5 +293,6 @@ export const useShippingOperations = () => {
     bulkCancelShipments,
     getBulkOperationStatus,
     getAllBulkOperations,
+    downloadBulkOperationFile,
   };
 };

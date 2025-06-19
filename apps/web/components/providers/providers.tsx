@@ -26,7 +26,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             refetchOnWindowFocus: false,
             retry: (failureCount, error) => {
               if (error instanceof Error && error.message.includes('401')) {
-                signOut({ callbackUrl: '/auth/login' }); // Redirect to login page after sign-out
+                signOut(); // Redirect to login page after sign-out
                 return false;
               }
               if (error instanceof Error && error.message.includes('4')) {

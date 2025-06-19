@@ -1,190 +1,234 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
+import { useShippingOperations } from '@/lib/apis/shipment';
 import {
-  useShippingOperations,
-  BulkOperation,
-  BulkOperationsListResponse,
-} from '@/lib/apis/shipment';
-import { DataTable } from '@lorrigo/ui/components';
-import { DataTableColumnHeader } from '@lorrigo/ui/components';
-import { Badge } from '@lorrigo/ui/components';
-import { Button } from '@lorrigo/ui/components';
-import { Progress } from '@lorrigo/ui/components';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@lorrigo/ui/components';
-import { MoreHorizontal, FileText, RefreshCw } from 'lucide-react';
+import { Button } from '@lorrigo/ui/components';
+import { Card, CardContent, CardHeader, CardTitle } from '@lorrigo/ui/components';
+import { Badge } from '@lorrigo/ui/components';
 import { format } from 'date-fns';
-import { useRouter } from 'next/navigation';
+import { Download, FileText, FileCheck, AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from '@lorrigo/ui/components';
-import type { ColumnDef } from '@lorrigo/ui/components';
 
-export default function BulkOperationsLogPage() {
-  const [pagination, setPagination] = useState({
-    pageIndex: 0,
-    pageSize: 10,
-  });
+export default function BulkLogPage() {
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [downloading, setDownloading] = useState<string | null>(null);
 
-  const router = useRouter();
+  const { getAllBulkOperations, downloadBulkOperationFile } = useShippingOperations();
+  const { data: operationsData, isLoading, error } = getAllBulkOperations({ page, pageSize });
 
-  const { getAllBulkOperations } = useShippingOperations();
+  const handleDownload = async (operationId: string, type: 'report' | 'file') => {
+    try {
+      setDownloading(`${operationId}-${type}`);
+      const response = await downloadBulkOperationFile(operationId, type);
+      
+      // Create a blob from the response data
+      const blob = new Blob([response.data], { 
+        type: type === 'report' ? 'text/csv' : 'application/pdf' 
+      });
+      
+      // Create a URL for the blob
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a temporary link element to trigger the download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `bulk_operation_${type === 'report' ? 'report.csv' : 'file.pdf'}`;
+      document.body.appendChild(link);
+      
+      // Trigger the download
+      link.click();
+      
+      // Clean up
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+      
+      toast.success(`${type === 'report' ? 'Report' : 'File'} downloaded successfully`);
+    } catch (error: any) {
+      toast.error(`Failed to download ${type}: ${error.message || 'Unknown error'}`);
+    } finally {
+      setDownloading(null);
+    }
+  };
 
-  const { data, isLoading, isError, refetch } = getAllBulkOperations({
-    page: pagination.pageIndex + 1, // API uses 1-based indexing
-    pageSize: pagination.pageSize,
-  });
+  const getStatusBadge = (status: string) => {
+    switch (status.toUpperCase()) {
+      case 'COMPLETED':
+        return <Badge className="bg-green-100 text-green-800">Completed</Badge>;
+      case 'PENDING':
+        return <Badge className="bg-blue-100 text-blue-800">Pending</Badge>;
+      case 'PROCESSING':
+        return <Badge className="bg-yellow-100 text-yellow-800">Processing</Badge>;
+      case 'FAILED':
+        return <Badge className="bg-red-100 text-red-800">Failed</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
+    }
+  };
 
-  // Define columns for the data table
-  const columns: ColumnDef<BulkOperation>[] = [
-    {
-      id: 'code',
-      accessorKey: 'code',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Operation Code" />,
-      cell: ({ row }) => {
-        const operation = row.original;
-        return (
-          <div className="flex flex-col">
-            <span className="font-medium">{operation.code}</span>
-            <span className="text-muted-foreground text-xs">
-              {format(new Date(operation.created_at), 'PPP p')}
-            </span>
-          </div>
-        );
-      },
-    },
-    {
-      id: 'type',
-      accessorKey: 'type',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
-      cell: ({ row }) => {
-        const operation = row.original;
-        const typeLabels: Record<string, string> = {
-          CREATE_SHIPMENT: 'Create Shipments',
-          SCHEDULE_PICKUP: 'Schedule Pickup',
-          CANCEL_SHIPMENT: 'Cancel Shipments',
-        };
-
-        return <Badge variant="outline">{typeLabels[operation.type] || operation.type}</Badge>;
-      },
-    },
-    {
-      id: 'status',
-      accessorKey: 'status',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
-      cell: ({ row }) => {
-        const operation = row.original;
-        const statusColorMap: Record<string, string> = {
-          PENDING: 'bg-yellow-100 text-yellow-800',
-          PROCESSING: 'bg-blue-100 text-blue-800',
-          COMPLETED: 'bg-green-100 text-green-800',
-          FAILED: 'bg-red-100 text-red-800',
-        };
-
-        return (
-          <Badge className={`${statusColorMap[operation.status]} w-fit`}>{operation.status}</Badge>
-        );
-      },
-    },
-    {
-      id: 'progress',
-      accessorKey: 'progress',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Progress" />,
-      cell: ({ row }) => {
-        const operation = row.original;
-        const progress =
-          operation.status === 'COMPLETED'
-            ? 100
-            : Math.floor((operation.processed_count / operation.total_count) * 100) || 0;
-
-        return (
-          <div className="w-full">
-            <Progress value={progress} className="h-2" />
-            <div className="mt-1 flex justify-between text-xs">
-              <span>
-                {operation.processed_count} / {operation.total_count} processed
-              </span>
-              <span>{progress}%</span>
-            </div>
-            {operation.status === 'COMPLETED' && (
-              <div className="mt-1 text-xs">
-                <span className="text-green-600">{operation.success_count} successful</span>
-                {operation.failed_count > 0 && (
-                  <span className="ml-2 text-red-600">{operation.failed_count} failed</span>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      id: 'actions',
-      header: 'Actions',
-      cell: ({ row }) => {
-        const operation = row.original;
-
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => {
-                  router.push(`/seller/bulk-log/${operation.id}`);
-                }}
-              >
-                <FileText className="mr-2 h-4 w-4" />
-                View Details
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  refetch();
-                  toast.success('Refreshed operation status');
-                }}
-              >
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Refresh Status
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
-    },
-  ];
-
-  // Extract data from the response
-
-  const operationsData = data?.data || [];
-  const totalCount = data?.meta?.total || 0;
-  const pageCount = data?.meta?.pageCount || 0;
+  const getOperationTypeLabel = (type: string) => {
+    switch (type) {
+      case 'CREATE_SHIPMENT':
+        return 'Create Shipments';
+      case 'SCHEDULE_PICKUP':
+        return 'Schedule Pickups';
+      case 'CANCEL_SHIPMENT':
+        return 'Cancel Shipments';
+      case 'EDIT_PICKUP_ADDRESS':
+        return 'Edit Pickup Address';
+      case 'DOWNLOAD_LABEL':
+        return 'Download Labels';
+      default:
+        return type.replace(/_/g, ' ');
+    }
+  };
 
   return (
-    <div className="mx-auto w-full space-y-6 p-4">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Bulk Operations Log</h1>
-        <p className="text-muted-foreground mt-2">Track and manage your bulk shipment operations</p>
-      </div>
+    <div className="container mx-auto py-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Bulk Operations Log</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center py-8 text-red-500">
+              <AlertCircle className="mr-2 h-5 w-5" />
+              <span>Failed to load operations</span>
+            </div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Operation</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Progress</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {operationsData?.data?.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                        No bulk operations found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    operationsData?.data?.map((operation) => (
+                      <TableRow key={operation.id}>
+                        <TableCell>
+                          <div className="font-medium">{getOperationTypeLabel(operation.type)}</div>
+                          <div className="text-sm text-gray-500">Code: {operation.code}</div>
+                        </TableCell>
+                        <TableCell>{getStatusBadge(operation.status)}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center">
+                            <div className="w-full bg-gray-200 rounded-full h-2.5 mr-2">
+                              <div
+                                className="bg-blue-600 h-2.5 rounded-full"
+                                style={{
+                                  width: `${
+                                    operation.total_count > 0
+                                      ? (operation.processed_count / operation.total_count) * 100
+                                      : 0
+                                  }%`,
+                                }}
+                              ></div>
+                            </div>
+                            <span className="text-xs">
+                              {operation.processed_count}/{operation.total_count}
+                            </span>
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {operation.success_count} succeeded, {operation.failed_count} failed
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {format(new Date(operation.created_at), 'MMM dd, yyyy HH:mm')}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDownload(operation.id, 'report')}
+                              disabled={operation.status !== 'COMPLETED' || downloading === `${operation.id}-report`}
+                            >
+                              {downloading === `${operation.id}-report` ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <FileText className="h-4 w-4 mr-1" />
+                              )}
+                              Report
+                            </Button>
+                            {operation.type === 'DOWNLOAD_LABEL' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDownload(operation.id, 'file')}
+                                disabled={operation.status !== 'COMPLETED' || downloading === `${operation.id}-file`}
+                              >
+                                {downloading === `${operation.id}-file` ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Download className="h-4 w-4 mr-1" />
+                                )}
+                                Labels
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
 
-      <DataTable
-        columns={columns}
-        data={operationsData}
-        count={totalCount}
-        pageCount={pageCount}
-        page={pagination.pageIndex}
-        pageSize={pagination.pageSize}
-        onPaginationChange={setPagination}
-        isLoading={isLoading}
-        isError={isError}
-        errorMessage="Failed to load bulk operations"
-      />
+              {/* Pagination */}
+              {operationsData?.meta && (
+                <div className="flex items-center justify-between mt-4">
+                  <div className="text-sm text-gray-500">
+                    Showing {(page - 1) * pageSize + 1} to{' '}
+                    {Math.min(page * pageSize, operationsData.meta.total)} of{' '}
+                    {operationsData.meta.total} operations
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(page - 1)}
+                      disabled={page === 1}
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(page + 1)}
+                      disabled={page >= operationsData.meta.pageCount}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

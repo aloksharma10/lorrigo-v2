@@ -1,19 +1,27 @@
 import { FastifyInstance } from 'fastify';
+import { authorizeRoles, checkAuth } from '@/middleware/auth';
+import { Role } from '@lorrigo/db';
+
 import { ShipmentController } from './controllers/shipmentsController';
-import { ShipmentService } from './services/shipmentService';
 import { OrderService } from '../orders/services/order-service';
-import { checkAuth } from '../../middleware/auth';
+import { ShipmentService } from './services/shipmentService';
+import { initShipmentQueue } from './queues/shipmentQueue';
 
 export async function shipmentRoutes(fastify: FastifyInstance) {
-  // Initialize services and controllers
   fastify.addHook('onRequest', fastify.authenticate);
 
+  // Initialize services
   const orderService = new OrderService(fastify);
   const shipmentService = new ShipmentService(fastify, orderService);
+
+  // Initialize the shipment queue
+  initShipmentQueue(fastify, shipmentService);
+
+  // Create controller instance
   const shipmentController = new ShipmentController(shipmentService);
 
   // Add auth preHandler to all routes
-  const preHandler = [checkAuth];
+  const preHandler = [checkAuth, authorizeRoles([Role.ADMIN, Role.SELLER])];
 
   // Shipment rates
   fastify.get<{ Params: { id: string } }>(
@@ -138,6 +146,13 @@ export async function shipmentRoutes(fastify: FastifyInstance) {
       return reply.code(500).send({ error: 'Internal Server Error' });
     }
   });
+
+  // Add a new route to download bulk operation reports and files
+  fastify.get<{ Params: { id: string }; Querystring: { type: string } }>(
+    '/bulk-operations/:id/download',
+    { preHandler },
+    shipmentController.downloadBulkOperationFile.bind(shipmentController)
+  );
 
   // Shipment statistics
   fastify.get(

@@ -6,6 +6,7 @@ export const redis = new Redis({
   host: APP_CONFIG.REDIS.HOST,
   port: APP_CONFIG.REDIS.PORT,
   password: APP_CONFIG.REDIS.PASSWORD,
+  maxRetriesPerRequest: null
 });
 
 // Log Redis connection events

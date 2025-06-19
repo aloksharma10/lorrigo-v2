@@ -5,6 +5,8 @@ import { CreateShipmentSchema, UpdateShipmentSchema, AddTrackingEventSchema } fr
 import { checkAuth } from '@/middleware/auth';
 import { captureException } from '@/lib/sentry';
 import { ShipmentStatus } from '@lorrigo/db';
+import fs from 'fs';
+import path from 'path';
 
 /**
  * Controller for shipment-related API endpoints
@@ -225,15 +227,15 @@ export class ShipmentController {
       }
 
       const result = await this.shipmentService.createShipmentBulk(
-        body.order_ids || [],
-        body.courier_ids || [],
-        body.is_schedule_pickup || false,
-        body.pickup_date,
-        userId,
         {
+          order_ids: body.order_ids || [],
+          courier_ids: body.courier_ids || [],
+          is_schedule_pickup: body.is_schedule_pickup || false,
+          pickup_date: body.pickup_date,
           status: body.filters?.status,
           dateRange,
-        }
+        },
+        userId
       );
 
       if (result.error) {
@@ -352,6 +354,72 @@ export class ShipmentController {
       }
 
       return reply.send(result);
+    } catch (error) {
+      request.log.error(error);
+      return reply.code(500).send({ error: 'Internal Server Error' });
+    }
+  }
+
+  /**
+   * Download bulk operation report or file
+   */
+  async downloadBulkOperationFile(
+    request: FastifyRequest<{ Params: { id: string }; Querystring: { type: string } }>,
+    reply: FastifyReply
+  ) {
+    try {
+      const { id } = request.params;
+      const { type = 'report' } = request.query;
+      const user_id = request.userPayload!.id;
+
+      // Verify operation exists and belongs to user
+      const operation = await request.server.prisma.bulkOperation.findFirst({
+        where: {
+          id,
+          user_id,
+        },
+      });
+
+      if (!operation) {
+        return reply.code(404).send({ error: 'Bulk operation not found' });
+      }
+
+      let filePath = '';
+      let fileName = '';
+      let contentType = '';
+
+      if (type === 'report') {
+        // Download CSV report
+        if (!operation.report_path) {
+          return reply.code(404).send({ error: 'Report not found for this operation' });
+        }
+        filePath = operation.report_path;
+        fileName = `bulk_operation_${operation.code}.csv`;
+        contentType = 'text/csv';
+      } else if (type === 'file') {
+        // Download generated file (e.g., PDF labels)
+        if (!operation.file_path) {
+          return reply.code(404).send({ error: 'No file available for this operation' });
+        }
+        filePath = operation.file_path;
+        fileName = `bulk_operation_${operation.code}.pdf`;
+        contentType = 'application/pdf';
+      } else {
+        return reply.code(400).send({ error: 'Invalid file type requested' });
+      }
+
+      // Check if file exists
+      if (!fs.existsSync(filePath)) {
+        return reply.code(404).send({ error: 'File not found' });
+      }
+
+      // Stream the file to the client
+      const stream = fs.createReadStream(filePath);
+      
+      reply.header('Content-Disposition', `attachment; filename="${fileName}"`);
+      reply.type(contentType);
+      
+      return reply.send(stream);
     } catch (error) {
       request.log.error(error);
       return reply.code(500).send({ error: 'Internal Server Error' });

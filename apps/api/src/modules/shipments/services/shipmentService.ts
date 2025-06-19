@@ -25,6 +25,7 @@ import { addJob, QueueNames } from '@/lib/queue';
 import { queues } from '@/lib/queue';
 import { format } from 'date-fns';
 import { TransactionService, TransactionType, TransactionEntityType } from '@/modules/transactions/services/transaction-service';
+import { JobType } from '../queues/shipmentQueue';
 
 // Define the interface for the extended FastifyInstance
 interface ExtendedFastifyInstance extends FastifyInstance {
@@ -935,338 +936,121 @@ export class ShipmentService {
   }
 
   /**
-   * Create multiple shipments in bulk with courier priority
-   * @param orderIds List of order IDs to create shipments for
-   * @param courierIds List of courier IDs in priority order
-   * @param isSchedulePickup Whether to schedule pickup for the shipments
-   * @param pickupDate Date for pickup scheduling (if applicable)
+   * Create shipments in bulk
+   * @param data Bulk shipment creation data
    * @param userId User ID
-   * @param filters Optional filters to apply when fetching orders
+   * @returns Promise resolving to bulk operation details
    */
-  async createShipmentBulk(
-    orderIds: string[],
-    courierIds: string[],
-    isSchedulePickup: boolean,
-    pickupDate?: string,
-    userId?: string,
-    filters?: { status?: string; dateRange?: [Date, Date] }
-  ) {
+  async createShipmentBulk(data: any, userId: string) {
     try {
-      // Ensure userId is provided
-      if (!userId) {
-        return { error: 'User ID is required' };
-      }
+      const { order_ids, courier_ids, is_schedule_pickup, pickup_date, filters } = data;
 
-      // Generate operation code
-      const operationCode = `BO-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+      // Start with an empty array of orders to process
+      let ordersToProcess: any[] = [];
 
-      // Default pickup date to tomorrow if not provided but scheduling is requested
-      const defaultPickupDate =
-        pickupDate || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      // If order_ids are provided, fetch those specific orders
+      if (order_ids && order_ids.length > 0) {
+        const orders = await this.fastify.prisma.order.findMany({
+          where: {
+            id: { in: order_ids },
+            user_id: userId,
+          },
+        });
 
-      // If filters are provided, fetch matching orders
-      let processedOrderIds = [...orderIds];
-      if (filters) {
-        const where: any = { user_id: userId };
+        // Map orders to the format needed for processing
+        ordersToProcess = orders.map((order) => ({
+          order_id: order.id,
+          courier_ids: courier_ids,
+          is_schedule_pickup: is_schedule_pickup,
+          pickup_date: pickup_date,
+        }));
+      } else if (filters) {
+        // If filters are provided, use them to find matching orders
+        const { status, dateRange } = filters;
 
-        if (filters.status) {
-          where.status = filters.status;
-        }
+        // Build the where clause for filtering orders
+        const where: any = {
+          user_id: userId,
+          status: status || 'CONFIRMED',
+        };
 
-        if (filters.dateRange && filters.dateRange.length === 2) {
+        // Add date range filter if provided
+        if (dateRange && dateRange.length === 2 && dateRange[0] && dateRange[1]) {
           where.created_at = {
-            gte: filters.dateRange[0],
-            lte: filters.dateRange[1],
+            gte: new Date(dateRange[0]),
+            lte: new Date(dateRange[1]),
           };
         }
 
-        // If orderIds are provided, add them to the filter
-        if (orderIds.length > 0) {
-          where.id = { in: orderIds };
-        }
+        // Count orders matching the filter for total count
+        const totalCount = await this.fastify.prisma.order.count({ where });
 
+        // Fetch orders matching the filter
         const orders = await this.fastify.prisma.order.findMany({
           where,
-          select: { id: true },
+          include: {
+            hub: true,
+          },
+          take: 1000, // Limit to 1000 orders for performance
         });
 
-        // If we're filtering with provided orderIds, use the intersection
-        // Otherwise use all orders that match the filter
-        if (orderIds.length > 0) {
-          const filteredOrderIds = orders.map((order) => order.id);
-          processedOrderIds = orderIds.filter((id) => filteredOrderIds.includes(id));
-        } else {
-          processedOrderIds = orders.map((order) => order.id);
+        // Map orders to the format needed for processing
+        ordersToProcess = orders.map((order) => ({
+          order_id: order.id,
+          courier_ids: courier_ids,
+          is_schedule_pickup: is_schedule_pickup,
+          pickup_date: pickup_date,
+        }));
+
+        // Log warning if we're limiting the number of orders
+        if (totalCount > 1000) {
+          this.fastify.log.warn(
+            `Bulk shipment creation limited to 1000 orders. Total matching orders: ${totalCount}`
+          );
         }
       }
 
-      // If no orders to process, return early
-      if (processedOrderIds.length === 0) {
+      // If no orders to process, return error
+      if (ordersToProcess.length === 0) {
         return { error: 'No orders found to process' };
       }
 
       // Create bulk operation record
       const bulkOperation = await this.fastify.prisma.bulkOperation.create({
         data: {
-          user_id: userId,
-          code: operationCode,
+          code: generateId({
+            tableName: 'bulk_operation',
+            entityName: 'bulk_operation',
+            lastUsedFinancialYear: getFinancialYear(new Date()),
+            lastSequenceNumber: Math.floor(Math.random() * 1000000),
+          }).id,
           type: 'CREATE_SHIPMENT',
           status: 'PENDING',
-          total_count: processedOrderIds.length,
-          processed_count: 0,
-          success_count: 0,
-          failed_count: 0,
+          total_count: ordersToProcess.length,
+          user_id: userId,
         },
       });
 
-      // Prepare shipment data with courier priorities
-      interface ShipmentDataItem {
-        order_id: string;
-        courier_id?: string;
-        schedule_pickup?: boolean;
-        pickup_date?: string;
-        index: number;
-        error?: string;
-        timestamp?: Date;
+      // Add job to queue
+      const queue = this.fastify.queues[QueueNames.BULK_OPERATION];
+      if (!queue) {
+        throw new Error('Bulk operation queue not initialized');
       }
 
-      console.log('processedOrderIds', processedOrderIds, orderIds, filters);
-
-      const shipmentBatchData = await Promise.all(
-        processedOrderIds.map(async (orderId, index): Promise<ShipmentDataItem> => {
-          // Get rates for each order to validate courier availability
-          const ratesResult = await this.getShipmentRates(orderId, userId);
-
-          if (!ratesResult.rates || ratesResult.rates.length === 0) {
-            return {
-              order_id: orderId,
-              error: 'No shipping rates available for this order',
-              timestamp: new Date(),
-              index,
-            };
-          }
-
-          // Find the first available courier from the priority list
-          let selectedCourierId: string | null = null;
-          for (const courierId of courierIds) {
-            const matchingRate = ratesResult.rates.find(
-              (rate: { id: string }) => rate.id === courierId
-            );
-            if (matchingRate) {
-              selectedCourierId = courierId;
-              break;
-            }
-          }
-
-          // If no courier from priority list is available, use the cheapest one
-          if (!selectedCourierId && ratesResult.rates.length > 0) {
-            selectedCourierId = ratesResult.rates[0].id;
-          }
-
-          if (!selectedCourierId) {
-            return {
-              order_id: orderId,
-              error: 'No valid courier found for this order',
-              timestamp: new Date(),
-              index,
-            };
-          }
-
-          return {
-            order_id: orderId,
-            courier_id: selectedCourierId,
-            schedule_pickup: isSchedulePickup,
-            pickup_date: isSchedulePickup ? defaultPickupDate : undefined,
-            index,
-          };
-        })
-      );
-
-      // Filter out orders with errors
-      // Separate valid shipments from those with errors
-      const validShipments = shipmentBatchData.filter((item) => !item.error);
-      const failedShipments = shipmentBatchData.filter((item) => item.error);
-
-      // Update bulk operation with initial failed count
-      await this.fastify.prisma.bulkOperation.update({
-        where: { id: bulkOperation.id },
-        data: {
-          failed_count: failedShipments.length,
-        },
+      await queue.add(JobType.BULK_CREATE_SHIPMENT, {
+        type: 'CREATE_SHIPMENT',
+        data: ordersToProcess,
+        userId,
+        operationId: bulkOperation.id,
       });
 
-      // Prepare data for queue by removing index and error fields and ensuring courier_id is present
-      const queueData = validShipments.reduce((acc: any[], { courier_id, error, index, ...rest }) => {
-        if (courier_id) {
-          acc.push(rest);
-        }
-        return acc;
-      }, []);
-
-      try {
-        // Add job to the bulk operation queue using the queue.ts helper
-        await addJob(
-          QueueNames.BULK_OPERATION,
-          'bulk-create-shipment',
-          {
-            type: 'BULK_CREATE_SHIPMENT',
-            data: queueData,
-            userId,
-            operationId: bulkOperation.id,
-          },
-          {
-            attempts: 3,
-          }
-        );
-
-        this.fastify.log.info(`Bulk shipment creation job added to queue: ${bulkOperation.id}`);
-
-        return {
-          success: true,
-          message: 'Bulk shipment creation operation started',
-          operation: {
-            id: bulkOperation.id,
-            code: bulkOperation.code,
-            status: bulkOperation.status,
-            total: processedOrderIds.length,
-            initialFailed: failedShipments.length,
-            failedOrders: failedShipments.map((item) => ({
-              order_id: item.order_id,
-              error: item.error,
-              timestamp: item.timestamp,
-            })),
-          },
-        };
-      } catch (error) {
-        this.fastify.log.error(`Failed to add job to queue: ${error}`);
-
-        // Fallback to synchronous processing if queue fails
-        this.fastify.log.warn('Falling back to synchronous processing');
-
-        // Process shipments in parallel batches
-        const batchSize = 5; // Process 5 shipments at a time
-        let successCount = failedShipments.length;
-        let failedCount = 0;
-        const results = [
-          ...failedShipments.map((item) => ({
-            id: item.order_id,
-            success: false,
-            message: item.error,
-            timestamp: item.timestamp,
-            index: item.index,
-          })),
-        ];
-
-        // Process in batches
-        for (let i = 0; i < validShipments.length; i += batchSize) {
-          const batch = validShipments.slice(i, i + batchSize);
-
-          // Process batch in parallel
-          const batchResults = await Promise.all(
-            batch.map(async (item) => {
-              try {
-                // Only process items that have courier_id
-                if (!item.courier_id) {
-                  return {
-                    id: item.order_id,
-                    success: false,
-                    message: 'Missing courier ID',
-                    timestamp: new Date(),
-                    index: item.index,
-                  };
-                }
-
-                // Create shipment data with required fields
-                const shipmentData = {
-                  order_id: item.order_id,
-                  courier_id: item.courier_id,
-                  schedule_pickup: item.schedule_pickup,
-                  pickup_date: item.pickup_date,
-                };
-
-                const result = await this.createShipment(shipmentData, userId);
-                if (result.error) {
-                  return {
-                    id: item.order_id,
-                    success: false,
-                    message: result.error,
-                    timestamp: new Date(),
-                    index: item.index,
-                  };
-                } else {
-                  return {
-                    id: item.order_id,
-                    success: true,
-                    message: 'Shipment created successfully',
-                    timestamp: new Date(),
-                    index: item.index,
-                    shipment: result.shipment,
-                  };
-                }
-              } catch (error) {
-                return {
-                  id: item.order_id,
-                  success: false,
-                  message: error instanceof Error ? error.message : 'Unknown error',
-                  timestamp: new Date(),
-                  index: item.index,
-                };
-              }
-            })
-          );
-
-          // Update counts and collect results
-          for (const result of batchResults) {
-            if (result.success) {
-              successCount++;
-            } else {
-              failedCount++;
-            }
-            results.push(result);
-          }
-
-          // Update bulk operation status after each batch
-          await this.fastify.prisma.bulkOperation.update({
-            where: { id: bulkOperation.id },
-            data: {
-              processed_count: i + batch.length,
-              success_count: successCount,
-              failed_count: failedCount,
-            },
-          });
-        }
-
-        // Sort results by original index
-        results.sort((a, b) => a.index - b.index);
-
-        // Update bulk operation status to completed
-        await this.fastify.prisma.bulkOperation.update({
-          where: { id: bulkOperation.id },
-          data: {
-            status: 'COMPLETED',
-            processed_count: processedOrderIds.length,
-            success_count: successCount,
-            failed_count: failedCount,
-          },
-        });
-
-        return {
-          success: true,
-          message: 'Bulk shipment creation operation completed synchronously',
-          operation: {
-            id: bulkOperation.id,
-            code: bulkOperation.code,
-            status: 'COMPLETED',
-            total: processedOrderIds.length,
-            processed: processedOrderIds.length,
-            successful: successCount,
-            failed: failedCount,
-            results,
-          },
-        };
-      }
+      return {
+        success: true,
+        message: 'Bulk shipment creation started',
+        operation: bulkOperation,
+      };
     } catch (error) {
-      this.fastify.log.error(`Error creating bulk shipments: ${error}`);
+      this.fastify.log.error(`Error in createShipmentBulk: ${error}`);
       return { error: 'Failed to start bulk shipment creation' };
     }
   }
@@ -1304,7 +1088,7 @@ export class ShipmentService {
       if (filters) {
         const where: any = {
           user_id: userId,
-          status: ShipmentStatus.NEW, // Only NEW shipments can be scheduled
+          status: ShipmentStatus.COURIER_ASSIGNED, // Only NEW shipments can be scheduled
           // Only consider shipments with AWB
           awb: { not: null },
         };
@@ -1775,13 +1559,14 @@ export class ShipmentService {
   }
 
   /**
-   * Get bulk operation status and results
+   * Get bulk operation status
    * @param operationId Bulk operation ID
    * @param userId User ID
-   * @returns Promise resolving to operation status and results
+   * @returns Bulk operation status
    */
   async getBulkOperationStatus(operationId: string, userId: string) {
     try {
+      // Get bulk operation
       const operation = await this.fastify.prisma.bulkOperation.findUnique({
         where: { id: operationId },
       });
