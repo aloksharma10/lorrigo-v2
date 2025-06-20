@@ -971,7 +971,7 @@ export class ShipmentService {
         // Build the where clause for filtering orders
         const where: any = {
           user_id: userId,
-          status: status || 'CONFIRMED',
+          status: status || 'NEW',
         };
 
         // Add date range filter if provided

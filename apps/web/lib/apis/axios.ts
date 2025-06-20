@@ -1,4 +1,5 @@
-import { apiClient } from '@/components/providers/token-provider';
+import { apiClient, fileDownloadClient } from '@/components/providers/token-provider';
+import { AxiosResponse } from 'axios';
 
 // Generic API request function
 export const apiRequest = async <T>(
@@ -14,6 +15,25 @@ export const apiRequest = async <T>(
     ...config,
   });
   return response.data;
+};
+
+export const fileDownloadRequest = async <T>(
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
+  url: string,
+  data?: any,
+  config?: any
+): Promise<AxiosResponse<T>> => {
+  const response = await fileDownloadClient.request({
+    method,
+    url,
+    data,
+    ...config,
+  });
+  return response;
+};
+
+export const apiDownload = {
+  get: <T>(url: string, config?: any) => fileDownloadRequest<T>('GET', url, undefined, config),
 };
 
 // Specific API methods

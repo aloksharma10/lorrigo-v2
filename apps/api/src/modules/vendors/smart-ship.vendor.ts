@@ -270,6 +270,9 @@ export class SmartShipVendor extends BaseVendor {
     hubData: PickupAddress
   ): Promise<VendorRegistrationResult> {
     try {
+      // Register with surface delivery type (3)
+      const heavyResult = await this.registerHub(hubData, 3);
+
       // Register with surface delivery type (2)
       const surfaceResult = await this.registerHub(hubData, 2);
 
@@ -282,6 +285,8 @@ export class SmartShipVendor extends BaseVendor {
         surfaceResult.success && surfaceResult.data?.hubId ? surfaceResult.data.hubId : '0';
       const expressHubId =
         expressResult.success && expressResult.data?.hubId ? expressResult.data.hubId : '0';
+      const heavyHubId =
+        heavyResult.success && heavyResult.data?.hubId ? heavyResult.data.hubId : '0';
 
       return {
         success,
@@ -289,6 +294,7 @@ export class SmartShipVendor extends BaseVendor {
         data: {
           surfaceHubId,
           expressHubId,
+          heavyHubId,
           surfaceResult: surfaceResult.data,
           expressResult: expressResult.data,
         },
@@ -328,8 +334,9 @@ export class SmartShipVendor extends BaseVendor {
       const { order, hub, orderItems, paymentMethod, dimensions, courier } = shipmentData;
 
       const isExpressCourier = [DeliveryType.EXPRESS, DeliveryType.AIR].includes(courier.type);
+      const isHeavyCouier = courier.weight_slab >= 10
 
-      const hubCode = isExpressCourier
+      const hubCode = isHeavyCouier ? hub.hub_config.smart_ship_hub_code_heavy : isExpressCourier
         ? hub.hub_config.smart_ship_hub_code_express
         : hub.hub_config.smart_ship_hub_code_surface;
 

@@ -39,7 +39,7 @@ export interface ChannelConfigUpdateInput {
  * Custom hook for channel configuration operations
  * Provides all channel-related queries and mutations in one place
  */
-export const useChannels = () => {
+export const useChannelOperations = () => {
   const queryClient = useQueryClient();
   const { isTokenReady } = useAuthToken();
 

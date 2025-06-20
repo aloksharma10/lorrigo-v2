@@ -319,6 +319,7 @@ model HubConfig {
   is_primary                  Boolean @default(false)
   smart_ship_hub_code_surface String  @unique @db.VarChar(50)
   smart_ship_hub_code_express String  @unique @db.VarChar(50)
+  smart_ship_hub_code_heavy String  @unique @db.VarChar(50)
 
   hub Hub? @relation("HubConfigHub") // inverse side, optional
 
@@ -391,7 +392,7 @@ model Package {
 model Order {
   id               String         @id @default(cuid())
   code             String         @unique // Will use your custom ID logic
-  order_number     String         @unique @db.VarChar(50)
+  order_number     String         @db.VarChar(50)
   type             OrderType      @default(B2C)
   status           ShipmentStatus @default(NEW)
   payment_mode     PaymentMethod  @default(COD)
@@ -861,28 +862,28 @@ model ApiRequest {
 
 // BulkOperation Model
 model BulkOperation {
-  id              String   @id @default(cuid())
-  code            String   @unique // Custom ID - Format: BO-YYMM-XXXXX
-  type            String   @db.VarChar(50)
-  status          String   @db.VarChar(20)
-  total_count     Int
-  processed_count Int      @default(0)
-  success_count   Int      @default(0)
-  failed_count    Int      @default(0)
-  results         String?  @db.Text // JSON string of operation results
-  error_message   String?  @db.Text // Error message if operation failed
-  report_path     String?  @db.VarChar(255) // Path to CSV report
-  file_path       String?  @db.VarChar(255) // Path to generated file (e.g., PDF)
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
+  id             String   @id @default(uuid())
+  type           String   // CREATE_SHIPMENT, SCHEDULE_PICKUP, CANCEL_SHIPMENT, DOWNLOAD_LABEL, EDIT_PICKUP_ADDRESS
+  status         String   // PENDING, PROCESSING, COMPLETED, FAILED
+  code           String   @unique
+  user_id        String
+  total_count    Int      @default(0)
+  processed_count Int     @default(0)
+  success_count  Int      @default(0)
+  failed_count   Int      @default(0)
+  results        String?  @db.Text // JSON string of operation results
+  report_path    String?  // Path to CSV report file
+  file_path      String?  // Path to PDF or other output file
+  error_message  String?  // Error message if operation failed
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
 
-  user_id String?
-  user    User?   @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  user User @relation(fields: [user_id], references: [id])
 
-  @@index([code])
-  @@index([type, status, created_at])
   @@index([user_id])
-  @@unique([code, user_id])
+  @@index([type])
+  @@index([status])
+  @@index([created_at])
 }
 
 // Auth.js models

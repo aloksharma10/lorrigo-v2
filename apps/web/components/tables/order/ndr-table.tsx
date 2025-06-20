@@ -286,7 +286,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
             {/* <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
               <span className="text-white text-xs font-bold">S</span>
             </div>
-            <span className="text-sm font-medium">Shiprocket</span> */}
+            <span className="text-sm font-medium">Lorrigo</span> */}
           </div>
         );
       },
@@ -302,7 +302,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
             <div className="flex h-8 w-8 items-center justify-center rounded bg-blue-600">
               <span className="text-xs font-bold text-white">S</span>
             </div>
-            <span className="text-sm font-medium">Shiprocket</span>
+            <span className="text-sm font-medium">Lorrigo</span>
           </div>
         );
       },

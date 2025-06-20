@@ -32,7 +32,7 @@ export const DesktopOrderDetails = ({
   setIsOpen: (open: boolean) => void;
 }) => {
   return (
-    <div className="sticky top-0 hidden h-screen w-80 overflow-y-auto border-r border-gray-200 md:block dark:border-gray-800">
+    <div className="sticky top-0 hidden h-screen w-80 scrollbar-hide overflow-y-auto border-r border-gray-200 md:block dark:border-gray-800">
       <div className="space-y-6 p-6">
         <Collapsible open={isOpen} onOpenChange={setIsOpen}>
           <CollapsibleTrigger asChild>

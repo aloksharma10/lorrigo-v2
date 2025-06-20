@@ -1,0 +1,406 @@
+import { FastifyInstance } from 'fastify';
+import fs from 'fs';
+import path from 'path';
+import { generateId } from '@lorrigo/utils';
+import { ShipmentService } from '@/modules/shipments/services/shipmentService';
+import { VendorService } from '@/modules/vendors/vendor.service';
+import { addJob, QueueNames } from '@/lib/queue';
+import { JobType } from '@/modules/shipments/queues/shipmentQueue';
+import { generateCsvReport } from '../utils/file-utils';
+import { OrderService } from '@/modules/orders/services/order-service';
+import { randomUUID } from 'crypto';
+
+/**
+ * Service for handling bulk operations
+ */
+export class BulkOperationsService {
+  private shipmentService: ShipmentService;
+  private vendorService: VendorService;
+
+  constructor(private fastify: FastifyInstance) {
+    const orderService = new OrderService(fastify);
+    this.shipmentService = new ShipmentService(fastify, orderService);
+    this.vendorService = new VendorService(fastify);
+  }
+
+  /**
+   * Get all bulk operations with pagination and filters
+   */
+  async getAllBulkOperations(
+    userId: string,
+    page: number = 1,
+    pageSize: number = 10,
+    type?: string,
+    status?: string,
+    dateRange?: [Date, Date]
+  ) {
+    try {
+      // Build where clause
+      const where: any = { user_id: userId };
+
+      if (type) {
+        where.type = type;
+      }
+
+      if (status) {
+        where.status = status;
+      }
+
+      if (dateRange && dateRange.length === 2) {
+        where.created_at = {
+          gte: dateRange[0],
+          lte: dateRange[1],
+        };
+      }
+
+      // Count total operations matching the criteria
+      const total = await this.fastify.prisma.bulkOperation.count({ where });
+
+      // Calculate pagination
+      const skip = (page - 1) * pageSize;
+      const pageCount = Math.ceil(total / pageSize);
+
+      // Fetch operations
+      const operations = await this.fastify.prisma.bulkOperation.findMany({
+        where,
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: pageSize,
+      });
+
+      return {
+        data: operations,
+        meta: {
+          total,
+          pageCount,
+          page,
+          pageSize,
+        },
+      };
+    } catch (error: any) {
+      this.fastify.log.error(`Error getting bulk operations: ${error.message}`);
+      throw new Error(`Failed to get bulk operations: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get a specific bulk operation by ID
+   */
+  async getBulkOperation(id: string, userId: string) {
+    try {
+      const operation = await this.fastify.prisma.bulkOperation.findFirst({
+        where: {
+          id,
+          user_id: userId,
+        },
+      });
+
+      if (!operation) {
+        throw new Error('Bulk operation not found');
+      }
+
+      return operation;
+    } catch (error: any) {
+      this.fastify.log.error(`Error getting bulk operation: ${error.message}`);
+      throw new Error(`Failed to get bulk operation: ${error.message}`);
+    }
+  }
+
+  /**
+   * Download a bulk operation report
+   */
+  async downloadReport(id: string, userId: string) {
+    try {
+      const operation = await this.fastify.prisma.bulkOperation.findFirst({
+        where: {
+          id,
+          user_id: userId,
+        },
+      });
+
+      if (!operation) {
+        throw new Error('Bulk operation not found');
+      }
+
+      if (!operation.report_path) {
+        throw new Error('Report not available for this operation');
+      }
+
+      const filePath = operation.report_path;
+      const fileName = `bulk_operation_${operation.code}.csv`;
+
+      // Check if file exists
+      if (!fs.existsSync(filePath)) {
+        throw new Error('Report file not found');
+      }
+
+      return { filePath, fileName };
+    } catch (error: any) {
+      this.fastify.log.error(`Error downloading report: ${error.message}`);
+      throw new Error(`Failed to download report: ${error.message}`);
+    }
+  }
+
+  /**
+   * Download a bulk operation file (e.g., PDF labels)
+   */
+  async downloadFile(id: string, userId: string) {
+    try {
+      const operation = await this.fastify.prisma.bulkOperation.findFirst({
+        where: {
+          id,
+          user_id: userId,
+        },
+      });
+
+      if (!operation) {
+        throw new Error('Bulk operation not found');
+      }
+
+      if (!operation.file_path) {
+        throw new Error('File not available for this operation');
+      }
+
+      const filePath = operation.file_path;
+      const fileName = `bulk_operation_${operation.code}.pdf`;
+
+      // Check if file exists
+      if (!fs.existsSync(filePath)) {
+        throw new Error('File not found');
+      }
+
+      return { filePath, fileName };
+    } catch (error: any) {
+      this.fastify.log.error(`Error downloading file: ${error.message}`);
+      throw new Error(`Failed to download file: ${error.message}`);
+    }
+  }
+
+  /**
+   * Create bulk shipments
+   */
+  async createBulkShipments(
+    data: {
+      shipments?: any[];
+      order_ids?: string[];
+      courier_ids?: string[];
+      is_schedule_pickup?: boolean;
+      pickup_date?: string;
+      filters?: {
+        status?: string;
+        dateRange?: [Date, Date];
+      };
+    },
+    userId: string
+  ) {
+    const shipment = await this.shipmentService.createShipmentBulk(data, userId)
+    return {
+      operation: shipment.operation
+    }
+  }
+
+  /**
+   * Schedule bulk pickups
+   */
+  async scheduleBulkPickups(data: { pickups: any[] }, userId: string) {
+    try {
+      // Validate input
+      if (!data.pickups || !Array.isArray(data.pickups) || data.pickups.length === 0) {
+        throw new Error('Invalid pickup data');
+      }
+
+      // Create a bulk operation record
+      const operationCode = this.generateOperationCode();
+      const operation = await this.fastify.prisma.bulkOperation.create({
+        data: {
+          type: 'SCHEDULE_PICKUP',
+          status: 'PENDING',
+          code: operationCode,
+          user_id: userId,
+          total_count: data.pickups.length,
+          processed_count: 0,
+          success_count: 0,
+          failed_count: 0,
+        },
+      });
+
+      // Add job to the queue using the addJob helper
+      await addJob(
+        QueueNames.BULK_OPERATION,
+        JobType.BULK_SCHEDULE_PICKUP,
+        {
+          data: data.pickups,
+          userId,
+          operationId: operation.id,
+        },
+        {
+          attempts: 3,
+        }
+      );
+
+      return {
+        success: true,
+        operation,
+      };
+    } catch (error) {
+      this.fastify.log.error(`Error scheduling bulk pickups: ${error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Cancel bulk shipments
+   */
+  async cancelBulkShipments(data: { shipments: any[] }, userId: string) {
+    try {
+      // Validate input
+      if (!data.shipments || !Array.isArray(data.shipments) || data.shipments.length === 0) {
+        throw new Error('Invalid shipment data');
+      }
+
+      // Create a bulk operation record
+      const operationCode = this.generateOperationCode();
+      const operation = await this.fastify.prisma.bulkOperation.create({
+        data: {
+          type: 'CANCEL_SHIPMENT',
+          status: 'PENDING',
+          code: operationCode,
+          user_id: userId,
+          total_count: data.shipments.length,
+          processed_count: 0,
+          success_count: 0,
+          failed_count: 0,
+        },
+      });
+
+      // Add job to the queue using the addJob helper
+      await addJob(
+        QueueNames.BULK_OPERATION,
+        JobType.BULK_CANCEL_SHIPMENT,
+        {
+          data: data.shipments,
+          userId,
+          operationId: operation.id,
+        },
+        {
+          attempts: 3,
+        }
+      );
+
+      return {
+        success: true,
+        operation,
+      };
+    } catch (error) {
+      this.fastify.log.error(`Error cancelling bulk shipments: ${error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate bulk labels
+   */
+  async generateBulkLabels(data: { shipments: any[] }, userId: string) {
+    try {
+      // Validate input
+      if (!data.shipments || !Array.isArray(data.shipments) || data.shipments.length === 0) {
+        throw new Error('Invalid shipment data');
+      }
+
+      // Create a bulk operation record
+      const operationCode = this.generateOperationCode();
+      const operation = await this.fastify.prisma.bulkOperation.create({
+        data: {
+          type: 'DOWNLOAD_LABEL',
+          status: 'PENDING',
+          code: operationCode,
+          user_id: userId,
+          total_count: data.shipments.length,
+          processed_count: 0,
+          success_count: 0,
+          failed_count: 0,
+        },
+      });
+
+      // Add job to the queue using the addJob helper
+      await addJob(
+        QueueNames.BULK_OPERATION,
+        JobType.BULK_DOWNLOAD_LABEL,
+        {
+          data: data.shipments,
+          userId,
+          operationId: operation.id,
+        },
+        {
+          attempts: 3,
+        }
+      );
+
+      return {
+        success: true,
+        operation,
+      };
+    } catch (error) {
+      this.fastify.log.error(`Error generating bulk labels: ${error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Edit bulk pickup addresses
+   */
+  async editBulkPickupAddresses(data: { shipments: any[] }, userId: string) {
+    try {
+      // Validate input
+      if (!data.shipments || !Array.isArray(data.shipments) || data.shipments.length === 0) {
+        throw new Error('Invalid shipment data');
+      }
+
+      // Create a bulk operation record
+      const operationCode = this.generateOperationCode();
+      const operation = await this.fastify.prisma.bulkOperation.create({
+        data: {
+          type: 'EDIT_PICKUP_ADDRESS',
+          status: 'PENDING',
+          code: operationCode,
+          user_id: userId,
+          total_count: data.shipments.length,
+          processed_count: 0,
+          success_count: 0,
+          failed_count: 0,
+        },
+      });
+
+      // Add job to the queue using the addJob helper
+      await addJob(
+        QueueNames.BULK_OPERATION,
+        JobType.BULK_EDIT_PICKUP_ADDRESS,
+        {
+          data: data.shipments,
+          userId,
+          operationId: operation.id,
+        },
+        {
+          attempts: 3,
+        }
+      );
+
+      return {
+        success: true,
+        operation,
+      };
+    } catch (error) {
+      this.fastify.log.error(`Error editing bulk pickup addresses: ${error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate a unique operation code
+   */
+  private generateOperationCode(): string {
+    const timestamp = Date.now().toString(36).toUpperCase();
+    const random = randomUUID()?.split('-')?.[0]?.toUpperCase();
+    return `BLK-${timestamp}-${random}`;
+  }
+} 

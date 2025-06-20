@@ -790,47 +790,47 @@ export class TransactionService {
     transactions: (ShipmentTransactionData | InvoiceTransactionData | WalletRechargeTransactionData)[],
     entityType: TransactionEntityType
   ) {
-    try {
-      // Generate operation code
-      const operationCode = `BO-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    // try {
+    //   // Generate operation code
+    //   const operationCode = `BO-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
 
-      // Create bulk operation record
-      const bulkOperation = await this.prisma.bulkOperation.create({
-        data: {
-          code: operationCode,
-          type: 'PROCESS_TRANSACTIONS',
-          status: 'PENDING',
-          total_count: transactions.length,
-          processed_count: 0,
-          success_count: 0,
-          failed_count: 0,
-          user_id: transactions[0]?.userId, // Use the first transaction's user ID
-        },
-      });
+    //   // Create bulk operation record
+    //   const bulkOperation = await this.prisma.bulkOperation.create({
+    //     data: {
+    //       code: operationCode,
+    //       type: 'PROCESS_TRANSACTIONS',
+    //       status: 'PENDING',
+    //       total_count: transactions.length,
+    //       processed_count: 0,
+    //       success_count: 0,
+    //       failed_count: 0,
+    //       user_id: transactions[0]?.userId, // Use the first transaction's user ID
+    //     },
+    //   });
 
-      // Add job to queue
-      await addJob(
-        QueueNames.BULK_OPERATION,
-        'bulk-process-transactions',
-        {
-          operationId: bulkOperation.id,
-          transactions,
-          entityType,
-        },
-        {
-          attempts: 3,
-        }
-      );
+    //   // Add job to queue
+    //   await addJob(
+    //     QueueNames.BULK_OPERATION,
+    //     'bulk-process-transactions',
+    //     {
+    //       operationId: bulkOperation.id,
+    //       transactions,
+    //       entityType,
+    //     },
+    //     {
+    //       attempts: 3,
+    //     }
+    //   );
 
-      return {
-        success: true,
-        operationId: bulkOperation.id,
-        operationCode,
-      };
-    } catch (error) {
-      this.fastify.log.error(`Error processing bulk transactions: ${error}`);
-      return { success: false, error: 'Failed to process bulk transactions' };
-    }
+    //   return {
+    //     success: true,
+    //     operationId: bulkOperation.id,
+    //     operationCode,
+    //   };
+    // } catch (error) {
+    //   this.fastify.log.error(`Error processing bulk transactions: ${error}`);
+    //   return { success: false, error: 'Failed to process bulk transactions' };
+    // }
   }
 
   /**

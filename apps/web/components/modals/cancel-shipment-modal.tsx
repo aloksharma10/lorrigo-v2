@@ -146,7 +146,7 @@ export const CancelShipmentModal = () => {
               <p>
                 In both cases, a cancellation request would be sent to the courier partner. Once
                 confirmed by the partner, the freight charges will be refunded and credited to your
-                Shiprocket wallet immediately.
+                Lorrigo wallet immediately.
               </p>
             </div>
           </div>

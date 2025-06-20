@@ -16,22 +16,65 @@ import { Badge } from '@lorrigo/ui/components';
 import { format } from 'date-fns';
 import { Download, FileText, FileCheck, AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from '@lorrigo/ui/components';
+import { AxiosResponse } from 'axios';
+// import { DataTableDateRangePicker  } from '@lorrigo/ui/components';
+
+// Define TypeScript interface for bulk operation
+interface BulkOperation {
+  id: string;
+  code: string;
+  type: string;
+  status: string;
+  total_count: number;
+  processed_count: number;
+  success_count: number;
+  failed_count: number;
+  created_at: string;
+  updated_at: string;
+}
 
 export default function BulkLogPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState<[Date | undefined, Date | undefined]>([
+    undefined,
+    undefined,
+  ]);
+  const [type, setType] = useState<string | undefined>(undefined);
+  const [status, setStatus] = useState<string | undefined>(undefined);
 
-  const { getAllBulkOperations, downloadBulkOperationFile } = useShippingOperations();
-  const { data: operationsData, isLoading, error } = getAllBulkOperations({ page, pageSize });
+  const shippingOps = useShippingOperations();
+  const { data: operationsData, isLoading, error } = shippingOps.getAllBulkOperations({ 
+    page, 
+    pageSize,
+    type,
+    status,
+    dateRange: dateRange[0] && dateRange[1] ? dateRange as [Date, Date] : undefined
+  });
+
 
   const handleDownload = async (operationId: string, type: 'report' | 'file') => {
     try {
       setDownloading(`${operationId}-${type}`);
-      const response = await downloadBulkOperationFile(operationId, type);
+      const response = await shippingOps.downloadBulkOperationFile(operationId, type);
+      
+      // Get the filename from the Content-Disposition header if available
+      const contentDisposition = response.headers['content-disposition'];
+
+      console.log(response.headers);
+
+      let filename = `bulk_operation_${type === 'report' ? 'report.csv' : 'file.pdf'}`;
+      
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+?)"/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1];
+        }
+      }
       
       // Create a blob from the response data
-      const blob = new Blob([response.data], { 
+      const blob = new Blob([response.data as BlobPart], { 
         type: type === 'report' ? 'text/csv' : 'application/pdf' 
       });
       
@@ -41,7 +84,7 @@ export default function BulkLogPage() {
       // Create a temporary link element to trigger the download
       const link = document.createElement('a');
       link.href = url;
-      link.download = `bulk_operation_${type === 'report' ? 'report.csv' : 'file.pdf'}`;
+      link.download = filename;
       document.body.appendChild(link);
       
       // Trigger the download
@@ -91,11 +134,48 @@ export default function BulkLogPage() {
     }
   };
 
+  const handleFilter = (type?: string, status?: string) => {
+    setType(type);
+    setStatus(status);
+    setPage(1); // Reset to first page when filters change
+  };
+
   return (
-    <div className="container mx-auto py-6">
-      <Card>
-        <CardHeader>
+    <div className="mx-auto py-6 w-full">
+      <Card className='w-full'>
+        <CardHeader className="w-full flex flex-row items-center justify-between">
           <CardTitle>Bulk Operations Log</CardTitle>
+          <div className="flex items-center space-x-2">
+            {/* <DataTableDateRangePicker
+              value={dateRange}
+              onChange={setDateRange}
+              placeholder="Filter by date"
+              align="end"
+            /> */}
+            <select 
+              className="border rounded p-2 text-sm"
+              value={type || ''}
+              onChange={(e) => handleFilter(e.target.value || undefined, status)}
+            >
+              <option value="">All Types</option>
+              <option value="CREATE_SHIPMENT">Create Shipments</option>
+              <option value="SCHEDULE_PICKUP">Schedule Pickups</option>
+              <option value="CANCEL_SHIPMENT">Cancel Shipments</option>
+              <option value="DOWNLOAD_LABEL">Download Labels</option>
+              <option value="EDIT_PICKUP_ADDRESS">Edit Pickup Address</option>
+            </select>
+            <select 
+              className="border rounded p-2 text-sm"
+              value={status || ''}
+              onChange={(e) => handleFilter(type, e.target.value || undefined)}
+            >
+              <option value="">All Statuses</option>
+              <option value="PENDING">Pending</option>
+              <option value="PROCESSING">Processing</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="FAILED">Failed</option>
+            </select>
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -127,7 +207,7 @@ export default function BulkLogPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    operationsData?.data?.map((operation) => (
+                    operationsData?.data?.map((operation: BulkOperation) => (
                       <TableRow key={operation.id}>
                         <TableCell>
                           <div className="font-medium">{getOperationTypeLabel(operation.type)}</div>
@@ -174,7 +254,7 @@ export default function BulkLogPage() {
                               )}
                               Report
                             </Button>
-                            {operation.type === 'DOWNLOAD_LABEL' && (
+                            {operation.type.toUpperCase() === 'DOWNLOAD_LABEL' && (
                               <Button
                                 variant="outline"
                                 size="sm"

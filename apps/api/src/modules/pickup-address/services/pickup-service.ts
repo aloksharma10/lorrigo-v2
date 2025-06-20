@@ -161,6 +161,7 @@ export class PickupService {
                   create: {
                     smart_ship_hub_code_surface: smartShipResult.data?.surfaceHubId?.toString(),
                     smart_ship_hub_code_express: smartShipResult.data?.expressHubId?.toString(),
+                    smart_ship_hub_code_heavy: smartShipResult.data?.heavyHubId?.toString(),
                   },
                 },
                 user: {

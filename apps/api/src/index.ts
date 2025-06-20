@@ -21,6 +21,7 @@ import planRoutes from '@/modules/plan';
 import productRoutes from '@/modules/products';
 import sellerRoutes from '@/modules/sellers';
 import transactionRoutes from '@/modules/transactions';
+import { bulkOperationsRoutes } from '@/modules/bulk-operations';
 
 // Hooks
 import { setupSellerHooks } from '@/modules/sellers/hooks';
@@ -85,13 +86,14 @@ const registerPlugins = async () => {
 
         // Register existing routes until refactored
         fastify.register(authRoutes, { prefix: '/auth' });
+        fastify.register(planRoutes, { prefix: '/plans' });
+        fastify.register(sellerRoutes, { prefix: '/sellers' });
+        fastify.register(bulkOperationsRoutes, { prefix: '/bulk-operations' });
         fastify.register(customerRoutes, { prefix: '/customers' });
         fastify.register(courierRoutes, { prefix: '/couriers' });
         fastify.register(channelRoutes, { prefix: '/channels' });
         fastify.register(hubRoutes, { prefix: '/hubs' });
-        fastify.register(planRoutes, { prefix: '/plans' });
         fastify.register(productRoutes, { prefix: '/products' });
-        fastify.register(sellerRoutes, { prefix: '/sellers' });
         fastify.register(transactionRoutes, { prefix: '/transactions' });
 
         // Health check route

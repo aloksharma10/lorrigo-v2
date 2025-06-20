@@ -10,6 +10,12 @@ export const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_BACKEND_API_URL || '/api',
 });
 
+// Create axios instance for handling file downloads
+export const fileDownloadClient = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_BACKEND_API_URL || '/api',
+  responseType: 'blob',
+});
+
 // Token management context
 interface TokenContextType {
   setAuthToken: (token: string | null) => void;
@@ -36,8 +42,10 @@ export function TokenProvider({ children }: { children: React.ReactNode }) {
   const setAuthToken = React.useCallback((token: string | null) => {
     if (token) {
       apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      fileDownloadClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     } else {
       delete apiClient.defaults.headers.common['Authorization'];
+      delete fileDownloadClient.defaults.headers.common['Authorization'];
     }
     setIsTokenReady(true); // Mark token as ready after setting
   }, []);

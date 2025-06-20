@@ -39,6 +39,7 @@ function Button({
   asChild = false,
   icon,
   children,
+  isLoading,
   ...props
 }: React.ComponentProps<'button'> &
   VariantProps<typeof buttonVariants> & {
@@ -47,11 +48,10 @@ function Button({
     icon?: React.ReactNode;
   }) {
   const Comp = asChild ? Slot : 'button';
-  const { isLoading } = props;
 
   return (
     <Comp
-      type="button"
+      type={!asChild ? 'button' : undefined}
       data-slot="button"
       className={cn(
         'cursor-pointer',
@@ -61,11 +61,10 @@ function Button({
       )}
       {...props}
     >
-      <>
+      <span className="flex items-center gap-2">
         {icon && <span className="shrink-0">{icon}</span>}
-
         {children}
-      </>
+      </span>
     </Comp>
   );
 }

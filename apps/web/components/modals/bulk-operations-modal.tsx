@@ -92,7 +92,7 @@ export default function BulkOperationsModal({
   const [courierToAdd, setCourierToAdd] = useState<string>('');
 
   // const router = useRouter();
-  const { bulkCreateShipments, bulkSchedulePickup, bulkCancelShipments, downloadBulkOperationFile } = useShippingOperations();
+  const { createBulkShipments, scheduleBulkPickups, cancelBulkShipments, downloadBulkOperationFile } = useShippingOperations();
 
   const { getCouriersQuery } = useCourierOperations();
   const availableCouriers = getCouriersQuery.data || [];
@@ -202,14 +202,14 @@ export default function BulkOperationsModal({
       // Prepare filters if using them
       const filters = useFilters
         ? {
-            status: filterForm.getValues('status'),
-            dateRange: filterForm.getValues('dateRange')
-              ? ([
-                  filterForm.getValues('dateRange')?.[0]?.toISOString() || undefined,
-                  filterForm.getValues('dateRange')?.[1]?.toISOString() || undefined,
-                ] as [string | undefined, string | undefined])
-              : undefined,
-          }
+          status: filterForm.getValues('status'),
+          dateRange: filterForm.getValues('dateRange')
+            ? ([
+              filterForm.getValues('dateRange')?.[0]?.toISOString() || undefined,
+              filterForm.getValues('dateRange')?.[1]?.toISOString() || undefined,
+            ] as [string | undefined, string | undefined])
+            : undefined,
+        }
         : undefined;
 
       // Handle different operation types
@@ -224,10 +224,10 @@ export default function BulkOperationsModal({
         const courier_ids =
           selectedCouriers.length > 0 ? selectedCouriers.map((courier) => courier.id) : undefined;
 
-        result = await bulkCreateShipments.mutateAsync({
+        result = await createBulkShipments.mutateAsync({
           order_ids,
           courier_ids,
-          filters,
+          filters: filters,
           is_schedule_pickup,
           pickup_date: pickup_date ? format(pickup_date, 'yyyy-MM-dd') : undefined,
         });
@@ -238,10 +238,10 @@ export default function BulkOperationsModal({
         const shipment_ids =
           !useFilters && selectedRows.length > 0 ? selectedRows.map((row) => row.id) : undefined;
 
-        result = await bulkSchedulePickup.mutateAsync({
+        result = await scheduleBulkPickups.mutateAsync({
           shipment_ids,
           pickup_date: format(pickup_date, 'yyyy-MM-dd'),
-          filters,
+          filters: filters,
         });
       } else if (activeTab === 'cancel-shipment') {
         const { reason } = cancelShipmentForm.getValues();
@@ -250,7 +250,7 @@ export default function BulkOperationsModal({
         const shipment_ids =
           !useFilters && selectedRows.length > 0 ? selectedRows.map((row) => row.id) : undefined;
 
-        result = await bulkCancelShipments.mutateAsync({
+        result = await cancelBulkShipments.mutateAsync({
           shipment_ids,
           reason,
           filters,
@@ -277,28 +277,28 @@ export default function BulkOperationsModal({
   const handleDownload = async (operationId: string, type: 'report' | 'file') => {
     try {
       const response = await downloadBulkOperationFile(operationId, type);
-      
+
       // Create a blob from the response data
-      const blob = new Blob([response.data], { 
-        type: type === 'report' ? 'text/csv' : 'application/pdf' 
+      const blob = new Blob([response.data], {
+        type: type === 'report' ? 'text/csv' : 'application/pdf'
       });
-      
+
       // Create a URL for the blob
       const url = window.URL.createObjectURL(blob);
-      
+
       // Create a temporary link element to trigger the download
       const link = document.createElement('a');
       link.href = url;
       link.download = `bulk_operation_${type === 'report' ? 'report.csv' : 'file.pdf'}`;
       document.body.appendChild(link);
-      
+
       // Trigger the download
       link.click();
-      
+
       // Clean up
       window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
-      
+
       toast.success(`${type === 'report' ? 'Report' : 'File'} downloaded successfully`);
     } catch (error: any) {
       toast.error(`Failed to download ${type}: ${error.message || 'Unknown error'}`);

@@ -296,6 +296,7 @@ export class OrderService {
               select: {
                 smart_ship_hub_code_express: true,
                 smart_ship_hub_code_surface: true,
+                smart_ship_hub_code_heavy: true,
                 is_cod_enabled: true,
                 is_prepaid_enabled: true,
               },
@@ -897,16 +898,16 @@ export class OrderService {
 
           // Step 11: Update shipment if it exists
           if (existingOrder.shipment) {
-            await tx.shipment.update({
-              where: { id: existingOrder.shipment.id },
-              data: {
-                // Update any shipment fields if needed
-                cod_amount:
-                  data.paymentMethod.paymentMethod?.toUpperCase() === 'COD'
-                    ? data.amountToCollect
-                    : 0,
-              },
-            });
+            // await tx.shipment.update({
+            //   where: { id: existingOrder.shipment.id },
+            //   data: {
+            //     // Update any shipment fields if needed
+            //     cod_amount:
+            //       data.paymentMethod.paymentMethod?.toUpperCase() === 'COD'
+            //         ? data.amountToCollect
+            //         : 0,
+            //   },
+            // });
 
             // Add a tracking event for the update
             await tx.trackingEvent.create({

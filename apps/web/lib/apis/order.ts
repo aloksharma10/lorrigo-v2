@@ -176,7 +176,7 @@ export async function fetchOrders(params: any) {
           gstNo: order.sellerDetails?.gstNo || '',
           contactNumber: order.sellerDetails?.contactNumber || '',
           country: order.sellerDetails?.country || 'India',
-          isAddressAvailable: order.sellerDetails?.address ? true : false,
+          isAddressAvailable: false,
         },
         productDetails: {
           products: order.productDetails?.products || [],
