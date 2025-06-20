@@ -59,3 +59,4 @@ export * from './loading-input';
 export * from './accordion';
 
 export * from './drawer';
+export * from './alert-dialog';
