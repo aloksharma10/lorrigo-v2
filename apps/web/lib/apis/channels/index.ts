@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiClient, useAuthToken } from '@/components/providers/token-provider';
+import { useAuthToken } from '@/components/providers/token-provider';
+import { api } from '../axios';
 
 // Types
 export interface ChannelConfig {
@@ -55,8 +56,8 @@ export const useChannelOperations = () => {
           is_active,
         };
 
-        const response = await apiClient.get('/channels', { params });
-        return response.data;
+        const response = await api.get('/channels', { params });
+        return response;
       },
       staleTime: 1000 * 60 * 5, // 5 minutes
       gcTime: 1000 * 60 * 10, // 10 minutes
@@ -71,8 +72,8 @@ export const useChannelOperations = () => {
     return useQuery({
       queryKey: ['channels', 'configs', 'active'],
       queryFn: async () => {
-        const response = await apiClient.get('/channels/active');
-        return response.data;
+        const response = await api.get('/channels/active');
+        return response;
       },
       staleTime: 1000 * 60 * 5, // 5 minutes
       enabled: isTokenReady,
@@ -84,8 +85,8 @@ export const useChannelOperations = () => {
     return useQuery({
       queryKey: ['channels', 'config', id],
       queryFn: async () => {
-        const response = await apiClient.get(`/channels/${id}`);
-        return response.data;
+        const response = await api.get(`/channels/${id}`);
+        return response;
       },
       enabled: isTokenReady && !!id,
     });
@@ -96,8 +97,8 @@ export const useChannelOperations = () => {
     return useQuery({
       queryKey: ['channels', 'config', 'identifier', identifier],
       queryFn: async () => {
-        const response = await apiClient.get(`/channels/lookup/${identifier}`);
-        return response.data;
+        const response = await api.get(`/channels/lookup/${identifier}`);
+        return response;
       },
       enabled: isTokenReady && !!identifier,
     });
@@ -106,8 +107,8 @@ export const useChannelOperations = () => {
   // Create a new channel configuration
   const createChannel = useMutation({
     mutationFn: async (channelData: ChannelConfigCreateInput) => {
-      const response = await apiClient.post('/channels', channelData);
-      return response.data;
+      const response = await api.post('/channels', channelData);
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['channels', 'configs'] });
@@ -118,8 +119,8 @@ export const useChannelOperations = () => {
   const updateChannel = useMutation({
     mutationFn: async (channelData: ChannelConfigUpdateInput) => {
       const { id, ...data } = channelData;
-      const response = await apiClient.put(`/channels/${id}`, data);
-      return response.data;
+      const response = await api.put(`/channels/${id}`, data);
+      return response;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['channels', 'configs'] });
@@ -130,8 +131,8 @@ export const useChannelOperations = () => {
   // Delete a channel configuration
   const deleteChannel = useMutation({
     mutationFn: async (channelId: string) => {
-      const response = await apiClient.delete(`/channels/${channelId}`);
-      return response.data;
+      const response = await api.delete(`/channels/${channelId}`);
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['channels', 'configs'] });
@@ -141,8 +142,8 @@ export const useChannelOperations = () => {
   // Toggle channel active status
   const toggleChannelStatus = useMutation({
     mutationFn: async (channelId: string) => {
-      const response = await apiClient.patch(`/channels/${channelId}/toggle`);
-      return response.data;
+      const response = await api.patch(`/channels/${channelId}/toggle`);
+      return response;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['channels', 'configs'] });

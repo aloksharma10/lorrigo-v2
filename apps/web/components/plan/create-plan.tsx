@@ -395,7 +395,7 @@ export function CreatePlanForm() {
                               <Truck className="h-4 w-4" />
                               <span className="font-medium">
                                 {selectedCourier
-                                  ? `${selectedCourier.name} (${selectedCourier.code})`
+                                  ? `${selectedCourier.name}`
                                   : `Courier ${courierIndex + 1}`}
                               </span>
                             </div>
@@ -447,9 +447,6 @@ export function CreatePlanForm() {
                                         <SelectItem key={courier.id} value={courier.id}>
                                           <div className="flex items-center gap-2">
                                             <span className="font-medium">{courier.name}</span>
-                                            <span className="text-muted-foreground text-xs">
-                                              ({courier.code})
-                                            </span>
                                           </div>
                                         </SelectItem>
                                       ))}
