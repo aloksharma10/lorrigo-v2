@@ -1,7 +1,8 @@
 "use client";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuthToken, apiClient } from '@/components/providers/token-provider';
+import { useAuthToken } from '@/components/providers/token-provider';
 import { useSession } from 'next-auth/react';
+import { api } from './axios';
 
 // Fetch user profile
 export const useUserProfile = () => {
@@ -11,8 +12,8 @@ export const useUserProfile = () => {
   return useQuery({
     queryKey: ['user'],
     queryFn: async () => {
-      const response = await apiClient.get<{ id: string; name: string; email: string }>('/auth/me');
-      return response.data;
+      const response = await api.get<{ id: string; name: string; email: string }>('/auth/me');
+      return response;
     },
     enabled: status === 'authenticated' && isTokenReady, // Only run when authenticated AND token is ready
     retry: 0, // Disable retries to avoid multiple requests on 401
@@ -27,7 +28,7 @@ export const useUpdateUserProfile = () => {
 
   return useMutation({
     mutationFn: (data: { userId: string; name: string; email: string }) =>
-      apiClient.put(`/users/${data.userId}`, { name: data.name, email: data.email }),
+      api.put(`/users/${data.userId}`, { name: data.name, email: data.email }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user'] });
     },
@@ -44,8 +45,8 @@ export const useWalletOperations = () => {
   const getWalletBalance = useQuery({
     queryKey: ['wallet', 'balance'],
     queryFn: async () => {
-      const response = await apiClient.get('/transactions/wallet/balance');
-      return response.data;
+      const response = await api.get('/transactions/wallet/balance');
+      return response;
     },
     enabled: status === 'authenticated' && isTokenReady,
     refetchOnWindowFocus: false,
@@ -55,12 +56,12 @@ export const useWalletOperations = () => {
   // Recharge wallet
   const rechargeWallet = useMutation({
     mutationFn: async (data: { amount: number; redirectUrl: string }) => {
-      const response = await apiClient.post('/transactions/wallet/recharge', {
+      const response = await api.post('/transactions/wallet/recharge', {
         amount: data.amount,
         origin: window.location.origin, // Using origin similar to old code
         redirectUrl: data.redirectUrl,
       });
-      return response.data;
+      return response;
     },
     onSuccess: () => {
       // Invalidate wallet balance query to refetch after successful recharge
@@ -72,8 +73,8 @@ export const useWalletOperations = () => {
   const getTransactionHistory = useQuery({
     queryKey: ['wallet', 'transactions'],
     queryFn: async () => {
-      const response = await apiClient.get('/transactions/history');
-      return response.data;
+      const response = await api.get('/transactions/history');
+      return response;
     },
     enabled: status === 'authenticated' && isTokenReady,
     refetchOnWindowFocus: false,
@@ -82,14 +83,14 @@ export const useWalletOperations = () => {
 
   // Verify wallet recharge (can be called from callback page)
   const verifyWalletRecharge = useMutation({
-    mutationFn: async (data: { 
-      merchantTransactionId: string; 
+    mutationFn: async (data: {
+      merchantTransactionId: string;
     }) => {
       // Using GET with query params like in the old code
-      const response = await apiClient.get(`/transactions/wallet/verify`, {
+      const response = await api.get(`/transactions/wallet/verify`, {
         params: data
       });
-      return response.data;
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wallet', 'balance'] });
@@ -100,8 +101,8 @@ export const useWalletOperations = () => {
   // Refetch failed transactions (from old code)
   const refetchFailedTransactions = useMutation({
     mutationFn: async () => {
-      const response = await apiClient.get('/transactions/refetch-failed');
-      return response.data;
+      const response = await api.get('/transactions/refetch-failed');
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wallet', 'balance'] });
@@ -111,29 +112,29 @@ export const useWalletOperations = () => {
 
   // Pay invoice (from old code)
   const payInvoice = useMutation({
-    mutationFn: async (data: { 
-      amount: number; 
+    mutationFn: async (data: {
+      amount: number;
       invoiceId: string;
     }) => {
-      const response = await apiClient.post('/transactions/invoice/pay', {
+      const response = await api.post('/transactions/invoice/pay', {
         amount: data.amount,
         invoiceId: data.invoiceId,
         origin: window.location.origin,
       });
-      return response.data;
+      return response;
     },
   });
 
   // Confirm invoice payment (from old code)
   const confirmInvoicePayment = useMutation({
-    mutationFn: async (data: { 
-      merchantTransactionId: string; 
+    mutationFn: async (data: {
+      merchantTransactionId: string;
       invoiceId: string;
     }) => {
-      const response = await apiClient.get(`/transactions/invoice/verify`, {
+      const response = await api.get(`/transactions/invoice/verify`, {
         params: data
       });
-      return response.data;
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });

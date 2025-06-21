@@ -170,15 +170,14 @@ export default function ShipOrderPage() {
         />
 
         {/* Main Content */}
-        <div className="flex-1 p-4 md:p-6">
+        <div className="flex-1">
           <div className="mx-auto max-w-7xl space-y-4 md:space-y-6">
             {/* Mobile Header with Order Details Sheet */}
             <div className="flex items-center justify-between md:hidden">
               <h1 className="text-xl font-bold">Select Courier</h1>
               <Sheet open={showMobileOrderDetails} onOpenChange={setShowMobileOrderDetails}>
                 <SheetTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Menu className="mr-2 h-4 w-4" />
+                  <Button icon={<Menu className="mr-2 h-4 w-4" />} variant="outline" size="sm">
                     Order Details
                   </Button>
                 </SheetTrigger>

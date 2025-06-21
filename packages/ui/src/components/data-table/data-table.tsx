@@ -24,6 +24,7 @@ import { DataTableSelectedActions } from './data-table-selected-actions';
 import { Skeleton } from '../skeleton';
 import { Alert, AlertDescription, AlertTitle } from '../alert';
 import { AlertCircle } from 'lucide-react';
+import { Card, CardContent } from '../card';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -259,85 +260,89 @@ export function DataTable<TData, TValue>({
   }
 
   return (
-    <div className="space-y-4">
-      <DataTableToolbar
-        table={table}
-        filterableColumns={filterableColumns}
-        searchableColumns={searchableColumns}
-        advancedFilter={advancedFilter}
-        dateRangeFilter={dateRangeFilter}
-        dateRange={dateRange}
-        setDateRange={handleDateRangeChange}
-        searchPlaceholder={searchPlaceholder}
-        globalFilter={globalFilter}
-        setGlobalFilter={handleGlobalFilterChange}
-        isLoading={isLoading}
-      />
+    <Card>
+      <CardContent className="space-y-4 p-1">
+        <DataTableToolbar
+          table={table}
+          filterableColumns={filterableColumns}
+          searchableColumns={searchableColumns}
+          advancedFilter={advancedFilter}
+          dateRangeFilter={dateRangeFilter}
+          dateRange={dateRange}
+          setDateRange={handleDateRangeChange}
+          searchPlaceholder={searchPlaceholder}
+          globalFilter={globalFilter}
+          setGlobalFilter={handleGlobalFilterChange}
+          isLoading={isLoading}
+        />
 
-      {selectable && Object.keys(rowSelection).length > 0 && (
-        <DataTableSelectedActions table={table} bulkActions={bulkActions} />
-      )}
+        {selectable && Object.keys(rowSelection).length > 0 && (
+          <DataTableSelectedActions table={table} bulkActions={bulkActions} />
+        )}
 
-      <div className="rounded-md border">
-        <Table className={className}>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id} colSpan={header.colSpan}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array.from({ length: currentPageSize }).map((_, i) => (
-                <TableRow key={i}>
-                  {columns.map((column, j) => (
-                    <TableCell key={j}>
-                      <Skeleton className="h-6 w-full" />
+        <Card className="rounded-sm border-0 p-0">
+          <CardContent className="rounded-sm border-0 p-1">
+            <Table className={className}>
+              <TableHeader className="border-b">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => {
+                      return (
+                        <TableHead key={header.id} colSpan={header.colSpan}>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(header.column.columnDef.header, header.getContext())}
+                        </TableHead>
+                      );
+                    })}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: currentPageSize }).map((_, i) => (
+                    <TableRow key={i}>
+                      {columns.map((column, j) => (
+                        <TableCell key={j}>
+                          <Skeleton className="h-6 w-full" />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && 'selected'}
+                      onClick={() => onRowClick && onRowClick(row.original)}
+                      className={onRowClick ? 'cursor-pointer' : ''}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="h-24 text-center">
+                      No results.
                     </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && 'selected'}
-                  onClick={() => onRowClick && onRowClick(row.original)}
-                  className={onRowClick ? 'cursor-pointer' : ''}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
 
-      <DataTablePagination
-        table={table}
-        pageSizeOptions={pageSizeOptions}
-        totalCount={count}
-        isLoading={isLoading}
-      />
-    </div>
+        <DataTablePagination
+          table={table}
+          pageSizeOptions={pageSizeOptions}
+          totalCount={count}
+          isLoading={isLoading}
+        />
+      </CardContent>
+    </Card>
   );
 }

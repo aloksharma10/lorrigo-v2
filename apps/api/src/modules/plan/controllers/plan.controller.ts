@@ -133,6 +133,22 @@ export class PlanController {
     }
   }
 
+  async getDefaultPlanCourierPricing(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const { courierId } = request.params as { courierId: string };
+      const pricing = await this.planService.getDefaultPlanCourierPricing(courierId);
+
+      if (!pricing) {
+        return reply.code(404).send({ error: 'No pricing found for this courier in the default plan' });
+      }
+
+      return reply.code(200).send({ pricing });
+    } catch (error) {
+      request.log.error(error);
+      return reply.code(500).send({ error: 'Failed to fetch default pricing for courier' });
+    }
+  }
+
   async calculateRates(request: FastifyRequest, reply: FastifyReply) {
     try {
       const params = request.body as RateCalculationParams;

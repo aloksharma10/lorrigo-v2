@@ -81,13 +81,19 @@ export class ShipmentService {
       return { rates: [], order, message: 'Order already has a courier assigned' };
     }
 
-    // Build cache key
-    const key = `rates-${order?.is_reverse_order ? 'reversed' : 'forward'}-${order?.hub?.address?.pincode}-${order?.customer?.address?.pincode}-${order?.applicable_weight}-${order?.payment_mode}-${order.amount_to_collect}`;
+    // Build comprehensive cache key including all rate-affecting parameters
+    const dimensionsStr = `${order?.package?.length || 0}x${order?.package?.breadth || 0}x${order?.package?.height || 0}x${order?.package?.dead_weight || 0}`;
+    const ratesKey = `rates-${userId}-${order?.is_reverse_order ? 'reverse' : 'forward'}-${order?.hub?.address?.pincode}-${order?.customer?.address?.pincode}-${order?.applicable_weight}-${dimensionsStr}-${order?.payment_mode}-${order.amount_to_collect}`;
 
-    // Try to get rates from cache
-    const cachedRates = await this.fastify.redis.get(key);
+    // Try to get rates from cache first
+    const cachedRates = await this.fastify.redis.get(ratesKey);
     if (cachedRates) {
-      return { rates: JSON.parse(cachedRates).formattedRates, order };
+      const parsedCache = JSON.parse(cachedRates);
+      return {
+        rates: parsedCache.formattedRates || parsedCache.rates || [],
+        order,
+        cached: true
+      };
     }
 
     // Prepare parameters for price calculation
@@ -116,17 +122,20 @@ export class ShipmentService {
       state: order?.customer?.address?.state || '',
     };
 
-    // Check serviceability for the user's plan
+    // Calculate volumetric weight once
+    const volumetricWeight = calculateVolumetricWeight(
+      params.boxLength,
+      params.boxWidth,
+      params.boxHeight,
+      params.sizeUnit as 'cm' | 'inch'
+    );
+
+    // Check serviceability for the user's plan (this will use its own cache)
     const serviceabilityResult = await this.vendorService.checkServiceabilityForPlan(
       userId,
       params.pickupPincode,
       params.deliveryPincode,
-      calculateVolumetricWeight(
-        params.boxLength,
-        params.boxWidth,
-        params.boxHeight,
-        params.sizeUnit as 'cm' | 'inch'
-      ),
+      volumetricWeight,
       {
         length: params.boxLength,
         width: params.boxWidth,
@@ -142,14 +151,22 @@ export class ShipmentService {
 
     // If no serviceability, return empty rates with message
     if (!serviceabilityResult.success || serviceabilityResult.serviceableCouriers.length === 0) {
-      // Cache empty rates
-      await this.fastify.redis.set(key, JSON.stringify([]), 'EX', 60 * 60 * 24);
-      return {
+      const emptyResult = {
         rates: [],
         order,
-        message: 'No courier is serviceable for this order',
+        message: serviceabilityResult.message || 'No courier is serviceable for this order',
       };
+
+      // Cache empty rates for shorter duration (1 hour)
+      await this.fastify.redis.set(ratesKey, JSON.stringify({
+        rates: [],
+        message: emptyResult.message,
+        timestamp: Date.now()
+      }), 'EX', 3600);
+
+      return emptyResult;
     }
+
     // Calculate rates for serviceable couriers using utility function
     rates = calculatePricesForCouriers(
       params,
@@ -164,12 +181,12 @@ export class ShipmentService {
           id: courier.id,
           name: courier.name,
           courier_code: courier.code,
-          type: courier.pricing.courier.type || '', // Ensure type is always string
+          type: courier.pricing?.courier?.type || '', // Safe access
           is_active: true,
           is_reversed_courier: !!order?.is_reverse_order,
           pickup_time: undefined,
           weight_slab: courier.pricing?.weight_slab || 0.5,
-          nickname: courier.pricing?.courier.channel_config.nickname || '',
+          nickname: courier.pricing?.courier?.channel_config?.nickname || courier.name,
         },
         pricing: {
           weight_slab: courier.pricing?.weight_slab || 0.5,
@@ -187,6 +204,7 @@ export class ShipmentService {
       deliveryDetails
     );
 
+    // Format rates for response
     const formattedRates = rates.map((rate) => ({
       // Core courier identification
       id: rate.courier.id,
@@ -226,20 +244,22 @@ export class ShipmentService {
       breakdown: rate.breakdown,
     }));
 
-    // Sort rates by total price
-    rates.sort((a, b) => a.total_price - b.total_price);
+    // Sort rates by total price (ascending - cheapest first)
+    formattedRates.sort((a, b) => a.total_price - b.total_price);
 
-    // Cache the rates
-    await this.fastify.redis.set(
-      key,
-      JSON.stringify({ formattedRates, rates, order }),
-      'EX',
-      60 * 60 * 24
-    );
+    // Prepare cache data
+    const cacheData = {
+      rates: formattedRates,
+      serviceableCount: serviceabilityResult.serviceableCouriers.length,
+      timestamp: Date.now(),
+      orderId: id,
+    };
+
+    // Cache the rates for 24 hours
+    await this.fastify.redis.set(ratesKey, JSON.stringify(cacheData), 'EX', 86400);
 
     return { rates: formattedRates, order };
   }
-
   /**
    * Create a new shipment
    */
@@ -259,8 +279,9 @@ export class ShipmentService {
     }
 
     // Get rates from cache
-    const cacheKey = `rates-${order?.is_reverse_order ? 'reversed' : 'forward'}-${order?.hub?.address?.pincode}-${order?.customer?.address?.pincode}-${order?.applicable_weight}-${order?.payment_mode}-${order.amount_to_collect}`;
-    const cachedRatesString = await this.fastify.redis.get(cacheKey);
+    const dimensionsStr = `${order?.package?.length || 0}x${order?.package?.breadth || 0}x${order?.package?.height || 0}x${order?.package?.dead_weight || 0}`;
+    const ratesKey = `rates-${userId}-${order?.is_reverse_order ? 'reverse' : 'forward'}-${order?.hub?.address?.pincode}-${order?.customer?.address?.pincode}-${order?.applicable_weight}-${dimensionsStr}-${order?.payment_mode}-${order.amount_to_collect}`;
+    const cachedRatesString = await this.fastify.redis.get(ratesKey);
 
     if (!cachedRatesString) {
       return { error: 'Rate information not available. Please recalculate rates first.' };

@@ -1,5 +1,5 @@
-import { CreatePlanForm } from '@/components/plan/create-plan';
+import { EnhancedCreatePlanForm } from '@/components/plan/enhanced-create-plan';
 
 export default function NewPlanPage() {
-  return <CreatePlanForm />;
+  return <EnhancedCreatePlanForm />;
 }

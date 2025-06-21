@@ -32,9 +32,9 @@ export default async function sellerRoutes(fastify: FastifyInstance) {
                 properties: {
                   id: { type: 'string' },
                   name: { type: 'string' },
-                  gstNo: { type: 'string' },
-                  contactNumber: { type: 'string' },
-                  createdAt: { type: 'string', format: 'date-time' },
+                  email: { type: 'string' },
+                  phone: { type: 'string' },
+                  created_at: { type: 'string', format: 'date-time' },
                 },
               },
             },

@@ -8,6 +8,7 @@ import {
   PriceCalculationParams,
   validateCalculationParams,
 } from '@/utils/calculate-order-price';
+import { flushKeysByPattern } from '@/lib/upstash/flush-key-by-pattern';
 
 // Types
 interface ZonePricingItem {
@@ -232,7 +233,7 @@ export class PlanService {
 
   async updatePlan(id: string, data: UpdatePlanInput) {
     // Check if plan exists
-    const existingPlan = await this.fastify.prisma.plan.findUnique({ where: { id } });
+    const existingPlan = await this.fastify.prisma.plan.findUnique({ where: { id }, include: { users: true } });
     if (!existingPlan) {
       return null;
     }
@@ -344,6 +345,13 @@ export class PlanService {
       }
     }
 
+    for (const user of existingPlan.users) {
+      const pattern = `serviceability-${user.id}-*`;
+      const pattern2 = `rates-${user.id}-*`;
+      await flushKeysByPattern(pattern);
+      await flushKeysByPattern(pattern2);
+    }
+
     // Update plan
     return this.fastify.prisma.plan.update({
       where: { id },
@@ -446,6 +454,7 @@ export class PlanService {
       },
     });
   }
+
   async getDefaultPlan() {
     return this.fastify.prisma.plan.findFirst({
       where: { isDefault: true },
@@ -458,6 +467,60 @@ export class PlanService {
         },
       },
     });
+  }
+
+  async getDefaultPlanCourierPricing(courierId: string) {
+    const defaultPlan = await this.getDefaultPlan();
+
+    if (!defaultPlan) {
+      return null;
+    }
+
+    const courierPricing = defaultPlan.plan_courier_pricings.find(
+      (pricing) => pricing.courier_id === courierId
+    );
+
+    if (!courierPricing) {
+      return null;
+    }
+
+    // Format the response to match the expected structure for the frontend
+    const zonePricing: Record<string, any> = {
+      withinCity: {},
+      withinZone: {},
+      withinMetro: {},
+      withinRoi: {},
+      northEast: {},
+    };
+
+    // Map zone pricing from database to the expected format
+    courierPricing.zone_pricing.forEach((zone) => {
+      const key = zone.zone;
+      if (key) {
+        zonePricing[key] = {
+          base_price: zone.base_price,
+          increment_price: zone.increment_price,
+          is_rto_same_as_fw: zone.is_rto_same_as_fw,
+          rto_base_price: zone.rto_base_price,
+          rto_increment_price: zone.rto_increment_price,
+          flat_rto_charge: zone.flat_rto_charge,
+        };
+      }
+    });
+
+    return {
+      courierId: courierPricing.courier_id,
+      cod_charge_hard: courierPricing.cod_charge_hard,
+      cod_charge_percent: courierPricing.cod_charge_percent,
+      is_fw_applicable: courierPricing.is_fw_applicable,
+      is_rto_applicable: courierPricing.is_rto_applicable,
+      is_cod_applicable: courierPricing.is_cod_applicable,
+      is_cod_reversal_applicable: courierPricing.is_cod_reversal_applicable,
+      weight_slab: courierPricing.weight_slab,
+      increment_weight: courierPricing.increment_weight,
+      increment_price: courierPricing.increment_price,
+      zonePricing,
+    };
   }
 
   async getUserPlan(userId: string) {

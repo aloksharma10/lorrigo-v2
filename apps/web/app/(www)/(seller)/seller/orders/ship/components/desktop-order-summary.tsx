@@ -33,11 +33,11 @@ export const DesktopOrderDetails = ({
 }) => {
   return (
     <div className="sticky top-0 hidden h-screen w-80 scrollbar-hide overflow-y-auto border-r border-gray-200 md:block dark:border-gray-800">
-      <div className="space-y-6 p-6">
+      <div className="space-y-6 p-6 lg:p-4 lg:pt-1">
         <Collapsible open={isOpen} onOpenChange={setIsOpen}>
           <CollapsibleTrigger asChild>
             <Button variant="ghost" className="h-auto w-full justify-between p-0">
-              <h2 className="text-lg font-semibold">Order Details</h2>
+              <h2 className="text-lg lg:text-xl font-semibold">Order Details</h2>
               {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </Button>
           </CollapsibleTrigger>

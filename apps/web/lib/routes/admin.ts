@@ -54,6 +54,20 @@ export const ADMIN_ROUTES = [
     ],
   },
   {
+    title: 'Plans',
+    url: '/admin/plans',
+    icon: Command,
+    isActive: false,
+    items: [
+      {
+        title: 'Manage Plans',
+        url: '/admin/plans',
+        icon: Command,
+        isActive: false,
+      },
+    ],
+  },
+  {
     title: 'Setup & Manage',
     url: '/admin/setup-manage',
     icon: Command,

@@ -45,7 +45,7 @@ export const useChannelOperations = () => {
   const { isTokenReady } = useAuthToken();
 
   // Get all channel configurations with pagination and filtering
-  const getChannels = (page = 1, limit = 10, search?: string, is_active?: boolean) => {
+  const getChannels = (page = 1, limit = 10, search?: string, is_active?: boolean): any => {
     return useQuery({
       queryKey: ['channels', 'configs', { page, limit, search, is_active }],
       queryFn: async () => {
@@ -142,7 +142,7 @@ export const useChannelOperations = () => {
   // Toggle channel active status
   const toggleChannelStatus = useMutation({
     mutationFn: async (channelId: string) => {
-      const response = await api.patch(`/channels/${channelId}/toggle`);
+      const response = await api.patch(`/channels/${channelId}/toggle-status`);
       return response;
     },
     onSuccess: (_, variables) => {

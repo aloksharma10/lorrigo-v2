@@ -69,7 +69,7 @@ export default function OrderFormPage() {
   return (
     <div className="w-full">
       <div className="sticky top-0 z-10 rounded-t-md border-b bg-white shadow-sm dark:bg-stone-900">
-        <div className="container flex max-w-full items-center justify-between px-4 py-3">
+        <div className="container flex max-w-full items-center justify-between py-3">
           <div className="flex items-center gap-2">
             <BackButton showLabel={false} />
             <h1 className="text-sm font-semibold lg:text-xl">Add Order</h1>

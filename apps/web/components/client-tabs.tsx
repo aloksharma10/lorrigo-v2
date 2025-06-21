@@ -116,7 +116,7 @@ export default function ClientTabs({ menuItems, onValueChange }: ClientTabsProps
 
           <div
             ref={tabsListRef}
-            className="scrollbar-hide w-full overflow-x-auto px-1 md:w-auto"
+            className="scrollbar-hide w-full overflow-x-auto md:w-auto"
             onScroll={checkScroll}
           >
             <Tabs defaultValue={currentPath} onValueChange={handleValueChange} className="w-full">

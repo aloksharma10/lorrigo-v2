@@ -76,7 +76,7 @@ const summary = [
 
 export default function Home() {
   return (
-    <div className="@container/main flex flex-1 flex-col gap-2 space-y-6 p-4 lg:gap-4">
+    <div className="@container/main flex flex-1 flex-col gap-2 space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-4">
         <Card className="w-full">
           <CardHeader>

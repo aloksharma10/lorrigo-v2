@@ -187,17 +187,56 @@ export class VendorService {
     }>;
   }> {
     try {
+      // Create Redis cache key - similar pattern to getShipmentRates
+      const dimensionsStr = `${dimensions.length}x${dimensions.width}x${dimensions.height}x${dimensions.weight}`;
+      const cacheKey = `serviceability-${userId}-${isReverseOrder ? 'reverse' : 'forward'}-${pickupPincode}-${deliveryPincode}-${volumeWeight}-${dimensionsStr}-${paymentType}-${collectableAmount}`;
+
+      // Try to get cached result first
+      const cachedResult = await this.fastify.redis.get(cacheKey);
+      if (cachedResult) {
+        return JSON.parse(cachedResult);
+      }
+
       // Get user's plan and associated couriers
       const user = await this.fastify.prisma.user.findUnique({
         where: { id: userId },
         include: {
           plan: {
+            where: {
+              is_active: true,
+            },
             include: {
               plan_courier_pricings: {
+                where: {
+                  courier: {
+                    is_active: true,
+                    channel_config: {
+                      is_active: true,
+                    },
+                  },
+                },
                 include: {
                   courier: {
-                    include: {
-                      channel_config: true,
+                    select: {
+                      id: true,
+                      name: true,
+                      code: true,
+                      courier_code: true,
+                      is_active: true,
+                      weight_unit: true,
+                      weight_slab: true,
+                      increment_weight: true,
+                      cod_charge_hard: true,
+                      cod_charge_percent: true,
+                      is_reversed_courier: true,
+                      type: true,
+                      channel_config: {
+                        select: {
+                          name: true,
+                          nickname: true,
+                          is_active: true,
+                        },
+                      },
                     },
                   },
                   zone_pricing: true,
@@ -209,11 +248,14 @@ export class VendorService {
       });
 
       if (!user || !user.plan) {
-        return {
+        const errorResult = {
           success: false,
           message: 'User has no assigned plan',
           serviceableCouriers: [],
         };
+        // Cache error result for 5 minutes to avoid repeated DB queries
+        await this.fastify.redis.set(cacheKey, JSON.stringify(errorResult), 'EX', 180);
+        return errorResult;
       }
 
       // Extract couriers from the plan
@@ -303,7 +345,7 @@ export class VendorService {
         .filter(Boolean)
         .flatMap((result) => result?.result.serviceableCouriers || []);
 
-      return {
+      const finalResult = {
         success: allServiceableCouriers.length > 0,
         message:
           allServiceableCouriers.length > 0
@@ -311,16 +353,33 @@ export class VendorService {
             : 'No serviceable couriers found for the plan',
         serviceableCouriers: allServiceableCouriers,
       };
+
+      // Cache the result - success results for 1 hour, no serviceability for 30 minutes
+      const cacheExpiry = finalResult.success ? 3600 : 1800;
+      await this.fastify.redis.set(cacheKey, JSON.stringify(finalResult), 'EX', cacheExpiry);
+
+      return finalResult;
     } catch (error) {
       console.error('Error checking serviceability for plan:', error);
-      return {
+
+      // Create error result
+      const errorResult = {
         success: false,
         message: 'Failed to check serviceability for plan',
         serviceableCouriers: [],
       };
+
+      // Cache error for short duration to prevent repeated failures
+      try {
+        const errorCacheKey = `serviceability-error-${userId}-${pickupPincode}-${deliveryPincode}`;
+        await this.fastify.redis.set(errorCacheKey, JSON.stringify(errorResult), 'EX', 60);
+      } catch (cacheError) {
+        console.error('Error caching serviceability error:', cacheError);
+      }
+
+      return errorResult;
     }
   }
-
   /**
    * Create a shipment with a specific vendor
    * @param vendorName Vendor name

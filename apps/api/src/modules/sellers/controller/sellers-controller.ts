@@ -15,8 +15,6 @@ const createSellerSchema = z.object({
   country: z.string().default('India'),
 });
 
-const updateSellerSchema = createSellerSchema.partial();
-
 export class SellerController {
   constructor(private sellerService: SellerService) {}
 

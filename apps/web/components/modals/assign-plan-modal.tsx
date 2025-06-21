@@ -2,11 +2,11 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useState, useEffect } from 'react';
 
 import {
   toast,
   Button,
-  Input,
   Select,
   SelectContent,
   SelectItem,
@@ -24,10 +24,20 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Command,
+  CommandInput,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+  CommandList,
 } from '@lorrigo/ui/components';
-import { X, Loader2 } from 'lucide-react';
-import { useEffect } from 'react';
+import { X, Loader2, Check, ChevronsUpDown } from 'lucide-react';
+import { useDebounce } from '@/lib/hooks/use-debounce';
 import { usePlanOperations } from '@/lib/apis/plans';
+import { cn } from '@lorrigo/ui/lib/utils';
 
 interface Plan {
   id: string;
@@ -37,39 +47,60 @@ interface Plan {
   isDefault: boolean;
 }
 
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+}
+
 interface AssignPlanModalProps {
   planId?: string;
+  userId?: string;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
 const formSchema = z.object({
   planId: z.string().min(1, 'Please select a plan'),
-  userId: z.string().min(1, 'Please enter a user ID').trim(),
+  userId: z.string().min(1, 'Please select a user'),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
-export function AssignPlanModal({ planId, onClose }: AssignPlanModalProps) {
-  const { getPlansQuery, assignPlanToUser } = usePlanOperations();
+export function AssignPlanModal({ planId, userId, onClose, onSuccess }: AssignPlanModalProps) {
+  const { getPlansQuery, assignPlanToUser, getUsersQuery } = usePlanOperations();
+  const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       planId: planId || '',
-      userId: '',
+      userId: userId || '',
     },
   });
 
-  // Set initial plan if provided
+  // Set initial values if provided
   useEffect(() => {
     if (planId) {
       form.setValue('planId', planId);
     }
-  }, [planId, form]);
+    if (userId) {
+      form.setValue('userId', userId);
+    }
+  }, [planId, userId, form]);
 
-  // Use cached data - no unnecessary refetch calls
-  const plans: Plan[] = getPlansQuery.data || [];
-  const isLoadingPlans = getPlansQuery.isLoading;
+  const { data: users = [], isLoading: isLoadingUsers } = getUsersQuery({
+    queryKey: ['users', debouncedSearchQuery],
+    search: debouncedSearchQuery,
+    enabled: true,
+  });
+
+  // Fetch plans
+  const { data: plans = [], isLoading: isLoadingPlans } = getPlansQuery(['plans']);
+
   const isAssigning = assignPlanToUser.isPending;
 
   const handleSubmit = async (data: FormData) => {
@@ -79,20 +110,25 @@ export function AssignPlanModal({ planId, onClose }: AssignPlanModalProps) {
         userId: data.userId,
       });
       toast.success('Plan assigned to user successfully');
+      if (onSuccess) {
+        onSuccess();
+      }
       onClose();
     } catch (error: any) {
       toast.error(error?.response?.data?.message || 'Failed to assign plan to user');
     }
   };
 
+  // Get selected user details
+  const selectedUser = users.find((user: User) => user.id === form.watch('userId'));
+
   return (
     <Card className="mx-auto flex w-full max-w-md flex-col">
-      {/* Fixed Header */}
       <CardHeader className="flex-shrink-0 border-b">
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>Assign Plan to User</CardTitle>
-            <CardDescription>Select a plan and enter the user ID to assign</CardDescription>
+            <CardDescription>Select a plan and user to assign</CardDescription>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 rounded-full">
             <X className="h-4 w-4" />
@@ -100,10 +136,9 @@ export function AssignPlanModal({ planId, onClose }: AssignPlanModalProps) {
         </div>
       </CardHeader>
 
-      {/* Scrollable Content */}
-      <CardContent className="flex-1 overflow-y-auto">
+      <CardContent className="flex-1 overflow-y-auto pt-4">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="planId"
@@ -123,7 +158,7 @@ export function AssignPlanModal({ planId, onClose }: AssignPlanModalProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {plans.map((plan) => (
+                      {plans.map((plan: any) => (
                         <SelectItem key={plan.id} value={plan.id}>
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{plan.name}</span>
@@ -148,11 +183,75 @@ export function AssignPlanModal({ planId, onClose }: AssignPlanModalProps) {
               control={form.control}
               name="userId"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>User ID</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter user ID" disabled={isAssigning} {...field} />
-                  </FormControl>
+                <FormItem className="flex flex-col">
+                  <FormLabel>Select User</FormLabel>
+                  <Popover open={open} onOpenChange={setOpen}>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={open}
+                          className={cn(
+                            'w-full justify-between text-left flex',
+                            !field.value && 'text-muted-foreground'
+                          )}
+                        >
+                          {field.value && selectedUser
+                            ? `${selectedUser.name} (${selectedUser.phone})`
+                            : 'Select user'}
+                          <ChevronsUpDown className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[400px] p-0">
+                      <Command>
+                        <CommandInput
+                          placeholder="Search users by name, email, or phone..."
+                          value={searchQuery}
+                          onValueChange={setSearchQuery}
+                        />
+                        <CommandList>
+                          <CommandEmpty>
+                            {isLoadingUsers ? (
+                              <div className="flex items-center justify-center p-4">
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Searching users...
+                              </div>
+                            ) : searchQuery ? (
+                              `No users found for "${searchQuery}"`
+                            ) : (
+                              'Start typing to search users...'
+                            )}
+                          </CommandEmpty>
+                          <CommandGroup>
+                            {users.map((user: User) => (
+                              <CommandItem
+                                key={user.id}
+                                value={`${user.name} ${user.email} ${user.phone}`} // This helps with built-in filtering
+                                onSelect={() => {
+                                  form.setValue('userId', user.id);
+                                  setOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    'mr-2 h-4 w-4',
+                                    user.id === field.value ? 'opacity-100' : 'opacity-0'
+                                  )}
+                                />
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{user.name}</span>
+                                  <span className="text-muted-foreground text-xs">{user.email}</span>
+                                  <span className="text-muted-foreground text-xs">{user.phone}</span>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   <FormMessage />
                 </FormItem>
               )}
@@ -161,7 +260,6 @@ export function AssignPlanModal({ planId, onClose }: AssignPlanModalProps) {
         </Form>
       </CardContent>
 
-      {/* Fixed Footer */}
       <CardFooter className="bg-muted/20 flex-shrink-0 border-t">
         <div className="flex w-full justify-end space-x-2">
           <Button type="button" variant="outline" onClick={onClose} disabled={isAssigning}>
@@ -170,15 +268,9 @@ export function AssignPlanModal({ planId, onClose }: AssignPlanModalProps) {
           <Button
             onClick={form.handleSubmit(handleSubmit)}
             disabled={isAssigning || !form.formState.isValid}
+            isLoading={isAssigning}
           >
-            {isAssigning ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Assigning...
-              </>
-            ) : (
-              'Assign Plan'
-            )}
+            Assign Plan
           </Button>
         </div>
       </CardFooter>

@@ -174,7 +174,7 @@ export default function ManagePlansPage() {
 
   // Other handlers
   const handleCreatePlan = () => {
-    router.push('/admin/plan/new', { scroll: false });
+    router.push('/admin/plans/new', { scroll: false });
   };
 
   const handleAssignPlan = (planId?: string) => {
@@ -207,7 +207,7 @@ export default function ManagePlansPage() {
   // Show loading state
   if (isLoading && !channels.length) {
     return (
-      <div className="container mx-auto space-y-6 py-6">
+      <div className="space-y-4">
         <div className="flex min-h-[400px] items-center justify-center">
           <div className="space-y-2 text-center">
             <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-gray-900"></div>
@@ -221,7 +221,7 @@ export default function ManagePlansPage() {
   // Show error state
   if (hasError) {
     return (
-      <div className="container mx-auto space-y-6 py-6">
+      <div className="space-y-4">
         <div className="flex min-h-[400px] items-center justify-center">
           <div className="space-y-4 text-center">
             <div className="text-lg font-semibold text-red-500">Error loading data</div>
@@ -240,7 +240,7 @@ export default function ManagePlansPage() {
   }
 
   return (
-    <div className="container mx-auto space-y-6 py-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="items-center justify-between lg:flex">
         <div>

@@ -46,6 +46,12 @@ export default async function planRoutes(fastify: FastifyInstance) {
     handler: planController.assignPlanToUser.bind(planController),
   });
 
+  // Get default plan's courier pricing (accessible by ADMIN)
+  fastify.get<{ Params: { courierId: string } }>('/default-pricing/:courierId', {
+    preHandler: [authorizeRoles([Role.ADMIN])],
+    handler: planController.getDefaultPlanCourierPricing.bind(planController),
+  });
+
   // Calculate shipping rate based on user's plan
   fastify.post('/calculate-rates', {
     preHandler: [authorizeRoles([Role.ADMIN, Role.SELLER, Role.SUBADMIN, Role.SALESPERSON])],
