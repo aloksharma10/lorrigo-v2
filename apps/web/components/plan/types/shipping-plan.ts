@@ -7,7 +7,6 @@ export interface Courier {
  
  export interface ZonePricing {
    base_price: number
-   is_fw_applicable?: boolean
    increment_price: number
    is_rto_same_as_fw: boolean
    rto_base_price: number

@@ -3,7 +3,6 @@ import type { ZonePricing, CourierPricing } from "../types/shipping-plan"
 
 export const defaultZonePricing: ZonePricing = {
   base_price: 0,
-  is_fw_applicable: false,
   increment_price: 0,
   is_rto_same_as_fw: true,
   rto_base_price: 0,

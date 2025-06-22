@@ -1,7 +1,6 @@
 "use client"
 
 import { useForm, useFieldArray } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
 import { useState, useEffect, useCallback } from "react"
 
 import {
@@ -52,13 +51,12 @@ import { FormHeader } from "./shipping-plan/form-header"
 import { BulkAdjustmentPanel } from "./shipping-plan/bulk-adjustment-panel"
 import { CourierSelector } from "./shipping-plan/courier-selector"
 import { ZonePricingCard } from "./shipping-plan/zone-pricing-card"
-import { shippingPlanSchema, type ShippingPlanFormData } from "./schemas/shipping-plan-schema"
+import { type ShippingPlanFormData } from "./schemas/shipping-plan-schema"
 import { defaultCourierPricing, defaultZonePricing, zoneLabels } from "./constants/shipping-plan-constants"
 import { formatZonePricing, applyBulkPriceAdjustment } from "./utils/shipping-plan-utils"
 import type { EnhancedCreatePlanFormProps, Courier, CourierPricing } from "./types/shipping-plan"
 import { usePlanOperations } from "@/lib/apis/plans"
 import { useCourierOperations } from "@/lib/apis/couriers"
-import { json } from "stream/consumers"
 
 export function EnhancedCreatePlanForm({ planData, isEditing = false }: EnhancedCreatePlanFormProps) {
   const { createPlan, updatePlan, getDefaultPlanCourierPricing } = usePlanOperations()
@@ -74,7 +72,7 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
   const [expandedAccordions, setExpandedAccordions] = useState<string[]>([])
 
   // Prepare default values for form based on whether we're editing or creating
-  const getDefaultValues = () => {
+  const getDefaultValues = (): ShippingPlanFormData => {
     if (isEditing && planData) {
       return {
         name: planData.name || "",
@@ -83,18 +81,18 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
         features: planData.features?.length ? planData.features : [""],
         courierPricing: planData.plan_courier_pricings?.length
           ? planData.plan_courier_pricings.map((pricing: any) => ({
-              courierId: pricing.courier_id,
-              cod_charge_hard: pricing.cod_charge_hard || 0,
-              cod_charge_percent: pricing.cod_charge_percent || 0,
-              is_fw_applicable: pricing.is_fw_applicable,
-              is_rto_applicable: pricing.is_rto_applicable,
-              is_cod_applicable: pricing.is_cod_applicable,
-              is_cod_reversal_applicable: pricing.is_cod_reversal_applicable,
-              weight_slab: pricing.weight_slab || 0.5,
-              increment_weight: pricing.increment_weight || 0.5,
-              increment_price: pricing.increment_price || 0,
-              zonePricing: formatZonePricing(pricing.zone_pricing),
-            }))
+            courierId: pricing.courier_id,
+            cod_charge_hard: pricing.cod_charge_hard || 0,
+            cod_charge_percent: pricing.cod_charge_percent || 0,
+            is_fw_applicable: pricing.is_fw_applicable,
+            is_rto_applicable: pricing.is_rto_applicable,
+            is_cod_applicable: pricing.is_cod_applicable,
+            is_cod_reversal_applicable: pricing.is_cod_reversal_applicable,
+            weight_slab: pricing.weight_slab || 0.5,
+            increment_weight: pricing.increment_weight || 0.5,
+            increment_price: pricing.increment_price || 0,
+            zonePricing: formatZonePricing(pricing.zone_pricing),
+          }))
           : [],
       }
     }
@@ -111,9 +109,8 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
   }
 
   const form = useForm<ShippingPlanFormData>({
-    resolver: zodResolver(shippingPlanSchema),
     defaultValues: getDefaultValues(),
-    // mode: "onChange"
+    mode: "onChange" as const
   })
 
   useEffect(() => {
@@ -136,12 +133,12 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
 
   // Instead of using useFieldArray for features, use direct form manipulation
   const featureFields = form.watch("features") || [];
-  
+
   const appendFeature = () => {
     const currentFeatures = form.getValues("features") || [];
     form.setValue("features", [...currentFeatures, ""], { shouldValidate: true });
   };
-  
+
   const removeFeature = (index: number) => {
     const currentFeatures = form.getValues("features") || [];
     const newFeatures = [...currentFeatures];
@@ -213,13 +210,88 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
       const defaultPricing = await getDefaultPlanCourierPricing(courierId)
 
       if (defaultPricing) {
-        const currentPricing = form.getValues(`courierPricing.${index}`)
+        // Map the API response to the form structure
+        const updatedPricing: CourierPricing = {
+          courierId: defaultPricing.courierId,
+          cod_charge_hard: defaultPricing.cod_charge_hard || 0,
+          cod_charge_percent: defaultPricing.cod_charge_percent || 0,
+          is_fw_applicable: defaultPricing.is_fw_applicable ?? true,
+          is_rto_applicable: defaultPricing.is_rto_applicable ?? false,
+          is_cod_applicable: defaultPricing.is_cod_applicable ?? true,
+          is_cod_reversal_applicable: defaultPricing.is_cod_reversal_applicable ?? true,
+          weight_slab: defaultPricing.weight_slab || 0.5,
+          increment_weight: defaultPricing.increment_weight || 0.5,
+          increment_price: defaultPricing.increment_price || 0,
+          zonePricing: {
+            Z_A: {
+              base_price: defaultPricing.zonePricing?.Z_A?.base_price || 0,
+              increment_price: defaultPricing.zonePricing?.Z_A?.increment_price || 0,
+              is_rto_same_as_fw: defaultPricing.zonePricing?.Z_A?.is_rto_same_as_fw ?? true,
+              rto_base_price: defaultPricing.zonePricing?.Z_A?.rto_base_price || 0,
+              rto_increment_price: defaultPricing.zonePricing?.Z_A?.rto_increment_price || 0,
+              flat_rto_charge: defaultPricing.zonePricing?.Z_A?.flat_rto_charge || 0,
+            },
+            Z_B: {
+              base_price: defaultPricing.zonePricing?.Z_B?.base_price || 0,
+              increment_price: defaultPricing.zonePricing?.Z_B?.increment_price || 0,
+              is_rto_same_as_fw: defaultPricing.zonePricing?.Z_B?.is_rto_same_as_fw ?? true,
+              rto_base_price: defaultPricing.zonePricing?.Z_B?.rto_base_price || 0,
+              rto_increment_price: defaultPricing.zonePricing?.Z_B?.rto_increment_price || 0,
+              flat_rto_charge: defaultPricing.zonePricing?.Z_B?.flat_rto_charge || 0,
+            },
+            Z_C: {
+              base_price: defaultPricing.zonePricing?.Z_C?.base_price || 0,
+              increment_price: defaultPricing.zonePricing?.Z_C?.increment_price || 0,
+              is_rto_same_as_fw: defaultPricing.zonePricing?.Z_C?.is_rto_same_as_fw ?? true,
+              rto_base_price: defaultPricing.zonePricing?.Z_C?.rto_base_price || 0,
+              rto_increment_price: defaultPricing.zonePricing?.Z_C?.rto_increment_price || 0,
+              flat_rto_charge: defaultPricing.zonePricing?.Z_C?.flat_rto_charge || 0,
+            },
+            Z_D: {
+              base_price: defaultPricing.zonePricing?.Z_D?.base_price || 0,
+              increment_price: defaultPricing.zonePricing?.Z_D?.increment_price || 0,
+              is_rto_same_as_fw: defaultPricing.zonePricing?.Z_D?.is_rto_same_as_fw ?? true,
+              rto_base_price: defaultPricing.zonePricing?.Z_D?.rto_base_price || 0,
+              rto_increment_price: defaultPricing.zonePricing?.Z_D?.rto_increment_price || 0,
+              flat_rto_charge: defaultPricing.zonePricing?.Z_D?.flat_rto_charge || 0,
+            },
+            Z_E: {
+              base_price: defaultPricing.zonePricing?.Z_E?.base_price || 0,
+              increment_price: defaultPricing.zonePricing?.Z_E?.increment_price || 0,
+              is_rto_same_as_fw: defaultPricing.zonePricing?.Z_E?.is_rto_same_as_fw ?? true,
+              rto_base_price: defaultPricing.zonePricing?.Z_E?.rto_base_price || 0,
+              rto_increment_price: defaultPricing.zonePricing?.Z_E?.rto_increment_price || 0,
+              flat_rto_charge: defaultPricing.zonePricing?.Z_E?.flat_rto_charge || 0,
+            },
+          },
+        }
 
-        updateCourier(index, {
-          ...currentPricing,
-          ...defaultPricing,
-          courierId,
+        // Get current form values
+        const currentFormValues = form.getValues()
+
+        // Update the courier pricing at the specific index
+        const updatedCourierPricing = [...currentFormValues.courierPricing]
+        updatedCourierPricing[index] = updatedPricing
+
+        // Create new form values with updated pricing
+        const newFormValues = {
+          ...currentFormValues,
+          courierPricing: updatedCourierPricing
+        }
+
+        // Reset form with new values - this forces UI re-render
+        form.reset(newFormValues, {
+          keepDefaultValues: false,
+          keepErrors: false,
+          keepDirty: false,
+          keepIsSubmitted: false,
+          keepTouched: false,
+          keepIsValid: false,
+          keepSubmitCount: false
         })
+
+        // Force a re-render by updating state
+        setHasUnsavedChanges(true)
 
         toast.success("Default pricing loaded successfully")
       } else {
@@ -227,7 +299,6 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
       }
     } catch (error) {
       toast.error("Failed to load default pricing")
-      console.error("Error loading default pricing:", error)
     }
   }
 
@@ -247,7 +318,7 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
       setIsApplyingBulkAdjustment(true)
 
       try {
-        const currentPricing = form.getValues("courierPricing")
+        const currentPricing = form.getValues("courierPricing") as CourierPricing[]
         const updatedPricing = applyBulkPriceAdjustment(currentPricing, selectedCourierIndices, adjustmentPercent)
 
         // Update the entire courierPricing array at once
@@ -259,8 +330,7 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
           .filter(Boolean)
 
         toast.success(
-          `Applied ${adjustmentPercent}% adjustment to ${selectedCourierIndices.size} selected courier${
-            selectedCourierIndices.size > 1 ? "s" : ""
+          `Applied ${adjustmentPercent}% adjustment to ${selectedCourierIndices.size} selected courier${selectedCourierIndices.size > 1 ? "s" : ""
           }: ${selectedCourierNames.join(", ")}`,
         )
       } catch (error) {
@@ -284,22 +354,9 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
     }
   }, [originalPricing, replaceCourierPricing])
 
+
   const handleSubmit = async (data: ShippingPlanFormData) => {
     try {
-      // Check if there are any courier pricings
-      if (data.courierPricing.length === 0) {
-        toast.error("Please add at least one courier to the plan");
-        setActiveTab("pricing");
-        return;
-      }
-
-      // Check if all couriers have valid IDs
-      const invalidCouriers = data.courierPricing.filter(courier => !courier.courierId);
-      if (invalidCouriers.length > 0) {
-        toast.error("Please select valid couriers for all pricing entries");
-        setActiveTab("pricing");
-        return;
-      }
 
       const payload = {
         ...data,
@@ -357,22 +414,25 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
           Z_E: { ...defaultZonePricing },
         }
       };
-      
+
       return newCourier;
     });
-    
+
     // Append all new couriers
     newCouriers.forEach(courier => {
       appendCourier(courier);
     });
-    
+
     toast.success(`Added ${courierIds.length} couriers to the plan`);
   };
 
   return (
     <div className="min-w-full mx-auto p-6 space-y-6 bg-gradient-to-br from-background to-muted/20 min-h-screen">
       {/* Header */}
-      <FormHeader isEditing={isEditing} isSubmitting={isSubmitting} onSubmit={form.handleSubmit(handleSubmit)} />
+      <FormHeader isEditing={isEditing} isSubmitting={isSubmitting} onSubmit={() => {
+        const formData = form.getValues() as ShippingPlanFormData
+        handleSubmit(formData)
+      }} />
 
       {/* Bulk Adjustment */}
       <BulkAdjustmentPanel
@@ -584,11 +644,10 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
                         <AccordionItem
                           key={`courier-${index}`}
                           value={`item-${index}`}
-                          className={`border-2 rounded-lg shadow-sm transition-all duration-200 ${
-                            selectedCourierIndices.has(index)
+                          className={`border-2 rounded-lg shadow-sm transition-all duration-200 ${selectedCourierIndices.has(index)
                             ? "border-orange-500 bg-orange-50 dark:border-orange-400 dark:bg-orange-950/20"
                             : "border-border"
-                        }`}
+                            }`}
                         >
                           <AccordionTrigger className="hover:no-underline px-4 py-3">
                             <div className="flex items-center justify-between w-full pr-4">
@@ -597,14 +656,12 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
                                   checked={selectedCourierIndices.has(index)}
                                   onClick={(e) => e.stopPropagation()}
                                   onCheckedChange={() => toggleCourierSelection(index)}
-                                  className="data-[state=checked]:bg-secondary data-[state=checked]:border-secondary"
                                 />
                                 <div
-                                  className={`p-3 rounded-lg ${
-                                    selectedCourierIndices.has(index)
-                                      ? "bg-gradient-to-r from-orange-500 to-orange-600"
-                                      : "bg-gradient-to-r from-primary to-primary/80"
-                                  }`}
+                                  className={`p-3 rounded-lg ${selectedCourierIndices.has(index)
+                                    ? "bg-gradient-to-r from-orange-500 to-orange-600"
+                                    : "bg-gradient-to-r from-primary to-primary/80"
+                                    }`}
                                 >
                                   <Truck className="h-5 w-5 text-primary-foreground" />
                                 </div>

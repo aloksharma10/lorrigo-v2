@@ -2,7 +2,6 @@ import * as z from "zod"
 
 export const zonePricingSchema = z.object({
   base_price: z.coerce.number().min(0, "Base price must be positive"),
-  is_fw_applicable: z.boolean().optional(),
   increment_price: z.coerce.number().min(0, "Increment price must be positive"),
   is_rto_same_as_fw: z.boolean().default(true),
   rto_base_price: z.coerce.number().min(0, "RTO base price must be positive").default(0),

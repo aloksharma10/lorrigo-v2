@@ -22,12 +22,12 @@ export const formatZonePricing = (zonePricingArray: any[]) => {
   }
 
   zonePricingArray.forEach((zone) => {
-    const formKey = zoneMapping[zone.zone]
-    if (formKey) {
+    const formKey = zoneMapping[zone.zone] || zone.zone
+    if (formKey && ['Z_A', 'Z_B', 'Z_C', 'Z_D', 'Z_E'].includes(formKey)) {
       formattedZonePricing[formKey] = {
         base_price: zone.base_price || 0,
         increment_price: zone.increment_price || 0,
-        is_rto_same_as_fw: zone.is_rto_same_as_fw || true,
+        is_rto_same_as_fw: zone.is_rto_same_as_fw ?? true,
         rto_base_price: zone.rto_base_price || 0,
         rto_increment_price: zone.rto_increment_price || 0,
         flat_rto_charge: zone.flat_rto_charge || 0,
@@ -41,32 +41,54 @@ export const formatZonePricing = (zonePricingArray: any[]) => {
 export const applyBulkPriceAdjustment = (
   courierPricing: CourierPricing[],
   selectedIndices: Set<number>,
-  adjustmentPercent: number,
+  adjustmentPercent: number
 ): CourierPricing[] => {
-  const zones: ZoneLabel[] = ["Z_A", "Z_B", "Z_C", "Z_D", "Z_E"]
-
   return courierPricing.map((courier, index) => {
     if (!selectedIndices.has(index)) {
       return courier
     }
 
-    const updatedZonePricing = { ...courier.zonePricing }
-
-    zones.forEach((zone) => {
-      const zonePricing = courier.zonePricing[zone as keyof typeof courier.zonePricing]
-      updatedZonePricing[zone as keyof typeof updatedZonePricing] = {
-        ...zonePricing,
-        base_price: Number((zonePricing.base_price * (1 + adjustmentPercent / 100)).toFixed(2)),
-        increment_price: Number((zonePricing.increment_price * (1 + adjustmentPercent / 100)).toFixed(2)),
-        rto_base_price: Number((zonePricing.rto_base_price * (1 + adjustmentPercent / 100)).toFixed(2)),
-        rto_increment_price: Number((zonePricing.rto_increment_price * (1 + adjustmentPercent / 100)).toFixed(2)),
-        flat_rto_charge: Number((zonePricing.flat_rto_charge * (1 + adjustmentPercent / 100)).toFixed(2)),
-      }
-    })
+    const adjustmentFactor = 1 + (adjustmentPercent / 100)
 
     return {
       ...courier,
-      zonePricing: updatedZonePricing,
+      zonePricing: {
+        Z_A: {
+          ...courier.zonePricing.Z_A,
+          base_price: Math.round(courier.zonePricing.Z_A.base_price * adjustmentFactor * 100) / 100,
+          increment_price: Math.round(courier.zonePricing.Z_A.increment_price * adjustmentFactor * 100) / 100,
+          rto_base_price: Math.round(courier.zonePricing.Z_A.rto_base_price * adjustmentFactor * 100) / 100,
+          rto_increment_price: Math.round(courier.zonePricing.Z_A.rto_increment_price * adjustmentFactor * 100) / 100,
+        },
+        Z_B: {
+          ...courier.zonePricing.Z_B,
+          base_price: Math.round(courier.zonePricing.Z_B.base_price * adjustmentFactor * 100) / 100,
+          increment_price: Math.round(courier.zonePricing.Z_B.increment_price * adjustmentFactor * 100) / 100,
+          rto_base_price: Math.round(courier.zonePricing.Z_B.rto_base_price * adjustmentFactor * 100) / 100,
+          rto_increment_price: Math.round(courier.zonePricing.Z_B.rto_increment_price * adjustmentFactor * 100) / 100,
+        },
+        Z_C: {
+          ...courier.zonePricing.Z_C,
+          base_price: Math.round(courier.zonePricing.Z_C.base_price * adjustmentFactor * 100) / 100,
+          increment_price: Math.round(courier.zonePricing.Z_C.increment_price * adjustmentFactor * 100) / 100,
+          rto_base_price: Math.round(courier.zonePricing.Z_C.rto_base_price * adjustmentFactor * 100) / 100,
+          rto_increment_price: Math.round(courier.zonePricing.Z_C.rto_increment_price * adjustmentFactor * 100) / 100,
+        },
+        Z_D: {
+          ...courier.zonePricing.Z_D,
+          base_price: Math.round(courier.zonePricing.Z_D.base_price * adjustmentFactor * 100) / 100,
+          increment_price: Math.round(courier.zonePricing.Z_D.increment_price * adjustmentFactor * 100) / 100,
+          rto_base_price: Math.round(courier.zonePricing.Z_D.rto_base_price * adjustmentFactor * 100) / 100,
+          rto_increment_price: Math.round(courier.zonePricing.Z_D.rto_increment_price * adjustmentFactor * 100) / 100,
+        },
+        Z_E: {
+          ...courier.zonePricing.Z_E,
+          base_price: Math.round(courier.zonePricing.Z_E.base_price * adjustmentFactor * 100) / 100,
+          increment_price: Math.round(courier.zonePricing.Z_E.increment_price * adjustmentFactor * 100) / 100,
+          rto_base_price: Math.round(courier.zonePricing.Z_E.rto_base_price * adjustmentFactor * 100) / 100,
+          rto_increment_price: Math.round(courier.zonePricing.Z_E.rto_increment_price * adjustmentFactor * 100) / 100,
+        },
+      },
     }
   })
 }
