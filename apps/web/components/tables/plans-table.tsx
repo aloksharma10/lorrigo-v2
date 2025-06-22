@@ -162,12 +162,7 @@ export default function PlansTable({ onAssignPlan }: PlansTableProps) {
         const plan = row.original;
 
         const handleDelete = async () => {
-          try {
-            await deletePlan.mutateAsync(plan.id);
-            toast.success('Plan deleted successfully');
-          } catch (error) {
-            toast.error('Failed to delete plan');
-          }
+          await deletePlan.mutateAsync(plan.id);
         };
 
         return (

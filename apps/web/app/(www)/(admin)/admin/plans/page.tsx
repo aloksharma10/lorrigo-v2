@@ -137,42 +137,6 @@ export default function ManagePlansPage() {
     });
   }, [openModal, closeAllModals, channelsQuery, activeChannelsQuery]);
 
-  const handleEditChannel = useCallback((channel: ChannelConfig) => {
-    // Placeholder for edit functionality
-    console.log('Edit channel:', channel.id);
-  }, []);
-
-  const handleDeleteChannel = useCallback(async (channelId: string) => {
-    try {
-      await deleteChannel.mutateAsync(channelId);
-      channelsQuery.refetch();
-      activeChannelsQuery.refetch();
-    } catch (error) {
-      console.error('Failed to delete channel:', error);
-    }
-  }, [deleteChannel, channelsQuery, activeChannelsQuery]);
-
-  const handleToggleChannelStatus = useCallback(async (channelId: string) => {
-    try {
-      await toggleChannelStatus.mutateAsync(channelId);
-      channelsQuery.refetch();
-      activeChannelsQuery.refetch();
-    } catch (error) {
-      console.error('Failed to toggle channel status:', error);
-    }
-  }, [toggleChannelStatus, channelsQuery, activeChannelsQuery]);
-
-  const handleChannelSearch = useCallback((value: string) => {
-    setChannelSearch(value);
-    setChannelPage(1); // Reset to first page when searching
-  }, []);
-
-  const handleChannelFilterChange = useCallback((value: string) => {
-    const filter = value === 'all' ? undefined : value === 'active';
-    setChannelActiveFilter(filter);
-    setChannelPage(1); // Reset to first page when filtering
-  }, []);
-
   // Loading and error states
   const isLoading = plansQuery.isLoading || getCouriersQuery.isLoading || channelsQuery.isLoading;
   const hasError = plansQuery.error || getCouriersQuery.error || channelsQuery.error;

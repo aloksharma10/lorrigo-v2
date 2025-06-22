@@ -109,7 +109,6 @@ export function AssignPlanModal({ planId, userId, onClose, onSuccess }: AssignPl
         planId: data.planId,
         userId: data.userId,
       });
-      toast.success('Plan assigned to user successfully');
       if (onSuccess) {
         onSuccess();
       }

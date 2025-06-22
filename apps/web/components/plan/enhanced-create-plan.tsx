@@ -386,10 +386,8 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
 
       if (isEditing && planData) {
         await updatePlan.mutateAsync({ id: planData.id, ...payload })
-        toast.success("Plan updated successfully")
       } else {
         await createPlan.mutateAsync(payload)
-        toast.success("Plan created successfully")
       }
       setHasUnsavedChanges(false)
       setSelectedCourierIndices(new Set())

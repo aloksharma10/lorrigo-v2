@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from './axios';
 import { useAuthToken } from '@/components/providers/token-provider';
+import { toast } from '@lorrigo/ui/components';
 
 export const usePlanOperations = () => {
   const queryClient = useQueryClient();
@@ -79,6 +80,7 @@ export const usePlanOperations = () => {
   const createPlan = useMutation({
     mutationFn: (planData: any) => api.post('/plans', planData),
     onSuccess: () => {
+      toast.success('Plan created successfully');
       queryClient.invalidateQueries({ queryKey: ['plans'] });
       queryClient.invalidateQueries({ queryKey: ['defaultPlan'] });
     },
@@ -88,6 +90,7 @@ export const usePlanOperations = () => {
   const updatePlan = useMutation({
     mutationFn: (planData: any) => api.put(`/plans/${planData.id}`, planData),
     onSuccess: () => {
+      toast.success('Plan updated successfully');
       queryClient.invalidateQueries({ queryKey: ['plans'] });
       queryClient.invalidateQueries({ queryKey: ['defaultPlan'] });
     },
@@ -97,8 +100,12 @@ export const usePlanOperations = () => {
   const deletePlan = useMutation({
     mutationFn: (planId: string) => api.delete(`/plans/${planId}`),
     onSuccess: () => {
+      toast.success('Plan deleted successfully');
       queryClient.invalidateQueries({ queryKey: ['plans'] });
       queryClient.invalidateQueries({ queryKey: ['defaultPlan'] });
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.error || 'Failed to delete plan');
     },
   });
 
@@ -107,6 +114,7 @@ export const usePlanOperations = () => {
     mutationFn: ({ planId, userId }: { planId: string; userId: string }) =>
       api.post(`/plans/assign/${planId}/user/${userId}`, { userId }),
     onSuccess: () => {
+      toast.success('Plan assigned to user successfully');
       queryClient.invalidateQueries({ queryKey: ['plans'] });
       queryClient.invalidateQueries({ queryKey: ['plan-assignments'] });
     },
