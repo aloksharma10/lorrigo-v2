@@ -99,7 +99,7 @@ export function AssignPlanModal({ planId, userId, onClose, onSuccess }: AssignPl
   });
 
   // Fetch plans
-  const { data: plans = [], isLoading: isLoadingPlans } = getPlansQuery(['plans']);
+  const { data: plans = [], isLoading: isLoadingPlans } = getPlansQuery();
 
   const isAssigning = assignPlanToUser.isPending;
 

@@ -57,7 +57,7 @@ export const useWalletOperations = () => {
   // Recharge wallet
   const rechargeWallet = useMutation({
     mutationFn: async (data: { amount: number; redirectUrl: string }) => {
-      const response = await api.post('/transactions/wallet/recharge', {
+      const response = await api.post<{ valid: boolean, message: string, merchantTransactionId: string, url: string }>('/transactions/wallet/recharge', {
         amount: data.amount,
         origin: window.location.origin, // Using origin similar to old code
         redirectUrl: data.redirectUrl,
@@ -90,7 +90,7 @@ export const useWalletOperations = () => {
       merchantTransactionId: string;
     }) => {
       // Using GET with query params like in the old code
-      const response = await api.get(`/transactions/wallet/verify`, {
+      const response = await api.get<{ valid: boolean, message: string }>(`/transactions/wallet/verify`, {
         params: data
       });
       return response;

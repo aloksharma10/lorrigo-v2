@@ -107,7 +107,7 @@ export const useChannelOperations = () => {
   // Create a new channel configuration
   const createChannel = useMutation({
     mutationFn: async (channelData: ChannelConfigCreateInput) => {
-      const response = await api.post('/channels', channelData);
+      const response = await api.post<ChannelConfig>('/channels', channelData);
       return response;
     },
     onSuccess: () => {
