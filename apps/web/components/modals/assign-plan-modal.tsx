@@ -267,7 +267,7 @@ export function AssignPlanModal({ planId, userId, onClose, onSuccess }: AssignPl
           </Button>
           <Button
             onClick={form.handleSubmit(handleSubmit)}
-            disabled={isAssigning || !form.formState.isValid}
+            disabled={isAssigning}
             isLoading={isAssigning}
           >
             Assign Plan

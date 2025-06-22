@@ -93,14 +93,6 @@ enum DeliveryType {
   SURFACE
 }
 
-enum Zone {
-  WITHIN_CITY
-  WITHIN_STATE
-  WITHIN_METRO
-  WITHIN_ROI
-  NORTH_EAST
-}
-
 enum ZoneLabel {
   Z_A
   Z_B
@@ -993,7 +985,7 @@ model PlanCourierPricing {
 
 model ZonePricing {
   id                  String  @id @default(cuid())
-  zone                Zone
+  zone                ZoneLabel
   base_price          Float
   increment_price     Float
   is_rto_same_as_fw   Boolean
@@ -1044,7 +1036,7 @@ model ShipmentPricing {
 
 model ShipmentCourierZonePricing {
   id                  String  @id @default(cuid())
-  zone                Zone
+  zone                ZoneLabel
   base_price          Float
   increment_price     Float
   is_rto_same_as_fw   Boolean

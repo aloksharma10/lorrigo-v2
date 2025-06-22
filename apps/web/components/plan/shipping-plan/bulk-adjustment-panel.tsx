@@ -88,7 +88,7 @@ export function BulkAdjustmentPanel({
             <Button
               onClick={handleApply}
               disabled={isApplying || selectedCourierIndices.size === 0}
-              className="bg-background text-secondary hover:bg-background/90 font-semibold"
+              className="hover:bg-background/90 font-semibold"
             >
               {isApplying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
               Apply to Selected ({selectedCourierIndices.size})

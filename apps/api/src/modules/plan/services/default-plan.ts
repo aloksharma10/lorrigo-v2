@@ -3,35 +3,35 @@ import { generatePlanId } from '../utils/id-generator';
 
 // Default zone pricing template
 const defaultZonePricing = {
-  withinCity: {
+  Z_A: {
     base_price: 40,
     increment_price: 10,
     isRTOSameAsFW: true,
     rto_base_price: 0,
     rto_increment_price: 0,
   },
-  withinZone: {
+  Z_B: {
     base_price: 50,
     increment_price: 15,
     isRTOSameAsFW: true,
     rto_base_price: 0,
     rto_increment_price: 0,
   },
-  withinMetro: {
+  Z_C: {
     base_price: 60,
     increment_price: 18,
     isRTOSameAsFW: true,
     rto_base_price: 0,
     rto_increment_price: 0,
   },
-  withinRoi: {
+  Z_D: {
     base_price: 70,
     increment_price: 20,
     isRTOSameAsFW: true,
     rto_base_price: 0,
     rto_increment_price: 0,
   },
-  northEast: {
+  Z_E: {
     base_price: 100,
     increment_price: 30,
     isRTOSameAsFW: true,

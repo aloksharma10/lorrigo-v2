@@ -35,7 +35,7 @@ export default function PlansTable({ onAssignPlan }: PlansTableProps) {
   const { getPlansQuery, deletePlan } = usePlanOperations();
 
   // Fetch plans
-  const { data: apiPlans = [], isLoading, isError, error } = getPlansQuery;
+  const { data: apiPlans = [], isLoading, isError, error } = getPlansQuery();
 
   // Transform API response to match the Plan interface
   const plans: Plan[] = apiPlans.map((plan: any) => ({
@@ -236,6 +236,7 @@ export default function PlansTable({ onAssignPlan }: PlansTableProps) {
       manualPagination={false}
       manualSorting={false}
       manualFiltering={false}
+      showToolbar={false}
     />
   );
 }

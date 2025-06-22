@@ -1,6 +1,6 @@
 import courierData from './data/lorrigo.couriers.json';
 import channelData from './data/lorrigo.envs.json';
-import { prisma, DeliveryType, Zone } from '@lorrigo/db';
+import { prisma, DeliveryType, ZoneLabel } from '@lorrigo/db';
 
 async function main() {
   // await prisma.zonePricing.deleteMany();
@@ -90,12 +90,12 @@ async function main() {
     });
 
     // Zones Mapping
-    const zones: { zone: Zone; key: keyof typeof courier }[] = [
-      { zone: 'WITHIN_CITY', key: 'withinCity' },
-      { zone: 'WITHIN_STATE', key: 'withinZone' },
-      { zone: 'WITHIN_METRO', key: 'withinMetro' },
-      { zone: 'WITHIN_ROI', key: 'withinRoi' },
-      { zone: 'NORTH_EAST', key: 'northEast' },
+    const zones: { zone: ZoneLabel; key: keyof typeof courier }[] = [
+      { zone: 'Z_A', key: 'withinCity' },
+      { zone: 'Z_B', key: 'withinZone' },
+      { zone: 'Z_C', key: 'withinMetro' },
+      { zone: 'Z_D', key: 'withinRoi' },
+      { zone: 'Z_E', key: 'northEast' },
     ];
 
     for (const z of zones) {

@@ -6,9 +6,9 @@ export const usePlanOperations = () => {
   const queryClient = useQueryClient();
   const { isTokenReady } = useAuthToken();
 
-  const getPlansQuery = (queryKey: string[]) => {
+  const getPlansQuery = () => {
     return useQuery({
-      queryKey: queryKey,
+      queryKey: ['plans'],
       queryFn: () => api.get('/plans').then((res: any) => res?.plans || []),
       staleTime: 1000 * 60 * 5,
       gcTime: 1000 * 60 * 10,

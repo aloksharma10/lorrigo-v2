@@ -53,7 +53,7 @@ import { BulkAdjustmentPanel } from "./shipping-plan/bulk-adjustment-panel"
 import { CourierSelector } from "./shipping-plan/courier-selector"
 import { ZonePricingCard } from "./shipping-plan/zone-pricing-card"
 import { shippingPlanSchema, type ShippingPlanFormData } from "./schemas/shipping-plan-schema"
-import { defaultCourierPricing, zoneLabels } from "./constants/shipping-plan-constants"
+import { defaultCourierPricing, defaultZonePricing, zoneLabels } from "./constants/shipping-plan-constants"
 import { formatZonePricing, applyBulkPriceAdjustment } from "./utils/shipping-plan-utils"
 import type { EnhancedCreatePlanFormProps, Courier, CourierPricing } from "./types/shipping-plan"
 import { usePlanOperations } from "@/lib/apis/plans"
@@ -95,22 +95,25 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
               increment_price: pricing.increment_price || 0,
               zonePricing: formatZonePricing(pricing.zone_pricing),
             }))
-          : [defaultCourierPricing],
+          : [],
       }
     }
 
+    // For new plan creation, don't initialize with any couriers
+    // The user will need to select at least one courier
     return {
       name: "",
       description: "",
       isDefault: false,
       features: [""],
-      courierPricing: [defaultCourierPricing],
+      courierPricing: [],
     }
   }
 
   const form = useForm<ShippingPlanFormData>({
     resolver: zodResolver(shippingPlanSchema),
     defaultValues: getDefaultValues(),
+    // mode: "onChange"
   })
 
   useEffect(() => {
@@ -131,14 +134,20 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
     return () => subscription.unsubscribe()
   }, [form, originalPricing.length])
 
-  const {
-    fields: featureFields,
-    append: appendFeature,
-    remove: removeFeature,
-  } = useFieldArray({
-    control: form.control,
-    name: "features",
-  })
+  // Instead of using useFieldArray for features, use direct form manipulation
+  const featureFields = form.watch("features") || [];
+  
+  const appendFeature = () => {
+    const currentFeatures = form.getValues("features") || [];
+    form.setValue("features", [...currentFeatures, ""], { shouldValidate: true });
+  };
+  
+  const removeFeature = (index: number) => {
+    const currentFeatures = form.getValues("features") || [];
+    const newFeatures = [...currentFeatures];
+    newFeatures.splice(index, 1);
+    form.setValue("features", newFeatures, { shouldValidate: true });
+  };
 
   const {
     fields: courierFields,
@@ -206,10 +215,6 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
       if (defaultPricing) {
         const currentPricing = form.getValues(`courierPricing.${index}`)
 
-        // console.log("currentPricing", JSON.stringify(currentPricing, null, 2))
-
-        // console.log("defaultPricing", JSON.stringify(defaultPricing, null, 2))
-
         updateCourier(index, {
           ...currentPricing,
           ...defaultPricing,
@@ -245,25 +250,8 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
         const currentPricing = form.getValues("courierPricing")
         const updatedPricing = applyBulkPriceAdjustment(currentPricing, selectedCourierIndices, adjustmentPercent)
 
-        // Update each field individually to trigger form validation and updates
-        updatedPricing.forEach((courier, index) => {
-          if (selectedCourierIndices.has(index)) {
-            // Update zone pricing for each zone
-            Object.entries(courier.zonePricing).forEach(([zone, pricing]) => {
-              form.setValue(`courierPricing.${index}.zonePricing.${zone}.base_price`, pricing.base_price)
-              form.setValue(`courierPricing.${index}.zonePricing.${zone}.increment_price`, pricing.increment_price)
-              form.setValue(`courierPricing.${index}.zonePricing.${zone}.rto_base_price`, pricing.rto_base_price)
-              form.setValue(
-                `courierPricing.${index}.zonePricing.${zone}.rto_increment_price`,
-                pricing.rto_increment_price,
-              )
-              form.setValue(`courierPricing.${index}.zonePricing.${zone}.flat_rto_charge`, pricing.flat_rto_charge)
-            })
-          }
-        })
-
-        // Trigger form validation
-        form.trigger("courierPricing")
+        // Update the entire courierPricing array at once
+        form.setValue("courierPricing", updatedPricing, { shouldValidate: true })
         setHasUnsavedChanges(true)
 
         const selectedCourierNames = Array.from(selectedCourierIndices)
@@ -297,33 +285,48 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
   }, [originalPricing, replaceCourierPricing])
 
   const handleSubmit = async (data: ShippingPlanFormData) => {
-    const payload = {
-      ...data,
-      features: data.features.filter((feature) => feature.trim() !== ""),
-      courierPricing: data.courierPricing.map((courier) => ({
-        ...courier,
-        cod_charge_hard: Number(courier.cod_charge_hard),
-        cod_charge_percent: Number(courier.cod_charge_percent),
-        weight_slab: Number(courier.weight_slab),
-        increment_weight: Number(courier.increment_weight),
-        increment_price: Number(courier.increment_price),
-        zonePricing: Object.fromEntries(
-          Object.entries(courier.zonePricing).map(([zone, pricing]) => [
-            zone,
-            {
-              ...pricing,
-              base_price: Number(pricing.base_price),
-              increment_price: Number(pricing.increment_price),
-              rto_base_price: Number(pricing.rto_base_price),
-              rto_increment_price: Number(pricing.rto_increment_price),
-              flat_rto_charge: Number(pricing.flat_rto_charge),
-            },
-          ]),
-        ),
-      })),
-    }
-
     try {
+      // Check if there are any courier pricings
+      if (data.courierPricing.length === 0) {
+        toast.error("Please add at least one courier to the plan");
+        setActiveTab("pricing");
+        return;
+      }
+
+      // Check if all couriers have valid IDs
+      const invalidCouriers = data.courierPricing.filter(courier => !courier.courierId);
+      if (invalidCouriers.length > 0) {
+        toast.error("Please select valid couriers for all pricing entries");
+        setActiveTab("pricing");
+        return;
+      }
+
+      const payload = {
+        ...data,
+        features: data.features.filter((feature) => feature.trim() !== ""),
+        courierPricing: data.courierPricing.map((courier) => ({
+          ...courier,
+          cod_charge_hard: Number(courier.cod_charge_hard),
+          cod_charge_percent: Number(courier.cod_charge_percent),
+          weight_slab: Number(courier.weight_slab),
+          increment_weight: Number(courier.increment_weight),
+          increment_price: Number(courier.increment_price),
+          zonePricing: Object.fromEntries(
+            Object.entries(courier.zonePricing).map(([zone, pricing]) => [
+              zone,
+              {
+                ...pricing,
+                base_price: Number(pricing.base_price),
+                increment_price: Number(pricing.increment_price),
+                rto_base_price: Number(pricing.rto_base_price),
+                rto_increment_price: Number(pricing.rto_increment_price),
+                flat_rto_charge: Number(pricing.flat_rto_charge),
+              },
+            ]),
+          ),
+        })),
+      }
+
       if (isEditing && planData) {
         await updatePlan.mutateAsync({ id: planData.id, ...payload })
         toast.success("Plan updated successfully")
@@ -334,12 +337,40 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
       setHasUnsavedChanges(false)
       setSelectedCourierIndices(new Set())
     } catch (error: any) {
+      console.error("Error submitting form:", error);
       toast.error(error?.response?.data?.message || `Failed to ${isEditing ? "update" : "create"} plan`)
     }
   }
 
+  // Add function to handle multiple courier selection
+  const handleSelectMultipleCouriers = (courierIds: string[]) => {
+    const newCouriers = courierIds.map(courierId => {
+      // Create a new courier with default pricing
+      const newCourier = {
+        ...defaultCourierPricing,
+        courierId,
+        zonePricing: {
+          Z_A: { ...defaultZonePricing },
+          Z_B: { ...defaultZonePricing },
+          Z_C: { ...defaultZonePricing },
+          Z_D: { ...defaultZonePricing },
+          Z_E: { ...defaultZonePricing },
+        }
+      };
+      
+      return newCourier;
+    });
+    
+    // Append all new couriers
+    newCouriers.forEach(courier => {
+      appendCourier(courier);
+    });
+    
+    toast.success(`Added ${courierIds.length} couriers to the plan`);
+  };
+
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6 bg-gradient-to-br from-background to-muted/20 min-h-screen">
+    <div className="min-w-full mx-auto p-6 space-y-6 bg-gradient-to-br from-background to-muted/20 min-h-screen">
       {/* Header */}
       <FormHeader isEditing={isEditing} isSubmitting={isSubmitting} onSubmit={form.handleSubmit(handleSubmit)} />
 
@@ -456,7 +487,7 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
                     </CardTitle>
                     <Button
                       type="button"
-                      onClick={() => appendFeature("")}
+                      onClick={appendFeature}
                       className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
                     >
                       <Plus className="mr-2 h-4 w-4" />
@@ -467,7 +498,7 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
                 <CardContent className="p-6">
                   <div className="space-y-4">
                     {featureFields.map((field, index) => (
-                      <div key={field.id} className="flex items-center space-x-3">
+                      <div key={index} className="flex items-center space-x-3">
                         <FormField
                           control={form.control}
                           name={`features.${index}`}
@@ -513,7 +544,21 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
                     </CardTitle>
                     <CourierSelector
                       availableCouriers={availableCouriers}
-                      onSelectCourier={(courierId) => appendCourier({ ...defaultCourierPricing, courierId })}
+                      onSelectCourier={(courierId) => {
+                        const newCourier = {
+                          ...defaultCourierPricing,
+                          courierId,
+                          zonePricing: {
+                            Z_A: { ...defaultZonePricing },
+                            Z_B: { ...defaultZonePricing },
+                            Z_C: { ...defaultZonePricing },
+                            Z_D: { ...defaultZonePricing },
+                            Z_E: { ...defaultZonePricing },
+                          }
+                        };
+                        appendCourier(newCourier);
+                      }}
+                      onSelectMultipleCouriers={handleSelectMultipleCouriers}
                       open={showCourierSelector}
                       onOpenChange={setShowCourierSelector}
                     />
@@ -544,7 +589,7 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
                             ? "border-orange-500 bg-orange-50 dark:border-orange-400 dark:bg-orange-950/20"
                             : "border-border"
                         }`}
-                      >
+                        >
                           <AccordionTrigger className="hover:no-underline px-4 py-3">
                             <div className="flex items-center justify-between w-full pr-4">
                               <div className="flex items-center space-x-4">

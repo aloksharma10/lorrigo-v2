@@ -11,11 +11,11 @@ export const ZonePricingItemSchema = z.object({
 });
 
 export const ZonePricingSchema = z.object({
-  withinCity: ZonePricingItemSchema,
-  withinZone: ZonePricingItemSchema,
-  withinMetro: ZonePricingItemSchema,
-  withinRoi: ZonePricingItemSchema,
-  northEast: ZonePricingItemSchema,
+  Z_A: ZonePricingItemSchema,
+  Z_B: ZonePricingItemSchema,
+  Z_C: ZonePricingItemSchema,
+  Z_D: ZonePricingItemSchema,
+  Z_E: ZonePricingItemSchema,
 });
 
 export const CourierPricingSchema = z.object({

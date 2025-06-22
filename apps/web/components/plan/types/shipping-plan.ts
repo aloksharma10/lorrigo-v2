@@ -27,11 +27,11 @@ export interface Courier {
    increment_weight: number
    increment_price: number
    zonePricing: {
-     withinCity: ZonePricing
-     withinZone: ZonePricing
-     withinMetro: ZonePricing
-     withinRoi: ZonePricing
-     northEast: ZonePricing
+     Z_A: ZonePricing
+     Z_B: ZonePricing
+     Z_C: ZonePricing
+     Z_D: ZonePricing
+     Z_E: ZonePricing
    }
  }
  

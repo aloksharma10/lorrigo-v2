@@ -7,15 +7,17 @@ import { useModalStore } from '@/modal/modal-store';
 import { format } from 'date-fns';
 
 export default function WalletPage() {
-  const { getWalletBalance, getTransactionHistory } = useWalletOperations();
+  const {
+    getWalletBalance: { data: walletData, isLoading: isLoadingBalance },
+    getTransactionHistory
+  } = useWalletOperations();
   const { openModal } = useModalStore();
 
   // Get wallet balance
-  const { data: walletData, isLoading: isLoadingBalance } = getWalletBalance;
   const walletBalance = walletData?.balance || 0;
 
   // Get transaction history
-  const { data: transactionData, isLoading: isLoadingTransactions } = getTransactionHistory;
+  const { data: transactionData, isLoading: isLoadingTransactions } = getTransactionHistory({ page: 1, limit: 10 });
   const transactions = transactionData?.transactions || [];
 
   // Open recharge wallet modal

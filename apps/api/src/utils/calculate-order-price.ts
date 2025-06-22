@@ -24,7 +24,7 @@ export interface PriceCalculationParams {
 }
 
 export interface ZonePricing {
-  zone: 'WITHIN_CITY' | 'WITHIN_STATE' | 'WITHIN_METRO' | 'WITHIN_ROI' | 'NORTH_EAST';
+  zone: 'Z_A' | 'Z_B' | 'Z_C' | 'Z_D' | 'Z_E';
   base_price: number;
   increment_price: number;
   rto_base_price?: number;
@@ -154,11 +154,11 @@ export const NorthEastStates = [
 ];
 
 export const ZoneNames = {
-  WITHIN_CITY: 'Zone A',
-  WITHIN_STATE: 'Zone B',
-  WITHIN_METRO: 'Zone C',
-  WITHIN_ROI: 'Zone D',
-  NORTH_EAST: 'Zone E',
+  Z_A: 'Zone A',
+  Z_B: 'Zone B',
+  Z_C: 'Zone C',
+  Z_D: 'Zone D',
+  Z_E: 'Zone E',
 } as const;
 
 // ================================
@@ -268,17 +268,17 @@ export function determineZone(
 ): { zone: ZonePricing['zone']; zoneName: string } {
   // Same city
   if (pickupDetails.city === deliveryDetails.city) {
-    return { zone: 'WITHIN_CITY', zoneName: ZoneNames.WITHIN_CITY };
+    return { zone: 'Z_A', zoneName: ZoneNames.Z_A };
   }
 
   // Same state
   if (pickupDetails.state === deliveryDetails.state) {
-    return { zone: 'WITHIN_STATE', zoneName: ZoneNames.WITHIN_STATE };
+    return { zone: 'Z_B', zoneName: ZoneNames.Z_B };
   }
 
   // Both metro cities
   if (MetroCities.includes(pickupDetails.city) && MetroCities.includes(deliveryDetails.city)) {
-    return { zone: 'WITHIN_METRO', zoneName: ZoneNames.WITHIN_METRO };
+    return { zone: 'Z_C', zoneName: ZoneNames.Z_C };
   }
 
   // North East states
@@ -286,11 +286,11 @@ export function determineZone(
     NorthEastStates.includes(pickupDetails.state) ||
     NorthEastStates.includes(deliveryDetails.state)
   ) {
-    return { zone: 'NORTH_EAST', zoneName: ZoneNames.NORTH_EAST };
+    return { zone: 'Z_E', zoneName: ZoneNames.Z_E };
   }
 
   // Rest of India
-  return { zone: 'WITHIN_ROI', zoneName: ZoneNames.WITHIN_ROI };
+  return { zone: 'Z_D', zoneName: ZoneNames.Z_D };
 }
 
 /**

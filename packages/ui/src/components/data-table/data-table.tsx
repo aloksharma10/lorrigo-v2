@@ -74,6 +74,7 @@ interface DataTableProps<TData, TValue> {
   isError?: boolean;
   errorMessage?: string;
   className?: string;
+  showToolbar?: boolean;
   manualPagination?: boolean;
   manualSorting?: boolean;
   manualFiltering?: boolean;
@@ -111,6 +112,7 @@ export function DataTable<TData, TValue>({
   isError = false,
   errorMessage = 'An error occurred while fetching data.',
   className,
+  showToolbar = true,
   manualPagination = true,
   manualSorting = true,
   manualFiltering = true,
@@ -262,7 +264,7 @@ export function DataTable<TData, TValue>({
   return (
     <Card>
       <CardContent className="space-y-4 p-1">
-        <DataTableToolbar
+        {showToolbar && <DataTableToolbar
           table={table}
           filterableColumns={filterableColumns}
           searchableColumns={searchableColumns}
@@ -274,7 +276,7 @@ export function DataTable<TData, TValue>({
           globalFilter={globalFilter}
           setGlobalFilter={handleGlobalFilterChange}
           isLoading={isLoading}
-        />
+        />}
 
         {selectable && Object.keys(rowSelection).length > 0 && (
           <DataTableSelectedActions table={table} bulkActions={bulkActions} />

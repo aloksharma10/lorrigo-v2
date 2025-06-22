@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthToken } from '@/components/providers/token-provider';
 import { useSession } from 'next-auth/react';
 import { api } from './axios';
+import { AxiosResponse } from 'axios';
 
 // Fetch user profile
 export const useUserProfile = () => {
@@ -45,7 +46,7 @@ export const useWalletOperations = () => {
   const getWalletBalance = useQuery({
     queryKey: ['wallet', 'balance'],
     queryFn: async () => {
-      const response = await api.get('/transactions/wallet/balance');
+      const response = await api.get<{ balance: number }>('/transactions/wallet/balance');
       return response;
     },
     enabled: status === 'authenticated' && isTokenReady,
@@ -70,16 +71,18 @@ export const useWalletOperations = () => {
   });
 
   // Get transaction history
-  const getTransactionHistory = useQuery({
-    queryKey: ['wallet', 'transactions'],
-    queryFn: async () => {
-      const response = await api.get('/transactions/history');
-      return response;
-    },
-    enabled: status === 'authenticated' && isTokenReady,
-    refetchOnWindowFocus: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
+  const getTransactionHistory = ({ page, limit }: { page: number, limit: number }) => {
+    return useQuery({
+      queryKey: ['wallet', 'transactions'],
+      queryFn: async () => {
+        const response = await api.get<{ transactions: any[] }>('/transactions/history', { params: { page, limit } });
+        return response;
+      },
+      enabled: status === 'authenticated' && isTokenReady,
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    });
+  }
 
   // Verify wallet recharge (can be called from callback page)
   const verifyWalletRecharge = useMutation({

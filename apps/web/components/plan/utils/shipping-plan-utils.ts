@@ -1,23 +1,24 @@
 import type { CourierPricing } from "../types/shipping-plan"
 import { defaultZonePricing, zoneMapping } from "../constants/shipping-plan-constants"
+import { ZoneLabel } from "@lorrigo/db"
 
 export const formatZonePricing = (zonePricingArray: any[]) => {
   if (!zonePricingArray || !Array.isArray(zonePricingArray)) {
     return {
-      withinCity: { ...defaultZonePricing },
-      withinZone: { ...defaultZonePricing },
-      withinMetro: { ...defaultZonePricing },
-      withinRoi: { ...defaultZonePricing },
-      northEast: { ...defaultZonePricing },
+      Z_A: { ...defaultZonePricing },
+      Z_B: { ...defaultZonePricing },
+      Z_C: { ...defaultZonePricing },
+      Z_D: { ...defaultZonePricing },
+      Z_E: { ...defaultZonePricing },
     }
   }
 
   const formattedZonePricing: any = {
-    withinCity: { ...defaultZonePricing },
-    withinZone: { ...defaultZonePricing },
-    withinMetro: { ...defaultZonePricing },
-    withinRoi: { ...defaultZonePricing },
-    northEast: { ...defaultZonePricing },
+    Z_A: { ...defaultZonePricing },
+    Z_B: { ...defaultZonePricing },
+    Z_C: { ...defaultZonePricing },
+    Z_D: { ...defaultZonePricing },
+    Z_E: { ...defaultZonePricing },
   }
 
   zonePricingArray.forEach((zone) => {
@@ -26,7 +27,7 @@ export const formatZonePricing = (zonePricingArray: any[]) => {
       formattedZonePricing[formKey] = {
         base_price: zone.base_price || 0,
         increment_price: zone.increment_price || 0,
-        is_rto_same_as_fw: zone.is_rto_same_as_fw,
+        is_rto_same_as_fw: zone.is_rto_same_as_fw || true,
         rto_base_price: zone.rto_base_price || 0,
         rto_increment_price: zone.rto_increment_price || 0,
         flat_rto_charge: zone.flat_rto_charge || 0,
@@ -42,7 +43,7 @@ export const applyBulkPriceAdjustment = (
   selectedIndices: Set<number>,
   adjustmentPercent: number,
 ): CourierPricing[] => {
-  const zones = ["withinCity", "withinZone", "withinMetro", "withinRoi", "northEast"]
+  const zones: ZoneLabel[] = ["Z_A", "Z_B", "Z_C", "Z_D", "Z_E"]
 
   return courierPricing.map((courier, index) => {
     if (!selectedIndices.has(index)) {

@@ -1,7 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { generatePlanId } from '../utils/id-generator';
 import { getPincodeDetails } from '@/utils/pincode';
-import { Zone } from '@lorrigo/db';
 import {
   calculatePricesForCouriers,
   CourierWithPricing,
@@ -9,6 +8,7 @@ import {
   validateCalculationParams,
 } from '@/utils/calculate-order-price';
 import { flushKeysByPattern } from '@/lib/upstash/flush-key-by-pattern';
+import { ZoneLabel } from '@lorrigo/db';
 
 // Types
 interface ZonePricingItem {
@@ -21,11 +21,11 @@ interface ZonePricingItem {
 }
 
 interface ZonePricingData {
-  withinCity: ZonePricingItem;
-  withinZone: ZonePricingItem;
-  withinMetro: ZonePricingItem;
-  withinRoi: ZonePricingItem;
-  northEast: ZonePricingItem;
+  Z_A: ZonePricingItem;
+  Z_B: ZonePricingItem;
+  Z_C: ZonePricingItem;
+  Z_D: ZonePricingItem;
+  Z_E: ZonePricingItem;
 }
 
 interface PlanCourierPricingInput {
@@ -153,49 +153,49 @@ export class PlanService {
             // Process the zonePricing data to match the DB schema
             const zonePricingData = [
               {
-                zone: Zone.WITHIN_CITY,
-                base_price: pricing.zonePricing.withinCity.base_price,
-                increment_price: pricing.zonePricing.withinCity.increment_price,
-                is_rto_same_as_fw: pricing.zonePricing.withinCity.is_rto_same_as_fw,
-                rto_base_price: pricing.zonePricing.withinCity.rto_base_price,
-                rto_increment_price: pricing.zonePricing.withinCity.rto_increment_price,
-                flat_rto_charge: pricing.zonePricing.withinCity.flat_rto_charge,
+                zone: ZoneLabel.Z_A,
+                base_price: pricing.zonePricing.Z_A.base_price,
+                increment_price: pricing.zonePricing.Z_A.increment_price,
+                is_rto_same_as_fw: pricing.zonePricing.Z_A.is_rto_same_as_fw,
+                rto_base_price: pricing.zonePricing.Z_A.rto_base_price,
+                rto_increment_price: pricing.zonePricing.Z_A.rto_increment_price,
+                flat_rto_charge: pricing.zonePricing.Z_A.flat_rto_charge,
               },
               {
-                zone: Zone.WITHIN_STATE,
-                base_price: pricing.zonePricing.withinZone.base_price,
-                increment_price: pricing.zonePricing.withinZone.increment_price,
-                is_rto_same_as_fw: pricing.zonePricing.withinZone.is_rto_same_as_fw,
-                rto_base_price: pricing.zonePricing.withinZone.rto_base_price,
-                rto_increment_price: pricing.zonePricing.withinZone.rto_increment_price,
-                flat_rto_charge: pricing.zonePricing.withinZone.flat_rto_charge,
+                zone: ZoneLabel.Z_B,
+                base_price: pricing.zonePricing.Z_B.base_price,
+                increment_price: pricing.zonePricing.Z_B.increment_price,
+                is_rto_same_as_fw: pricing.zonePricing.Z_B.is_rto_same_as_fw,
+                rto_base_price: pricing.zonePricing.Z_B.rto_base_price,
+                rto_increment_price: pricing.zonePricing.Z_B.rto_increment_price,
+                flat_rto_charge: pricing.zonePricing.Z_B.flat_rto_charge,
               },
               {
-                zone: Zone.WITHIN_METRO,
-                base_price: pricing.zonePricing.withinMetro.base_price,
-                increment_price: pricing.zonePricing.withinMetro.increment_price,
-                is_rto_same_as_fw: pricing.zonePricing.withinMetro.is_rto_same_as_fw,
-                rto_base_price: pricing.zonePricing.withinMetro.rto_base_price,
-                rto_increment_price: pricing.zonePricing.withinMetro.rto_increment_price,
-                flat_rto_charge: pricing.zonePricing.withinMetro.flat_rto_charge,
+                zone: ZoneLabel.Z_C,
+                base_price: pricing.zonePricing.Z_C.base_price,
+                increment_price: pricing.zonePricing.Z_C.increment_price,
+                is_rto_same_as_fw: pricing.zonePricing.Z_C.is_rto_same_as_fw,
+                rto_base_price: pricing.zonePricing.Z_C.rto_base_price,
+                rto_increment_price: pricing.zonePricing.Z_C.rto_increment_price,
+                flat_rto_charge: pricing.zonePricing.Z_C.flat_rto_charge,
               },
               {
-                zone: Zone.WITHIN_ROI,
-                base_price: pricing.zonePricing.withinRoi.base_price,
-                increment_price: pricing.zonePricing.withinRoi.increment_price,
-                is_rto_same_as_fw: pricing.zonePricing.withinRoi.is_rto_same_as_fw,
-                rto_base_price: pricing.zonePricing.withinRoi.rto_base_price,
-                rto_increment_price: pricing.zonePricing.withinRoi.rto_increment_price,
-                flat_rto_charge: pricing.zonePricing.withinRoi.flat_rto_charge,
+                zone: ZoneLabel.Z_D,
+                base_price: pricing.zonePricing.Z_D.base_price,
+                increment_price: pricing.zonePricing.Z_D.increment_price,
+                is_rto_same_as_fw: pricing.zonePricing.Z_D.is_rto_same_as_fw,
+                rto_base_price: pricing.zonePricing.Z_D.rto_base_price,
+                rto_increment_price: pricing.zonePricing.Z_D.rto_increment_price,
+                flat_rto_charge: pricing.zonePricing.Z_D.flat_rto_charge,
               },
               {
-                zone: Zone.NORTH_EAST,
-                base_price: pricing.zonePricing.northEast.base_price,
-                increment_price: pricing.zonePricing.northEast.increment_price,
-                is_rto_same_as_fw: pricing.zonePricing.northEast.is_rto_same_as_fw,
-                rto_base_price: pricing.zonePricing.northEast.rto_base_price,
-                rto_increment_price: pricing.zonePricing.northEast.rto_increment_price,
-                flat_rto_charge: pricing.zonePricing.northEast.flat_rto_charge,
+                zone: ZoneLabel.Z_E,
+                base_price: pricing.zonePricing.Z_E.base_price,
+                increment_price: pricing.zonePricing.Z_E.increment_price,
+                is_rto_same_as_fw: pricing.zonePricing.Z_E.is_rto_same_as_fw,
+                rto_base_price: pricing.zonePricing.Z_E.rto_base_price,
+                rto_increment_price: pricing.zonePricing.Z_E.rto_increment_price,
+                flat_rto_charge: pricing.zonePricing.Z_E.flat_rto_charge,
               },
             ];
             return {
@@ -291,53 +291,53 @@ export class PlanService {
         await this.fastify.prisma.zonePricing.createMany({
           data: [
             {
-              zone: 'WITHIN_CITY',
-              base_price: pricing.zonePricing.withinCity.base_price,
-              increment_price: pricing.zonePricing.withinCity.increment_price,
-              is_rto_same_as_fw: pricing.zonePricing.withinCity.is_rto_same_as_fw,
-              rto_base_price: pricing.zonePricing.withinCity.rto_base_price,
-              rto_increment_price: pricing.zonePricing.withinCity.rto_increment_price,
-              flat_rto_charge: pricing.zonePricing.withinCity.flat_rto_charge,
+              zone: ZoneLabel.Z_A,
+              base_price: pricing.zonePricing.Z_A.base_price,
+              increment_price: pricing.zonePricing.Z_A.increment_price,
+              is_rto_same_as_fw: pricing.zonePricing.Z_A.is_rto_same_as_fw,
+              rto_base_price: pricing.zonePricing.Z_A.rto_base_price,
+              rto_increment_price: pricing.zonePricing.Z_A.rto_increment_price,
+              flat_rto_charge: pricing.zonePricing.Z_A.flat_rto_charge,
               plan_courier_pricing_id: newPricing.id,
             },
             {
-              zone: 'WITHIN_STATE',
-              base_price: pricing.zonePricing.withinZone.base_price,
-              increment_price: pricing.zonePricing.withinZone.increment_price,
-              is_rto_same_as_fw: pricing.zonePricing.withinZone.is_rto_same_as_fw,
-              rto_base_price: pricing.zonePricing.withinZone.rto_base_price,
-              rto_increment_price: pricing.zonePricing.withinZone.rto_increment_price,
-              flat_rto_charge: pricing.zonePricing.withinZone.flat_rto_charge,
+              zone: ZoneLabel.Z_B,
+              base_price: pricing.zonePricing.Z_B.base_price,
+              increment_price: pricing.zonePricing.Z_B.increment_price,
+              is_rto_same_as_fw: pricing.zonePricing.Z_B.is_rto_same_as_fw,
+              rto_base_price: pricing.zonePricing.Z_B.rto_base_price,
+              rto_increment_price: pricing.zonePricing.Z_B.rto_increment_price,
+              flat_rto_charge: pricing.zonePricing.Z_B.flat_rto_charge,
               plan_courier_pricing_id: newPricing.id,
             },
             {
-              zone: 'WITHIN_METRO',
-              base_price: pricing.zonePricing.withinMetro.base_price,
-              increment_price: pricing.zonePricing.withinMetro.increment_price,
-              is_rto_same_as_fw: pricing.zonePricing.withinMetro.is_rto_same_as_fw,
-              rto_base_price: pricing.zonePricing.withinMetro.rto_base_price,
-              rto_increment_price: pricing.zonePricing.withinMetro.rto_increment_price,
-              flat_rto_charge: pricing.zonePricing.withinMetro.flat_rto_charge,
+              zone: ZoneLabel.Z_C,
+              base_price: pricing.zonePricing.Z_C.base_price,
+              increment_price: pricing.zonePricing.Z_C.increment_price,
+              is_rto_same_as_fw: pricing.zonePricing.Z_C.is_rto_same_as_fw,
+              rto_base_price: pricing.zonePricing.Z_C.rto_base_price,
+              rto_increment_price: pricing.zonePricing.Z_C.rto_increment_price,
+              flat_rto_charge: pricing.zonePricing.Z_C.flat_rto_charge,
               plan_courier_pricing_id: newPricing.id,
             },
             {
-              zone: 'WITHIN_ROI',
-              base_price: pricing.zonePricing.withinRoi.base_price,
-              increment_price: pricing.zonePricing.withinRoi.increment_price,
-              is_rto_same_as_fw: pricing.zonePricing.withinRoi.is_rto_same_as_fw,
-              rto_base_price: pricing.zonePricing.withinRoi.rto_base_price,
-              rto_increment_price: pricing.zonePricing.withinRoi.rto_increment_price,
-              flat_rto_charge: pricing.zonePricing.withinRoi.flat_rto_charge,
+              zone: ZoneLabel.Z_D,
+              base_price: pricing.zonePricing.Z_D.base_price,
+              increment_price: pricing.zonePricing.Z_D.increment_price,
+              is_rto_same_as_fw: pricing.zonePricing.Z_D.is_rto_same_as_fw,
+              rto_base_price: pricing.zonePricing.Z_D.rto_base_price,
+              rto_increment_price: pricing.zonePricing.Z_D.rto_increment_price,
+              flat_rto_charge: pricing.zonePricing.Z_D.flat_rto_charge,
               plan_courier_pricing_id: newPricing.id,
             },
             {
-              zone: 'NORTH_EAST',
-              base_price: pricing.zonePricing.northEast.base_price,
-              increment_price: pricing.zonePricing.northEast.increment_price,
-              is_rto_same_as_fw: pricing.zonePricing.northEast.is_rto_same_as_fw,
-              rto_base_price: pricing.zonePricing.northEast.rto_base_price,
-              rto_increment_price: pricing.zonePricing.northEast.rto_increment_price,
-              flat_rto_charge: pricing.zonePricing.northEast.flat_rto_charge,
+              zone: ZoneLabel.Z_E,
+              base_price: pricing.zonePricing.Z_E.base_price,
+              increment_price: pricing.zonePricing.Z_E.increment_price,
+              is_rto_same_as_fw: pricing.zonePricing.Z_E.is_rto_same_as_fw,
+              rto_base_price: pricing.zonePricing.Z_E.rto_base_price,
+              rto_increment_price: pricing.zonePricing.Z_E.rto_increment_price,
+              flat_rto_charge: pricing.zonePricing.Z_E.flat_rto_charge,
               plan_courier_pricing_id: newPricing.id,
             },
           ],
@@ -486,11 +486,11 @@ export class PlanService {
 
     // Format the response to match the expected structure for the frontend
     const zonePricing: Record<string, any> = {
-      withinCity: {},
-      withinZone: {},
-      withinMetro: {},
-      withinRoi: {},
-      northEast: {},
+      Z_A: {},
+      Z_B: {},
+      Z_C: {},
+      Z_D: {},
+      Z_E: {},
     };
 
     // Map zone pricing from database to the expected format
