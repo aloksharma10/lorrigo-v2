@@ -38,6 +38,7 @@ import { X, Loader2, Check, ChevronsUpDown } from 'lucide-react';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { usePlanOperations } from '@/lib/apis/plans';
 import { cn } from '@lorrigo/ui/lib/utils';
+import { useModalStore } from '@/modal/modal-store';
 
 interface Plan {
   id: string;
@@ -74,23 +75,30 @@ export function AssignPlanModal({ planId, userId, onClose, onSuccess }: AssignPl
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
+  const { modals, closeModal } = useModalStore();
+  const modal_props = modals.filter((modal) => modal.type === 'assign-plan')[0];
+  const { planId: modalPlanId, userId: modalUserId } = modal_props?.props as {
+    planId: string;
+    userId: string;
+  };
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      planId: planId || '',
-      userId: userId || '',
+      planId: modalPlanId || '',
+      userId: modalUserId || '',
     },
   });
 
   // Set initial values if provided
   useEffect(() => {
-    if (planId) {
-      form.setValue('planId', planId);
+    if (modalPlanId) {
+      form.setValue('planId', modalPlanId);
     }
-    if (userId) {
-      form.setValue('userId', userId);
+    if (modalUserId) {
+      form.setValue('userId', modalUserId);
     }
-  }, [planId, userId, form]);
+  }, [modalPlanId, modalUserId, form]);
 
   const { data: users = [], isLoading: isLoadingUsers } = getUsersQuery({
     queryKey: ['users', debouncedSearchQuery],

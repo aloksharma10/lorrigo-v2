@@ -118,7 +118,7 @@ export function ShopifyChannelCard() {
               size="sm"
               className="flex-1"
               onClick={() => window.open(`https://${connection.shop}/admin`, '_blank')}
-              icon={<ExternalLink className="mr-2 h-4 w-4" />}
+              icon={ExternalLink}
             >
               Open Shopify Admin
             </Button>
@@ -178,7 +178,7 @@ export function ShopifyChannelCard() {
           onClick={handleDisconnect}
           disabled={isDisconnecting}
           className="w-full"
-          icon={<Unlink className="mr-2 h-4 w-4" />}
+          icon={Unlink}
         >
           {isDisconnecting ? 'Disconnecting...' : 'Disconnect Store'}
         </Button>
@@ -190,7 +190,7 @@ export function ShopifyChannelCard() {
         onClick={handleConnect}
         disabled={isConnecting}
         className="w-full"
-        icon={<LinkIcon className="mr-2 h-4 w-4" />}
+        icon={LinkIcon}
       >
         {isConnecting ? 'Connecting...' : 'Connect Shopify Store'}
       </Button>

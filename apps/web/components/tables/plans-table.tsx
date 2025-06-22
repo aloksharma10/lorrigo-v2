@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@lorrigo/ui/components';
 import { usePlanOperations } from '@/lib/apis/plans';
+import Link from 'next/link';
 
 interface Plan {
   id: string;
@@ -178,10 +179,12 @@ export default function PlansTable({ onAssignPlan }: PlansTableProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit Plan
-                </DropdownMenuItem>
+                <Link href={`/admin/plans/${plan.id}/edit`}>
+                  <DropdownMenuItem>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit Plan
+                  </DropdownMenuItem>
+                </Link>
                 <DropdownMenuItem onClick={handleDelete} className="text-red-600">
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete Plan

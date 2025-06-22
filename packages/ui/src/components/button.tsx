@@ -3,6 +3,8 @@ import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 import { cn } from '@lorrigo/ui/lib/utils';
+import { Loader2Icon, LucideProps } from 'lucide-react';
+import { ForwardRefExoticComponent, RefAttributes } from 'react';
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
@@ -37,7 +39,7 @@ function Button({
   variant,
   size,
   asChild = false,
-  icon,
+  icon: Icon,
   children,
   isLoading,
   ...props
@@ -45,7 +47,7 @@ function Button({
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean;
     isLoading?: boolean;
-    icon?: React.ReactNode;
+    icon?: React.ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>;
   }) {
   const Comp = asChild ? Slot : 'button';
 
@@ -57,12 +59,13 @@ function Button({
         'cursor-pointer',
         buttonVariants({ variant, size, className }),
         isLoading && 'cursor-wait',
-        icon && 'gap-2'
+        Icon && 'gap-2'
       )}
       {...props}
     >
       <span className="flex items-center gap-2">
-        {icon && <span className="shrink-0">{icon}</span>}
+        {isLoading && <Loader2Icon className="animate-spin" />}
+        {Icon && !isLoading && <Icon className={cn("h-4 w-4")} />}
         {children}
       </span>
     </Comp>

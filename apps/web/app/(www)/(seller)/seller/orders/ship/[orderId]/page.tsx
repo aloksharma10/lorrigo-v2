@@ -177,7 +177,7 @@ export default function ShipOrderPage() {
               <h1 className="text-xl font-bold">Select Courier</h1>
               <Sheet open={showMobileOrderDetails} onOpenChange={setShowMobileOrderDetails}>
                 <SheetTrigger asChild>
-                  <Button icon={<Menu className="mr-2 h-4 w-4" />} variant="outline" size="sm">
+                  <Button icon={Menu} variant="outline" size="sm">
                     Order Details
                   </Button>
                 </SheetTrigger>
