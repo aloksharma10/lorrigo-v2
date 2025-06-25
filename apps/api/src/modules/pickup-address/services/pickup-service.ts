@@ -87,7 +87,7 @@ export class PickupService {
 
       const lorrigoPickupId = generateId({
         tableName: 'HUB',
-        prefix: 'LS-HUB-',
+        prefix: `${sellerName}-HUB-`,
         entityName: sellerName,
         lastUsedFinancialYear: getFinancialYear(lastHub?.created_at || new Date()),
         lastSequenceNumber: lastSequenceNumberHub,

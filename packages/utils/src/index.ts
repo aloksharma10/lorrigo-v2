@@ -26,3 +26,6 @@ export {
 
 // Export all functions
 export * from './functions/parse-csv-update';
+
+// Export bucketing system
+export * from './lorrigo-bucketing';

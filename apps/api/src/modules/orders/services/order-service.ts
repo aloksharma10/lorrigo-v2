@@ -163,6 +163,9 @@ export class OrderService {
                 },
                 select: {
                   status: true,
+                  status_code: true,
+                  description: true,
+                  location: true,
                   timestamp: true,
                 },
               },

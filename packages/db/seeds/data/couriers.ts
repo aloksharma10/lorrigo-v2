@@ -1,0 +1,214 @@
+// Define bucket constants - Updated to match the ShipmentBucket enum
+const ShipmentBucket = {
+   ALL: 101,
+   NEW: 0,
+   READY_TO_SHIP: 1,
+   IN_TRANSIT: 2,
+   NDR: 3,
+   DELIVERED: 4,
+   RTO_INITIATED: 5,
+   RTO_IN_TRANSIT: 51, // New status
+   RTO_DELIVERED: 9,
+   CANCELLED_ORDER: 6, // New status
+   LOST_DAMAGED: 7,
+   DISPOSED: 8,
+   COURIER_ASSIGNED: 11,
+   PICKUP_SCHEDULED: 12,
+   PICKED_UP: 13,
+   OUT_FOR_DELIVERY: 41,
+   EXCEPTION: 81,
+   CANCELLED_SHIPMENT: 61,
+};
+
+export const delhiveryStatusMappings = [
+   // Bucket 101: ALL
+   { courier_name: 'DELHIVERY', status_code: 'ALL', status_label: 'All Shipments', status_description: 'All shipment statuses', bucket: ShipmentBucket.ALL, is_active: true },
+   // Bucket 0: NEW / Order Placed
+   { courier_name: 'DELHIVERY', status_code: 'Manifested', status_label: 'Manifested', status_description: 'Order has been created', bucket: ShipmentBucket.NEW, is_active: true },
+   // Bucket 11: COURIER_ASSIGNED
+   { courier_name: 'DELHIVERY', status_code: 'Assigned', status_label: 'Assigned', status_description: 'Courier assigned', bucket: ShipmentBucket.COURIER_ASSIGNED, is_active: true },
+   { courier_name: 'DELHIVERY', status_code: 'PENDING', status_label: 'Pending', status_description: 'Shipment pending', bucket: ShipmentBucket.COURIER_ASSIGNED, is_active: true },
+   // Bucket 12: PICKUP_SCHEDULED
+   { courier_name: 'DELHIVERY', status_code: 'PICKUP', status_label: 'Pickup', status_description: 'Shipment pickup scheduled', bucket: ShipmentBucket.PICKUP_SCHEDULED, is_active: true },
+   // Bucket 13: PICKED_UP
+   { courier_name: 'DELHIVERY', status_code: 'Picked', status_label: 'Picked Up', status_description: 'Shipment picked up', bucket: ShipmentBucket.PICKED_UP, is_active: true },
+   // Bucket 2: IN_TRANSIT
+   { courier_name: 'DELHIVERY', status_code: 'In Transit:UD', status_label: 'In Transit', status_description: 'In Transit', bucket: ShipmentBucket.IN_TRANSIT, is_active: true },
+   { courier_name: 'DELHIVERY', status_code: 'Pending:UD', status_label: 'In Transit', status_description: 'In Transit', bucket: ShipmentBucket.IN_TRANSIT, is_active: true },
+   { courier_name: 'DELHIVERY', status_code: 'Dispatched:UD', status_label: 'Out for Delivery', status_description: 'Out for Delivery', bucket: ShipmentBucket.IN_TRANSIT, is_active: true },
+   // Bucket 41: OUT_FOR_DELIVERY
+   { courier_name: 'DELHIVERY', status_code: 'Out for Delivery', status_label: 'Out for Delivery', status_description: 'Shipment out for delivery', bucket: ShipmentBucket.OUT_FOR_DELIVERY, is_active: true },
+   // Bucket 4: DELIVERED
+   { courier_name: 'DELHIVERY', status_code: 'Delivered:UD', status_label: 'Delivered', status_description: 'Delivered', bucket: ShipmentBucket.DELIVERED, is_active: true },
+   { courier_name: 'DELHIVERY', status_code: 'Delivered:DL', status_label: 'Delivered', status_description: 'Delivered', bucket: ShipmentBucket.DELIVERED, is_active: true },
+   // Bucket 3: NDR
+   { courier_name: 'DELHIVERY', status_code: 'Undelivered', status_label: 'Undelivered', status_description: 'Shipment undelivered', bucket: ShipmentBucket.NDR, is_active: true },
+   { courier_name: 'DELHIVERY', status_code: 'NDR', status_label: 'Not Delivered', status_description: 'Shipment could not be delivered', bucket: ShipmentBucket.NDR, is_active: true },
+   // Bucket 5: RTO
+   { courier_name: 'DELHIVERY', status_code: 'RTO:UD', status_label: 'Return to Origin', status_description: 'Return to Origin (RTO)', bucket: ShipmentBucket.RTO_IN_TRANSIT, is_active: true },
+   { courier_name: 'DELHIVERY', status_code: 'RTO:RT', status_label: 'Return to Origin', status_description: 'Return to Origin (RTO)', bucket: ShipmentBucket.RTO_IN_TRANSIT, is_active: true },
+   { courier_name: 'DELHIVERY', status_code: 'In Transit:RT', status_label: 'In Transit (RTO)', status_description: 'In Transit', bucket: ShipmentBucket.RTO_IN_TRANSIT, is_active: true },
+   { courier_name: 'DELHIVERY', status_code: 'Pending:RT', status_label: 'In Transit (RTO)', status_description: 'In Transit', bucket: ShipmentBucket.RTO_IN_TRANSIT, is_active: true },
+   { courier_name: 'DELHIVERY', status_code: 'Dispatched:RT', status_label: 'Out for Delivery (RTO)', status_description: 'Out for Delivery', bucket: ShipmentBucket.RTO_IN_TRANSIT, is_active: true },
+   { courier_name: 'DELHIVERY', status_code: 'RT', status_label: 'Return', status_description: 'Shipment returning to origin', bucket: ShipmentBucket.RTO_IN_TRANSIT, is_active: true },
+   // Bucket 9: RTO_DELIVERED
+   { courier_name: 'DELHIVERY', status_code: 'RTO Delivered', status_label: 'RTO Delivered', status_description: 'Return to origin completed', bucket: ShipmentBucket.RTO_DELIVERED, is_active: true },
+   { courier_name: 'DELHIVERY', status_code: 'DTO:UD', status_label: 'Return Delivered', status_description: 'Return Delivered', bucket: ShipmentBucket.RTO_DELIVERED, is_active: true },
+   { courier_name: 'DELHIVERY', status_code: 'DTO:RT', status_label: 'Return Delivered', status_description: 'Return Delivered', bucket: ShipmentBucket.RTO_DELIVERED, is_active: true },
+   { courier_name: 'DELHIVERY', status_code: 'DTO:DL', status_label: 'Delivered To Origin', status_description: 'Delivered To Origin', bucket: ShipmentBucket.RTO_DELIVERED, is_active: true },
+   // Bucket 7: LOST_DAMAGED
+   { courier_name: 'DELHIVERY', status_code: 'Lost', status_label: 'Lost', status_description: 'Shipment lost', bucket: ShipmentBucket.LOST_DAMAGED, is_active: true },
+   { courier_name: 'DELHIVERY', status_code: 'Damaged', status_label: 'Damaged', status_description: 'Shipment damaged', bucket: ShipmentBucket.LOST_DAMAGED, is_active: true },
+   { courier_name: 'DELHIVERY', status_code: 'LOST:UD', status_label: 'Lost or Damaged', status_description: 'Lost or Damaged', bucket: ShipmentBucket.LOST_DAMAGED, is_active: true },
+   { courier_name: 'DELHIVERY', status_code: 'LOST:RT', status_label: 'Lost or Damaged', status_description: 'Lost or Damaged', bucket: ShipmentBucket.LOST_DAMAGED, is_active: true },
+   // Bucket 61: CANCELLED_SHIPMENT
+   { courier_name: 'DELHIVERY', status_code: 'Cancelled', status_label: 'Cancelled', status_description: 'Shipment cancelled', bucket: ShipmentBucket.CANCELLED_SHIPMENT, is_active: true },
+   // Return-related statuses
+   { courier_name: 'DELHIVERY', status_code: 'Returned:UD', status_label: 'Return Delivered', status_description: 'Return Delivered', bucket: ShipmentBucket.RTO_DELIVERED, is_active: true },
+   { courier_name: 'DELHIVERY', status_code: 'Returned:DL', status_label: 'Returned', status_description: 'Returned', bucket: ShipmentBucket.RTO_DELIVERED, is_active: true },
+   { courier_name: 'DELHIVERY', status_code: 'RETURN Accepted:DL', status_label: 'Delivered To Origin', status_description: 'Delivered To Origin', bucket: ShipmentBucket.RTO_DELIVERED, is_active: true },
+   { courier_name: 'DELHIVERY', status_code: 'In Transit:PP', status_label: 'In Transit (Return)', status_description: 'In Transit (Return)', bucket: ShipmentBucket.RTO_IN_TRANSIT, is_active: true },
+   { courier_name: 'DELHIVERY', status_code: 'Pending:PP', status_label: 'Pending (Return)', status_description: 'Pending (Return)', bucket: ShipmentBucket.RTO_IN_TRANSIT, is_active: true },
+   { courier_name: 'DELHIVERY', status_code: 'Dispatched:PP', status_label: 'Out for Pickup (Return)', status_description: 'Out for Pickup (Return)', bucket: ShipmentBucket.RTO_IN_TRANSIT, is_active: true },
+   { courier_name: 'DELHIVERY', status_code: 'Returned:PP', status_label: 'Return Delivered', status_description: 'Return Delivered', bucket: ShipmentBucket.RTO_DELIVERED, is_active: true },
+   { courier_name: 'DELHIVERY', status_code: 'DTO:PP', status_label: 'Return Delivered', status_description: 'Return Delivered', bucket: ShipmentBucket.RTO_DELIVERED, is_active: true }
+];
+
+export const shiprocketStatusMappings = [
+   // Bucket 101: ALL
+   { courier_name: 'SHIPROCKET', status_code: 'ALL', status_label: 'All Shipments', status_description: 'All shipment statuses', bucket: ShipmentBucket.ALL, is_active: true },
+   // Bucket 0: NEW / Order Placed
+   { courier_name: 'SHIPROCKET', status_code: 'NEW', status_label: 'Order Placed', status_description: 'Order has been placed', bucket: ShipmentBucket.NEW, is_active: true },
+   // Bucket 1: READY_TO_SHIP
+   { courier_name: 'SHIPROCKET', status_code: 'NA', status_label: 'Pickup Scheduled', status_description: 'Pickup Scheduled', bucket: ShipmentBucket.READY_TO_SHIP, is_active: true },
+   { courier_name: 'SHIPROCKET', status_code: '15', status_label: 'Customer Not Available', status_description: 'Customer Not Available/Contactable', bucket: ShipmentBucket.READY_TO_SHIP, is_active: true },
+   { courier_name: 'SHIPROCKET', status_code: '19', status_label: 'Out For Pickup', status_description: 'Out For Pickup', bucket: ShipmentBucket.READY_TO_SHIP, is_active: true },
+   // Bucket 11: COURIER_ASSIGNED
+   // // Bucket 12: PICKUP_SCHEDULED
+   // // Bucket 13: PICKED_UP
+   { courier_name: 'SHIPROCKET', status_code: '42', status_label: 'Picked Up', status_description: 'Picked Up', bucket: ShipmentBucket.PICKED_UP, is_active: true },
+   // Bucket 2: IN_TRANSIT
+   { courier_name: 'SHIPROCKET', status_code: '6', status_label: 'Shipped', status_description: 'Shipped', bucket: ShipmentBucket.IN_TRANSIT, is_active: true },
+   { courier_name: 'SHIPROCKET', status_code: '17', status_label: 'Out For Delivery', status_description: 'Out For Delivery', bucket: ShipmentBucket.IN_TRANSIT, is_active: true },
+   { courier_name: 'SHIPROCKET', status_code: '18', status_label: 'In Transit', status_description: 'In Transit', bucket: ShipmentBucket.IN_TRANSIT, is_active: true },
+   { courier_name: 'SHIPROCKET', status_code: '22', status_label: 'Delayed', status_description: 'Delayed', bucket: ShipmentBucket.IN_TRANSIT, is_active: true },
+   { courier_name: 'SHIPROCKET', status_code: '23', status_label: 'Partial Delivered', status_description: 'Partial Delivered', bucket: ShipmentBucket.IN_TRANSIT, is_active: true },
+   { courier_name: 'SHIPROCKET', status_code: '38', status_label: 'Reached At Destination Hub', status_description: 'Reached At Destination Hub', bucket: ShipmentBucket.IN_TRANSIT, is_active: true },
+   { courier_name: 'SHIPROCKET', status_code: '39', status_label: 'Misrouted', status_description: 'Misrouted', bucket: ShipmentBucket.IN_TRANSIT, is_active: true },
+   { courier_name: 'SHIPROCKET', status_code: '48', status_label: 'Reached Warehouse', status_description: 'Reached Warehouse', bucket: ShipmentBucket.IN_TRANSIT, is_active: true },
+   { courier_name: 'SHIPROCKET', status_code: '50', status_label: 'In Flight', status_description: 'In Flight', bucket: ShipmentBucket.IN_TRANSIT, is_active: true },
+   { courier_name: 'SHIPROCKET', status_code: '51', status_label: 'Handover To Courier', status_description: 'Handover To Courier', bucket: ShipmentBucket.IN_TRANSIT, is_active: true },
+   { courier_name: 'SHIPROCKET', status_code: '76', status_label: 'Untraceable', status_description: 'Untraceable', bucket: ShipmentBucket.IN_TRANSIT, is_active: true },
+   { courier_name: 'SHIPROCKET', status_code: '77', status_label: 'Issue Related to Recipient', status_description: 'Issue Related to the Recipient', bucket: ShipmentBucket.IN_TRANSIT, is_active: true },
+   // Bucket 41: OUT_FOR_DELIVERY
+   // Bucket 4: DELIVERED
+   { courier_name: 'SHIPROCKET', status_code: '7', status_label: 'Delivered', status_description: 'Delivered', bucket: ShipmentBucket.DELIVERED, is_active: true },
+   { courier_name: 'SHIPROCKET', status_code: '26', status_label: 'Fulfilled', status_description: 'Fulfilled', bucket: ShipmentBucket.DELIVERED, is_active: true },
+   { courier_name: 'SHIPROCKET', status_code: '43', status_label: 'Self Fulfilled', status_description: 'Self Fulfilled', bucket: ShipmentBucket.DELIVERED, is_active: true },
+   // Bucket 3: NDR
+   { courier_name: 'SHIPROCKET', status_code: '21', status_label: 'Undelivered', status_description: 'Undelivered', bucket: ShipmentBucket.NDR, is_active: true },
+   // Bucket 5: RTO
+   { courier_name: 'SHIPROCKET', status_code: '9', status_label: 'RTO Initiated', status_description: 'RTO Initiated', bucket: ShipmentBucket.RTO_INITIATED, is_active: true },
+   { courier_name: 'SHIPROCKET', status_code: '14', status_label: 'RTO Acknowledged', status_description: 'RTO Acknowledged', bucket: ShipmentBucket.RTO_INITIATED, is_active: true },
+   { courier_name: 'SHIPROCKET', status_code: '40', status_label: 'RTO_NDR', status_description: 'RTO_NDR', bucket: ShipmentBucket.RTO_INITIATED, is_active: true },
+   { courier_name: 'SHIPROCKET', status_code: '41', status_label: 'RTO_OFD', status_description: 'RTO_OFD', bucket: ShipmentBucket.RTO_IN_TRANSIT, is_active: true },
+   { courier_name: 'SHIPROCKET', status_code: '46', status_label: 'RTO In Transit', status_description: 'RTO In Transit', bucket: ShipmentBucket.RTO_IN_TRANSIT, is_active: true },
+   { courier_name: 'SHIPROCKET', status_code: '75', status_label: 'RTO_LOCK', status_description: 'RTO_LOCK', bucket: ShipmentBucket.RTO_INITIATED, is_active: true },
+   { courier_name: 'SHIPROCKET', status_code: '78', status_label: 'Reached Back at Seller City', status_description: 'Reached Back at Seller City', bucket: ShipmentBucket.RTO_DELIVERED, is_active: true },
+   // Bucket 9: RTO_DELIVERED
+   { courier_name: 'SHIPROCKET', status_code: '10', status_label: 'RTO Delivered', status_description: 'RTO Delivered', bucket: ShipmentBucket.RTO_DELIVERED, is_active: true },
+   // Bucket 7: LOST_DAMAGED
+   { courier_name: 'SHIPROCKET', status_code: '12', status_label: 'Lost', status_description: 'Lost', bucket: ShipmentBucket.LOST_DAMAGED, is_active: true },
+   { courier_name: 'SHIPROCKET', status_code: '24', status_label: 'Destroyed', status_description: 'Destroyed', bucket: ShipmentBucket.LOST_DAMAGED, is_active: true },
+   { courier_name: 'SHIPROCKET', status_code: '25', status_label: 'Damaged', status_description: 'Damaged', bucket: ShipmentBucket.LOST_DAMAGED, is_active: true },
+   // Bucket 61: CANCELLED_SHIPMENT
+   { courier_name: 'SHIPROCKET', status_code: '8', status_label: 'Canceled', status_description: 'Canceled', bucket: ShipmentBucket.CANCELLED_SHIPMENT, is_active: true },
+   { courier_name: 'SHIPROCKET', status_code: '16', status_label: 'Cancellation Requested', status_description: 'Cancellation Requested', bucket: ShipmentBucket.CANCELLED_SHIPMENT, is_active: true },
+   { courier_name: 'SHIPROCKET', status_code: '45', status_label: 'Cancelled Before Dispatched', status_description: 'Cancelled Before Dispatched', bucket: ShipmentBucket.CANCELLED_SHIPMENT, is_active: true },
+   // Bucket 8: DISPOSED
+   { courier_name: 'SHIPROCKET', status_code: '44', status_label: 'Disposed Off', status_description: 'Disposed Off', bucket: ShipmentBucket.DISPOSED, is_active: true }
+];
+
+export const shiprocketB2BStatusMappings = [
+   // Bucket 101: ALL
+   { courier_name: 'SHIPROCKET_B2B', status_code: 'ALL', status_label: 'All Shipments', status_description: 'All shipment statuses', bucket: ShipmentBucket.ALL, is_active: true },
+   // Bucket 0: NEW / Order Placed
+   { courier_name: 'SHIPROCKET_B2B', status_code: 'NEW', status_label: 'Order Placed', status_description: 'Order has been placed', bucket: ShipmentBucket.NEW, is_active: true },
+   // Bucket 1: READY_TO_SHIP
+   { courier_name: 'SHIPROCKET_B2B', status_code: 'Not Picked', status_label: 'Not Picked', status_description: 'In Transit', bucket: ShipmentBucket.READY_TO_SHIP, is_active: true },
+   // Bucket 11: COURIER_ASSIGNED
+   { courier_name: 'SHIPROCKET_B2B', status_code: 'PENDING', status_label: 'Pending', status_description: 'Order is pending', bucket: ShipmentBucket.COURIER_ASSIGNED, is_active: true },
+   // Bucket 12: PICKUP_SCHEDULED
+   { courier_name: 'SHIPROCKET_B2B', status_code: 'PICKUP_SCHEDULED', status_label: 'Pickup Scheduled', status_description: 'Pickup scheduled for the shipment', bucket: ShipmentBucket.PICKUP_SCHEDULED, is_active: true },
+   // Bucket 2: IN_TRANSIT
+   { courier_name: 'SHIPROCKET_B2B', status_code: 'IN_TRANSIT', status_label: 'In Transit', status_description: 'In Transit', bucket: ShipmentBucket.IN_TRANSIT, is_active: true },
+   { courier_name: 'SHIPROCKET_B2B', status_code: 'Picked Up', status_label: 'In Transit', status_description: 'In Transit', bucket: ShipmentBucket.IN_TRANSIT, is_active: true },
+   // Bucket 41: OUT_FOR_DELIVERY
+   { courier_name: 'SHIPROCKET_B2B', status_code: 'Out For Delivery', status_label: 'Out for Delivery', status_description: 'Out for Delivery', bucket: ShipmentBucket.OUT_FOR_DELIVERY, is_active: true },
+   // Bucket 4: DELIVERED
+   { courier_name: 'SHIPROCKET_B2B', status_code: 'DELIVERED', status_label: 'Delivered', status_description: 'Delivered', bucket: ShipmentBucket.DELIVERED, is_active: true },
+   { courier_name: 'SHIPROCKET_B2B', status_code: 'Reached At Destination', status_label: 'Delivered', status_description: 'Delivered', bucket: ShipmentBucket.DELIVERED, is_active: true },
+   // Bucket 3: NDR
+   { courier_name: 'SHIPROCKET_B2B', status_code: 'NDR', status_label: 'Undelivered', status_description: 'Shipment undelivered', bucket: ShipmentBucket.NDR, is_active: true },
+   // Bucket 5: RTO
+   { courier_name: 'SHIPROCKET_B2B', status_code: 'RTO', status_label: 'Return to Origin', status_description: 'Return to Origin (RTO)', bucket: ShipmentBucket.RTO_INITIATED, is_active: true },
+   // Bucket 9: RTO_DELIVERED
+   { courier_name: 'SHIPROCKET_B2B', status_code: 'RTO_DELIVERED', status_label: 'RTO Delivered', status_description: 'Return to origin completed', bucket: ShipmentBucket.RTO_DELIVERED, is_active: true },
+   { courier_name: 'SHIPROCKET_B2B', status_code: 'DTO', status_label: 'Return Delivered', status_description: 'Return Delivered', bucket: ShipmentBucket.RTO_DELIVERED, is_active: true },
+   // Bucket 7: LOST_DAMAGED
+   { courier_name: 'SHIPROCKET_B2B', status_code: 'LOST', status_label: 'Lost or Damaged', status_description: 'Lost or Damaged', bucket: ShipmentBucket.LOST_DAMAGED, is_active: true },
+   // Bucket 61: CANCELLED_SHIPMENT
+   { courier_name: 'SHIPROCKET_B2B', status_code: 'CANCELLED', status_label: 'Cancelled', status_description: 'Shipment cancelled', bucket: ShipmentBucket.CANCELLED_SHIPMENT, is_active: true },
+   // Return-related statuses
+   { courier_name: 'SHIPROCKET_B2B', status_code: 'Returned', status_label: 'Return Delivered', status_description: 'Return Delivered', bucket: ShipmentBucket.RTO_DELIVERED, is_active: true }
+];
+
+export const smartshipStatusMappings = [
+   // Bucket 2: IN_TRANSIT
+   { courier_name: 'SMARTSHIP', status_code: '10', status_label: 'Shipped', status_description: 'Shipped', bucket: ShipmentBucket.IN_TRANSIT, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '27', status_label: 'In Transit', status_description: 'In Transit', bucket: ShipmentBucket.IN_TRANSIT, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '30', status_label: 'Out For Delivery', status_description: 'Out For Delivery', bucket: ShipmentBucket.IN_TRANSIT, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '36', status_label: 'Handed Over to Courier', status_description: 'Handed Over to Courier', bucket: ShipmentBucket.IN_TRANSIT, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '207', status_label: 'Misrouted', status_description: 'Misrouted', bucket: ShipmentBucket.IN_TRANSIT, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '209', status_label: 'Destination Reached', status_description: 'Destination Reached', bucket: ShipmentBucket.IN_TRANSIT, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '210', status_label: 'Delivery Not Attempted', status_description: 'Delivery Not Attempted', bucket: ShipmentBucket.IN_TRANSIT, is_active: true },
+   // Bucket 4: DELIVERED
+   { courier_name: 'SMARTSHIP', status_code: '11', status_label: 'Delivered', status_description: 'Delivered', bucket: ShipmentBucket.DELIVERED, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '48', status_label: 'Delivery Confirmed by Customer', status_description: 'Delivery Confirmed by Customer', bucket: ShipmentBucket.DELIVERED, is_active: true },
+   // Bucket 3: NDR
+   { courier_name: 'SMARTSHIP', status_code: '12', status_label: 'Delivery Attempted', status_description: 'Delivery Attempted-Out Of Delivery Area', bucket: ShipmentBucket.NDR, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '13', status_label: 'Delivery Attempted', status_description: 'Delivery Attempted-Address Issue / Wrong Address', bucket: ShipmentBucket.NDR, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '14', status_label: 'Delivery Attempted', status_description: 'Delivery Attempted-COD Not ready', bucket: ShipmentBucket.NDR, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '15', status_label: 'Delivery Attempted', status_description: 'Delivery Attempted-Customer Not Available/Contactable', bucket: ShipmentBucket.NDR, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '16', status_label: 'Delivery Attempted', status_description: 'Delivery Attempted-Customer Refused To Accept Delivery', bucket: ShipmentBucket.NDR, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '17', status_label: 'Delivery Attempted', status_description: 'Delivery Attempted-Requested for Future Delivery', bucket: ShipmentBucket.NDR, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '22', status_label: 'Delivery Attempted', status_description: 'Delivery Attempted-Requested For Open Delivery', bucket: ShipmentBucket.NDR, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '23', status_label: 'Delivery Attempted', status_description: 'Delivery Attempted-Others', bucket: ShipmentBucket.NDR, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '26', status_label: 'Cancellation Requested', status_description: 'Cancellation Requested By Client', bucket: ShipmentBucket.NDR, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '59', status_label: 'In Transit Delay', status_description: 'In Transit Delay-ODA Location/ Area Not Accessible', bucket: ShipmentBucket.NDR, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '185', status_label: 'Cancelled By Client', status_description: 'Cancelled By Client', bucket: ShipmentBucket.NDR, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '214', status_label: 'Delivery Attempted', status_description: 'Delivery Attempted-Refused by Customer with OTP', bucket: ShipmentBucket.NDR, is_active: true },
+   // Bucket 5: RTO
+   { courier_name: 'SMARTSHIP', status_code: '18', status_label: 'Return To Origin', status_description: 'Return To Origin', bucket: ShipmentBucket.RTO_IN_TRANSIT, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '28', status_label: 'RTO In Transit', status_description: 'RTO In Transit', bucket: ShipmentBucket.RTO_IN_TRANSIT, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '118', status_label: 'RTO to be Refunded', status_description: 'RTO to be Refunded', bucket: ShipmentBucket.RTO_INITIATED, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '198', status_label: 'RTO-Rejected by Merchant', status_description: 'RTO-Rejected by Merchant', bucket: ShipmentBucket.RTO_INITIATED, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '212', status_label: 'RTO - In Transit - Damaged', status_description: 'RTO - In Transit - Damaged', bucket: ShipmentBucket.RTO_IN_TRANSIT, is_active: true },
+   // Bucket 9: RTO_DELIVERED
+   { courier_name: 'SMARTSHIP', status_code: '19', status_label: 'RTO Delivered To Shipper', status_description: 'RTO Delivered To Shipper', bucket: ShipmentBucket.RTO_DELIVERED, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '199', status_label: 'RTO-Delivered to FC', status_description: 'RTO-Delivered to FC', bucket: ShipmentBucket.RTO_DELIVERED, is_active: true },
+   // Bucket 7: LOST_DAMAGED
+   { courier_name: 'SMARTSHIP', status_code: '189', status_label: 'Forward Shipment Lost', status_description: 'Forward Shipment Lost', bucket: ShipmentBucket.LOST_DAMAGED, is_active: true },
+   // Bucket 61: CANCELLED_SHIPMENT
+   // Return-related statuses
+   { courier_name: 'SMARTSHIP', status_code: '163', status_label: 'Return Confirmed by Customer', status_description: 'Return Confirmed by Customer', bucket: ShipmentBucket.RTO_INITIATED, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '168', status_label: 'Return Order Manifested', status_description: 'Return Order Manifested', bucket: ShipmentBucket.RTO_IN_TRANSIT, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '169', status_label: 'Return Order Picked', status_description: 'Return Order Picked', bucket: ShipmentBucket.RTO_IN_TRANSIT, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '170', status_label: 'Return Order Cancelled', status_description: 'Return Order Cancelled', bucket: ShipmentBucket.CANCELLED_SHIPMENT, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '171', status_label: 'Return Order Delivered', status_description: 'Return Order Delivered', bucket: ShipmentBucket.RTO_DELIVERED, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '172', status_label: 'Return Order Out for Pickup', status_description: 'Return Order Out for Pickup', bucket: ShipmentBucket.RTO_IN_TRANSIT, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '173', status_label: 'Return In Transit', status_description: 'Return In Transit', bucket: ShipmentBucket.RTO_IN_TRANSIT, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '187', status_label: 'Return Cancelled by Smartship', status_description: 'Return Cancelled by Smartship', bucket: ShipmentBucket.CANCELLED_SHIPMENT, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '188', status_label: 'Return Cancelled by Client', status_description: 'Return Cancelled by Client', bucket: ShipmentBucket.CANCELLED_SHIPMENT, is_active: true },
+   { courier_name: 'SMARTSHIP', status_code: '190', status_label: 'Return Shipment Lost', status_description: 'Return Shipment Lost', bucket: ShipmentBucket.LOST_DAMAGED, is_active: true }
+];

@@ -15,12 +15,15 @@
     "db:studio": "npx prisma studio --schema=./schema/schema.prisma --browser none",
     "db:seed:pincode": "ts-node seeds/pincode.seed.ts",
     "db:seed:courier": "ts-node seeds/courier.seed.ts",
+    "db:seed:courier-status-mapping": "ts-node seeds/courier-status-mapping.seed.ts",
+    "db:seed:order": "ts-node seeds/order.seed.ts",
     "db:format": "npx prisma format --schema=./schema/schema.prisma",
     "postinstall": "prisma generate --schema=./schema/schema.prisma"
   },
   "author": "<aloksharma.cs1@gmail.com> Alok Sharma",
   "license": "ISC",
   "devDependencies": {
+    "@lorrigo/utils": "workspace:*",
     "@types/node": "^20",
     "prisma": "^6.7.0",
     "typescript": "^5.8.3"

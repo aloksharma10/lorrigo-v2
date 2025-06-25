@@ -42,6 +42,31 @@ export interface VendorCancellationResult {
   data: any;
 }
 
+export interface VendorTrackingResult {
+  success: boolean;
+  message: string;
+  data: any;
+  trackingEvents: TrackingEventData[];
+  cached?: boolean;
+}
+
+/**
+ * Tracking event data structure
+ */
+export interface TrackingEventData {
+  status: string;
+  status_code: string;
+  description: string;
+  location: string;
+  timestamp: Date;
+  activity: string;
+  isRTO: boolean;
+  isNDR: boolean;
+  bucket?: number;
+  vendor_name?: string;
+  raw_data?: any;
+}
+
 export interface VendorShipmentData {
   order: any;
   hub: any;
@@ -69,6 +94,16 @@ export interface ShipmentPickupData {
 export interface ShipmentCancelData {
   awb: string;
   shipment: any;
+}
+
+export interface ShipmentTrackingData {
+  awb: string;
+  courier?: string;
+  shipment?: {
+    id: string;
+    status: string;
+  };
+  shipmentId?: string;
 }
 
 export type VendorRegistrationData = {

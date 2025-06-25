@@ -266,6 +266,9 @@ importers:
         specifier: ^10.9.2
         version: 10.9.2(@types/node@20.19.0)(typescript@5.8.3)
     devDependencies:
+      '@lorrigo/utils':
+        specifier: workspace:*
+        version: link:../utils
       '@types/node':
         specifier: ^20
         version: 20.19.0

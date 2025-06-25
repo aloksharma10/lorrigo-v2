@@ -8,10 +8,15 @@ import {
   VendorShipmentResult,
   VendorPickupResult,
   VendorCancellationResult,
+  VendorTrackingResult,
+  TrackingEventData,
+  ShipmentTrackingData,
 } from '@/types/vendor';
-import { PickupAddress, VendorShipmentData } from '@lorrigo/utils';
+import { PickupAddress, VendorShipmentData, ShipmentBucketManager } from '@lorrigo/utils';
+import { BucketMappingService } from '../shipments/services/bucket-mapping.service';
 import { getPincodeDetails } from '@/utils/pincode';
 import { DeliveryType, prisma } from '@lorrigo/db';
+import { redis } from '@/lib/redis';
 
 /**
  * SmartShip vendor implementation
@@ -20,8 +25,9 @@ import { DeliveryType, prisma } from '@lorrigo/db';
 export class SmartShipVendor extends BaseVendor {
   private email: string;
   private password: string;
+  private bucketMappingService?: BucketMappingService;
 
-  constructor() {
+  constructor(bucketMappingService?: BucketMappingService) {
     const vendorConfig = APP_CONFIG.VENDOR.SMART_SHIP;
     super(
       'SmartShip',
@@ -31,6 +37,7 @@ export class SmartShipVendor extends BaseVendor {
     );
     this.email = vendorConfig.EMAIL || '';
     this.password = vendorConfig.PASSWORD || '';
+    this.bucketMappingService = bucketMappingService;
   }
 
   /**
@@ -617,6 +624,194 @@ export class SmartShipVendor extends BaseVendor {
         success: false,
         message: error.response?.data?.message || error.message || 'Failed to cancel shipment',
         data: null,
+      };
+    }
+  }
+
+  /**
+   * Track a shipment with SmartShip
+   * @param trackingInput Tracking data including AWB and shipment details
+   * @returns Promise resolving to tracking result with events and status
+   */
+  public async trackShipment(trackingInput: ShipmentTrackingData): Promise<VendorTrackingResult> {
+    try {
+      // Check if AWB is available
+      if (!trackingInput.awb) {
+        return {
+          success: false,
+          message: 'AWB number is required for tracking',
+          data: null,
+          trackingEvents: [],
+        };
+      }
+
+      // Check cache for tracking data to avoid unnecessary API calls
+      const cacheKey = `tracking:${this.name.toLowerCase()}:${trackingInput.awb}`;
+      const cachedData = await redis.get(cacheKey);
+      
+      if (cachedData) {
+        try {
+          const parsedData = JSON.parse(cachedData);
+          return {
+            success: true,
+            message: 'Tracking data retrieved from cache',
+            data: parsedData.data,
+            trackingEvents: parsedData.trackingEvents,
+          };
+        } catch (parseError) {
+          console.error(`Error parsing cached tracking data for ${trackingInput.awb}:`, parseError);
+          // Continue with API call if cache parsing fails
+        }
+      }
+
+      // Get authentication token
+      const token = await this.getAuthToken();
+      if (!token) {
+        return {
+          success: false,
+          message: 'Failed to get SmartShip authentication token',
+          data: null,
+          trackingEvents: [],
+        };
+      }
+
+      // Make API request to get tracking information
+      const apiConfig = {
+        Authorization: token,
+      };
+
+      // SmartShip API endpoint for tracking
+      const endpoint = APIs.SMART_SHIP.TRACK_SHIPMENT;
+      const payload = {
+        awb_number: trackingInput.awb,
+      };
+      
+      const response = await this.makeRequest(endpoint, 'POST', payload, apiConfig);
+
+      // Check if response is valid
+      if (!response.data || response.data.status === false || !response.data.data) {
+        return {
+          success: false,
+          message: response.data?.message || 'No tracking data found',
+          data: null,
+          trackingEvents: [],
+        };
+      }
+
+      // Extract tracking data
+      const trackingData = response.data.data;
+      const statusHistory = trackingData.status_history || [];
+      
+      // Process tracking events
+      const trackingEvents: TrackingEventData[] = [];
+      
+      // Map status history to tracking events
+      if (Array.isArray(statusHistory) && statusHistory.length > 0) {
+        for (const status of statusHistory) {
+          if (!status.status || !status.timestamp) continue;
+          
+          // Parse date string to Date object
+          let timestamp: Date;
+          try {
+            timestamp = new Date(status.timestamp);
+          } catch (e) {
+            timestamp = new Date();
+          }
+          
+          // Extract status and status code
+          const statusText = status.status;
+          const statusCode = status.status_code || statusText.toUpperCase().replace(/\s+/g, '_');
+          
+          // Determine if this is an RTO status
+          const isRTO = this.isRTOStatus(statusText, statusCode);
+          
+          // Map to bucket using helper method
+          const bucket = this.bucketMappingService 
+            ? await this.bucketMappingService.detectBucket(statusText, statusCode, this.name.toUpperCase())
+            : await this.mapStatusToBucket(statusText, statusCode);
+          
+          trackingEvents.push({
+            status: statusText,
+            status_code: statusCode,
+            description: status.description || statusText,
+            location: status.location || '',
+            timestamp,
+            activity: statusText,
+            isRTO,
+            bucket,
+          });
+        }
+      }
+      
+      // Add current status if not already included in status history
+      if (trackingData.current_status && !trackingEvents.some(e => e.status === trackingData.current_status)) {
+        const currentStatus = trackingData.current_status;
+        const currentStatusCode = trackingData.current_status_code || 
+          currentStatus.toUpperCase().replace(/\s+/g, '_');
+        
+        const currentBucket = this.bucketMappingService 
+          ? await this.bucketMappingService.detectBucket(currentStatus, currentStatusCode, this.name.toUpperCase())
+          : await this.mapStatusToBucket(currentStatus, currentStatusCode);
+          
+        trackingEvents.push({
+          status: currentStatus,
+          status_code: currentStatusCode,
+          description: trackingData.current_status_description || currentStatus,
+          location: trackingData.current_location || '',
+          timestamp: new Date(),
+          activity: currentStatus,
+          isRTO: this.isRTOStatus(currentStatus, currentStatusCode),
+          bucket: currentBucket,
+        });
+      }
+      
+      // Sort events by timestamp (oldest first)
+      trackingEvents.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+      
+      // If no events found, add a default event
+      if (trackingEvents.length === 0) {
+        trackingEvents.push({
+          status: 'Pending',
+          status_code: 'PENDING',
+          description: 'Tracking information not available',
+          location: '',
+          timestamp: new Date(),
+          activity: 'Tracking information not available',
+          isRTO: false,
+          bucket: ShipmentBucketManager.getBucketFromStatus('NEW'),
+        });
+      }
+      
+      // Cache the result
+      // Use a longer TTL for delivered/RTO shipments (24 hours) as they won't change
+      // Use a shorter TTL for in-transit shipments (30 minutes)
+      const isDelivered = trackingEvents.some(event => this.isDeliveredStatus(event.status));
+      const isRTO = trackingEvents.some(event => event.isRTO);
+      const cacheTTL = isDelivered || isRTO ? 86400 : 1800; // 24 hours or 30 minutes
+      
+      await redis.set(
+        cacheKey, 
+        JSON.stringify({
+          data: response.data,
+          trackingEvents,
+        }),
+        'EX',
+        cacheTTL
+      );
+      
+      return {
+        success: true,
+        message: 'Tracking data retrieved successfully',
+        data: response.data,
+        trackingEvents,
+      };
+    } catch (error) {
+      console.error(`Error tracking shipment with SmartShip:`, error);
+      return {
+        success: false,
+        message: `Error tracking shipment: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        data: null,
+        trackingEvents: [],
       };
     }
   }

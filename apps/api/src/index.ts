@@ -8,6 +8,7 @@ import { registerSwagger } from '@/plugins/swagger';
 import { registerRateLimiter } from '@/plugins/rate-limiter';
 import authPlugin from '@/plugins/auth';
 import { initSentry, captureException } from '@/lib/sentry';
+import { cleanupOrphanedRepeatJobs } from '@/lib/queue';
 
 // Route modules
 import orderRoutes from '@/modules/orders';
@@ -27,6 +28,7 @@ import { bulkOperationsRoutes } from '@/modules/bulk-operations';
 import { setupSellerHooks } from '@/modules/sellers/hooks';
 import { ensureDefaultPlan } from '@/modules/plan/services/default-plan';
 import { queues } from '@/lib/queue';
+import { assignDefaultPlanToAllUsers } from './scripts/assign-default-plan';
 
 // Initialize Sentry
 initSentry();
@@ -50,6 +52,10 @@ const server = Fastify({
 server.decorate('prisma', prisma);
 server.decorate('redis', redis);
 server.decorate('queues', queues);
+
+// // Initialize and attach VendorService
+// const vendorService = new VendorService(server);
+// server.decorate('vendorService', vendorService);
 
 // Register plugins
 const registerPlugins = async () => {
@@ -76,6 +82,9 @@ const registerPlugins = async () => {
 
     // Ensure default plan exists
     await ensureDefaultPlan(server);
+
+    // Assign default plan to all users
+    // await assignDefaultPlanToAllUsers();
 
     // Register API routes
     await server.register(
@@ -120,6 +129,9 @@ const registerPlugins = async () => {
 // Start the server
 const start = async () => {
   try {
+    // Clean up any orphaned repeat jobs before starting
+    await cleanupOrphanedRepeatJobs();
+
     await registerPlugins();
 
     await server.listen({

@@ -1,0 +1,139 @@
+[
+   {
+      "_id": {
+         "$oid": "685bda571037deb65e4150d1"
+      },
+      "lorrigo_order_id": "",
+      "rtoCharges": 0,
+      "isReverseOrder": false,
+      "sellerId": {
+         "$oid": "678218bd1c334cfcb9ac1699"
+      },
+      "bucket": 2,
+      "orderStages": [
+         {
+            "stage": 0,
+            "action": "New",
+            "stageDateTime": {
+               "$date": "2025-06-25T11:15:35.899Z"
+            },
+            "_id": {
+               "$oid": "685bda571037deb65e4150d2"
+            }
+         },
+         {
+            "stage": 52,
+            "action": "Courier Assigned",
+            "stageDateTime": {
+               "$date": "2025-06-25T11:15:38.317Z"
+            },
+            "_id": {
+               "$oid": "685bda5a1037deb65e4150de"
+            }
+         },
+         {
+            "stage": 2,
+            "action": "Picked Up",
+            "activity": "PICK UP SCAN ON FIELD",
+            "location": "PATNA ETAIL PUD",
+            "stageDateTime": {
+               "$date": "2025-06-25T16:48:00.000Z"
+            },
+            "_id": {
+               "$oid": "685be4e01037deb65e428bb9"
+            }
+         },
+         {
+            "stage": 2,
+            "action": "Shipped",
+            "activity": "SHIPMENT INSCAN",
+            "location": "PATNA ETAIL PUD",
+            "stageDateTime": {
+               "$date": "2025-06-25T18:29:00.000Z"
+            },
+            "_id": {
+               "$oid": "685bf4f51037deb65e4aec0f"
+            }
+         },
+         {
+            "stage": 2,
+            "action": "In Transit",
+            "activity": "SHIPMENT OUTSCANNED TO NETWORK",
+            "location": "PATNA ETAIL PUD",
+            "stageDateTime": {
+               "$date": "2025-06-25T20:21:00.000Z"
+            },
+            "_id": {
+               "$oid": "685c0f861037deb65e4b63c6"
+            }
+         }
+      ],
+      "orderItems": [
+         {
+            "name": "Meftal-Spas Injection",
+            "sku": "sku-product",
+            "units": "2",
+            "selling_price": "418",
+            "_id": {
+               "$oid": "685bda571037deb65e4150d3"
+            }
+         }
+      ],
+      "pickupAddress": {
+         "$oid": "685b886d7c9566b22e7f073d"
+      },
+      "productId": {
+         "$oid": "685bda571037deb65e4150ce"
+      },
+      "client_order_reference_id": "12956809",
+      "order_reference_id": "12956809",
+      "payment_mode": 1,
+      "order_invoice_date": "2025-06-25T11:15:35.899Z",
+      "order_invoice_number": "",
+      "isContainFragileItem": false,
+      "numberOfBoxes": 1,
+      "orderBoxHeight": 1,
+      "orderBoxWidth": 1,
+      "orderBoxLength": 1,
+      "orderSizeUnit": "cm",
+      "orderWeight": 0.5,
+      "orderWeightUnit": "kg",
+      "amount2Collect": 418,
+      "ewaybill": "",
+      "customerDetails": {
+         "name": "Satyam",
+         "phone": "+917889600859",
+         "address": "Hno274 lno5 colonels colony bohri jammu Colonels colony bohri jammu, Jammu, Jammu and Kashmir",
+         "pincode": "180002",
+         "state": "Jammu and Kashmir",
+         "city": "Jammu"
+      },
+      "sellerDetails": {
+         "sellerName": "Dawai Medical Hall",
+         "sellerGSTIN": "",
+         "sellerAddress": "",
+         "isSellerAddressAdded": false,
+         "sellerPincode": 0,
+         "sellerCity": "",
+         "sellerState": "",
+         "sellerPhone": ""
+      },
+      "createdAt": {
+         "$date": "2025-06-25T11:15:35.900Z"
+      },
+      "updatedAt": {
+         "$date": "2025-06-25T15:02:30.874Z"
+      },
+      "__v": 0,
+      "awb": "80830268271",
+      "carrierId": {
+         "$oid": "678b3ac540f9b7f91a8b4c3f"
+      },
+      "carrierName": "Bluedart air 0.5kg BDS",
+      "routingCode": "JMU/JMO",
+      "shiprocket_order_id": "874789374",
+      "shiprocket_shipment_id": "871131969",
+      "codCharge": 47.2,
+      "shipmentCharges": 177.2
+   }
+]

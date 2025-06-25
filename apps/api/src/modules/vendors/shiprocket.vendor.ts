@@ -2,12 +2,15 @@ import { APP_CONFIG } from '@/config/app';
 import { BaseVendor } from './base-vendor';
 import { APIs } from '@/config/api';
 import { CACHE_KEYS } from '@/config/cache';
+import { prisma } from '@lorrigo/db';
 import {
   formatAddress,
   formatPhoneNumber,
   formatShiprocketAddress,
   PickupAddress,
+  ShipmentBucketManager
 } from '@lorrigo/utils';
+import { BucketMappingService } from '../shipments/services/bucket-mapping.service';
 import {
   VendorRegistrationResult,
   VendorServiceabilityResult,
@@ -17,8 +20,13 @@ import {
   VendorShipmentData,
   ShipmentPickupData,
   ShipmentCancelData,
+  VendorTrackingResult,
+  TrackingEventData,
+  ShipmentTrackingData,
 } from '@/types/vendor';
 import { getPincodeDetails } from '@/utils/pincode';
+import { redis } from '@/lib/redis';
+import { QueueNames, addJob } from '@/lib/queue';
 
 /**
  * Shiprocket vendor implementation
@@ -27,8 +35,9 @@ import { getPincodeDetails } from '@/utils/pincode';
 export class ShiprocketVendor extends BaseVendor {
   private email: string;
   private password: string;
+  private bucketMappingService?: BucketMappingService;
 
-  constructor() {
+  constructor(bucketMappingService?: BucketMappingService) {
     const vendorConfig = APP_CONFIG.VENDOR.SHIPROCKET;
     super(
       'Shiprocket',
@@ -38,6 +47,7 @@ export class ShiprocketVendor extends BaseVendor {
     );
     this.email = vendorConfig.EMAIL || '';
     this.password = vendorConfig.PASSWORD || '';
+    this.bucketMappingService = bucketMappingService;
   }
 
   /**
@@ -86,7 +96,8 @@ export class ShiprocketVendor extends BaseVendor {
     dimensions: { length: number; width: number; height: number; weight: number },
     paymentType: 0 | 1,
     collectableAmount?: number,
-    couriers?: string[]
+    couriers?: string[],
+    isReverseOrder?: boolean
   ): Promise<VendorServiceabilityResult> {
     try {
       const token = await this.getAuthToken();
@@ -518,6 +529,227 @@ export class ShiprocketVendor extends BaseVendor {
       };
     }
   }
+
+  /**
+   * Track a shipment with Shiprocket
+   * @param trackingInput Tracking data including AWB and shipment details
+   * @returns Promise resolving to tracking result with events and status
+   */
+  public async trackShipment(trackingInput: ShipmentTrackingData): Promise<VendorTrackingResult> {
+    try {
+      // Check if AWB is available
+      if (!trackingInput.awb) {
+        return {
+          success: false,
+          message: 'AWB number is required for tracking',
+          data: null,
+          trackingEvents: [],
+        };
+      }
+
+      // Check cache for tracking data to avoid unnecessary API calls
+      const cacheKey = `tracking:${this.name.toLowerCase()}:${trackingInput.awb}`;
+      const cachedData = await redis.get(cacheKey);
+
+      if (cachedData) {
+        const parsedData = JSON.parse(cachedData);
+        return {
+          success: true,
+          message: 'Tracking data retrieved from cache',
+          data: parsedData.data,
+          trackingEvents: parsedData.trackingEvents,
+          cached: true
+        };
+      }
+
+      const token = await this.getAuthToken();
+
+      // Prepare API request
+      const endpoint = `${APIs.SHIPROCKET.TRACK_SHIPMENT}${trackingInput.awb}`;
+      const apiConfig = {
+        Authorization: token,
+      };
+
+      // Make API request
+      const response: any = await this.makeRequest(endpoint, 'GET', null, apiConfig);
+
+      if (!response.data || !response.data.tracking_data) {
+        return {
+          success: false,
+          message: 'Failed to get tracking data from Shiprocket',
+          data: null,
+          trackingEvents: [],
+        };
+      }
+
+      // Process tracking data
+      const trackingData = response.data.tracking_data;
+
+      // Get shipment details
+      const shipmentTrack = trackingData.shipment_track?.[0];
+      if (!shipmentTrack) {
+        return {
+          success: false,
+          message: 'No shipment tracking data available',
+          data: null,
+          trackingEvents: [],
+        };
+      }
+
+      // Extract EDD (Estimated Delivery Date) if available
+      let edd = null;
+      if (shipmentTrack.edd) {
+        edd = new Date(shipmentTrack.edd);
+
+        // Queue EDD update for batch processing
+        if (trackingInput.shipmentId && edd) {
+          const eddUpdate = {
+            id: trackingInput.shipmentId,
+            edd: edd.toISOString()
+          };
+
+          await redis.rpush('shipment:edd:updates', JSON.stringify(eddUpdate));
+        } else if (trackingInput.shipment?.id && edd) {
+          const eddUpdate = {
+            id: trackingInput.shipment.id,
+            edd: edd.toISOString()
+          };
+
+          await redis.rpush('shipment:edd:updates', JSON.stringify(eddUpdate));
+        }
+      }
+
+      // Process tracking events
+      const trackingEvents: TrackingEventData[] = [];
+
+      // Process tracking activities
+      const activities = trackingData.shipment_track_activities || [];
+
+      for (const activity of activities) {
+        // Parse date
+        const timestamp = activity.date ? new Date(activity.date) : new Date();
+
+        // Get status code
+        const statusCode = activity['sr-status'] || '';
+        const statusLabel = activity['sr-status-label'] || activity.activity;
+
+        // Use optimized bucket detection with vendor-specific mappings
+        const bucket = this.bucketMappingService
+          ? await this.bucketMappingService.detectBucket(statusLabel, statusCode, 'SHIPROCKET')
+          : ShipmentBucketManager.detectBucketFromVendorStatus(statusLabel, statusCode, 'SHIPROCKET');
+
+        const status_code = ShipmentBucketManager.getStatusFromBucket(bucket);
+        // If status code is not mapped, queue it for admin to map
+        if (!bucket) {
+          const unmappedStatus = {
+            courier_name: 'SHIPROCKET',
+            status_code: statusCode,
+            status_label: statusLabel
+          };
+
+          await redis.rpush('courier:unmapped:statuses', JSON.stringify(unmappedStatus));
+        }
+
+        // Determine if this is an RTO status
+        const isNDR = ShipmentBucketManager.isNDRStatus(statusLabel || activity.activity, statusCode);
+        const isRTO = ShipmentBucketManager.isRTOStatus(activity.activity, statusCode);
+
+        // Create tracking event
+        const trackingEvent: TrackingEventData = {
+          status: activity.activity,
+          status_code,
+          description: activity.activity,
+          location: activity.location || '',
+          timestamp,
+          activity: activity.activity,
+          isRTO,
+          isNDR,
+          bucket,
+          vendor_name: 'SHIPROCKET',
+          raw_data: activity
+        };
+
+        trackingEvents.push(trackingEvent);
+
+        // Queue tracking event for bulk processing
+        const shipmentId = trackingInput.shipmentId || trackingInput.shipment?.id;
+        if (shipmentId) {
+          const eventData = {
+            ...trackingEvent,
+            shipment_id: shipmentId
+          };
+
+          await redis.rpush('tracking:events:queue', JSON.stringify(eventData));
+        }
+      }
+
+      // Get current status
+      const currentStatus = shipmentTrack.current_status || '';
+
+      // Determine the latest status bucket based on the most recent event
+      let latestBucket = 0;
+      if (trackingEvents.length > 0) {
+        // Sort events by timestamp (newest first)
+        const sortedEvents = [...trackingEvents].sort((a, b) =>
+          b.timestamp.getTime() - a.timestamp.getTime()
+        );
+
+        latestBucket = sortedEvents?.[0]?.bucket ?? 0;
+      }
+
+      // Queue status update for batch processing
+      const shipmentId = trackingInput.shipmentId || trackingInput.shipment?.id;
+      if (shipmentId && latestBucket > 0) {
+        const statusUpdate = {
+          id: shipmentId,
+          status: ShipmentBucketManager.getStatusFromBucket(latestBucket)
+        };
+
+        await redis.rpush('shipment:status:updates', JSON.stringify(statusUpdate));
+      }
+
+      // Prepare result data
+      const resultData = {
+        awb: trackingInput.awb,
+        courier: 'SHIPROCKET',
+        currentStatus,
+        edd,
+        activities: trackingEvents.map(event => ({
+          date: event.timestamp,
+          status: event.status,
+          location: event.location,
+          activity: event.activity
+        }))
+      };
+
+      // Cache the result - use adaptive TTL based on status
+      const isDelivered = trackingEvents.some(event => ShipmentBucketManager.isDeliveredStatus(event.status));
+      const isRTODelivered = trackingEvents.some(event => event.isRTO && ShipmentBucketManager.isDeliveredStatus(event.status));
+
+      // Use longer TTL for final statuses
+      const cacheTTL = (isDelivered || isRTODelivered) ? 86400 : 1800; // 24 hours or 30 minutes
+
+      await redis.set(cacheKey, JSON.stringify({
+        data: resultData,
+        trackingEvents
+      }), 'EX', cacheTTL);
+
+      return {
+        success: true,
+        message: 'Tracking data retrieved successfully',
+        data: resultData,
+        trackingEvents,
+      };
+    } catch (error: any) {
+      console.error('Error tracking shipment with Shiprocket:', error);
+      return {
+        success: false,
+        message: `Failed to track shipment: ${error.message}`,
+        data: null,
+        trackingEvents: [],
+      };
+    }
+  }
 }
 
 /**
@@ -525,6 +757,7 @@ export class ShiprocketVendor extends BaseVendor {
  * Handles token generation and hub registration with Shiprocket B2B API
  */
 export class ShiprocketB2BVendor extends BaseVendor {
+
   private clientId: string;
 
   constructor() {
@@ -642,6 +875,16 @@ export class ShiprocketB2BVendor extends BaseVendor {
     }
   }
 
+  // TODO: Implement schedule pickup
+  public schedulePickup(pickupData: any): Promise<VendorPickupResult> {
+    throw new Error('Method not implemented.');
+  }
+
+  // TODO: Implement cancel shipment
+  public cancelShipment(cancelData: any): Promise<VendorCancellationResult> {
+    throw new Error('Method not implemented.');
+  }
+
   /**
    * Create a shipment with Shiprocket B2B
    * @param shipmentData Shipment data
@@ -675,5 +918,129 @@ export class ShiprocketB2BVendor extends BaseVendor {
       message: 'Serviceability check not implemented for Shiprocket B2B',
       serviceableCouriers: [],
     };
+  }
+
+  /**
+   * Track a shipment with Shiprocket B2B
+   * @param trackingData Tracking data including AWB and shipment details
+   * @returns Promise resolving to tracking result
+   */
+  public async trackShipment(trackingInput: ShipmentTrackingData): Promise<VendorTrackingResult> {
+    try {
+      const token = await this.getAuthToken();
+
+      if (!token) {
+        return {
+          success: false,
+          message: 'Failed to get Shiprocket B2B authentication token',
+          data: null,
+          trackingEvents: [],
+        };
+      }
+
+      const { awb } = trackingInput;
+
+      // Make API request to Shiprocket B2B tracking endpoint
+      // Using direct URL construction since APIs.SHIPROCKET_B2B.TRACK_SHIPMENT might not be defined
+      const endpoint = `/v1/external/b2b/courier/track/awb/${awb}`;
+      const response = await this.makeRequest(endpoint, 'GET', null, {
+        Authorization: token,
+      });
+
+      const trackingResponse = response.data;
+      if (!trackingResponse || !trackingResponse.status_history) {
+        return {
+          success: false,
+          message: `No tracking data found for AWB ${awb}`,
+          data: null,
+          trackingEvents: [],
+        };
+      }
+
+      const history = trackingResponse.status_history || [];
+      if (history.length === 0) {
+        return {
+          success: false,
+          message: `No tracking history found for AWB ${awb}`,
+          data: trackingResponse,
+          trackingEvents: [],
+        };
+      }
+
+      // Sort history by timestamp (oldest first)
+      history.sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+      // Try to fetch status mappings from database
+      let statusMappings: any[] = [];
+      try {
+        // Check if courierStatusMapping model exists in prisma client
+        if (prisma.courierStatusMapping) {
+          statusMappings = await prisma.courierStatusMapping.findMany({
+            where: {
+              courier_name: 'SHIPROCKET_B2B',
+              is_active: true,
+            },
+          });
+        }
+      } catch (dbError) {
+        console.error('Error fetching courier status mappings:', dbError);
+      }
+
+      // Map history to tracking events
+      const trackingEvents: TrackingEventData[] = history.map((item: any) => {
+        const status = item.status || '';
+        const statusCode = item.status || ''; // B2B API might use the same value for status and statusCode
+        const description = item.reason || '';
+
+        // Try to find bucket from status mappings
+        let bucket: number | undefined;
+        const mapping = statusMappings.find(m => m.status_code === statusCode);
+        if (mapping) {
+          bucket = mapping.bucket;
+        } else {
+          // Use ShipmentBucketManager to detect bucket from status
+          bucket = ShipmentBucketManager.detectBucketFromVendorStatus(
+            status,
+            statusCode,
+            'SHIPROCKET_B2B'
+          );
+        }
+
+        const isRTO = ShipmentBucketManager.isRTOStatus(status, statusCode);
+        const isDelivered = ShipmentBucketManager.isDeliveredStatus(status, statusCode);
+        const isNDR = ShipmentBucketManager.isNDRStatus(status, statusCode);
+
+        return {
+          status: status,
+          status_code: statusCode,
+          description: description,
+          location: item.location || '',
+          timestamp: new Date(item.timestamp),
+          activity: item.remarks || status,
+          isRTO: isRTO,
+          isNDR: isNDR,
+          isDelivered: isDelivered,
+          bucket: bucket,
+          vendor_name: 'SHIPROCKET_B2B',
+          raw_data: item
+        };
+      });
+
+      return {
+        success: true,
+        message: `Successfully retrieved tracking data for AWB ${awb}`,
+        data: trackingResponse,
+        trackingEvents,
+      };
+    } catch (error: any) {
+      console.error('Error tracking shipment with Shiprocket B2B:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to track shipment',
+        data: null,
+        trackingEvents: [],
+      };
+    }
   }
 }

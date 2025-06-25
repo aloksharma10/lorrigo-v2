@@ -1,11 +1,13 @@
 import { APP_CONFIG } from '@/config/app';
 import { BaseVendor } from './base-vendor';
 import { ShiprocketVendor } from './shiprocket.vendor';
-import { DelhiveryVendorFactory } from './delhivery.vendor';
+import { DelhiveryVendorFactory, DelhiveryVendor } from './delhivery.vendor';
 import { SmartShipVendor } from './smart-ship.vendor';
-import { VendorServiceabilityResult } from '@/types/vendor';
+import { VendorServiceabilityResult, ShipmentTrackingData, TrackingEventData } from '@/types/vendor';
 import { FastifyInstance } from 'fastify';
-import { Courier, Hub, Order } from '@lorrigo/db';
+import { Courier, Order, ShipmentStatus } from '@lorrigo/db';
+import { ShipmentBucketManager } from '@lorrigo/utils';
+import { BucketMappingService } from '../shipments/services/bucket-mapping.service';
 
 /**
  * Service for managing vendor operations
@@ -14,10 +16,12 @@ import { Courier, Hub, Order } from '@lorrigo/db';
 export class VendorService {
   private vendors: Map<string, BaseVendor>;
   private fastify: FastifyInstance;
+  private bucketMappingService: BucketMappingService;
 
   constructor(fastify: FastifyInstance) {
     this.fastify = fastify;
     this.vendors = new Map();
+    this.bucketMappingService = new BucketMappingService(fastify);
     this.initializeVendors();
   }
 
@@ -26,16 +30,16 @@ export class VendorService {
    */
   private initializeVendors(): void {
     // Initialize Shiprocket
-    this.vendors.set('SHIPROCKET', new ShiprocketVendor());
+    this.vendors.set('SHIPROCKET', new ShiprocketVendor(this.bucketMappingService));
 
     // Initialize Delhivery with different weight categories
-    const delhiveryVendors = DelhiveryVendorFactory.getAllVendors();
+    const delhiveryVendors = DelhiveryVendorFactory.getAllVendors(this.bucketMappingService);
     delhiveryVendors.forEach((vendor) => {
       this.vendors.set(`DELHIVERY_${vendor.getName().split('-')[1]}`, vendor);
     });
 
     // Initialize SmartShip
-    this.vendors.set('SMARTSHIP', new SmartShipVendor());
+    this.vendors.set('SMARTSHIP', new SmartShipVendor(this.bucketMappingService));
   }
 
   /**
@@ -53,6 +57,14 @@ export class VendorService {
    */
   public getAllVendors(): BaseVendor[] {
     return Array.from(this.vendors.values());
+  }
+
+  /**
+   * Get the bucket mapping service instance
+   * @returns BucketMappingService instance
+   */
+  public getBucketMappingService(): BucketMappingService {
+    return this.bucketMappingService;
   }
 
   /**
@@ -284,23 +296,44 @@ export class VendorService {
 
           const courierIds = couriers.map((c) => c.courierId);
           try {
-            const result = await vendor.checkServiceability(
-              pickupPincode,
-              deliveryPincode,
-              volumeWeight,
-              dimensions,
-              paymentType,
-              collectableAmount,
-              courierIds,
-              isReverseOrder,
-              couriers
-            );
+            // Different vendors have different parameter requirements
+            // We need to adapt based on the vendor name
+            let result;
+            
+            if (vendorName.startsWith('DELHIVERY')) {
+              // Delhivery vendors have extended the base interface with additional parameters
+              // Use type assertion to call with the extended parameter list
+              const delhiveryVendor = vendor as DelhiveryVendor;
+              result = await delhiveryVendor.checkServiceability(
+                pickupPincode,
+                deliveryPincode,
+                volumeWeight,
+                dimensions,
+                paymentType,
+                collectableAmount,
+                courierIds,
+                isReverseOrder,
+                couriers
+              );
+            } else {
+              // Default call for other vendors that follow the base interface
+              result = await vendor.checkServiceability(
+                pickupPincode,
+                deliveryPincode,
+                volumeWeight,
+                dimensions,
+                paymentType,
+                collectableAmount,
+                courierIds
+              );
+            }
+
             // Match serviceability results with courier pricing
             return {
               vendorName,
               result: {
                 ...result,
-                serviceableCouriers: result.serviceableCouriers.map((sc) => {
+                serviceableCouriers: result.serviceableCouriers.map((sc: any) => {
                   // Find courier in the plan
                   const courierInfo = couriers.find(
                     (c) => c.courierId === sc.id || c.courier.code === sc.code
@@ -588,5 +621,269 @@ export class VendorService {
         data: null,
       };
     }
+  }
+
+  /**
+   * Track a shipment with a specific vendor
+   * @param vendorName Vendor name
+   * @param trackingData Tracking data
+   * @returns Promise resolving to tracking result
+   */
+  public async trackShipment(
+    vendorName: string,
+    trackingData: ShipmentTrackingData
+  ): Promise<{
+    success: boolean;
+    message: string;
+    trackingEvents?: TrackingEventData[];
+    data?: any;
+    latestBucket?: number;
+  }> {
+    try {
+      const vendor = this.getVendor(vendorName);
+      if (!vendor) {
+        return {
+          success: false,
+          message: `Vendor ${vendorName} not found`,
+          trackingEvents: [],
+          data: null,
+        };
+      }
+
+      // Skip tracking for shipments in final states
+      if (trackingData.shipment?.status) {
+        const status = trackingData.shipment.status as ShipmentStatus;
+        if (ShipmentBucketManager.isFinalStatus(status)) {
+          return {
+            success: false,
+            message: `Shipment is in final status (${status}), no tracking needed`,
+            trackingEvents: [],
+            data: null,
+          };
+        }
+      }
+
+      // Get tracking data from vendor
+      const result = await vendor.trackShipment(trackingData);
+      
+      if (!result.success || !result.trackingEvents || result.trackingEvents.length === 0) {
+        return {
+          success: false,
+          message: result.message || 'No tracking events found',
+          trackingEvents: [],
+          data: result.data,
+        };
+      }
+
+      // Find the latest event with a bucket
+      const eventsWithBuckets = result.trackingEvents.filter(event => event.bucket !== undefined);
+      if (eventsWithBuckets.length === 0) {
+        return {
+          success: true,
+          message: 'Tracking events found but no bucket information available',
+          trackingEvents: result.trackingEvents,
+          data: result.data,
+        };
+      }
+
+      // Sort events by timestamp (newest first) to get the latest status
+      const sortedEvents = [...eventsWithBuckets].sort((a, b) => {
+        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+      });
+
+      // Make sure we have sorted events
+      if (sortedEvents.length === 0) {
+        return {
+          success: false,
+          message: 'No valid tracking events with bucket information found',
+          trackingEvents: result.trackingEvents,
+          data: result.data,
+        };
+      }
+
+      // Get the latest bucket (we've already checked that sortedEvents is not empty)
+      const latestBucket = sortedEvents[0]?.bucket;
+
+      return {
+        success: true,
+        message: result.message || 'Successfully retrieved tracking data',
+        trackingEvents: result.trackingEvents,
+        data: result.data,
+        latestBucket,
+      };
+    } catch (error: unknown) {
+      console.error(`Error tracking shipment with vendor ${vendorName}:`, error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : `Failed to track shipment with ${vendorName}`,
+        trackingEvents: [],
+        data: null,
+      };
+    }
+  }
+
+  /**
+   * Process shipment tracking in batches
+   * @param shipments Array of shipments to track
+   * @returns Promise resolving to tracking results
+   */
+  public async processShipmentTrackingBatch(
+    shipments: Array<{
+      id: string;
+      awb: string | null;
+      status: ShipmentStatus;
+      order: {
+        id: string;
+        code: string;
+      };
+      courier: {
+        channel_config: {
+          name: string;
+        };
+      } | null;
+    }>
+  ): Promise<{
+    processed: number;
+    updated: number;
+    skipped: number;
+    failed: number;
+    results: Array<{
+      shipmentId: string;
+      success: boolean;
+      message: string;
+      newStatus?: ShipmentStatus;
+      newBucket?: number;
+    }>;
+  }> {
+    const results = [];
+    let updated = 0;
+    let skipped = 0;
+    let failed = 0;
+
+    for (const shipment of shipments) {
+      try {
+        // Skip shipments without AWB or courier
+        if (!shipment.awb || !shipment.courier) {
+          results.push({
+            shipmentId: shipment.id,
+            success: false,
+            message: 'Missing AWB or courier information',
+          });
+          skipped++;
+          continue;
+        }
+
+        // Skip shipments in final states
+        if (ShipmentBucketManager.isFinalStatus(shipment.status)) {
+          results.push({
+            shipmentId: shipment.id,
+            success: false,
+            message: `Shipment is in final status (${shipment.status}), skipping tracking`,
+          });
+          skipped++;
+          continue;
+        }
+
+        // Get vendor name from courier channel config
+        const vendorName = shipment.courier.channel_config.name;
+        if (!vendorName) {
+          results.push({
+            shipmentId: shipment.id,
+            success: false,
+            message: 'Vendor name not found in courier configuration',
+          });
+          skipped++;
+          continue;
+        }
+
+        // Track shipment
+        const trackingResult = await this.trackShipment(vendorName, {
+          awb: shipment.awb,
+          shipment,
+        });
+
+        if (!trackingResult.success || !trackingResult.latestBucket) {
+          results.push({
+            shipmentId: shipment.id,
+            success: false,
+            message: trackingResult.message || 'Failed to track shipment',
+          });
+          failed++;
+          continue;
+        }
+
+        // Get status from bucket
+        const newStatus = ShipmentBucketManager.getStatusFromBucket(trackingResult.latestBucket) as ShipmentStatus;
+        
+        // If status has changed, update it
+        if (newStatus && newStatus !== shipment.status) {
+          // Update shipment status in database
+          await this.fastify.prisma.shipment.update({
+            where: { id: shipment.id },
+            data: { 
+              status: newStatus,
+              updated_at: new Date()
+            },
+          });
+
+          // Also update order status
+          await this.fastify.prisma.order.update({
+            where: { id: shipment.order.id },
+            data: { 
+              status: newStatus,
+              updated_at: new Date()
+            },
+          });
+
+          // Create tracking event
+          if (trackingResult.trackingEvents && trackingResult.trackingEvents.length > 0) {
+            const latestTrackingEvent = trackingResult.trackingEvents[0];
+            if (latestTrackingEvent) {
+              await this.fastify.prisma.trackingEvent.create({
+                data: {
+                  status: newStatus,
+                  location: latestTrackingEvent.location || '',
+                  description: latestTrackingEvent.description || latestTrackingEvent.status || '',
+                  timestamp: latestTrackingEvent.timestamp || new Date(),
+                  shipment_id: shipment.id,
+                },
+              });
+            }
+          }
+
+          results.push({
+            shipmentId: shipment.id,
+            success: true,
+            message: `Shipment status updated from ${shipment.status} to ${newStatus}`,
+            newStatus,
+            newBucket: trackingResult.latestBucket,
+          });
+          updated++;
+        } else {
+          results.push({
+            shipmentId: shipment.id,
+            success: true,
+            message: 'No status change detected',
+          });
+          skipped++;
+        }
+      } catch (error) {
+        console.error(`Error processing shipment ${shipment.id}:`, error);
+        results.push({
+          shipmentId: shipment.id,
+          success: false,
+          message: error instanceof Error ? error.message : 'Unknown error occurred',
+        });
+        failed++;
+      }
+    }
+
+    return {
+      processed: shipments.length,
+      updated,
+      skipped,
+      failed,
+      results,
+    };
   }
 }

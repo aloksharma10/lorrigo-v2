@@ -8,6 +8,7 @@ import {
   getFinancialYearStartDate,
   getFinancialYear,
   compareDates,
+  ShipmentBucketManager
 } from '@lorrigo/utils';
 import { OrderService } from '@/modules/orders/services/order-service';
 import { VendorService } from '@/modules/vendors/vendor.service';
@@ -26,6 +27,8 @@ import { queues } from '@/lib/queue';
 import { format } from 'date-fns';
 import { TransactionService, TransactionType, TransactionEntityType } from '@/modules/transactions/services/transaction-service';
 import { JobType } from '../queues/shipmentQueue';
+import { TrackingEventData } from '@/types/vendor';
+import { scheduleRtoChargesProcessing } from '../batch/scheduler';
 
 // Define the interface for the extended FastifyInstance
 interface ExtendedFastifyInstance extends FastifyInstance {
@@ -53,11 +56,11 @@ export class ShipmentService {
     this.vendorService = new VendorService(fastify);
     this.transactionService = new TransactionService(fastify);
 
-    // this.fastify.redis.flushall().then(() => {
-    //   this.fastify.log.info('Redis flushed successfully');
-    // }).catch((error) => {
-    //   this.fastify.log.error('Failed to flush Redis:', error);
-    // });
+    this.fastify.redis.flushall().then(() => {
+      this.fastify.log.info('Redis flushed successfully');
+    }).catch((error) => {
+      this.fastify.log.error('Failed to flush Redis:', error);
+    });
   }
 
   /**
@@ -583,7 +586,11 @@ export class ShipmentService {
             customer: true,
           },
         },
-        courier: true,
+        courier: {
+          include: {
+            channel_config: true,
+          },
+        },
         tracking_events: {
           orderBy: {
             timestamp: 'desc',
@@ -1348,12 +1355,11 @@ export class ShipmentService {
         const where: any = {
           user_id: userId,
           status: {
-            notIn: [
-              ShipmentStatus.DELIVERED,
-              ShipmentStatus.RETURNED,
-              ShipmentStatus.CANCELLED_SHIPMENT,
-              ShipmentStatus.CANCELLED_ORDER,
-            ],
+            in: [
+              ShipmentStatus.COURIER_ASSIGNED,
+              ShipmentStatus.PICKUP_SCHEDULED,
+              ShipmentStatus.OUT_FOR_PICKUP,
+            ]
           },
           // Only consider shipments with AWB
           awb: { not: null },
@@ -1400,12 +1406,11 @@ export class ShipmentService {
               user_id: userId,
               awb: { not: null },
               status: {
-                notIn: [
-                  ShipmentStatus.DELIVERED,
-                  ShipmentStatus.RETURNED,
-                  ShipmentStatus.CANCELLED_SHIPMENT,
-                  ShipmentStatus.CANCELLED_ORDER,
-                ],
+                in: [
+                  ShipmentStatus.COURIER_ASSIGNED,
+                  ShipmentStatus.PICKUP_SCHEDULED,
+                  ShipmentStatus.OUT_FOR_PICKUP,
+                ]
               },
             },
             select: { id: true },
@@ -1638,6 +1643,236 @@ export class ShipmentService {
     } catch (error) {
       this.fastify.log.error(`Error getting bulk operation status: ${error}`);
       return { error: 'Failed to get bulk operation status' };
+    }
+  }
+
+  /**
+   * Process a batch of shipments for tracking
+   * @param shipments Array of shipments to track
+   * @returns Promise resolving to processing results
+   */
+  async processShipmentTrackingBatch(
+    shipments: Array<{
+      id: string;
+      awb: string | null;
+      status: ShipmentStatus;
+      order: {
+        id: string;
+        code: string;
+      };
+      courier: {
+        channel_config: {
+          name: string;
+        };
+      } | null;
+    }>
+  ): Promise<{
+    processed: number;
+    updated: number;
+    skipped: number;
+    failed: number;
+    results: Array<{
+      shipmentId: string;
+      success: boolean;
+      message: string;
+      newStatus?: ShipmentStatus;
+      newBucket?: number;
+    }>;
+  }> {
+    try {
+      this.fastify.log.info(`Processing ${shipments.length} shipments for tracking updates`);
+
+      // Use the vendor service to process the batch
+      return await this.vendorService.processShipmentTrackingBatch(shipments);
+    } catch (error) {
+      this.fastify.log.error('Error processing shipment tracking batch:', error);
+      return {
+        processed: shipments.length,
+        updated: 0,
+        skipped: 0,
+        failed: shipments.length,
+        results: shipments.map(shipment => ({
+          shipmentId: shipment.id,
+          success: false,
+          message: error instanceof Error ? error.message : 'Unknown error occurred',
+        }))
+      };
+    }
+  }
+
+  /**
+   * Track a shipment and update its status
+   * @param shipmentId Shipment ID
+   * @param vendorName Vendor name
+   * @param awb AWB number
+   * @param orderId Order ID
+   * @returns Promise resolving to tracking result
+   */
+  async trackShipment(
+    shipmentId: string,
+    vendorName: string,
+    awb: string,
+    orderId: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    updated: boolean;
+    status_code?: ShipmentStatus;
+    newStatus?: string;
+    newBucket?: number;
+    events?: any[];
+  }> {
+    try {
+      // Get vendor service from fastify instance
+      const vendorService = this.vendorService;
+      if (!vendorService) {
+        return {
+          success: false,
+          message: 'Vendor service not initialized',
+          updated: false,
+        };
+      }
+
+      // Track shipment with vendor
+      const trackingResult = await vendorService.trackShipment(vendorName, {
+        awb,
+      });
+
+      if (!trackingResult.success) {
+        return {
+          success: false,
+          message: trackingResult.message,
+          updated: false,
+        };
+      }
+
+      // Get latest tracking event
+      const events = trackingResult.trackingEvents || [];
+      if (events.length === 0) {
+        return {
+          success: true,
+          message: 'No tracking events found',
+          updated: false,
+          events,
+        };
+      }
+
+      // Sort events by timestamp (newest first)
+      events.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+      // Get the latest event
+      const latestEvent = events[0];
+      const bucket = latestEvent?.bucket || trackingResult.latestBucket;
+
+      // Get current shipment status
+      const shipment = await this.fastify.prisma.shipment.findUnique({
+        where: { id: shipmentId },
+        select: { status: true, bucket: true },
+      });
+
+      if (!shipment) {
+        return {
+          success: false,
+          message: 'Shipment not found',
+          updated: false,
+        };
+      }
+
+      // Determine if status needs to be updated
+      let newStatus = latestEvent?.description || latestEvent?.activity || latestEvent?.status_code || shipment.status;
+      const status_code = latestEvent?.status_code || ShipmentStatus.AWAITING;
+      let statusUpdated = false;
+
+      if (bucket !== undefined && bucket !== null && (shipment.status !== status_code || bucket !== shipment.bucket)) {
+        // Map bucket to status
+        const bucketStatus = ShipmentBucketManager.getStatusFromBucket(bucket);
+        if (bucketStatus && bucketStatus !== shipment.status) {
+          newStatus = bucketStatus;
+          statusUpdated = true;
+        }
+      }
+
+      // Check for RTO status in events
+      const hasRtoEvent = events.some((event: any) => event.isRTO);
+      if (hasRtoEvent && !newStatus.includes('RTO')) {
+        newStatus = ShipmentStatus.RTO;
+        statusUpdated = true;
+      }
+
+      // Update shipment if status changed
+      if (statusUpdated) {
+        await this.fastify.prisma.shipment.update({
+          where: { id: shipmentId },
+          data: {
+            status: status_code as ShipmentStatus,
+            bucket: bucket !== undefined && bucket !== null ? bucket : undefined,
+          },
+        });
+
+        // If status changed to RTO, schedule RTO charges processing
+        if (newStatus.includes('RTO')) {
+          await scheduleRtoChargesProcessing(this.fastify, shipmentId, orderId, 5000);
+        }
+
+        // Store tracking events
+        // await this.storeTrackingEvents(shipmentId, events);
+
+        return {
+          success: true,
+          message: `Shipment status updated to ${newStatus}`,
+          updated: true,
+          status_code: status_code as ShipmentStatus,
+          newStatus,
+          newBucket: bucket,
+          events,
+        };
+      }
+
+      return {
+        success: true,
+        message: 'Tracking data retrieved but no status change',
+        updated: false,
+        status_code: shipment.status as ShipmentStatus,
+        newStatus: shipment.status,
+        newBucket: shipment.bucket,
+        events,
+      };
+    } catch (error) {
+      this.fastify.log.error(`Error tracking shipment ${shipmentId}: ${error}`);
+      return {
+        success: false,
+        message: `Error tracking shipment: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        updated: false,
+      };
+    }
+  }
+
+  /**
+   * Store tracking events in database
+   * @param shipmentId Shipment ID
+   * @param events Tracking events
+   */
+  private async storeTrackingEvents(shipmentId: string, events: TrackingEventData[]): Promise<void> {
+    try {
+      // Store each event
+      for (const event of events) {
+        await this.fastify.prisma.trackingEvent.create({
+          data: {
+            shipment_id: shipmentId,
+            status: event.status as ShipmentStatus,
+            status_code: event.status_code,
+            description: event.description,
+            location: event.location,
+            timestamp: event.timestamp,
+            is_rto: event.isRTO || false,
+            bucket: event.bucket,
+            // Store additional data as action
+            action: event.vendor_name || event.activity || ''
+          },
+        });
+      }
+    } catch (error) {
+      this.fastify.log.error(`Error storing tracking events: ${error}`);
     }
   }
 }

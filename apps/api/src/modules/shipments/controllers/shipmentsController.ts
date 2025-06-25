@@ -6,22 +6,22 @@ import { checkAuth } from '@/middleware/auth';
 import { captureException } from '@/lib/sentry';
 import { ShipmentStatus } from '@lorrigo/db';
 import fs from 'fs';
-import path from 'path';
+import { processShipmentTracking } from '../batch/processor';
 
 /**
  * Controller for shipment-related API endpoints
  */
 export class ShipmentController {
-  constructor(private shipmentService: ShipmentService) {}
+  constructor(private shipmentService: ShipmentService) { }
   /**
    * Get rates for an order
    */
-  async getRates(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+  async getRates(request: FastifyRequest<{ Params: { orderId: string } }>, reply: FastifyReply) {
     try {
-      const { id } = request.params;
+      const { orderId } = request.params;
       const user_id = request.userPayload!.id;
 
-      const rates = await this.shipmentService.getShipmentRates(id, user_id);
+      const rates = await this.shipmentService.getShipmentRates(orderId, user_id);
 
       return rates;
     } catch (error) {
@@ -266,12 +266,12 @@ export class ShipmentController {
       // Convert date strings to Date objects if provided
       const processedFilters = filters
         ? {
-            ...filters,
-            status: filters.status as ShipmentStatus,
-            dateRange: filters.dateRange
-              ? ([new Date(filters.dateRange[0]), new Date(filters.dateRange[1])] as [Date, Date])
-              : undefined,
-          }
+          ...filters,
+          status: filters.status as ShipmentStatus,
+          dateRange: filters.dateRange
+            ? ([new Date(filters.dateRange[0]), new Date(filters.dateRange[1])] as [Date, Date])
+            : undefined,
+        }
         : undefined;
 
       const result = await this.shipmentService.schedulePickupBulk(
@@ -310,12 +310,12 @@ export class ShipmentController {
       // Convert date strings to Date objects if provided
       const processedFilters = filters
         ? {
-            ...filters,
-            status: filters.status as ShipmentStatus,
-            dateRange: filters.dateRange
-              ? ([new Date(filters.dateRange[0]), new Date(filters.dateRange[1])] as [Date, Date])
-              : undefined,
-          }
+          ...filters,
+          status: filters.status as ShipmentStatus,
+          dateRange: filters.dateRange
+            ? ([new Date(filters.dateRange[0]), new Date(filters.dateRange[1])] as [Date, Date])
+            : undefined,
+        }
         : undefined;
 
       const result = await this.shipmentService.cancelShipmentBulk(
@@ -415,11 +415,102 @@ export class ShipmentController {
 
       // Stream the file to the client
       const stream = fs.createReadStream(filePath);
-      
+
       reply.header('Content-Disposition', `attachment; filename="${fileName}"`);
       reply.type(contentType);
-      
+
       return reply.send(stream);
+    } catch (error) {
+      request.log.error(error);
+      return reply.code(500).send({ error: 'Internal Server Error' });
+    }
+  }
+
+  /**
+   * Process a batch of shipments for tracking updates
+   * This endpoint is called by the worker service
+   */
+  async trackShipmentBatch(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const { batchSize } = request.body as { batchSize?: number };
+
+      const result = await processShipmentTracking(
+        request.server,
+        this.shipmentService,
+        { batchSize: batchSize || 50 }
+      );
+
+      return reply.send({
+        success: true,
+        message: `Processed ${result.processed} shipments: ${result.updated} updated, ${result.skipped} skipped, ${result.failed} failed`,
+        ...result
+      });
+    } catch (error) {
+      request.log.error('Error in trackShipmentBatch:', error);
+      captureException(error as Error);
+
+      return reply.code(500).send({
+        success: false,
+        message: 'Failed to process shipment tracking batch',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+
+  /**
+   * Track a specific shipment by ID
+   */
+  async trackShipment(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+    try {
+      // // Check if user is authenticated
+      // await checkAuth(request, reply);
+
+      const { id } = request.params;
+      const user_id = request.userPayload!.id;
+
+      // Get shipment details
+      const shipment = await this.shipmentService.getShipmentById(id, user_id);
+
+      if (!shipment) {
+        return reply.code(404).send({ error: 'Shipment not found' });
+      }
+
+      if (!shipment.awb) {
+        return reply.code(400).send({ error: 'Shipment has no AWB number for tracking' });
+      }
+
+      if (!shipment.courier || !shipment.courier.channel_config) {
+        return reply.code(400).send({ error: 'Shipment has no courier information' });
+      }
+
+      // Track the shipment
+      const trackingResult = await this.shipmentService.trackShipment(
+        id,
+        shipment.courier.channel_config.name,
+        shipment.awb,
+        shipment.order_id
+      );
+
+      if (!trackingResult.success) {
+        return reply.code(400).send({
+          error: trackingResult.message || 'Failed to track shipment',
+          status: shipment.status
+        });
+      }
+
+      // Get updated shipment details to include EDD
+      const updatedShipment = await this.shipmentService.getShipmentById(id, user_id);
+
+      return reply.send({
+        success: true,
+        message: trackingResult.updated
+          ? `Shipment status updated to ${trackingResult.newStatus}`
+          : 'No status change detected',
+        status: trackingResult.newStatus || shipment.status,
+        bucket: trackingResult.newBucket || shipment.bucket,
+        tracking_events: trackingResult.events || [],
+        edd: updatedShipment?.edd || null
+      });
     } catch (error) {
       request.log.error(error);
       return reply.code(500).send({ error: 'Internal Server Error' });

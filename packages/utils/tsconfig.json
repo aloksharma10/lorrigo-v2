@@ -11,7 +11,7 @@
     "esModuleInterop": true,
     "moduleResolution": "node"
   },
-  "include": ["src"]
+  "include": ["src", "src/**/*.ts"]
 }
 // {
 //   "extends": "@lorrigo/typescript-config/base.json",

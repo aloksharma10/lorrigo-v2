@@ -326,7 +326,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
         return (
           <div className="flex flex-col">
             <Badge className={`${statusColorMap[shipment.status]} w-fit`}>
-              {shipment.status.toUpperCase()}
+              {shipment?.trackingEvents[0]?.status?.toUpperCase() || 'AWAITING'}
             </Badge>
 
             <div className="mt-1 text-xs">

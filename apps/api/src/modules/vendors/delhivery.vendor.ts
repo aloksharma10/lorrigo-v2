@@ -2,14 +2,20 @@ import { APP_CONFIG } from '@/config/app';
 import { BaseVendor } from './base-vendor';
 import { APIs } from '@/config/api';
 import { CACHE_KEYS } from '@/config/cache';
-import { formatPhoneNumber } from '@lorrigo/utils';
+import { formatPhoneNumber, ShipmentBucketManager } from '@lorrigo/utils';
+import { prisma } from '@lorrigo/db';
 import {
   VendorRegistrationResult,
   VendorServiceabilityResult,
   VendorShipmentResult,
   VendorPickupResult,
   VendorCancellationResult,
+  VendorTrackingResult,
+  TrackingEventData,
+  ShipmentTrackingData,
 } from '@/types/vendor';
+import { redis } from '@/lib/redis';
+import { BucketMappingService } from '../shipments/services/bucket-mapping.service';
 
 /**
  * Delhivery vendor implementation
@@ -17,8 +23,9 @@ import {
  */
 export class DelhiveryVendor extends BaseVendor {
   private weightCategory: '0.5' | '5' | '10';
+  private bucketMappingService?: BucketMappingService;
 
-  constructor(weightCategory: '0.5' | '5' | '10' = '5') {
+  constructor(weightCategory: '0.5' | '5' | '10' = '5', bucketMappingService?: BucketMappingService) {
     const vendorConfig = APP_CONFIG.VENDOR.DELHIVERY;
     let apiKey = '';
     let tokenCacheKey = '';
@@ -42,6 +49,7 @@ export class DelhiveryVendor extends BaseVendor {
     super(`Delhivery-${weightCategory}`, vendorConfig.API_BASEURL || '', apiKey, tokenCacheKey);
 
     this.weightCategory = weightCategory;
+    this.bucketMappingService = bucketMappingService;
   }
 
   /**
@@ -462,6 +470,207 @@ export class DelhiveryVendor extends BaseVendor {
       };
     }
   }
+
+  /**
+   * Track a shipment with Delhivery
+   * @param trackingData Tracking data including AWB and shipment details
+   * @returns Promise resolving to tracking result
+   */
+  public async trackShipment(trackingData: ShipmentTrackingData): Promise<VendorTrackingResult> {
+    try {
+      // Check if AWB is available
+      if (!trackingData.awb) {
+        return {
+          success: false,
+          message: 'AWB number is required for tracking',
+          data: null,
+          trackingEvents: [],
+        };
+      }
+
+      // Check cache for tracking data to avoid unnecessary API calls
+      const cacheKey = `tracking:${this.name.toLowerCase()}:${trackingData.awb}`;
+      const cachedData = await redis.get(cacheKey);
+      
+      if (cachedData) {
+        try {
+          const parsedData = JSON.parse(cachedData);
+          return {
+            success: true,
+            message: 'Tracking data retrieved from cache',
+            data: parsedData.data,
+            trackingEvents: parsedData.trackingEvents,
+          };
+        } catch (parseError) {
+          console.error(`Error parsing cached tracking data for ${trackingData.awb}:`, parseError);
+          // Continue with API call if cache parsing fails
+        }
+      }
+
+      // Get authentication token
+      const token = await this.getAuthToken();
+      if (!token) {
+        return {
+          success: false,
+          message: `Failed to get Delhivery ${this.weightCategory} kg authentication token`,
+          data: null,
+          trackingEvents: [],
+        };
+      }
+
+      // Make API request to get tracking information
+      const apiConfig = {
+        Authorization: token,
+      };
+
+      // Delhivery API endpoint for tracking
+      const endpoint = `${APIs.DELHIVERY.TRACK_ORDER}${trackingData.awb}/json`;
+      const response = await this.makeRequest(endpoint, 'GET', null, apiConfig);
+
+      // Check if response is valid
+      if (!response.data || !response.data.ShipmentData || response.data.ShipmentData.length === 0) {
+        return {
+          success: false,
+          message: `No tracking data found for AWB ${trackingData.awb}`,
+          data: null,
+          trackingEvents: [],
+        };
+      }
+
+      // Extract tracking data
+      const shipmentData = response.data.ShipmentData[0];
+      const scans = shipmentData.Scans || [];
+      
+      // Process tracking events
+      const trackingEvents: TrackingEventData[] = [];
+      
+      // Map scans to tracking events
+      if (Array.isArray(scans) && scans.length > 0) {
+        for (const scan of scans) {
+          if (!scan.ScanDetail || !scan.ScanDateTime) continue;
+          
+          // Parse date string to Date object
+          let timestamp: Date;
+          try {
+            // Delhivery date format: "24-Mar-2023 15:30:45"
+            timestamp = new Date(scan.ScanDateTime);
+            if (isNaN(timestamp.getTime())) {
+              // Try alternative parsing if standard parsing fails
+              const parts = scan.ScanDateTime.split(/[- :]/);
+              if (parts.length >= 6) {
+                // Map month abbreviation to month number
+                const months: Record<string, number> = {
+                  'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
+                  'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
+                };
+                const day = parseInt(parts[0]);
+                const month = months[parts[1]] || 0;
+                const year = parseInt(parts[2]);
+                const hour = parseInt(parts[3]);
+                const minute = parseInt(parts[4]);
+                const second = parseInt(parts[5]);
+                timestamp = new Date(year, month, day, hour, minute, second);
+              } else {
+                timestamp = new Date();
+              }
+            }
+          } catch (e) {
+            timestamp = new Date();
+          }
+          
+          // Extract status and status code
+          const status = scan.ScanDetail;
+          const statusCode = scan.Scan;
+          
+          // Determine if this is an RTO status
+          const isRTO = this.isRTOStatus(status, statusCode);
+          
+          // Map to bucket using helper method
+          const bucket = this.bucketMappingService 
+            ? await this.bucketMappingService.detectBucket(status, statusCode, this.name.toUpperCase())
+            : await this.mapStatusToBucket(status, statusCode);
+          
+          trackingEvents.push({
+            status,
+            status_code: statusCode,
+            description: scan.Instructions || status,
+            location: scan.ScannedLocation || '',
+            timestamp,
+            activity: status,
+            isRTO,
+            bucket,
+          });
+        }
+      }
+      
+      // Add current status if not already included in scans
+      if (shipmentData.Status && !trackingEvents.some(e => e.status === shipmentData.Status)) {
+        const currentStatusBucket = this.bucketMappingService 
+          ? await this.bucketMappingService.detectBucket(shipmentData.Status, '', this.name.toUpperCase())
+          : await this.mapStatusToBucket(shipmentData.Status);
+          
+        trackingEvents.push({
+          status: shipmentData.Status,
+          status_code: shipmentData.Status.toUpperCase().replace(/\s+/g, '_'),
+          description: shipmentData.StatusDescription || shipmentData.Status,
+          location: shipmentData.Destination || '',
+          timestamp: new Date(),
+          activity: shipmentData.Status,
+          isRTO: this.isRTOStatus(shipmentData.Status),
+          bucket: currentStatusBucket,
+        });
+      }
+      
+      // Sort events by timestamp (oldest first)
+      trackingEvents.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+      
+      // If no events found, add a default event
+      if (trackingEvents.length === 0) {
+        trackingEvents.push({
+          status: 'Pending',
+          status_code: 'PENDING',
+          description: 'Tracking information not available',
+          location: '',
+          timestamp: new Date(),
+          activity: 'Tracking information not available',
+          isRTO: false,
+          bucket: ShipmentBucketManager.getBucketFromStatus('NEW'),
+        });
+      }
+      
+      // Cache the result
+      // Use a longer TTL for delivered/RTO shipments (24 hours) as they won't change
+      // Use a shorter TTL for in-transit shipments (30 minutes)
+      const isDelivered = trackingEvents.some(event => this.isDeliveredStatus(event.status));
+      const isRTO = trackingEvents.some(event => event.isRTO);
+      const cacheTTL = isDelivered || isRTO ? 86400 : 1800; // 24 hours or 30 minutes
+      
+      await redis.set(
+        cacheKey, 
+        JSON.stringify({
+          data: response.data,
+          trackingEvents,
+        }),
+        'EX',
+        cacheTTL
+      );
+      
+      return {
+        success: true,
+        message: 'Tracking data retrieved successfully',
+        data: response.data,
+        trackingEvents,
+      };
+    } catch (error) {
+      console.error(`Error tracking shipment with Delhivery ${this.weightCategory}:`, error);
+      return {
+        success: false,
+        message: `Error tracking shipment: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        data: null,
+        trackingEvents: [],
+      };
+    }
+  }
 }
 
 /**
@@ -470,18 +679,24 @@ export class DelhiveryVendor extends BaseVendor {
 export class DelhiveryVendorFactory {
   /**
    * Get all Delhivery vendor instances for all weight categories
+   * @param bucketMappingService Optional bucket mapping service
    * @returns Array of Delhivery vendor instances
    */
-  public static getAllVendors(): DelhiveryVendor[] {
-    return [new DelhiveryVendor('0.5'), new DelhiveryVendor('5'), new DelhiveryVendor('10')];
+  public static getAllVendors(bucketMappingService?: BucketMappingService): DelhiveryVendor[] {
+    return [
+      new DelhiveryVendor('0.5', bucketMappingService), 
+      new DelhiveryVendor('5', bucketMappingService), 
+      new DelhiveryVendor('10', bucketMappingService)
+    ];
   }
 
   /**
    * Get Delhivery vendor instance for a specific weight category
    * @param weightCategory Weight category
+   * @param bucketMappingService Optional bucket mapping service
    * @returns Delhivery vendor instance
    */
-  public static getVendor(weightCategory: '0.5' | '5' | '10'): DelhiveryVendor {
-    return new DelhiveryVendor(weightCategory);
+  public static getVendor(weightCategory: '0.5' | '5' | '10', bucketMappingService?: BucketMappingService): DelhiveryVendor {
+    return new DelhiveryVendor(weightCategory, bucketMappingService);
   }
 }

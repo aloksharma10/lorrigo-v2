@@ -3,7 +3,7 @@ import { prisma } from '@lorrigo/db';
 /**
  * This script assigns the default plan to all users who don't have a plan assigned
  */
-async function assignDefaultPlanToAllUsers() {
+export async function assignDefaultPlanToAllUsers() {
   try {
     // Get the default plan
     const defaultPlan = await prisma.plan.findFirst({
@@ -69,6 +69,3 @@ async function assignDefaultPlanToAllUsers() {
     await prisma.$disconnect();
   }
 }
-
-// Run the script
-assignDefaultPlanToAllUsers();

@@ -23,18 +23,23 @@ enum OrderType {
 }
 
 enum ShipmentStatus {
+  ALL
   NEW
   COURIER_ASSIGNED
   PICKUP_SCHEDULED
   OUT_FOR_PICKUP
+  PICKED_UP
   IN_TRANSIT
   OUT_FOR_DELIVERY
   DELIVERED
-  UNDELIVERED
-  RETURNED
+  NDR
+  RTO
+  RTO_DELIVERED
   EXCEPTION
   CANCELLED_SHIPMENT
   CANCELLED_ORDER
+
+  AWAITING
 }
 
 enum PaymentMethod {
@@ -311,7 +316,7 @@ model HubConfig {
   is_primary                  Boolean @default(false)
   smart_ship_hub_code_surface String  @unique @db.VarChar(50)
   smart_ship_hub_code_express String  @unique @db.VarChar(50)
-  smart_ship_hub_code_heavy String  @unique @db.VarChar(50)
+  smart_ship_hub_code_heavy   String  @unique @db.VarChar(50)
 
   hub Hub? @relation("HubConfigHub") // inverse side, optional
 
@@ -392,7 +397,6 @@ model Order {
 
   order_channel_config_id String
   order_channel_config    OrderChannelConfig @relation(fields: [order_channel_config_id], references: [id])
-  bucket                  Int                @default(0) // For legacy compatibility
   order_reference_id      String?
   ewaybill                String?            @db.VarChar(12)
   total_amount            Float
@@ -481,6 +485,7 @@ model Shipment {
   code   String         @unique // Custom ID - Format: SH-YYMM-XXXXX
   awb    String?        @unique @db.VarChar(50)
   status ShipmentStatus @default(NEW)
+  bucket Int            @default(1)
 
   shipping_charge Float?     @default(0)
   fw_charge       Float?     @default(0)
@@ -520,12 +525,28 @@ model Shipment {
 // TrackingEvent Model
 model TrackingEvent {
   id          String         @id @default(cuid())
-  status      ShipmentStatus
+  status      String
+
+  action      String?        @db.VarChar(100)
   location    String?        @db.VarChar(100)
   description String?        @db.VarChar(255)
+  status_code String?        @db.VarChar(100)
+
+  // Additional vendor-specific fields
+  vendor_name        String?  @db.VarChar(100)
+  vendor_status_code String?  @db.VarChar(100)
+  vendor_status_label String? @db.VarChar(100)
+  raw_data           Json?    // Store the complete raw tracking event data
+
   shipment_id String
   shipment    Shipment       @relation(fields: [shipment_id], references: [id], onDelete: Cascade)
-  timestamp   DateTime       @default(now())
+
+  is_rto      Boolean        @default(false)
+  bucket      Int?           @default(1)
+
+  timestamp  DateTime @default(now())
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   @@index([shipment_id, timestamp])
 }
@@ -780,8 +801,12 @@ model Dispute {
   order_box_width  Float?
   order_box_length Float?
   order_size_unit  String?
-  order_weight     Float?
-  charged_weight   Float?
+
+  applicable_weight  Float? // 0.5 
+  courier_weight     Float? // 1.5 
+  excess_weight      Float? // 1 
+  dispute_weight     Float? // 1.5 
+  final_total_weight Float? // 1
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -854,21 +879,21 @@ model ApiRequest {
 
 // BulkOperation Model
 model BulkOperation {
-  id             String   @id @default(uuid())
-  type           String   // CREATE_SHIPMENT, SCHEDULE_PICKUP, CANCEL_SHIPMENT, DOWNLOAD_LABEL, EDIT_PICKUP_ADDRESS
-  status         String   // PENDING, PROCESSING, COMPLETED, FAILED
-  code           String   @unique
-  user_id        String
-  total_count    Int      @default(0)
-  processed_count Int     @default(0)
-  success_count  Int      @default(0)
-  failed_count   Int      @default(0)
-  results        String?  @db.Text // JSON string of operation results
-  report_path    String?  // Path to CSV report file
-  file_path      String?  // Path to PDF or other output file
-  error_message  String?  // Error message if operation failed
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
+  id              String   @id @default(uuid())
+  type            String // CREATE_SHIPMENT, SCHEDULE_PICKUP, CANCEL_SHIPMENT, DOWNLOAD_LABEL, EDIT_PICKUP_ADDRESS
+  status          String // PENDING, PROCESSING, COMPLETED, FAILED
+  code            String   @unique
+  user_id         String
+  total_count     Int      @default(0)
+  processed_count Int      @default(0)
+  success_count   Int      @default(0)
+  failed_count    Int      @default(0)
+  results         String?  @db.Text // JSON string of operation results
+  report_path     String? // Path to CSV report file
+  file_path       String? // Path to PDF or other output file
+  error_message   String? // Error message if operation failed
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
 
   user User @relation(fields: [user_id], references: [id])
 
@@ -984,7 +1009,7 @@ model PlanCourierPricing {
 }
 
 model ZonePricing {
-  id                  String  @id @default(cuid())
+  id                  String    @id @default(cuid())
   zone                ZoneLabel
   base_price          Float
   increment_price     Float
@@ -1035,7 +1060,7 @@ model ShipmentPricing {
 }
 
 model ShipmentCourierZonePricing {
-  id                  String  @id @default(cuid())
+  id                  String    @id @default(cuid())
   zone                ZoneLabel
   base_price          Float
   increment_price     Float
@@ -1051,6 +1076,42 @@ model ShipmentCourierZonePricing {
   shipment_pricing    ShipmentPricing? @relation("CourierOtherZonePricing", fields: [shipment_pricing_id], references: [id])
 
   @@index([zone])
+}
+
+// CourierStatusMapping Model
+model CourierStatusMapping {
+  id                 String  @id @default(cuid())
+  courier_name       String  @db.VarChar(100) // Vendor name (SHIPROCKET, DELHIVERY, SMARTSHIP)
+  status_code        String  @db.VarChar(50) // Original status code from courier
+  status_label       String  @db.VarChar(100) // Status label from courier
+  status_description String? @db.VarChar(255) // Status description from courier
+  bucket             Int // Lorrigo bucket ID
+  is_active          Boolean @default(true)
+  is_mapped          Boolean @default(true)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@unique([courier_name, status_code])
+  @@index([courier_name, bucket])
+  @@index([status_code])
+}
+
+// UnmappedCourierStatus Model
+model UnmappedCourierStatus {
+  id           String  @id @default(cuid())
+  courier      String  @db.VarChar(100) // Vendor name (SHIPROCKET, DELHIVERY, SMARTSHIP)
+  status_code  String  @db.VarChar(50) // Original status code from courier
+  status_label String? @db.VarChar(100) // Status label from courier
+  count        Int     @default(1) // Number of times this status has been seen
+  last_seen    DateTime @default(now()) // Last time this status was seen
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@unique([courier, status_code], name: "courier_status_code")
+  @@index([courier])
+  @@index([status_code])
 }
 
 // Shopify Connection Model

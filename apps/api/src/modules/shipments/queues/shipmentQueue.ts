@@ -1,17 +1,19 @@
 import { Worker, Job } from 'bullmq';
 import { FastifyInstance } from 'fastify';
 import { ShipmentService } from '../services/shipmentService';
-import { z } from 'zod';
 import { CreateShipmentSchema } from '@lorrigo/utils';
-import { queues, QueueNames } from '@/lib/queue';
-import fs from 'fs';
-import path from 'path';
-import { ShipmentStatus } from '@lorrigo/db';
+import { QueueNames, initQueueEvents } from '@/lib/queue';
 import { APP_CONFIG } from '@/config/app';
 import { redis } from '@/lib/redis';
-import { QueueEvents } from 'bullmq';
 import { generateCsvReport, mergePdfBuffers, BulkOperationResult } from '@/modules/bulk-operations/utils/file-utils';
 import pLimit from 'p-limit';
+import { 
+  processShipmentTracking, 
+  processTrackingRetry, 
+  TrackingProcessor, 
+  TrackingProcessorConfig 
+} from '../batch/processor';
+import { ShipmentStatus } from '@lorrigo/db';
 
 // Job types for the shipment queue
 export enum JobType {
@@ -23,6 +25,13 @@ export enum JobType {
   BULK_CANCEL_SHIPMENT = 'bulk-cancel-shipment',
   BULK_DOWNLOAD_LABEL = 'bulk-download-label',
   BULK_EDIT_PICKUP_ADDRESS = 'bulk-edit-pickup-address',
+  TRACK_SHIPMENTS = 'track-shipments',
+  RETRY_TRACK_SHIPMENT = 'retry-track-shipment',
+  PROCESS_RTO_CHARGES = 'process-rto-charges',
+  PROCESS_RTO = 'process-rto',
+  PROCESS_BULK_STATUS_UPDATES = 'process-bulk-status-updates',
+  PROCESS_UNMAPPED_STATUSES = 'process-unmapped-statuses',
+  PROCESS_EDD_UPDATES = 'process-edd-updates',
 }
 
 /**
@@ -36,22 +45,51 @@ interface BulkOperationJobData {
 }
 
 /**
+ * Interface for tracking job data
+ */
+interface TrackingJobData {
+  batchSize?: number;
+  config?: Partial<TrackingProcessorConfig>;
+  shipmentId?: string;
+}
+
+/**
+ * Interface for RTO charges job data
+ */
+interface RtoChargesJobData {
+  shipmentId: string;
+  orderId: string;
+}
+
+/**
  * Initialize the shipment queue
  * @param fastify Fastify instance
  * @param shipmentService Shipment service instance
  */
 export function initShipmentQueue(fastify: FastifyInstance, shipmentService: ShipmentService) {
   // Initialize the bulk operation queue
-  const queue = fastify.queues[QueueNames.BULK_OPERATION];
+  const bulkOperationQueue = fastify.queues[QueueNames.BULK_OPERATION];
   
-  // Initialize the worker
-  if (!queue) {
+  // Initialize the shipment tracking queue
+  const trackingQueue = fastify.queues[QueueNames.SHIPMENT_TRACKING];
+  
+  // Initialize the workers
+  if (!bulkOperationQueue) {
     fastify.log.error('Bulk operation queue not initialized in queue.ts');
-    return { queue: null, worker: null };
+    return { bulkOperationQueue: null, bulkOperationWorker: null, trackingQueue: null, trackingWorker: null };
   }
 
-  // Create the worker
-  const worker = new Worker(
+  if (!trackingQueue) {
+    fastify.log.error('Shipment tracking queue not initialized in queue.ts');
+    return { bulkOperationQueue, bulkOperationWorker: null, trackingQueue: null, trackingWorker: null };
+  }
+
+  // Initialize queue events for monitoring
+  const bulkOperationQueueEvents = initQueueEvents(fastify, QueueNames.BULK_OPERATION);
+  const trackingQueueEvents = initQueueEvents(fastify, QueueNames.SHIPMENT_TRACKING);
+
+  // Create the bulk operation worker
+  const bulkOperationWorker = new Worker(
     QueueNames.BULK_OPERATION,
     async (job: Job) => {
       fastify.log.info(`Processing job ${job.id} of type ${job.name}`);
@@ -93,37 +131,187 @@ export function initShipmentQueue(fastify: FastifyInstance, shipmentService: Shi
     }, {
     connection: redis,
     prefix: APP_CONFIG.REDIS.PREFIX,
-    concurrency: 10, // Adjust based on your needs
+    concurrency: 10, // Process up to 10 bulk operations concurrently
+    limiter: {
+      max: 5, // Maximum number of jobs to process per time window
+      duration: 1000, // Time window in ms (1 second)
+    },
+    // Custom backoff strategy for retries
+    settings: {
+      backoffStrategy: (attemptsMade: number) => {
+        const baseDelay = 5000; // 5 seconds
+        const maxDelay = 300000; // 5 minutes
+        // Exponential backoff with full jitter
+        const expDelay = Math.min(maxDelay, baseDelay * Math.pow(2, attemptsMade));
+        return Math.floor(Math.random() * expDelay);
+      }
+    },
+    maxStalledCount: 2, // Consider a job stalled after 2 checks
+    stalledInterval: 15000, // Check for stalled jobs every 15 seconds
   });
 
-  // Log worker events
-  worker.on('completed', (job) => {
-    fastify.log.info(`Job ${job.id} completed successfully`);
-  });
+  // Create the tracking worker with optimized settings
+  const trackingWorker = new Worker(
+    QueueNames.SHIPMENT_TRACKING,
+    async (job: Job) => {
+      fastify.log.info(`Processing tracking job ${job.id} of type ${job.name}`);
 
-  worker.on('failed', (job, err) => {
-    fastify.log.error(`Job ${job?.id} failed with error: ${err.message}`);
-  });
-
-  worker.on('error', (err) => {
-    fastify.log.error(`Worker error: ${err.message}`);
-  });
-
-  // Initialize queue events for monitoring
-  const queueEvents = new QueueEvents(QueueNames.BULK_OPERATION, {
+      try {
+        switch (job.name) {
+          case JobType.TRACK_SHIPMENTS:
+            const { batchSize, config } = job.data as TrackingJobData;
+            return await processShipmentTracking(
+              fastify, 
+              shipmentService, 
+              { 
+                batchSize: batchSize || 50,
+                ...config
+              }
+            );
+          
+          case JobType.RETRY_TRACK_SHIPMENT:
+            const { shipmentId } = job.data as TrackingJobData;
+            if (!shipmentId) {
+              throw new Error('Missing shipment ID for retry tracking');
+            }
+            return await processTrackingRetry(fastify, shipmentService, shipmentId);
+          
+          case JobType.PROCESS_RTO_CHARGES:
+            const { shipmentId: rtoShipmentId, orderId } = job.data as RtoChargesJobData;
+            if (!rtoShipmentId || !orderId) {
+              throw new Error('Missing shipment ID or order ID for RTO charges');
+            }
+            return await TrackingProcessor.processRtoCharges(rtoShipmentId, orderId);
+          
+          case JobType.PROCESS_BULK_STATUS_UPDATES:
+            return await TrackingProcessor.processBulkStatusUpdates(fastify);
+          
+          case JobType.PROCESS_UNMAPPED_STATUSES:
+            return await TrackingProcessor.processUnmappedStatuses(fastify);
+          
+          case JobType.PROCESS_EDD_UPDATES:
+            return await TrackingProcessor.processBulkEddUpdates(fastify);
+          
+          case JobType.PROCESS_RTO:
+            const { batchSize: rtoBatchSize } = job.data as TrackingJobData;
+            return await TrackingProcessor.processRtoShipments(fastify, rtoBatchSize || 100);
+          
+          default:
+            throw new Error(`Unknown tracking job type: ${job.name}`);
+        }
+      } catch (error) {
+        fastify.log.error(`Error processing tracking job ${job.id}: ${error}`);
+        throw error;
+      }
+    }, {
     connection: redis,
     prefix: APP_CONFIG.REDIS.PREFIX,
+    concurrency: 3, // Process up to 3 tracking jobs concurrently
+    limiter: {
+      max: 10, // Maximum number of jobs to process per time window
+      duration: 1000, // Time window in ms (1 second)
+    },
+    settings: {
+      backoffStrategy: (attemptsMade: number) => {
+        const baseDelay = 3000; // 3 seconds
+        const maxDelay = 60000; // 1 minute
+        return maxDelay * Math.pow(2, attemptsMade);
+      }
+    },
+    maxStalledCount: 2, // Consider a job stalled after 2 checks
+    stalledInterval: 15000, // Check for stalled jobs every 15 seconds
   });
 
-  queueEvents.on('waiting', ({ jobId }) => {
-    fastify.log.info(`Job ${jobId} is waiting`);
+  // Log bulk operation worker events
+  bulkOperationWorker.on('completed', (job) => {
+    fastify.log.info(`Bulk operation job ${job.id} completed successfully`);
   });
 
-  queueEvents.on('active', ({ jobId }) => {
-    fastify.log.info(`Job ${jobId} is active`);
+  bulkOperationWorker.on('failed', (job, err) => {
+    fastify.log.error(`Bulk operation job ${job?.id} failed with error: ${err.message}`);
   });
 
-  return { queue, worker };
+  bulkOperationWorker.on('error', (err) => {
+    fastify.log.error(`Bulk operation worker error: ${err.message}`);
+  });
+
+  // Log tracking worker events
+  trackingWorker.on('completed', (job) => {
+    fastify.log.info(`Tracking job ${job.id} completed successfully`);
+  });
+
+  trackingWorker.on('failed', (job, err) => {
+    fastify.log.error(`Tracking job ${job?.id} failed with error: ${err.message}`);
+    
+    // Handle "Missing key for job repeat" error by attempting to recover
+    if (err.message?.includes('Missing key for job repeat')) {
+      try {
+        // Attempt to recover by cleaning up orphaned repeat jobs
+        // const { cleanupOrphanedRepeatJobs } = require('@/lib/queue');
+        fastify.log.warn(`Detected "Missing key for job repeat" error for job ${job?.id}, attempting recovery...`);
+        // cleanupOrphanedRepeatJobs().then(() => {
+        //   fastify.log.info(`Recovery attempt completed for job ${job?.id}`);
+        // }).catch((cleanupErr: Error) => {
+        //   fastify.log.error(`Recovery attempt failed for job ${job?.id}: ${cleanupErr.message}`);
+        // });
+      } catch (recoveryErr: unknown) {
+        const errMsg = recoveryErr instanceof Error ? recoveryErr.message : 'Unknown error';
+        fastify.log.error(`Failed to initiate recovery for job ${job?.id}: ${errMsg}`);
+      }
+    }
+  });
+
+  trackingWorker.on('error', (err) => {
+    fastify.log.error(`Tracking worker error: ${err.message}`);
+    
+    // Handle "Missing key for job repeat" error by attempting to recover
+    if (err.message?.includes('Missing key for job repeat')) {
+      try {
+        // Attempt to recover by cleaning up orphaned repeat jobs
+        // const { cleanupOrphanedRepeatJobs } = require('@/lib/queue');
+        fastify.log.warn(`Detected "Missing key for job repeat" error, attempting recovery...`);
+        // cleanupOrphanedRepeatJobs().then(() => {
+        //   fastify.log.info(`Recovery attempt completed for tracking worker error`);
+        // }).catch((cleanupErr: Error) => {
+        //   fastify.log.error(`Recovery attempt failed for tracking worker error: ${cleanupErr.message}`);
+        // });
+      } catch (recoveryErr: unknown) {
+        const errMsg = recoveryErr instanceof Error ? recoveryErr.message : 'Unknown error';
+        fastify.log.error(`Failed to initiate recovery for tracking worker error: ${errMsg}`);
+      }
+    }
+  });
+
+  // Setup graceful shutdown
+  const gracefulShutdown = async () => {
+    fastify.log.info('Shutting down queue workers gracefully...');
+    
+    // Close the workers
+    await Promise.all([
+      bulkOperationWorker.close(),
+      trackingWorker.close()
+    ]);
+    
+    // Close the queue events
+    await Promise.all([
+      bulkOperationQueueEvents.close(),
+      trackingQueueEvents.close()
+    ]);
+    
+    fastify.log.info('Queue workers shut down successfully');
+  };
+
+  // Register shutdown handlers
+  process.on('SIGTERM', gracefulShutdown);
+  process.on('SIGINT', gracefulShutdown);
+
+  return { 
+    bulkOperationQueue, 
+    bulkOperationWorker, 
+    trackingQueue, 
+    trackingWorker,
+    gracefulShutdown
+  };
 }
 
 /**
