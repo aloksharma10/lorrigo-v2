@@ -91,8 +91,8 @@ importers:
         specifier: ^5.3.2
         version: 5.6.1
       p-limit:
-        specifier: ^4.0.0
-        version: 4.0.0
+        specifier: ^3.1.0
+        version: 3.1.0
       pdf-lib:
         specifier: ^1.17.1
         version: 1.17.1
@@ -266,9 +266,6 @@ importers:
         specifier: ^10.9.2
         version: 10.9.2(@types/node@20.19.0)(typescript@5.8.3)
     devDependencies:
-      '@lorrigo/utils':
-        specifier: workspace:*
-        version: link:../utils
       '@types/node':
         specifier: ^20
         version: 20.19.0
@@ -3587,9 +3584,9 @@ packages:
     resolution: {integrity: sha512-D2FR03Vir7FIu45XBY20mTb+/ZSWB00sjU9jdQXt83gDrI4Ztz5Fs7/yy74g2N5SVQY4xY1qDr4rNddwYRVX0g==}
     engines: {node: '>=0.10.0'}
 
-  p-limit@4.0.0:
-    resolution: {integrity: sha512-5b0R4txpzjPWVw/cXXUResoD4hb6U/x9BH08L7nw+GN1sezDzPdxeRvpc9c433fZhBan/wusjbCsqwqm4EIBIQ==}
-    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
+  p-limit@3.1.0:
+    resolution: {integrity: sha512-TYOanM3wGwNGsZN2cVTYPArw454xnXj5qmWF1bEoAc4+cU/ol7GVh7odevjp1FNHduHc3KZMcFduxU5Xc6uJRQ==}
+    engines: {node: '>=10'}
 
   p-limit@5.0.0:
     resolution: {integrity: sha512-/Eaoq+QyLSiXQ4lyYV23f14mZRQcXnxfHrN0vCai+ak9G0pp9iEQukIIZq5NccEvwRB8PUnZT0KsOoDCINS1qQ==}
@@ -4655,6 +4652,10 @@ packages:
   yn@3.1.1:
     resolution: {integrity: sha512-Ux4ygGWsu2c7isFWe8Yu1YluJmqVhxqK2cLXNQA5AcC3QfbGNpM7fu0Y8b/z16pXLnFxZYvWhd3fhBY9DLmC6Q==}
     engines: {node: '>=6'}
+
+  yocto-queue@0.1.0:
+    resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
+    engines: {node: '>=10'}
 
   yocto-queue@1.2.1:
     resolution: {integrity: sha512-AyeEbWOu/TAXdxlV9wmGcR0+yh2j3vYPGOECcIj2S7MkrLyC7ne+oye2BKTItt0ii2PHk4cDy+95+LshzbXnGg==}
@@ -7677,9 +7678,9 @@ snapshots:
 
   os-tmpdir@1.0.2: {}
 
-  p-limit@4.0.0:
+  p-limit@3.1.0:
     dependencies:
-      yocto-queue: 1.2.1
+      yocto-queue: 0.1.0
 
   p-limit@5.0.0:
     dependencies:
@@ -8776,6 +8777,8 @@ snapshots:
   yaml@2.8.0: {}
 
   yn@3.1.1: {}
+
+  yocto-queue@0.1.0: {}
 
   yocto-queue@1.2.1: {}
 
