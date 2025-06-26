@@ -176,4 +176,31 @@ export async function shipmentRoutes(fastify: FastifyInstance) {
       return reply.code(500).send({ error: 'Internal server error' });
     }
   });
+
+  // Handle NDR event
+  fastify.post(
+    '/shipments/ndr',
+    {
+      onRequest: [fastify.authenticate],
+    },
+    shipmentController.handleNDREvent.bind(shipmentController)
+  );
+
+  // Get NDR orders
+  fastify.get(
+    '/shipments/ndr',
+    {
+      onRequest: [fastify.authenticate],
+    },
+    shipmentController.getNDROrders.bind(shipmentController)
+  );
+
+  // Take action on NDR order
+  fastify.post(
+    '/shipments/ndr/:id/action',
+    {
+      onRequest: [fastify.authenticate],
+    },
+    shipmentController.takeNDRAction.bind(shipmentController)
+  );
 }

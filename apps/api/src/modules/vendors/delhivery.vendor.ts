@@ -210,11 +210,8 @@ export class DelhiveryVendor extends BaseVendor {
         JSON.stringify(error.response?.data)
       );
 
-      return {
-        success: false,
-        message: error.response?.data || error.message,
-        data: null,
-      };
+      // Use the base class method to handle hub registration errors
+      return this.handleHubRegistrationError(error, `Delhivery ${this.weightCategory} kg`);
     }
   }
 

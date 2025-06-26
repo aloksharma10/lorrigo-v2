@@ -214,6 +214,46 @@ export abstract class BaseVendor {
   }
 
   /**
+   * Handle hub registration errors
+   * @param error Error object from hub registration
+   * @param vendorName Vendor name for error message
+   * @returns Registration result with appropriate success/failure status
+   */
+  protected handleHubRegistrationError(error: any, vendorName: string = this.name): VendorRegistrationResult {
+    // Check for common patterns indicating hub already exists
+    const errorMessage = error?.response?.data?.message || error?.response?.data?.error || error?.message || '';
+    const errorData = error?.response?.data || {};
+    
+    // Check for various error patterns that indicate hub already exists
+    const hubExistsPatterns = [
+      /already exists/i,
+      /already registered/i,
+      /duplicate/i,
+      /already in use/i,
+      /already added/i,
+    ];
+    
+    // Check if any pattern matches the error message
+    const isHubExists = hubExistsPatterns.some(pattern => pattern.test(errorMessage));
+    
+    // If hub already exists, return success
+    if (isHubExists) {
+      return {
+        success: true,
+        message: `Hub already registered with ${vendorName}`,
+        data: errorData,
+      };
+    }
+    
+    // Otherwise return failure with error message
+    return {
+      success: false,
+      message: errorMessage || `Failed to register hub with ${vendorName}`,
+      data: errorData,
+    };
+  }
+
+  /**
    * Check serviceability with vendor
    * @param pickupPincode Pickup pincode
    * @param deliveryPincode Delivery pincode

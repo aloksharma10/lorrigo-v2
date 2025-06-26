@@ -516,4 +516,149 @@ export class ShipmentController {
       return reply.code(500).send({ error: 'Internal Server Error' });
     }
   }
-}
+
+  /**
+   * Handle NDR (Non-Delivery Report) event
+   * @param request Request object
+   * @param reply Response object
+   * @returns Response with NDR creation result
+   */
+  async handleNDREvent(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const body = request.body as any;
+      const userId = request.userPayload?.id;
+
+      if (!userId) {
+        return reply.code(401).send({
+          success: false,
+          message: 'Unauthorized',
+        });
+      }
+
+      // Validate required fields
+      if (!body.shipment_id || !body.order_id) {
+        return reply.code(400).send({
+          success: false,
+          message: 'Missing required fields: shipment_id and order_id are required',
+        });
+      }
+
+      // Create NDR record using service
+      const result = await this.shipmentService.createNDRRecord(body, userId);
+
+      return reply.code(result.success ? 200 : 400).send(result);
+    } catch (error: any) {
+      request.log.error(`Error handling NDR event: ${error.message}`);
+      return reply.code(500).send({
+        success: false,
+        message: 'Internal server error',
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * Get NDR orders for a user
+   * @param request Request object
+   * @param reply Response object
+   * @returns Response with NDR orders
+   */
+  async getNDROrders(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const userId = request.userPayload?.id;
+      const query = request.query as any;
+
+      if (!userId) {
+        return reply.code(401).send({
+          success: false,
+          message: 'Unauthorized',
+        });
+      }
+
+      // Get pagination parameters
+      const page = parseInt(query.page || '1', 10);
+      const limit = parseInt(query.limit || '10', 10);
+      const status = query.status;
+      const awb = query.awb;
+      const startDate = query.startDate ? new Date(query.startDate) : undefined;
+      const endDate = query.endDate ? new Date(query.endDate) : undefined;
+      const actionTaken = query.actionTaken === 'true';
+
+      // Get NDR orders using service
+      const result = await this.shipmentService.getNDROrders(
+        userId,
+        page,
+        limit,
+        status,
+        awb,
+        startDate,
+        endDate,
+        query.actionTaken !== undefined ? actionTaken : undefined
+      );
+
+      return reply.code(200).send(result);
+    } catch (error: any) {
+      request.log.error(`Error getting NDR orders: ${error.message}`);
+      return reply.code(500).send({
+        success: false,
+        message: 'Internal server error',
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * Take action on an NDR order
+   * @param request Request object
+   * @param reply Response object
+   * @returns Response with action result
+   */
+  async takeNDRAction(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const body = request.body as any;
+      const userId = request.userPayload?.id;
+      const params = request.params as any;
+
+      if (!userId) {
+        return reply.code(401).send({
+          success: false,
+          message: 'Unauthorized',
+        });
+      }
+
+      // Validate required fields
+      if (!params.id || !body.action_type) {
+        return reply.code(400).send({
+          success: false,
+          message: 'Missing required fields: id and action_type are required',
+        });
+      }
+
+      // Valid action types
+      const validActionTypes = ['reattempt', 'return', 'cancel'];
+      if (!validActionTypes.includes(body.action_type)) {
+        return reply.code(400).send({
+          success: false,
+          message: `Invalid action_type. Must be one of: ${validActionTypes.join(', ')}`,
+        });
+      }
+
+      // Take action on NDR order using service
+      const result = await this.shipmentService.takeNDRAction(
+        params.id,
+        body.action_type,
+        body.comment || '',
+        userId
+      );
+
+      return reply.code(result.success ? 200 : 400).send(result);
+    } catch (error: any) {
+      request.log.error(`Error taking NDR action: ${error.message}`);
+      return reply.code(500).send({
+        success: false,
+        message: 'Internal server error',
+        error: error.message,
+      });
+    }
+  }
+} 

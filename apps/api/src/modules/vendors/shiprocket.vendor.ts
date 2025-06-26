@@ -232,38 +232,8 @@ export class ShiprocketVendor extends BaseVendor {
         data: response.data,
       };
     } catch (error: any) {
-      // console.error('Error registering hub with Shiprocket:', error);
-
-      // Check if error is due to existing hub but inactive
-      const isExistingHub = error?.response?.data?.errors?.pickup_location?.[0]?.includes(
-        'Address nick name already in use'
-      );
-      const isExistingHubButInactive = error?.response?.data?.message?.includes(
-        'Address name already exists'
-      );
-
-      if (isExistingHubButInactive) {
-        return {
-          success: false,
-          message: 'The address name you entered is already in use. Please choose a unique name.',
-          data: null,
-        };
-      }
-
-      // If it's an existing hub but not inactive, consider it a success
-      if (isExistingHub) {
-        return {
-          success: true,
-          message: 'Hub already exists',
-          data: null,
-        };
-      }
-
-      return {
-        success: false,
-        message: error.response?.data || error.message,
-        data: null,
-      };
+      // Use the base class method to handle hub registration errors
+      return this.handleHubRegistrationError(error, 'Shiprocket');
     }
   }
 

@@ -260,11 +260,8 @@ export class SmartShipVendor extends BaseVendor {
     } catch (error: any) {
       console.error('Error registering hub with SmartShip:', error);
 
-      return {
-        success: false,
-        message: error.response?.data || error.message,
-        data: null,
-      };
+      // Use the base class method to handle hub registration errors
+      return this.handleHubRegistrationError(error, 'SmartShip');
     }
   }
 

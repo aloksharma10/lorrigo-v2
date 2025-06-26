@@ -267,8 +267,9 @@ model Customer {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  address Address? @relation("CustomerAddresses")
-  orders  Order[]  @relation("CustomerOrders")
+  address    Address?   @relation("CustomerAddresses")
+  orders     Order[]    @relation("CustomerOrders")
+  ndr_orders NDROrder[]
 
   @@index([phone, email])
   @@index([name])
@@ -429,6 +430,7 @@ model Order {
   dispute    Dispute?    @relation("OrderDispute")
   remittance Remittance? @relation("OrderRemittances")
   billing    Billing[]
+  ndr        NDROrder?   @relation("OrderNDR")
 
   // B2B Specific
   freight_type   Int? @default(0)
@@ -474,6 +476,9 @@ model OrderItem {
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 
+  ndr_order_id String?
+  ndr_order    NDROrder? @relation("NDROrderItems", fields: [ndr_order_id], references: [id])
+
   @@index([order_id])
   @@index([code])
   @@index([sku])
@@ -510,6 +515,7 @@ model Shipment {
   user                  User                  @relation("UserShipments", fields: [user_id], references: [id], onDelete: Cascade)
   courier_id            String?
   courier               Courier?              @relation(fields: [courier_id], references: [id], onDelete: Cascade)
+  ndr                   NDROrder?             @relation("ShipmentNDR")
   tracking_events       TrackingEvent[]
   pricing               ShipmentPricing?
   shipment_transactions ShipmentTransaction[]
@@ -524,25 +530,25 @@ model Shipment {
 
 // TrackingEvent Model
 model TrackingEvent {
-  id          String         @id @default(cuid())
-  status      String
+  id     String @id @default(cuid())
+  status String
 
-  action      String?        @db.VarChar(100)
-  location    String?        @db.VarChar(100)
-  description String?        @db.VarChar(255)
-  status_code String?        @db.VarChar(100)
+  action      String? @db.VarChar(100)
+  location    String? @db.VarChar(100)
+  description String? @db.VarChar(255)
+  status_code String? @db.VarChar(100)
 
   // Additional vendor-specific fields
-  vendor_name        String?  @db.VarChar(100)
-  vendor_status_code String?  @db.VarChar(100)
+  vendor_name         String? @db.VarChar(100)
+  vendor_status_code  String? @db.VarChar(100)
   vendor_status_label String? @db.VarChar(100)
-  raw_data           Json?    // Store the complete raw tracking event data
+  raw_data            Json? // Store the complete raw tracking event data
 
   shipment_id String
-  shipment    Shipment       @relation(fields: [shipment_id], references: [id], onDelete: Cascade)
+  shipment    Shipment @relation(fields: [shipment_id], references: [id], onDelete: Cascade)
 
-  is_rto      Boolean        @default(false)
-  bucket      Int?           @default(1)
+  is_rto Boolean @default(false)
+  bucket Int?    @default(1)
 
   timestamp  DateTime @default(now())
   created_at DateTime @default(now())
@@ -589,6 +595,7 @@ model Courier {
 
   shipments     Shipment[]
   plan_pricings PlanCourierPricing[]
+  ndr_orders    NDROrder[]
 
   channel_config_id String
   channel_config    ChannelConfig @relation(fields: [channel_config_id], references: [id])
@@ -1099,11 +1106,11 @@ model CourierStatusMapping {
 
 // UnmappedCourierStatus Model
 model UnmappedCourierStatus {
-  id           String  @id @default(cuid())
-  courier      String  @db.VarChar(100) // Vendor name (SHIPROCKET, DELHIVERY, SMARTSHIP)
-  status_code  String  @db.VarChar(50) // Original status code from courier
-  status_label String? @db.VarChar(100) // Status label from courier
-  count        Int     @default(1) // Number of times this status has been seen
+  id           String   @id @default(cuid())
+  courier      String   @db.VarChar(100) // Vendor name (SHIPROCKET, DELHIVERY, SMARTSHIP)
+  status_code  String   @db.VarChar(50) // Original status code from courier
+  status_label String?  @db.VarChar(100) // Status label from courier
+  count        Int      @default(1) // Number of times this status has been seen
   last_seen    DateTime @default(now()) // Last time this status was seen
 
   created_at DateTime @default(now())
@@ -1127,4 +1134,68 @@ model ShopifyConnection {
 
   @@index([user_id])
   @@index([shop])
+}
+
+// NDROrder Model
+model NDROrder {
+  id          String   @id @default(cuid())
+  order_id    String?   @unique
+  order       Order?    @relation("OrderNDR", fields: [order_id], references: [id], onDelete: Cascade)
+  shipment_id String?   @unique
+  shipment    Shipment? @relation("ShipmentNDR", fields: [shipment_id], references: [id], onDelete: Cascade)
+  customer_id String
+  customer    Customer @relation(fields: [customer_id], references: [id])
+
+  courier_id String?
+  courier    Courier? @relation(fields: [courier_id], references: [id])
+
+  cancellation_reason String?
+  attempts            Int       @default(1)
+  ndr_raised_at       DateTime?
+  awb                 String    @unique
+
+  product_items OrderItem[] @relation("NDROrderItems")
+
+  delivered_date String?
+
+  action_taken   Boolean   @default(false)
+  action_type    String? // "reattempt", "cancel", "return", etc.
+  action_date    DateTime?
+  action_comment String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  ndr_history NDRHistory[]
+
+  @@index([order_id])
+  @@index([shipment_id])
+  @@index([awb])
+  @@index([ndr_raised_at])
+  @@index([action_taken])
+}
+
+// NDRHistory Model
+model NDRHistory {
+  id     String   @id @default(cuid())
+  ndr_id String
+  ndr    NDROrder @relation(fields: [ndr_id], references: [id], onDelete: Cascade)
+
+  ndr_reason      String?
+  action_by       Int?
+  ndr_attempt     Int?
+  ndr_push_status Int?
+  comment         String?
+
+  call_recording  String?
+  recording_date  String?
+  proof_recording String?
+  proof_image     String?
+  sms_response    String?
+  ndr_raised_at   DateTime?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([ndr_id])
 }

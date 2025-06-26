@@ -1875,4 +1875,413 @@ export class ShipmentService {
       this.fastify.log.error(`Error storing tracking events: ${error}`);
     }
   }
+
+  /**
+   * Create an NDR record from tracking event
+   * @param ndrData NDR data from tracking event
+   * @param userId User ID
+   * @returns Promise resolving to creation result
+   */
+  async createNDRRecord(ndrData: any, userId: string) {
+    try {
+      // Check if shipment exists and belongs to user
+      const shipment = await this.fastify.prisma.shipment.findFirst({
+        where: {
+          id: ndrData.shipment_id,
+          user_id: userId,
+        },
+        include: {
+          order: true,
+        },
+      });
+
+      if (!shipment) {
+        return {
+          success: false,
+          message: 'Shipment not found or does not belong to user',
+        };
+      }
+
+      // Check if order exists and belongs to user
+      const order = await this.fastify.prisma.order.findFirst({
+        where: {
+          id: ndrData.order_id,
+          user_id: userId,
+        },
+      });
+
+      if (!order) {
+        return {
+          success: false,
+          message: 'Order not found or does not belong to user',
+        };
+      }
+
+      // Check if NDR record already exists
+      const existingNDR = await this.fastify.prisma.nDROrder.findFirst({
+        where: {
+          shipment_id: ndrData.shipment_id,
+          order_id: ndrData.order_id,
+        },
+      });
+
+      if (existingNDR) {
+        // Update existing NDR record
+        const updatedNDR = await this.fastify.prisma.nDROrder.update({
+          where: {
+            id: existingNDR.id,
+          },
+          data: {
+            status: ndrData.status || existingNDR.status,
+            status_code: ndrData.status_code || existingNDR.status_code,
+            reason: ndrData.reason || existingNDR.reason,
+            attempts: (existingNDR.attempts || 0) + 1,
+            ndr_raised_at: ndrData.ndr_raised_at ? new Date(ndrData.ndr_raised_at) : new Date(),
+            updated_at: new Date(),
+          },
+        });
+
+        // Add NDR history entry
+        if (ndrData.history && ndrData.history.length > 0) {
+          const historyEntry = ndrData.history[0];
+          await this.fastify.prisma.nDRHistory.create({
+            data: {
+              ndr_id: updatedNDR.id,
+              ndr_reason: historyEntry.ndr_reason || ndrData.reason,
+              action_by: historyEntry.action_by,
+              ndr_attempt: historyEntry.ndr_attempt || updatedNDR.attempts,
+              medium: historyEntry.medium,
+              ndr_push_status: historyEntry.ndr_push_status,
+              comment: historyEntry.comment,
+              call_recording: historyEntry.call_center_call_recording,
+              recording_date: historyEntry.call_center_recording_date,
+              proof_recording: historyEntry.proof_recording,
+              proof_image: historyEntry.proof_image,
+              sms_response: historyEntry.sms_response,
+              ndr_raised_at: historyEntry.ndr_raised_at ? new Date(historyEntry.ndr_raised_at) : new Date(),
+            },
+          });
+        }
+
+        return {
+          success: true,
+          message: 'NDR record updated successfully',
+          data: updatedNDR,
+        };
+      }
+
+      // Create new NDR record
+      const newNDR = await this.fastify.prisma.nDROrder.create({
+        data: {
+          order_id: ndrData.order_id,
+          shipment_id: ndrData.shipment_id,
+          channel_order_id: ndrData.channel_order_id,
+          channel_name: ndrData.channel_name,
+          customer_name: ndrData.customer_name,
+          customer_email: ndrData.customer_email,
+          customer_phone: ndrData.customer_phone,
+          customer_address: ndrData.customer_address,
+          customer_address_2: ndrData.customer_address_2,
+          customer_city: ndrData.customer_city,
+          customer_state: ndrData.customer_state,
+          customer_pincode: ndrData.customer_pincode,
+          payment_status: ndrData.payment_status,
+          status: ndrData.status,
+          status_code: ndrData.status_code,
+          payment_method: ndrData.payment_method,
+          reason: ndrData.reason,
+          attempts: ndrData.attempts || 1,
+          ndr_raised_at: ndrData.ndr_raised_at ? new Date(ndrData.ndr_raised_at) : new Date(),
+          courier: ndrData.courier,
+          awb_code: ndrData.awb_code || shipment.awb,
+          product_name: ndrData.product_name,
+          product_qty: ndrData.product_qty,
+          product_price: ndrData.product_price,
+          escalation_status: ndrData.escalation_status,
+        },
+      });
+
+      // Add NDR history entry if available
+      if (ndrData.history && ndrData.history.length > 0) {
+        const historyEntries = ndrData.history.map((historyEntry: any) => ({
+          ndr_id: newNDR.id,
+          ndr_reason: historyEntry.ndr_reason || ndrData.reason,
+          action_by: historyEntry.action_by,
+          ndr_attempt: historyEntry.ndr_attempt || 1,
+          medium: historyEntry.medium,
+          ndr_push_status: historyEntry.ndr_push_status,
+          comment: historyEntry.comment,
+          call_recording: historyEntry.call_center_call_recording,
+          recording_date: historyEntry.call_center_recording_date,
+          proof_recording: historyEntry.proof_recording,
+          proof_image: historyEntry.proof_image,
+          sms_response: historyEntry.sms_response,
+          ndr_raised_at: historyEntry.ndr_raised_at ? new Date(historyEntry.ndr_raised_at) : new Date(),
+        }));
+
+        await this.fastify.prisma.nDRHistory.createMany({
+          data: historyEntries,
+        });
+      }
+
+      return {
+        success: true,
+        message: 'NDR record created successfully',
+        data: newNDR,
+      };
+    } catch (error: any) {
+      this.fastify.log.error(`Error creating NDR record: ${error.message}`);
+      return {
+        success: false,
+        message: 'Failed to create NDR record',
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Get NDR orders for a user
+   * @param userId User ID
+   * @param page Page number
+   * @param limit Items per page
+   * @param status Filter by status
+   * @param awb Filter by AWB
+   * @param startDate Filter by start date
+   * @param endDate Filter by end date
+   * @param actionTaken Filter by action taken
+   * @returns Promise resolving to NDR orders
+   */
+  async getNDROrders(
+    userId: string,
+    page: number = 1,
+    limit: number = 10,
+    status?: string,
+    awb?: string,
+    startDate?: Date,
+    endDate?: Date,
+    actionTaken?: boolean
+  ) {
+    try {
+      // Build filter conditions
+      const where: any = {
+        shipment: {
+          user_id: userId,
+        },
+      };
+
+      if (status) {
+        where.status = status;
+      }
+
+      if (awb) {
+        where.awb_code = awb;
+      }
+
+      if (startDate || endDate) {
+        where.ndr_raised_at = {};
+        if (startDate) {
+          where.ndr_raised_at.gte = startDate;
+        }
+        if (endDate) {
+          where.ndr_raised_at.lte = endDate;
+        }
+      }
+
+      if (actionTaken !== undefined) {
+        where.action_taken = actionTaken;
+      }
+
+      // Get total count
+      const totalCount = await this.fastify.prisma.nDROrder.count({ where });
+
+      // Get paginated results
+      const ndrOrders = await this.fastify.prisma.nDROrder.findMany({
+        where,
+        include: {
+          shipment: {
+            select: {
+              id: true,
+              awb: true,
+              status: true,
+              courier: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+          order: {
+            select: {
+              id: true,
+              code: true,
+              order_number: true,
+            },
+          },
+          ndr_history: {
+            orderBy: {
+              created_at: 'desc',
+            },
+          },
+        },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: {
+          ndr_raised_at: 'desc',
+        },
+      });
+
+      return {
+        success: true,
+        data: ndrOrders,
+        pagination: {
+          page,
+          limit,
+          totalCount,
+          totalPages: Math.ceil(totalCount / limit),
+        },
+      };
+    } catch (error: any) {
+      this.fastify.log.error(`Error getting NDR orders: ${error.message}`);
+      return {
+        success: false,
+        message: 'Failed to get NDR orders',
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Take action on an NDR order
+   * @param ndrId NDR order ID
+   * @param actionType Action type (reattempt, return, cancel)
+   * @param comment Comment for action
+   * @param userId User ID
+   * @returns Promise resolving to action result
+   */
+  async takeNDRAction(ndrId: string, actionType: string, comment: string, userId: string) {
+    try {
+      // Check if NDR order exists and belongs to user
+      const ndrOrder = await this.fastify.prisma.nDROrder.findFirst({
+        where: {
+          id: ndrId,
+          shipment: {
+            user_id: userId,
+          },
+        },
+        include: {
+          shipment: true,
+          order: true,
+        },
+      });
+
+      if (!ndrOrder) {
+        return {
+          success: false,
+          message: 'NDR order not found or does not belong to user',
+        };
+      }
+
+      // Check if action is already taken
+      if (ndrOrder.action_taken) {
+        return {
+          success: false,
+          message: 'Action already taken for this NDR order',
+        };
+      }
+
+      // Update NDR order with action details
+      const updatedNDR = await this.fastify.prisma.nDROrder.update({
+        where: {
+          id: ndrId,
+        },
+        data: {
+          action_taken: true,
+          action_type: actionType,
+          action_date: new Date(),
+          action_comment: comment,
+        },
+      });
+
+      // Process action based on type
+      switch (actionType) {
+        case 'reattempt':
+          // Call vendor API to request reattempt
+          // This will depend on the vendor implementation
+          // For now, just update the shipment status
+          await this.fastify.prisma.shipment.update({
+            where: {
+              id: ndrOrder.shipment_id,
+            },
+            data: {
+              status: 'REATTEMPT_REQUESTED',
+            },
+          });
+
+          // Add tracking event for reattempt request
+          await this.fastify.prisma.trackingEvent.create({
+            data: {
+              shipment_id: ndrOrder.shipment_id,
+              status: 'REATTEMPT_REQUESTED',
+              description: `Reattempt requested: ${comment}`,
+              location: 'System',
+            },
+          });
+          break;
+
+        case 'return':
+          // Call vendor API to request return
+          // This will depend on the vendor implementation
+          // For now, just update the shipment status
+          await this.fastify.prisma.shipment.update({
+            where: {
+              id: ndrOrder.shipment_id,
+            },
+            data: {
+              status: 'RETURN_REQUESTED',
+            },
+          });
+
+          // Add tracking event for return request
+          await this.fastify.prisma.trackingEvent.create({
+            data: {
+              shipment_id: ndrOrder.shipment_id,
+              status: 'RETURN_REQUESTED',
+              description: `Return requested: ${comment}`,
+              location: 'System',
+            },
+          });
+          break;
+
+        case 'cancel':
+          // Cancel the shipment
+          await this.cancelShipment(ndrOrder.shipment_id, 'shipment', userId, `Cancelled due to NDR: ${comment}`);
+          break;
+      }
+
+      // Add NDR history entry for action
+      await this.fastify.prisma.nDRHistory.create({
+        data: {
+          ndr_id: ndrId,
+          ndr_reason: ndrOrder.reason,
+          action_by: parseInt(userId) || 0,
+          ndr_attempt: ndrOrder.attempts,
+          comment: `Action taken: ${actionType} - ${comment}`,
+          ndr_raised_at: new Date(),
+        },
+      });
+
+      return {
+        success: true,
+        message: `NDR action '${actionType}' processed successfully`,
+        data: updatedNDR,
+      };
+    } catch (error: any) {
+      this.fastify.log.error(`Error taking NDR action: ${error.message}`);
+      return {
+        success: false,
+        message: 'Failed to process NDR action',
+        error: error.message,
+      };
+    }
+  }
 }
