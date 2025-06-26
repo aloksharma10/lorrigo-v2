@@ -25,15 +25,29 @@ export default function OrderFormPage() {
 
   async function onSubmit(values: OrderFormValues) {
     try {
-      // const validatedData = orderFormSchema.parse(values);
-      await createOrder(values);
+      // Validate the data with the schema first
+      const validatedData = orderFormSchema.parse(values);
+      
+      // Create a properly typed payload for the API
+      const orderPayload: OrderFormValues = {
+        ...validatedData,
+        sellerDetails: {
+          ...validatedData.sellerDetails,
+          // Ensure name field is properly set
+          name: validatedData.sellerDetails.name,
+          // Provide default for country if not set
+          country: validatedData.sellerDetails.country || 'India',
+        }
+      };
+      
+      await createOrder(orderPayload);
       toast.success('Order created successfully');
     } catch (error: any) {
+      console.error('Order creation error:', error);
       toast.error(
-        error.response.data.message ||
+        error.response?.data?.message ||
           'Failed to create order, Please Report to Support at support@lorrigo.in'
       );
-      console.error('Validation error:', error);
     }
   }
 
