@@ -1736,6 +1736,8 @@ export class ShipmentService {
       // Track shipment with vendor
       const trackingResult = await vendorService.trackShipment(vendorName, {
         awb,
+        shipmentId,
+        orderId: orderId || '',
       });
 
       if (!trackingResult.success) {

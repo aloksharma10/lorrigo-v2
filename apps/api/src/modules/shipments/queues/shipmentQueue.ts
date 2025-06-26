@@ -32,6 +32,7 @@ export enum JobType {
   PROCESS_BULK_STATUS_UPDATES = 'process-bulk-status-updates',
   PROCESS_UNMAPPED_STATUSES = 'process-unmapped-statuses',
   PROCESS_EDD_UPDATES = 'process-edd-updates',
+  PROCESS_NDR_DETAILS = 'process-ndr-details',
 }
 
 /**
@@ -58,6 +59,16 @@ interface TrackingJobData {
  */
 interface RtoChargesJobData {
   shipmentId: string;
+  orderId: string;
+}
+
+/**
+ * Interface for NDR details job data
+ */
+interface NdrDetailsJobData {
+  shipmentId: string;
+  awb: string;
+  vendorName: string;
   orderId: string;
 }
 
@@ -195,6 +206,13 @@ export function initShipmentQueue(fastify: FastifyInstance, shipmentService: Shi
           case JobType.PROCESS_RTO:
             const { batchSize: rtoBatchSize } = job.data as TrackingJobData;
             return await TrackingProcessor.processRtoShipments(fastify, rtoBatchSize || 100);
+          
+          case JobType.PROCESS_NDR_DETAILS:
+            const { shipmentId: ndrShipmentId, awb, vendorName, orderId: ndrOrderId } = job.data as NdrDetailsJobData;
+            if (!ndrShipmentId || !awb || !vendorName) {
+              throw new Error('Missing required data for NDR details processing');
+            }
+            return await TrackingProcessor.processNdrDetails(fastify, shipmentService, ndrShipmentId, awb, vendorName, ndrOrderId);
           
           default:
             throw new Error(`Unknown tracking job type: ${job.name}`);

@@ -1,134 +1,86 @@
 'use client';
 
 import * as React from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
 import { Checkbox } from '@lorrigo/ui/components';
 import { DataTable } from '@lorrigo/ui/components';
 import { DataTableColumnHeader } from '@lorrigo/ui/components';
 import { Badge } from '@lorrigo/ui/components';
 import { Button } from '@lorrigo/ui/components';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, Calendar, Eye, Download, Clock, AlertCircle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@lorrigo/ui/components';
 import { toast } from '@lorrigo/ui/components';
 import type { ColumnDef } from '@lorrigo/ui/components';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 
-import { fetchShipments, downloadManifest, generateLabels, cancelOrders } from '@/lib/apis/order';
-import { Shipment, ShipmentParams } from '@/lib/type/response-types';
-import { useAuthToken } from '@/components/providers/token-provider';
+import { 
+  useNDROperations, 
+  type NDROrder, 
+  type NDRQueryParams,
+} from '@/lib/apis/ndr';
+import { NDRActionModal } from '@/components/modals/ndr-action-modal';
 
-interface ShipmentsTableProps {
-  initialParams: ShipmentParams;
+interface NDRTableProps {
+  initialParams?: NDRQueryParams;
 }
 
-export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
-  const [activeTab, setActiveTab] = React.useState(initialParams.status || 'all');
+export default function NDRTable({ initialParams = {} }: NDRTableProps) {
   const [pagination, setPagination] = React.useState({
     pageIndex: initialParams.page || 0,
-    pageSize: initialParams.pageSize || 15,
+    pageSize: initialParams.limit || 15,
   });
-  const [sorting, setSorting] = React.useState<{ id: string; desc: boolean }[]>(
-    initialParams.sort || []
-  );
-  const [filters, setFilters] = React.useState<{ id: string; value: any }[]>(
-    initialParams.filters || []
-  );
-  const [globalFilter, setGlobalFilter] = React.useState(initialParams.globalFilter || '');
+  const [sorting, setSorting] = React.useState<{ id: string; desc: boolean }[]>([]);
+  const [filters, setFilters] = React.useState<{ id: string; value: any }[]>([]);
+  const [globalFilter, setGlobalFilter] = React.useState(initialParams.awb || '');
   const debouncedGlobalFilter = useDebounce(globalFilter, 500);
-  const [dateRange, setDateRange] = React.useState<{ from: Date; to: Date }>(
-    initialParams.dateRange || {
-      from: new Date(new Date().setDate(new Date().getDate() - 30)),
-      to: new Date(),
+  const [dateRange, setDateRange] = React.useState<{ from: Date; to: Date }>({
+    from: new Date(new Date().setDate(new Date().getDate() - 30)),
+    to: new Date(),
+  });
+
+  // Modal state
+  const [isNDRModalOpen, setIsNDRModalOpen] = React.useState(false);
+  const [selectedNDROrders, setSelectedNDROrders] = React.useState<NDROrder[]>([]);
+  const [isBulkAction, setIsBulkAction] = React.useState(false);
+
+  // API hooks
+  const { ndrOrdersQuery, ndrStatsQuery } = useNDROperations({
+    page: pagination.pageIndex + 1, // Convert 0-based to 1-based
+    limit: pagination.pageSize,
+    awb: debouncedGlobalFilter,
+    startDate: dateRange.from.toISOString(),
+    endDate: dateRange.to.toISOString(),
+    actionTaken: filters.find(f => f.id === 'actionTaken')?.value,
+    actionType: filters.find(f => f.id === 'actionType')?.value,
+  });
+
+  const { data, isLoading, isError } = ndrOrdersQuery;
+
+  // Handle single NDR action
+  const handleNDRAction = (ndrOrder: NDROrder) => {
+    setSelectedNDROrders([ndrOrder]);
+    setIsBulkAction(false);
+    setIsNDRModalOpen(true);
+  };
+
+  // Handle bulk NDR action
+  const handleBulkNDRAction = (selectedRows: NDROrder[]) => {
+    if (selectedRows.length === 0) {
+      toast.error('Please select at least one order');
+      return;
     }
-  );
-
-  const { isTokenReady } = useAuthToken();
-
-  // Fetch shipments with React Query
-  const { data, isLoading, isError, isFetching } = useQuery({
-    queryKey: [
-      'shipments',
-      pagination.pageIndex,
-      pagination.pageSize,
-      sorting,
-      filters,
-      debouncedGlobalFilter,
-      dateRange,
-      activeTab,
-    ],
-    queryFn: () =>
-      fetchShipments({
-        page: pagination.pageIndex,
-        pageSize: pagination.pageSize,
-        sort: sorting,
-        filters,
-        globalFilter: debouncedGlobalFilter,
-        dateRange,
-        status: activeTab,
-      }),
-
-    placeholderData: (previousData) => previousData,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
-    refetchInterval: false,
-    retryOnMount: false,
-    retry: false,
-    enabled: isTokenReady,
-  });
-
-  // Bulk action mutations
-  const downloadManifestMutation = useMutation({
-    mutationFn: async (shipments: Shipment[]) => {
-      const shipmentIds = shipments.map((s) => s.id);
-      return downloadManifest(shipmentIds);
-    },
-    onSuccess: (result) => {
-      toast.success(`Downloaded manifest for ${result.count} shipments`);
-    },
-    onError: () => {
-      toast.error('Failed to download manifest');
-    },
-  });
-
-  const generateLabelsMutation = useMutation({
-    mutationFn: async (shipments: Shipment[]) => {
-      const shipmentIds = shipments.map((s) => s.id);
-      return generateLabels(shipmentIds);
-    },
-    onSuccess: (result) => {
-      toast.success(`Generated labels for ${result.count} shipments`);
-    },
-    onError: () => {
-      toast.error('Failed to generate labels');
-    },
-  });
-
-  const cancelOrdersMutation = useMutation({
-    mutationFn: async (shipments: Shipment[]) => {
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-
-      const shipmentIds = shipments.map((s) => s.id);
-      return cancelOrders(shipmentIds);
-    },
-    onSuccess: (result) => {
-      toast.success(`Cancelled ${result.count} orders`);
-      // queryClient.invalidateQueries({ queryKey: ['shipments'] });
-    },
-    onError: () => {
-      toast.error('Failed to cancel orders');
-    },
-  });
+    setSelectedNDROrders(selectedRows);
+    setIsBulkAction(true);
+    setIsNDRModalOpen(true);
+  };
 
   // Define the columns for the data table
-  const columns: ColumnDef<any>[] = [
+  const columns: ColumnDef<NDROrder>[] = [
     {
       id: 'select',
       header: ({ table }) => (
@@ -148,7 +100,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
           onCheckedChange={(value) => row.toggleSelected(!!value)}
           aria-label="Select row"
           onClick={(e) => e.stopPropagation()}
-          disabled={isLoading}
+          disabled={isLoading || row.original.action_taken}
         />
       ),
       enableSorting: false,
@@ -158,31 +110,40 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
       accessorKey: 'ndrDetails',
       header: ({ column }) => <DataTableColumnHeader column={column} title="NDR Details" />,
       cell: ({ row }) => {
-        const shipment = row.original;
+        const ndr = row.original;
+        const raisedDate = new Date(ndr.ndr_raised_at);
+        
         return (
           <div className="flex flex-col space-y-1">
             <div className="text-sm">
-              {new Date(shipment.createdAt).toLocaleDateString('en-GB', {
+              {raisedDate.toLocaleDateString('en-GB', {
                 day: '2-digit',
                 month: 'short',
                 year: 'numeric',
               })}{' '}
               |{' '}
-              {new Date(shipment.createdAt).toLocaleTimeString([], {
+              {raisedDate.toLocaleTimeString([], {
                 hour: '2-digit',
                 minute: '2-digit',
               })}
             </div>
-            <div className="text-sm font-medium">{shipment.attemptNumber || '2nd'} Attempt</div>
-            <div className="text-muted-foreground text-xs">NDR Reason:</div>
-            <div className="text-xs font-medium text-orange-600">
-              {shipment.ndrReason || 'Wrong Address'}
-            </div>
+            <div className="text-sm font-medium">{ndr.attempts} Attempt{ndr.attempts !== 1 ? 's' : ''}</div>
+            {ndr.cancellation_reason && (
+              <>
+                <div className="text-muted-foreground text-xs">NDR Reason:</div>
+                <div className="text-xs font-medium text-orange-600">
+                  {ndr.cancellation_reason}
+                </div>
+              </>
+            )}
             <Badge
-              variant="outline"
-              className="w-fit border-orange-200 bg-orange-50 text-xs text-orange-600 dark:border-orange-700 dark:bg-orange-900 dark:text-orange-50"
+              variant={ndr.action_taken ? "default" : "outline"}
+              className={ndr.action_taken 
+                ? "w-fit border-green-200 bg-green-50 text-xs text-green-600 dark:border-green-700 dark:bg-green-900 dark:text-green-50"
+                : "w-fit border-orange-200 bg-orange-50 text-xs text-orange-600 dark:border-orange-700 dark:bg-orange-900 dark:text-orange-50"
+              }
             >
-              PENDING SINCE TODAY
+              {ndr.action_taken ? `${ndr.action_type?.toUpperCase()} COMPLETED` : 'PENDING ACTION'}
             </Badge>
           </div>
         );
@@ -194,23 +155,29 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
       accessorKey: 'orderDetails',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Order Details" />,
       cell: ({ row }) => {
-        const shipment = row.original;
-        const amount = new Intl.NumberFormat('en-IN', {
-          style: 'currency',
-          currency: 'INR',
-          minimumFractionDigits: 2,
-        }).format(shipment.amount);
-
+        const ndr = row.original;
+        const order = ndr.shipment?.order || ndr.order;
+        
         return (
           <div className="flex flex-col space-y-1">
-            <div className="font-medium text-blue-600">Id: {shipment.orderNumber}</div>
-            <div className="font-medium">{amount}</div>
+            <div className="font-medium text-blue-600">
+              AWB: {ndr.awb}
+            </div>
+            {order && (
+              <div className="text-sm">
+                Order: {order.code || order.order_reference_id}
+              </div>
+            )}
             <Button
               variant="link"
               size="sm"
               className="h-auto justify-start p-0 text-xs text-blue-600"
+              onClick={() => {
+                // Handle view order details
+                toast.info('Order details view not implemented yet');
+              }}
             >
-              View Products
+              View Details
             </Button>
           </div>
         );
@@ -220,18 +187,16 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
     },
     {
       accessorKey: 'customerDetails',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Customer details" />,
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Customer Details" />,
       cell: ({ row }) => {
-        const shipment = row.original;
+        const ndr = row.original;
+        const customer = ndr.shipment?.order?.customer || ndr.order?.customer || ndr.customer;
+        
         return (
           <div className="flex flex-col space-y-1">
-            <div className="font-medium">{shipment.customerName}</div>
-            <div className="text-muted-foreground text-sm">{shipment.customerEmail}</div>
-            <div className="text-muted-foreground text-sm">{shipment.customerPhone}</div>
-            <div className="mt-1 flex items-center gap-2">
-              <span className="text-muted-foreground text-xs">RTO Risk:</span>
-              <Badge variant="status_success">{shipment.rtoRisk || 'LOW'}</Badge>
-            </div>
+            <div className="font-medium">{customer?.name || 'N/A'}</div>
+            <div className="text-muted-foreground text-sm">{customer?.email || 'No email'}</div>
+            <div className="text-muted-foreground text-sm">{customer?.phone || 'No phone'}</div>
           </div>
         );
       },
@@ -240,16 +205,16 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
     },
     {
       accessorKey: 'deliveryAddress',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Delivery address" />,
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Delivery Address" />,
       cell: ({ row }) => {
-        const shipment = row.original;
+        const ndr = row.original;
+        const address = ndr.shipment?.order?.customer?.address || ndr.order?.customer?.address || ndr.customer?.address;
+        
         return (
           <div className="flex flex-col space-y-1">
             <div className="max-w-xs text-sm">
-              {shipment.deliveryAddress || shipment.pickupAddress}
+              {address ? `${address.address}, ${address.city}, ${address.state} - ${address.pincode}` : 'No address'}
             </div>
-            <div className="text-muted-foreground text-xs">Address Quality:</div>
-            <Badge variant="status_success">Valid</Badge>
           </div>
         );
       },
@@ -257,19 +222,18 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
       enableHiding: true,
     },
     {
-      accessorKey: 'fieldExecutiveInfo',
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Field Executive Info" />
-      ),
+      accessorKey: 'courierInfo',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Courier Info" />,
       cell: ({ row }) => {
-        const shipment = row.original;
+        const ndr = row.original;
+        const courier = ndr.shipment?.courier || ndr.courier;
+        
         return (
           <div className="flex flex-col space-y-1">
             <div className="text-sm font-medium">
-              {shipment.brandInfo || 'Bluedart brands 500 g'}
+              {courier?.channel_config?.name || 'Unknown Courier'}
             </div>
-            <div className="text-sm font-medium">Surface</div>
-            <div className="text-sm text-blue-600">{shipment.awbNumber}</div>
+            <div className="text-sm text-blue-600">{ndr.awb}</div>
           </div>
         );
       },
@@ -277,32 +241,33 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
       enableHiding: true,
     },
     {
-      accessorKey: 'shipmentDetails',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Shipment Details" />,
+      accessorKey: 'actionStatus',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Action Status" />,
       cell: ({ row }) => {
-        const shipment = row.original;
+        const ndr = row.original;
+        
         return (
-          <div className="flex items-center gap-2">
-            {/* <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
-              <span className="text-white text-xs font-bold">S</span>
-            </div>
-            <span className="text-sm font-medium">Lorrigo</span> */}
-          </div>
-        );
-      },
-      enableSorting: true,
-      enableHiding: true,
-    },
-    {
-      accessorKey: 'lastActionBy',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Last Action By" />,
-      cell: ({ row }) => {
-        return (
-          <div className="text-muted-foreground text-sm">
-            <div className="flex h-8 w-8 items-center justify-center rounded bg-blue-600">
-              <span className="text-xs font-bold text-white">S</span>
-            </div>
-            <span className="text-sm font-medium">Lorrigo</span>
+          <div className="flex flex-col space-y-1">
+            {ndr.action_taken ? (
+              <>
+                <Badge variant="secondary" className="w-fit">
+                  {ndr.action_type?.toUpperCase()}
+                </Badge>
+                <div className="text-xs text-muted-foreground">
+                  {ndr.action_date && new Date(ndr.action_date).toLocaleDateString()}
+                </div>
+                {ndr.action_comment && (
+                  <div className="text-xs text-muted-foreground max-w-xs truncate">
+                    {ndr.action_comment}
+                  </div>
+                )}
+              </>
+            ) : (
+              <Badge variant="outline" className="w-fit">
+                <Clock className="w-3 h-3 mr-1" />
+                Pending Action
+              </Badge>
+            )}
           </div>
         );
       },
@@ -311,20 +276,21 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
     },
     {
       id: 'actions',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Action" />,
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Actions" />,
       cell: ({ row }) => {
+        const ndr = row.original;
+        
         return (
-          <div className="flex flex-col items-center gap-2">
-            <Button
-              className="w-full bg-blue-600 text-xs hover:bg-blue-700"
-              size="sm"
-              onClick={() => {
-                // Handle re-attempt action
-                toast.success('Re-attempt scheduled');
-              }}
-            >
-              Re-attempt
-            </Button>
+          <div className="flex flex-col items-start gap-2">
+            {!ndr.action_taken && (
+              <Button
+                className="w-full bg-blue-600 text-xs hover:bg-blue-700"
+                size="sm"
+                onClick={() => handleNDRAction(ndr)}
+              >
+                Take Action
+              </Button>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-8 w-8 p-0">
@@ -333,15 +299,21 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>View History</DropdownMenuItem>
-                <DropdownMenuItem>Track shipment</DropdownMenuItem>
-                <DropdownMenuItem>Download Label</DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => cancelOrdersMutation.mutate([row.original])}
-                  disabled={cancelOrdersMutation.isPending}
-                >
-                  Cancel order
+                <DropdownMenuItem>
+                  <Eye className="w-4 h-4 mr-2" />
+                  View History
                 </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Label
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {!ndr.action_taken && (
+                  <DropdownMenuItem onClick={() => handleNDRAction(ndr)}>
+                    <AlertCircle className="w-4 h-4 mr-2" />
+                    Take NDR Action
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -351,24 +323,33 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
   ];
 
   return (
-    <DataTable
-      columns={columns}
-      data={data?.data || []}
-      count={data?.meta.total || 0}
-      pageCount={data?.meta.pageCount || 0}
-      page={pagination.pageIndex}
-      pageSize={pagination.pageSize}
-      isLoading={isLoading}
-      isError={isError}
-      errorMessage="Failed to fetch shipments. Please try again."
-      onPaginationChange={setPagination}
-      onSortingChange={setSorting}
-      manualPagination={true}
-      manualSorting={true}
-      manualFiltering={true}
-      onFiltersChange={setFilters}
-      onGlobalFilterChange={setGlobalFilter}
-      onDateRangeChange={setDateRange}
-    />
+    <>
+      <DataTable
+        columns={columns}
+        data={data?.data || []}
+        count={data?.meta?.total || 0}
+        pageCount={data?.meta?.totalPages || 0}
+        page={pagination.pageIndex}
+        pageSize={pagination.pageSize}
+        isLoading={isLoading}
+        isError={isError}
+        errorMessage="Failed to fetch NDR orders. Please try again."
+        onPaginationChange={setPagination}
+        onSortingChange={setSorting}
+        manualPagination={true}
+        manualSorting={true}
+        manualFiltering={true}
+        onFiltersChange={setFilters}
+        onGlobalFilterChange={setGlobalFilter}
+        onDateRangeChange={setDateRange}
+      />
+
+      <NDRActionModal
+        isOpen={isNDRModalOpen}
+        onOpenChange={setIsNDRModalOpen}
+        selectedOrders={selectedNDROrders}
+        isBulkAction={isBulkAction}
+      />
+    </>
   );
 }

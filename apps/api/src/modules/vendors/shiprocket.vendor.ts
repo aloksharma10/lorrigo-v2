@@ -29,6 +29,7 @@ import {
 import { getPincodeDetails } from '@/utils/pincode';
 import { redis } from '@/lib/redis';
 import { QueueNames, addJob } from '@/lib/queue';
+import { JobType } from '../shipments/queues/shipmentQueue';
 
 /**
  * Shiprocket vendor implementation
@@ -643,8 +644,11 @@ export class ShiprocketVendor extends BaseVendor {
 
         trackingEvents.push(trackingEvent);
 
+        console.log(trackingInput, "trackingInput")
+
         // Queue tracking event for bulk processing
         const shipmentId = trackingInput.shipmentId || trackingInput.shipment?.id;
+        console.log(shipmentId, "shipmentId")
         if (shipmentId) {
           const eventData = {
             ...trackingEvent,
@@ -652,6 +656,29 @@ export class ShiprocketVendor extends BaseVendor {
           };
 
           await redis.rpush('tracking:events:queue', JSON.stringify(eventData));
+          
+          // Queue NDR processing if this is a new NDR status
+          if (isNDR && trackingInput.awb) {
+            // We'll need to get the order ID from the shipment in the processor
+            // since it's not available in the tracking input
+            const ndrJobData = {
+              shipmentId,
+              awb: trackingInput.awb,
+              vendorName: 'SHIPROCKET',
+              orderId: '', // Will be fetched in the processor
+              timestamp: new Date().toISOString()
+            };
+            
+            await addJob(
+              QueueNames.SHIPMENT_TRACKING,
+              JobType.PROCESS_NDR_DETAILS,
+              ndrJobData,
+              { 
+                priority: 2, // High priority for NDR processing
+                delay: 5000  // 5 second delay to ensure tracking event is processed first
+              }
+            );
+          }
         }
       }
 
@@ -724,6 +751,67 @@ export class ShiprocketVendor extends BaseVendor {
   }
 
   /**
+   * Get NDR details from Shiprocket API
+   * @param awb AWB number
+   * @returns Promise resolving to NDR details result
+   */
+  public async getNdrDetails(awb: string): Promise<{
+    success: boolean;
+    message: string;
+    data?: any;
+  }> {
+    try {
+      const token = await this.getAuthToken();
+
+      if (!token) {
+        return {
+          success: false,
+          message: 'Failed to get Shiprocket authentication token',
+          data: null,
+        };
+      }
+
+      if (!awb) {
+        return {
+          success: false,
+          message: 'AWB number is required for NDR details',
+          data: null,
+        };
+      }
+
+      // Make API request to get NDR details
+      const response = await this.makeRequest(
+        `${APIs.SHIPROCKET.NDR_DETAILS}/${awb}`,
+        'GET',
+        null,
+        { Authorization: token }
+      );
+
+      if (!response.data?.data || response.data.data.length === 0) {
+        return {
+          success: false,
+          message: `No NDR details found for AWB ${awb}`,
+          data: response.data,
+        };
+      }
+
+      return {
+        success: true,
+        message: `NDR details retrieved successfully for AWB ${awb}`,
+        data: response.data,
+      };
+    } catch (error: any) {
+      console.error('Error getting NDR details from Shiprocket:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to get NDR details',
+        data: error.response?.data || null,
+      };
+    }
+  }
+
+  /**
    * Handle NDR action with Shiprocket
    * @param ndrData NDR action data
    * @returns Promise resolving to NDR result
@@ -791,7 +879,7 @@ export class ShiprocketVendor extends BaseVendor {
 
       // Make API request to Shiprocket NDR endpoint
       const response = await this.makeRequest(
-        `${APIs.SHIPROCKET.ORDER_NDR}/${ndrData.awb}/action`,
+        `${APIs.SHIPROCKET.NDR_DETAILS}/${ndrData.awb}/action`,
         'POST',
         orderReattemptPayload,
         { Authorization: token }

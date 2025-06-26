@@ -110,6 +110,7 @@ export interface ShipmentTrackingData {
     status: string;
   };
   shipmentId?: string;
+  orderId?: string;
 }
 
 export interface NDRData {

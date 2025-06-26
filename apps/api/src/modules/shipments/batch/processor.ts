@@ -913,6 +913,155 @@ export class TrackingProcessor {
   }
 
   /**
+   * Process NDR details for a shipment
+   * @param fastify Fastify instance
+   * @param shipmentService Shipment service instance
+   * @param shipmentId Shipment ID
+   * @param awb AWB number
+   * @param vendorName Vendor name
+   * @param orderId Order ID
+   * @returns Promise resolving to processing result
+   */
+  public static async processNdrDetails(
+    fastify: FastifyInstance,
+    shipmentService: any,
+    shipmentId: string,
+    awb: string,
+    vendorName: string,
+    orderId: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    ndrId?: string;
+  }> {
+    try {
+      fastify.log.info(`Processing NDR details for shipment ${shipmentId}, AWB: ${awb}`);
+
+      // Currently only support Shiprocket for NDR details
+      if (vendorName !== 'SHIPROCKET') {
+        return {
+          success: false,
+          message: `NDR details processing not supported for vendor: ${vendorName}`,
+        };
+      }
+
+      // Get the vendor service
+      const { VendorService } = await import('../../vendors/vendor.service');
+      const vendorService = new VendorService(fastify);
+      
+      // Get vendor instance
+      const vendor = vendorService.getVendor(vendorName);
+      if (!vendor || !('getNdrDetails' in vendor)) {
+        return {
+          success: false,
+          message: `Vendor ${vendorName} does not support NDR details`,
+        };
+      }
+
+      // Get NDR details from vendor API
+      const ndrDetailsResult = await (vendor as any).getNdrDetails(awb);
+      
+      if (!ndrDetailsResult.success || !ndrDetailsResult.data?.data?.[0]) {
+        return {
+          success: false,
+          message: ndrDetailsResult.message || `Failed to get NDR details for AWB ${awb}`,
+        };
+      }
+
+      const ndrData = ndrDetailsResult.data.data[0];
+
+      // Check if NDR record already exists
+      const existingNdr = await fastify.prisma.nDROrder.findFirst({
+        where: { awb },
+      });
+
+      if (existingNdr) {
+        fastify.log.info(`NDR record already exists for AWB ${awb}, skipping creation`);
+        return {
+          success: true,
+          message: `NDR record already exists for AWB ${awb}`,
+          ndrId: existingNdr.id,
+        };
+      }
+
+      // Get shipment and order details
+      const shipment = await fastify.prisma.shipment.findUnique({
+        where: { id: shipmentId },
+        include: {
+          order: {
+            include: {
+              customer: true,
+            },
+          },
+          courier: true,
+        },
+      });
+
+      if (!shipment) {
+        return {
+          success: false,
+          message: `Shipment not found: ${shipmentId}`,
+        };
+      }
+
+      // Use the actual order ID from the shipment if not provided
+      const actualOrderId = orderId || shipment.order_id;
+
+      // Create NDR record
+      const ndrRecord = await fastify.prisma.nDROrder.create({
+        data: {
+          order_id: actualOrderId,
+          shipment_id: shipmentId,
+          customer_id: shipment.order.customer?.id || '',
+          courier_id: shipment.courier_id,
+          awb: awb,
+          cancellation_reason: ndrData.reason || '',
+          attempts: ndrData.attempts || 1,
+          ndr_raised_at: ndrData.ndr_raised_at ? new Date(ndrData.ndr_raised_at) : new Date(),
+          action_taken: false,
+        },
+      });
+
+      // Create NDR history records from the API response history
+      if (ndrData.history && Array.isArray(ndrData.history)) {
+        const historyRecords = ndrData.history.map((historyItem: any) => ({
+          ndr_id: ndrRecord.id,
+          ndr_reason: historyItem.ndr_reason || '',
+          action_by: historyItem.action_by || null,
+          ndr_attempt: historyItem.ndr_attempt || null,
+          ndr_push_status: historyItem.ndr_push_status || null,
+          comment: historyItem.comment || '',
+          call_recording: historyItem.call_center_call_recording || '',
+          recording_date: historyItem.call_center_recording_date || '',
+          proof_recording: historyItem.proof_recording || '',
+          proof_image: historyItem.proof_image || '',
+          sms_response: historyItem.sms_response || '',
+          ndr_raised_at: historyItem.ndr_raised_at ? new Date(historyItem.ndr_raised_at) : new Date(),
+        }));
+
+        await fastify.prisma.nDRHistory.createMany({
+          data: historyRecords,
+          skipDuplicates: true,
+        });
+      }
+
+      fastify.log.info(`Successfully created NDR record ${ndrRecord.id} for AWB ${awb}`);
+
+      return {
+        success: true,
+        message: `NDR record created successfully for AWB ${awb}`,
+        ndrId: ndrRecord.id,
+      };
+    } catch (error) {
+      fastify.log.error(`Error processing NDR details for shipment ${shipmentId}:`, error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to process NDR details',
+      };
+    }
+  }
+
+  /**
    * Process RTO shipments for charge deduction and refund processing
    * @param fastify Fastify instance
    * @param batchSize Number of RTO shipments to process in a batch

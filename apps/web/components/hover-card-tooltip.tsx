@@ -33,7 +33,7 @@ const HoverCardToolTip = ({
         {triggerComponent || label}
         {Icon}
       </HoverCardTrigger>
-      <HoverCardContent side={side} align={align} className={className}>
+      <HoverCardContent side={side} align={align} className={cn('max-w-xs text-sm', className)}>
         {children}
       </HoverCardContent>
     </HoverCard>
