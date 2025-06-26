@@ -23,6 +23,8 @@ import {
   VendorTrackingResult,
   TrackingEventData,
   ShipmentTrackingData,
+  NDRData,
+  VendorNDRResult,
 } from '@/types/vendor';
 import { getPincodeDetails } from '@/utils/pincode';
 import { redis } from '@/lib/redis';
@@ -720,6 +722,106 @@ export class ShiprocketVendor extends BaseVendor {
       };
     }
   }
+
+  /**
+   * Handle NDR action with Shiprocket
+   * @param ndrData NDR action data
+   * @returns Promise resolving to NDR result
+   */
+  public async ndrAction(ndrData: NDRData): Promise<VendorNDRResult> {
+    try {
+      const token = await this.getAuthToken();
+
+      if (!token) {
+        return {
+          success: false,
+          message: 'Failed to get Shiprocket authentication token',
+          data: null,
+        };
+      }
+
+      // Validate required fields
+      if (!ndrData.awb) {
+        return {
+          success: false,
+          message: 'AWB number is required for NDR action',
+          data: null,
+        };
+      }
+
+      // Format the reschedule date for Shiprocket (they expect "dd MMM" format)
+      let formattedDate = '';
+      if (ndrData.next_attempt_date) {
+        try {
+          const date = new Date(ndrData.next_attempt_date);
+          formattedDate = date.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short'
+          });
+        } catch (error) {
+          console.error('Error formatting date for Shiprocket NDR:', error);
+          formattedDate = new Date().toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short'
+          });
+        }
+      }
+
+      // Map action types to Shiprocket's expected values
+      let shiprocketAction: string;
+      switch (ndrData.action) {
+        case 'reattempt':
+          shiprocketAction = 're-attempt';
+          break;
+        case 'return':
+          shiprocketAction = 'return';
+          break;
+        case 'fake-attempt':
+          shiprocketAction = 'fake-attempt';
+          break;
+        default:
+          shiprocketAction = 're-attempt';
+      }
+
+      const orderReattemptPayload = {
+        action: shiprocketAction,
+        comment: ndrData.comment || 'NDR action requested',
+        deferred_date: formattedDate
+      };
+
+      // Make API request to Shiprocket NDR endpoint
+      const response = await this.makeRequest(
+        `${APIs.SHIPROCKET.ORDER_NDR}/${ndrData.awb}/action`,
+        'POST',
+        orderReattemptPayload,
+        { Authorization: token }
+      );
+
+      // Check if the response was successful
+      if (!response.data?.success) {
+        return {
+          success: false,
+          message: response.data?.message || 'Failed to process NDR action with Shiprocket',
+          data: response.data,
+        };
+      }
+
+      return {
+        success: true,
+        message: `NDR action '${ndrData.action}' processed successfully with Shiprocket`,
+        data: response.data,
+      };
+    } catch (error: any) {
+      console.error('Error handling NDR action with Shiprocket:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to process NDR action',
+        data: error.response?.data || null,
+      };
+    }
+  }
+
 }
 
 /**
@@ -1010,6 +1112,44 @@ export class ShiprocketB2BVendor extends BaseVendor {
         message: error.response?.data?.message || error.message || 'Failed to track shipment',
         data: null,
         trackingEvents: [],
+      };
+    }
+  }
+
+  /**
+   * Handle NDR action with Shiprocket B2B
+   * Note: Shiprocket B2B may have different NDR handling than regular Shiprocket
+   * @param ndrData NDR action data
+   * @returns Promise resolving to NDR result
+   */
+  public async ndrAction(ndrData: NDRData): Promise<VendorNDRResult> {
+    try {
+      // Shiprocket B2B NDR handling is similar to regular Shiprocket
+      // but might have different endpoints or authentication
+      console.log('NDR action requested for Shiprocket B2B:', {
+        awb: ndrData.awb,
+        action: ndrData.action,
+        comment: ndrData.comment,
+      });
+
+      return {
+        success: false,
+        message: 'Shiprocket B2B NDR actions are not yet implemented. Please use regular Shiprocket or contact support.',
+        data: {
+          vendor: 'ShiprocketB2B',
+          awb: ndrData.awb,
+          action: ndrData.action,
+          comment: ndrData.comment,
+          manual_action_required: true,
+        },
+      };
+    } catch (error: any) {
+      console.error('Error handling NDR action with Shiprocket B2B:', error);
+
+      return {
+        success: false,
+        message: 'Failed to process NDR action with Shiprocket B2B',
+        data: null,
       };
     }
   }

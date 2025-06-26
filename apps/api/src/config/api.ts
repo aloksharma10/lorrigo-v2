@@ -32,7 +32,7 @@ export const APIs = {
     CANCEL_SHIPMENT: '/orders/cancel/shipment/awbs',
     ORDER_STATUS: '/shipments/status',
     ORDER_NDR: '/courier/track',
-    TRACK_SHIPMENT: '/courier/track/awb/',
+    TRACK_SHIPMENT: '/ndr/',
 
     CREATE_ORDER: '/orders/create/adhoc',
     GENRATE_AWB: '/courier/assign/awb',
@@ -53,6 +53,8 @@ export const APIs = {
     CANCEL_ORDER: '/api/p/edit',
     TRACK_ORDER: '/api/v1/packages/json/?waybill=',
     MANIFEST_ORDER: '/fm/request/new',
+    NDR_ACTION: '/api/p/update',
+    NDR_STATUS: '/api/p/update/status',
   },
 
   // Shopify API endpoints

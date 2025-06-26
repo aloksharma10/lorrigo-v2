@@ -10,6 +10,7 @@ export enum QueueNames {
   BULK_OPERATION = 'bulk-operation',
   REPORT_GENERATION = 'report-generation',
   REMITTANCE_PROCESSING = 'remittance-processing',
+  NDR_PROCESSING = 'ndr-processing',
 }
 
 // Queue connection options
@@ -71,6 +72,15 @@ export const queues = {
       ...queueConfig.defaultJobOptions,
       // Financial operations need more retries
       attempts: 5,
+    },
+  }),
+  [QueueNames.NDR_PROCESSING]: new Queue(QueueNames.NDR_PROCESSING, {
+    ...connectionOptions,
+    defaultJobOptions: {
+      ...queueConfig.defaultJobOptions,
+      // NDR actions should be processed with high priority and retries
+      priority: 1,
+      attempts: 3,
     },
   }),
 };

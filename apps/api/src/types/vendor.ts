@@ -50,6 +50,12 @@ export interface VendorTrackingResult {
   cached?: boolean;
 }
 
+export interface VendorNDRResult {
+  success: boolean;
+  message: string;
+  data: any;
+}
+
 /**
  * Tracking event data structure
  */
@@ -104,6 +110,36 @@ export interface ShipmentTrackingData {
     status: string;
   };
   shipmentId?: string;
+}
+
+export interface NDRData {
+  order_id: string;
+  awb: string;
+  action: 'reattempt' | 'return' | 'fake-attempt' | 'cancel';
+  comment: string;
+  customer_name?: string;
+  phone?: string;
+  address?: string;
+  next_attempt_date?: string;
+  client_order_reference_id?: string;
+  shipment?: {
+    id: string;
+    order: {
+      id: string;
+      code: string;
+      order_reference_id?: string;
+      customer?: {
+        name: string;
+        phone: string;
+        address: {
+          address: string;
+          city: string;
+          state: string;
+          pincode: string;
+        };
+      };
+    };
+  };
 }
 
 export type VendorRegistrationData = {

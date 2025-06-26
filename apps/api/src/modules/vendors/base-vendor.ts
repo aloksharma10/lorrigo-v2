@@ -9,7 +9,8 @@ import {
   VendorCancellationResult,
   VendorTrackingResult,
   ShipmentTrackingData,
-  TrackingEventData,
+  NDRData,
+  VendorNDRResult,
 } from '@/types/vendor';
 import { ShipmentBucketManager } from '@lorrigo/utils';
 
@@ -308,4 +309,6 @@ export abstract class BaseVendor {
    * @returns Promise resolving to tracking result
    */
   public abstract trackShipment(trackingData: ShipmentTrackingData): Promise<VendorTrackingResult>;
+
+  public abstract ndrAction(ndrData: NDRData): Promise<VendorNDRResult>;
 }

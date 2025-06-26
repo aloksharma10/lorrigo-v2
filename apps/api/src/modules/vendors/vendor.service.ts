@@ -3,7 +3,7 @@ import { BaseVendor } from './base-vendor';
 import { ShiprocketVendor } from './shiprocket.vendor';
 import { DelhiveryVendorFactory, DelhiveryVendor } from './delhivery.vendor';
 import { SmartShipVendor } from './smart-ship.vendor';
-import { VendorServiceabilityResult, ShipmentTrackingData, TrackingEventData } from '@/types/vendor';
+import { VendorServiceabilityResult, ShipmentTrackingData, TrackingEventData, NDRData, VendorNDRResult } from '@/types/vendor';
 import { FastifyInstance } from 'fastify';
 import { Courier, Order, ShipmentStatus } from '@lorrigo/db';
 import { ShipmentBucketManager } from '@lorrigo/utils';
@@ -882,6 +882,176 @@ export class VendorService {
       processed: shipments.length,
       updated,
       skipped,
+      failed,
+      results,
+    };
+  }
+
+  /**
+   * Handle NDR action with a specific vendor
+   * @param vendorName Vendor name
+   * @param ndrData NDR action data
+   * @returns Promise resolving to NDR result
+   */
+  public async handleNDRAction(
+    vendorName: string,
+    ndrData: NDRData
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: any;
+  }> {
+    try {
+      const vendor = this.getVendor(vendorName);
+      if (!vendor) {
+        return {
+          success: false,
+          message: `Vendor ${vendorName} not found`,
+          data: null,
+        };
+      }
+
+      // Validate required fields
+      if (!ndrData.awb && !ndrData.order_id) {
+        return {
+          success: false,
+          message: 'AWB or Order ID is required for NDR action',
+          data: null,
+        };
+      }
+
+      if (!ndrData.action) {
+        return {
+          success: false,
+          message: 'Action type is required for NDR action',
+          data: null,
+        };
+      }
+
+      if (!ndrData.comment) {
+        return {
+          success: false,
+          message: 'Comment is required for NDR action',
+          data: null,
+        };
+      }
+
+      // Process NDR action with the vendor
+      const result = await vendor.ndrAction(ndrData);
+
+      // Log NDR action for audit purposes
+      console.log('NDR action processed:', {
+        vendor: vendorName,
+        orderId: ndrData.order_id,
+        awb: ndrData.awb,
+        action: ndrData.action,
+        success: result.success,
+        message: result.message,
+      });
+
+      return {
+        success: result.success,
+        message: result.message,
+        data: result.data,
+      };
+    } catch (error: unknown) {
+      console.error(`Error handling NDR action with vendor ${vendorName}:`, error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : `Failed to handle NDR action with ${vendorName}`,
+        data: null,
+      };
+    }
+  }
+
+  /**
+   * Process NDR actions in batch using Redis queue for performance
+   * @param ndrActions Array of NDR actions to process
+   * @returns Promise resolving to batch processing results
+   */
+  public async processNDRActionsBatch(
+    ndrActions: Array<{
+      vendorName: string;
+      ndrData: NDRData;
+      shipmentId?: string;
+    }>
+  ): Promise<{
+    processed: number;
+    successful: number;
+    failed: number;
+    results: Array<{
+      vendorName: string;
+      orderId: string;
+      awb: string;
+      action: string;
+      success: boolean;
+      message: string;
+      shipmentId?: string;
+    }>;
+  }> {
+    const results = [];
+    let successful = 0;
+    let failed = 0;
+
+    // Process each NDR action
+    for (const ndrAction of ndrActions) {
+      try {
+        const result = await this.handleNDRAction(ndrAction.vendorName, ndrAction.ndrData);
+
+        results.push({
+          vendorName: ndrAction.vendorName,
+          orderId: ndrAction.ndrData.order_id,
+          awb: ndrAction.ndrData.awb,
+          action: ndrAction.ndrData.action,
+          success: result.success,
+          message: result.message,
+          shipmentId: ndrAction.shipmentId,
+        });
+
+        if (result.success) {
+          successful++;
+
+          // Update NDR order status in database if successful
+          if (ndrAction.shipmentId) {
+            try {
+                             await this.fastify.prisma.nDROrder.updateMany({
+                 where: {
+                   shipment_id: ndrAction.shipmentId,
+                   action_taken: false,
+                 },
+                 data: {
+                   action_taken: true,
+                   action_type: ndrAction.ndrData.action,
+                   action_comment: ndrAction.ndrData.comment,
+                   action_date: new Date(),
+                   updated_at: new Date(),
+                 },
+               });
+            } catch (dbError) {
+              console.error('Error updating NDR order in database:', dbError);
+            }
+          }
+        } else {
+          failed++;
+        }
+      } catch (error) {
+        console.error(`Error processing NDR action for order ${ndrAction.ndrData.order_id}:`, error);
+        results.push({
+          vendorName: ndrAction.vendorName,
+          orderId: ndrAction.ndrData.order_id,
+          awb: ndrAction.ndrData.awb,
+          action: ndrAction.ndrData.action,
+          success: false,
+          message: error instanceof Error ? error.message : 'Unknown error occurred',
+          shipmentId: ndrAction.shipmentId,
+        });
+        failed++;
+      }
+    }
+
+    return {
+      processed: ndrActions.length,
+      successful,
       failed,
       results,
     };

@@ -378,7 +378,7 @@ export class TransactionService {
                 merchant_transaction_id: data.merchantTransactionId,
                 currency: data.currency || 'INR',
                 awb: shipmentData.awb,
-                sr_shipment_id: shipmentData.srShipmentId,
+                sr_shipment_id: shipmentData?.srShipmentId || '',
                 wallet_id: wallet.id,
                 user_id: data.userId,
                 shipment_id: shipmentData.shipmentId,

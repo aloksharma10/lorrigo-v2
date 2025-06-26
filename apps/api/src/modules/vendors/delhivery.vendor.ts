@@ -13,6 +13,8 @@ import {
   VendorTrackingResult,
   TrackingEventData,
   ShipmentTrackingData,
+  NDRData,
+  VendorNDRResult,
 } from '@/types/vendor';
 import { redis } from '@/lib/redis';
 import { BucketMappingService } from '../shipments/services/bucket-mapping.service';
@@ -582,6 +584,9 @@ export class DelhiveryVendor extends BaseVendor {
           // Determine if this is an RTO status
           const isRTO = this.isRTOStatus(status, statusCode);
           
+          // Determine if this is an NDR status
+          const isNDR = ShipmentBucketManager.isNDRStatus(status, statusCode);
+          
           // Map to bucket using helper method
           const bucket = this.bucketMappingService 
             ? await this.bucketMappingService.detectBucket(status, statusCode, this.name.toUpperCase())
@@ -595,6 +600,7 @@ export class DelhiveryVendor extends BaseVendor {
             timestamp,
             activity: status,
             isRTO,
+            isNDR,
             bucket,
           });
         }
@@ -614,6 +620,7 @@ export class DelhiveryVendor extends BaseVendor {
           timestamp: new Date(),
           activity: shipmentData.Status,
           isRTO: this.isRTOStatus(shipmentData.Status),
+          isNDR: ShipmentBucketManager.isNDRStatus(shipmentData.Status),
           bucket: currentStatusBucket,
         });
       }
@@ -631,6 +638,7 @@ export class DelhiveryVendor extends BaseVendor {
           timestamp: new Date(),
           activity: 'Tracking information not available',
           isRTO: false,
+          isNDR: false,
           bucket: ShipmentBucketManager.getBucketFromStatus('NEW'),
         });
       }
@@ -665,6 +673,191 @@ export class DelhiveryVendor extends BaseVendor {
         message: `Error tracking shipment: ${error instanceof Error ? error.message : 'Unknown error'}`,
         data: null,
         trackingEvents: [],
+      };
+    }
+  }
+
+  /**
+   * Handle NDR action with Delhivery
+   * 
+   * Important constraints and considerations:
+   * 1. For RE-ATTEMPT:
+   *    - Can only be applied if current NSL code is in: ["EOD-74", "EOD-15", "EOD-104", "EOD-43", "EOD-86", "EOD-11", "EOD-69", "EOD-6"]
+   *    - Attempt count should be 1 or 2
+   *    - Recommended to apply after 9 PM for best results
+   * 
+   * 2. For PICKUP_RESCHEDULE (used for returns):
+   *    - Can be applied if NSL code is in: ["EOD-777", "EOD-21"]
+   *    - Shipment status will be marked as Cancelled (Non OTP Cancelled)
+   *    - Attempt count should be 1 or 2
+   *    - Apply after 9 PM to ensure dispatches are closed
+   * 
+   * 3. The API is asynchronous and returns a UPL ID for status tracking
+   * 
+   * @param ndrData NDR action data
+   * @returns Promise resolving to NDR result
+   */
+  public async ndrAction(ndrData: NDRData): Promise<VendorNDRResult> {
+    try {
+      const token = await this.getAuthToken();
+
+      if (!token) {
+        return {
+          success: false,
+          message: `Failed to get Delhivery ${this.weightCategory} kg authentication token`,
+          data: null,
+        };
+      }
+
+      // Validate required fields
+      if (!ndrData.awb) {
+        return {
+          success: false,
+          message: 'AWB number is required for Delhivery NDR action',
+          data: null,
+        };
+      }
+
+      // Map action types to Delhivery's expected values
+      let delhiveryAction: string;
+      switch (ndrData.action) {
+        case 'reattempt':
+          delhiveryAction = 'RE-ATTEMPT';
+          break;
+        case 'return':
+          // Delhivery uses PICKUP_RESCHEDULE for return/cancellation scenarios
+          delhiveryAction = 'PICKUP_RESCHEDULE';
+          break;
+        default:
+          // Default to re-attempt for unknown actions
+          delhiveryAction = 'RE-ATTEMPT';
+      }
+
+      // Prepare the request payload
+      const requestBody = {
+        data: [
+          {
+            waybill: ndrData.awb,
+            act: delhiveryAction,
+          },
+        ],
+      };
+
+      // Make API request to Delhivery NDR endpoint
+      const response = await this.makeRequest(
+        APIs.DELHIVERY.NDR_ACTION,
+        'POST',
+        requestBody,
+        { Authorization: token }
+      );
+
+      // Check if the response was successful
+      if (!response.data) {
+        return {
+          success: false,
+          message: 'Invalid response from Delhivery NDR API',
+          data: response.data,
+        };
+      }
+
+      // Delhivery NDR API is asynchronous and returns a UPL ID for tracking
+      const uplId = response.data.upl_id || response.data.data?.upl_id;
+      
+      if (!uplId) {
+        // Check for errors in the response
+        const errorMessage = response.data.error || response.data.message || 'Failed to process NDR action';
+        return {
+          success: false,
+          message: `Delhivery NDR API error: ${errorMessage}`,
+          data: response.data,
+        };
+      }
+
+      return {
+        success: true,
+        message: `NDR action '${ndrData.action}' (${delhiveryAction}) processed successfully with Delhivery ${this.weightCategory} kg. UPL ID: ${uplId}`,
+        data: {
+          vendor: `Delhivery-${this.weightCategory}`,
+          awb: ndrData.awb,
+          action: ndrData.action,
+          delhivery_action: delhiveryAction,
+          upl_id: uplId,
+          comment: ndrData.comment,
+          response: response.data,
+        },
+      };
+    } catch (error: any) {
+      console.error(`Error handling NDR action with Delhivery ${this.weightCategory}:`, error);
+
+      // Check for specific API errors
+      if (error.response?.status === 400) {
+        const errorMessage = error.response?.data?.error || error.response?.data?.message;
+        if (errorMessage?.includes('NSL') || errorMessage?.includes('attempt count')) {
+          return {
+            success: false,
+            message: `Delhivery NDR constraint violation: ${errorMessage}. Please check NSL code and attempt count requirements.`,
+            data: error.response?.data,
+          };
+        }
+      }
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || `Failed to process NDR action with Delhivery ${this.weightCategory}`,
+        data: error.response?.data || null,
+      };
+    }
+  }
+
+  /**
+   * Check NDR status using UPL ID
+   * @param uplId UPL ID returned from NDR action
+   * @returns Promise resolving to NDR status result
+   */
+  public async checkNDRStatus(uplId: string): Promise<{
+    success: boolean;
+    message: string;
+    data?: any;
+  }> {
+    try {
+      const token = await this.getAuthToken();
+
+      if (!token) {
+        return {
+          success: false,
+          message: `Failed to get Delhivery ${this.weightCategory} kg authentication token`,
+          data: null,
+        };
+      }
+
+      if (!uplId) {
+        return {
+          success: false,
+          message: 'UPL ID is required to check NDR status',
+          data: null,
+        };
+      }
+
+      // Make API request to check NDR status
+      const response = await this.makeRequest(
+        `${APIs.DELHIVERY.NDR_STATUS}?upl_id=${uplId}`,
+        'GET',
+        null,
+        { Authorization: token }
+      );
+
+      return {
+        success: true,
+        message: 'NDR status retrieved successfully',
+        data: response.data,
+      };
+    } catch (error: any) {
+      console.error(`Error checking NDR status with Delhivery ${this.weightCategory}:`, error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to check NDR status',
+        data: error.response?.data || null,
       };
     }
   }

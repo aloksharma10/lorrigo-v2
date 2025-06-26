@@ -11,6 +11,8 @@ import {
   VendorTrackingResult,
   TrackingEventData,
   ShipmentTrackingData,
+  NDRData,
+  VendorNDRResult,
 } from '@/types/vendor';
 import { PickupAddress, VendorShipmentData, ShipmentBucketManager } from '@lorrigo/utils';
 import { BucketMappingService } from '../shipments/services/bucket-mapping.service';
@@ -719,24 +721,28 @@ export class SmartShipVendor extends BaseVendor {
           const statusText = status.status;
           const statusCode = status.status_code || statusText.toUpperCase().replace(/\s+/g, '_');
           
-          // Determine if this is an RTO status
-          const isRTO = this.isRTOStatus(statusText, statusCode);
-          
-          // Map to bucket using helper method
-          const bucket = this.bucketMappingService 
-            ? await this.bucketMappingService.detectBucket(statusText, statusCode, this.name.toUpperCase())
-            : await this.mapStatusToBucket(statusText, statusCode);
-          
-          trackingEvents.push({
-            status: statusText,
-            status_code: statusCode,
-            description: status.description || statusText,
-            location: status.location || '',
-            timestamp,
-            activity: statusText,
-            isRTO,
-            bucket,
-          });
+                     // Determine if this is an RTO status
+           const isRTO = this.isRTOStatus(statusText, statusCode);
+           
+           // Determine if this is an NDR status
+           const isNDR = ShipmentBucketManager.isNDRStatus(statusText, statusCode);
+           
+           // Map to bucket using helper method
+           const bucket = this.bucketMappingService 
+             ? await this.bucketMappingService.detectBucket(statusText, statusCode, this.name.toUpperCase())
+             : await this.mapStatusToBucket(statusText, statusCode);
+           
+           trackingEvents.push({
+             status: statusText,
+             status_code: statusCode,
+             description: status.description || statusText,
+             location: status.location || '',
+             timestamp,
+             activity: statusText,
+             isRTO,
+             isNDR,
+             bucket,
+           });
         }
       }
       
@@ -750,16 +756,17 @@ export class SmartShipVendor extends BaseVendor {
           ? await this.bucketMappingService.detectBucket(currentStatus, currentStatusCode, this.name.toUpperCase())
           : await this.mapStatusToBucket(currentStatus, currentStatusCode);
           
-        trackingEvents.push({
-          status: currentStatus,
-          status_code: currentStatusCode,
-          description: trackingData.current_status_description || currentStatus,
-          location: trackingData.current_location || '',
-          timestamp: new Date(),
-          activity: currentStatus,
-          isRTO: this.isRTOStatus(currentStatus, currentStatusCode),
-          bucket: currentBucket,
-        });
+                 trackingEvents.push({
+           status: currentStatus,
+           status_code: currentStatusCode,
+           description: trackingData.current_status_description || currentStatus,
+           location: trackingData.current_location || '',
+           timestamp: new Date(),
+           activity: currentStatus,
+           isRTO: this.isRTOStatus(currentStatus, currentStatusCode),
+           isNDR: ShipmentBucketManager.isNDRStatus(currentStatus, currentStatusCode),
+           bucket: currentBucket,
+         });
       }
       
       // Sort events by timestamp (oldest first)
@@ -767,16 +774,17 @@ export class SmartShipVendor extends BaseVendor {
       
       // If no events found, add a default event
       if (trackingEvents.length === 0) {
-        trackingEvents.push({
-          status: 'Pending',
-          status_code: 'PENDING',
-          description: 'Tracking information not available',
-          location: '',
-          timestamp: new Date(),
-          activity: 'Tracking information not available',
-          isRTO: false,
-          bucket: ShipmentBucketManager.getBucketFromStatus('NEW'),
-        });
+                 trackingEvents.push({
+           status: 'Pending',
+           status_code: 'PENDING',
+           description: 'Tracking information not available',
+           location: '',
+           timestamp: new Date(),
+           activity: 'Tracking information not available',
+           isRTO: false,
+           isNDR: false,
+           bucket: ShipmentBucketManager.getBucketFromStatus('NEW'),
+         });
       }
       
       // Cache the result
@@ -809,6 +817,148 @@ export class SmartShipVendor extends BaseVendor {
         message: `Error tracking shipment: ${error instanceof Error ? error.message : 'Unknown error'}`,
         data: null,
         trackingEvents: [],
+      };
+    }
+  }
+
+  /**
+   * Handle NDR action with SmartShip
+   * @param ndrData NDR action data
+   * @returns Promise resolving to NDR result
+   */
+  public async ndrAction(ndrData: NDRData): Promise<VendorNDRResult> {
+    try {
+      const token = await this.getAuthToken();
+
+      if (!token) {
+        return {
+          success: false,
+          message: 'Failed to get SmartShip authentication token',
+          data: null,
+        };
+      }
+
+      // Validate required fields
+      if (!ndrData.client_order_reference_id && !ndrData.shipment?.order?.order_reference_id) {
+        return {
+          success: false,
+          message: 'Client order reference ID is required for SmartShip NDR action',
+          data: null,
+        };
+      }
+
+      // Map action types to SmartShip's expected action_id values
+      let actionId: number;
+      switch (ndrData.action) {
+        case 'reattempt':
+          actionId = 1; // 1 --> reattempt
+          break;
+        case 'return':
+          actionId = 2; // 2 --> RTO
+          break;
+        default:
+          actionId = 1; // Default to reattempt
+      }
+
+      // Format the next attempt date for SmartShip (they expect "yyyy-MM-dd" format)
+      let formattedDate: any = '';
+      if (ndrData.next_attempt_date) {
+        try {
+          const date = new Date(ndrData.next_attempt_date);
+          formattedDate = date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+        } catch (error) {
+          console.error('Error formatting date for SmartShip NDR:', error);
+          // Default to tomorrow if date formatting fails
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          formattedDate = tomorrow.toISOString().split('T')[0];
+        }
+      } else {
+        // Default to tomorrow if no date provided
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        formattedDate = tomorrow.toISOString().split('T')[0];
+      }
+
+                    // Extract customer details from shipment data or use provided data
+       const customerName = String(ndrData.customer_name ?? 
+                                  ndrData.shipment?.order?.customer?.name ?? 
+                                  'Customer');
+       const customerPhone = String(ndrData.phone ?? 
+                                   ndrData.shipment?.order?.customer?.phone ?? 
+                                   '');
+       const customerAddress = String(ndrData.address ?? 
+                                     ndrData.shipment?.order?.customer?.address?.address ?? 
+                                     '');
+
+       // Get the client order reference ID
+       const clientOrderReferenceId = String(ndrData.client_order_reference_id ?? 
+                                            ndrData.shipment?.order?.order_reference_id ??
+                                            ndrData.shipment?.order?.code ??
+                                            '');
+
+       const requestBody = {
+         orders: [
+           {
+             action_id: actionId,
+             names: customerName,
+             phone: customerPhone,
+             comments: ndrData.comment || 'NDR action requested',
+             next_attempt_date: formattedDate,
+             client_order_reference_id: [clientOrderReferenceId],
+             address: customerAddress,
+           },
+         ],
+       };
+
+      // Make API request to SmartShip NDR endpoint
+      const response = await this.makeRequest(
+        APIs.SMART_SHIP.ORDER_REATTEMPT,
+        'POST',
+        requestBody,
+        { Authorization: token }
+      );
+
+      // Check for authentication or authorization errors
+      if (response.data?.status === '403') {
+        return {
+          success: false,
+          message: 'SmartShip authentication token expired or invalid',
+          data: response.data,
+        };
+      }
+
+      // Check for API errors
+      if (response.data?.status === false) {
+        return {
+          success: false,
+          message: response.data?.message || 'Failed to process NDR action with SmartShip',
+          data: response.data,
+        };
+      }
+
+      // Check for failure in the order reattempt details
+      const orderReattemptDetails = response.data?.data;
+      if (orderReattemptDetails?.failure) {
+        return {
+          success: false,
+          message: 'NDR action request failed - order reattempt unsuccessful',
+          data: response.data,
+        };
+      }
+
+      return {
+        success: true,
+        message: `NDR action '${ndrData.action}' processed successfully with SmartShip`,
+        data: response.data,
+      };
+    } catch (error: any) {
+      console.error('Error handling NDR action with SmartShip:', error);
+
+      return {
+        success: false,
+        message: error.response?.data?.message || error.message || 'Failed to process NDR action',
+        data: error.response?.data || null,
       };
     }
   }

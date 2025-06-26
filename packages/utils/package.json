@@ -22,19 +22,19 @@
   },
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "require": "./dist/cjs/index.cjs",
-      "import": "./dist/esm/index.js",
-      "types": "./dist/index.d.ts"
+      "import": "./dist/esm/index.js"
     },
     "./validations": {
+      "types": "./dist/validations/index.d.ts",
       "require": "./dist/validations/index.cjs",
-      "import": "./dist/validations/index.js",
-      "types": "./dist/validations/index.d.ts"
+      "import": "./dist/validations/index.js"
     },
     "./helpers": {
+      "types": "./dist/helpers/index.d.ts",
       "require": "./dist/helpers/index.cjs",
-      "import": "./dist/helpers/index.js",
-      "types": "./dist/helpers/index.d.ts"
+      "import": "./dist/helpers/index.js"
     }
   }
 }
