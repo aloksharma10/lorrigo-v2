@@ -23,7 +23,6 @@
   "author": "<aloksharma.cs1@gmail.com> Alok Sharma",
   "license": "ISC",
   "devDependencies": {
-    "@lorrigo/utils": "workspace:*",
     "@types/node": "^20",
     "prisma": "^6.7.0",
     "typescript": "^5.8.3"
