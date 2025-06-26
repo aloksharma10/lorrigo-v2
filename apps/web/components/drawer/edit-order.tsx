@@ -37,13 +37,13 @@ export default function EditOrder({
   async function onSubmit(values: OrderFormValues) {
     try {
       const validatedData = orderFormSchema.parse(values);
-      await updateOrder({ ...validatedData, id: order?.id });
+      await updateOrder({ ...validatedData, id: order?.id } as any);
       toast.success('Order updated successfully');
       onClose();
     } catch (error: any) {
       toast.error(
-        error.response.data.message ||
-          'Failed to create order, Please Report to Support at support@lorrigo.in'
+        error.response?.data?.message ||
+          'Failed to update order, Please Report to Support at support@lorrigo.in'
       );
       console.error('Validation error:', error);
     }

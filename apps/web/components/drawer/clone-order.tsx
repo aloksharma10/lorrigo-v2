@@ -36,12 +36,12 @@ export default function CloneOrder({
   async function onSubmit(values: OrderFormValues) {
     try {
       const validatedData = orderFormSchema.parse(values);
-      await createOrder(validatedData);
+      await createOrder(validatedData as any);
       toast.success('Order created successfully');
       onClose();
     } catch (error: any) {
       toast.error(
-        error.response.data.message ||
+        error.response?.data?.message ||
           'Failed to create order, Please Report to Support at support@lorrigo.in'
       );
       console.error('Validation error:', error);
