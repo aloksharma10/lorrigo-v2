@@ -17,6 +17,7 @@ export interface NDROrder {
   action_type?: 'reattempt' | 'return' | 'cancel' | 'fake-attempt';
   action_comment?: string;
   action_date?: string;
+  otp_verified?: boolean; // Indicates if order is OTP verified (prevents re-attempts)
   created_at: string;
   updated_at: string;
 
@@ -57,8 +58,10 @@ export interface NDROrder {
     };
     courier?: {
       id: string;
+      name: string;
       channel_config?: {
         name: string;
+        nickname: string;
       };
     };
   };
@@ -75,8 +78,10 @@ export interface NDROrder {
   };
   courier?: {
     id: string;
+    name: string;
     channel_config?: {
       name: string;
+      nickname: string;
     };
   };
   ndr_history?: Array<{

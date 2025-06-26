@@ -644,11 +644,8 @@ export class ShiprocketVendor extends BaseVendor {
 
         trackingEvents.push(trackingEvent);
 
-        console.log(trackingInput, "trackingInput")
-
         // Queue tracking event for bulk processing
         const shipmentId = trackingInput.shipmentId || trackingInput.shipment?.id;
-        console.log(shipmentId, "shipmentId")
         if (shipmentId) {
           const eventData = {
             ...trackingEvent,

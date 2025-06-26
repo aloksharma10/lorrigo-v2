@@ -939,16 +939,6 @@ export class VendorService {
       // Process NDR action with the vendor
       const result = await vendor.ndrAction(ndrData);
 
-      // Log NDR action for audit purposes
-      console.log('NDR action processed:', {
-        vendor: vendorName,
-        orderId: ndrData.order_id,
-        awb: ndrData.awb,
-        action: ndrData.action,
-        success: result.success,
-        message: result.message,
-      });
-
       return {
         success: result.success,
         message: result.message,

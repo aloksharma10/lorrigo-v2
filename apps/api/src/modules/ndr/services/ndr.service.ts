@@ -132,6 +132,12 @@ export class NDRService {
       // Process NDR action via vendor service
       const result = await this.vendorService.handleNDRAction(vendorName, ndrData);
 
+      // Check for OTP verified condition in the response
+      const isOtpVerified = result.message?.includes('Cannot Raise Re-Attempt for OTP Verified') || 
+                           result.message?.includes('OTP Verified') ||
+                           result.data?.message?.includes('Cannot Raise Re-Attempt for OTP Verified') ||
+                           result.data?.message?.includes('OTP Verified');
+
       if (result.success) {
         // Update NDR record with action details
         await this.fastify.prisma.nDROrder.update({
@@ -141,8 +147,9 @@ export class NDRService {
             action_type: actionType,
             action_comment: comment,
             action_date: new Date(),
+            otp_verified: isOtpVerified,
             updated_at: new Date(),
-          },
+          } as any,
         });
 
         // Create NDR history record
@@ -186,6 +193,37 @@ export class NDRService {
             }
           }
         }
+      } else if (isOtpVerified) {
+        // Handle OTP verified case even when action fails
+        await this.fastify.prisma.nDROrder.update({
+          where: { id: ndrId },
+          data: {
+            otp_verified: true,
+            action_comment: `${comment} - ${result.message}`,
+            updated_at: new Date(),
+          } as any,
+        });
+
+        // Create NDR history record for OTP verification
+        await this.fastify.prisma.nDRHistory.create({
+          data: {
+            ndr_id: ndrId,
+            ndr_reason: 'OTP Verified - Action cannot be performed',
+            comment: `${actionType} failed: ${result.message}`,
+            ndr_raised_at: new Date(),
+          },
+        });
+
+        // Return failure with specific OTP verified message
+        return {
+          success: false,
+          message: 'NDR action failed: Order is OTP verified and cannot be re-attempted',
+          data: {
+            ...result.data,
+            otp_verified: true,
+            action_blocked: true,
+          },
+        };
       }
 
       return result;

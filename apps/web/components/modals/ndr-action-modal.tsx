@@ -4,7 +4,7 @@ import * as React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { CalendarIcon, Loader2 } from 'lucide-react';
+import { CalendarIcon, Loader2, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 
 import {
@@ -173,9 +173,9 @@ export function NDRActionModal({
           toast.error('Unexpected response format');
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error taking NDR action:', error);
-      toast.error('An error occurred while processing the NDR action');
+      toast.error(error?.response?.data?.message || 'An error occurred while processing the NDR action');
     } finally {
       setIsSubmitting(false);
     }
@@ -207,6 +207,11 @@ export function NDRActionModal({
                     <Badge variant="outline" className="text-xs">
                       {order.attempts} attempt{order.attempts !== 1 ? 's' : ''}
                     </Badge>
+                    {order.otp_verified && (
+                      <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-600 border-blue-200">
+                        OTP Verified
+                      </Badge>
+                    )}
                   </div>
                   <div className="text-muted-foreground">
                     {order.shipment?.order?.customer?.name || order.order?.customer?.name || order.customer?.name}
@@ -214,6 +219,21 @@ export function NDRActionModal({
                 </div>
               ))}
             </div>
+            
+            {/* OTP Verification Warning */}
+            {selectedOrders.some(order => order.otp_verified) && (
+              <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm">
+                    <p className="font-medium text-yellow-800">OTP Verified Orders Detected</p>
+                    <p className="text-yellow-700 mt-1">
+                      Some selected orders are OTP verified. Re-attempt actions may not be successful for these orders.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <Separator />

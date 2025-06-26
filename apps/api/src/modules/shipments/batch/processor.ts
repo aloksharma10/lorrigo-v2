@@ -973,13 +973,129 @@ export class TrackingProcessor {
       // Check if NDR record already exists
       const existingNdr = await fastify.prisma.nDROrder.findFirst({
         where: { awb },
+        include: {
+          ndr_history: {
+            orderBy: {
+              created_at: 'desc',
+            },
+          },
+        },
       });
 
       if (existingNdr) {
-        fastify.log.info(`NDR record already exists for AWB ${awb}, skipping creation`);
+        fastify.log.info(`NDR record already exists for AWB ${awb}, checking for changes`);
+        
+        // Check if cancellation_reason has changed
+        const reasonChanged = existingNdr.cancellation_reason !== (ndrData.reason || '');
+        
+        // Check if attempts count has changed
+        const attemptsChanged = existingNdr.attempts !== (ndrData.attempts || 1);
+        
+        // Check if ndr_raised_at date has changed
+        const ndrRaisedAtChanged = ndrData.ndr_raised_at && 
+          (!existingNdr.ndr_raised_at || 
+           new Date(ndrData.ndr_raised_at).getTime() !== existingNdr.ndr_raised_at.getTime());
+        
+        // Check if new history items are available
+        let historyChanged = false;
+        if (ndrData.history && Array.isArray(ndrData.history)) {
+          // Create a set of existing ndr_reasons for comparison
+          const existingReasons = new Set();
+          existingNdr.ndr_history.forEach(h => {
+            if (h.ndr_reason) {
+              existingReasons.add(h.ndr_reason.trim().toLowerCase());
+            }
+          });
+          
+          // Check if there are any new ndr_reasons in the incoming data
+          for (const historyItem of ndrData.history) {
+            const ndrReason = (historyItem.ndr_reason || '').trim();
+            if (ndrReason && !existingReasons.has(ndrReason.toLowerCase())) {
+              historyChanged = true;
+              break;
+            }
+          }
+        }
+        
+        // If no changes detected, return existing record
+        if (!reasonChanged && !attemptsChanged && !ndrRaisedAtChanged && !historyChanged) {
+          fastify.log.info(`No changes detected for NDR AWB ${awb}, skipping update`);
+          return {
+            success: true,
+            message: `NDR record exists with no changes for AWB ${awb}`,
+            ndrId: existingNdr.id,
+          };
+        }
+        
+        fastify.log.info(`Changes detected for NDR AWB ${awb}: reason=${reasonChanged}, attempts=${attemptsChanged}, ndrRaisedAt=${ndrRaisedAtChanged}, history=${historyChanged}`);
+        
+        // Update existing NDR record
+        const updatedNdr = await fastify.prisma.nDROrder.update({
+          where: { id: existingNdr.id },
+          data: {
+            cancellation_reason: ndrData.reason || existingNdr.cancellation_reason,
+            attempts: ndrData.attempts || existingNdr.attempts,
+            ndr_raised_at: ndrData.ndr_raised_at ? new Date(ndrData.ndr_raised_at) : existingNdr.ndr_raised_at,
+            updated_at: new Date(),
+          } as any,
+        });
+        
+        // Add new history records if there are changes
+        if (historyChanged && ndrData.history && Array.isArray(ndrData.history)) {
+          // Get existing history reasons to avoid duplicates - simplified approach
+          // Check if ndr_reason already exists for this NDR order
+          const existingReasons = new Set();
+          existingNdr.ndr_history.forEach(h => {
+            if (h.ndr_reason) {
+              existingReasons.add(h.ndr_reason.trim().toLowerCase());
+            }
+          });
+          
+          const newHistoryRecords = [];
+          
+          for (const historyItem of ndrData.history) {
+            const ndrReason = (historyItem.ndr_reason || '').trim();
+            const normalizedReason = ndrReason.toLowerCase();
+            
+            // Only add if this ndr_reason doesn't already exist for this NDR order
+            if (ndrReason && !existingReasons.has(normalizedReason)) {
+              newHistoryRecords.push({
+                ndr_id: existingNdr.id,
+                ndr_reason: ndrReason,
+                action_by: historyItem.action_by || null,
+                ndr_attempt: historyItem.ndr_attempt || null,
+                ndr_push_status: historyItem.ndr_push_status || null,
+                comment: historyItem.comment || '',
+                call_recording: historyItem.call_center_call_recording || '',
+                recording_date: historyItem.call_center_recording_date || '',
+                proof_recording: historyItem.proof_recording || '',
+                proof_image: historyItem.proof_image || '',
+                sms_response: historyItem.sms_response || '',
+                ndr_raised_at: historyItem.ndr_raised_at ? new Date(historyItem.ndr_raised_at) : new Date(),
+              });
+              
+              // Add to the set to prevent duplicates within the same batch
+              existingReasons.add(normalizedReason);
+            }
+          }
+          
+          if (newHistoryRecords.length > 0) {
+            await fastify.prisma.nDRHistory.createMany({
+              data: newHistoryRecords,
+              skipDuplicates: true,
+            });
+            
+            fastify.log.info(`Added ${newHistoryRecords.length} new history records for NDR ${existingNdr.id}`);
+          } else {
+            fastify.log.info(`No new unique history records to add for NDR ${existingNdr.id}`);
+          }
+        }
+        
+        fastify.log.info(`Successfully updated NDR record ${existingNdr.id} for AWB ${awb}`);
+        
         return {
           success: true,
-          message: `NDR record already exists for AWB ${awb}`,
+          message: `NDR record updated successfully for AWB ${awb}`,
           ndrId: existingNdr.id,
         };
       }
@@ -1019,30 +1135,48 @@ export class TrackingProcessor {
           attempts: ndrData.attempts || 1,
           ndr_raised_at: ndrData.ndr_raised_at ? new Date(ndrData.ndr_raised_at) : new Date(),
           action_taken: false,
-        },
+          otp_verified: false, // Default to false for new NDR records
+        } as any,
       });
 
       // Create NDR history records from the API response history
       if (ndrData.history && Array.isArray(ndrData.history)) {
-        const historyRecords = ndrData.history.map((historyItem: any) => ({
-          ndr_id: ndrRecord.id,
-          ndr_reason: historyItem.ndr_reason || '',
-          action_by: historyItem.action_by || null,
-          ndr_attempt: historyItem.ndr_attempt || null,
-          ndr_push_status: historyItem.ndr_push_status || null,
-          comment: historyItem.comment || '',
-          call_recording: historyItem.call_center_call_recording || '',
-          recording_date: historyItem.call_center_recording_date || '',
-          proof_recording: historyItem.proof_recording || '',
-          proof_image: historyItem.proof_image || '',
-          sms_response: historyItem.sms_response || '',
-          ndr_raised_at: historyItem.ndr_raised_at ? new Date(historyItem.ndr_raised_at) : new Date(),
-        }));
+        const seenReasons = new Set<string>();
+        const historyRecords = [];
+        
+        for (const historyItem of ndrData.history) {
+          const ndrReason = (historyItem.ndr_reason || '').trim();
+          const normalizedReason = ndrReason.toLowerCase();
+          
+          // Only add if this ndr_reason hasn't been seen before in this batch
+          if (ndrReason && !seenReasons.has(normalizedReason)) {
+            historyRecords.push({
+              ndr_id: ndrRecord.id,
+              ndr_reason: ndrReason,
+              action_by: historyItem.action_by || null,
+              ndr_attempt: historyItem.ndr_attempt || null,
+              ndr_push_status: historyItem.ndr_push_status || null,
+              comment: historyItem.comment || '',
+              call_recording: historyItem.call_center_call_recording || '',
+              recording_date: historyItem.call_center_recording_date || '',
+              proof_recording: historyItem.proof_recording || '',
+              proof_image: historyItem.proof_image || '',
+              sms_response: historyItem.sms_response || '',
+              ndr_raised_at: historyItem.ndr_raised_at ? new Date(historyItem.ndr_raised_at) : new Date(),
+            });
+            
+            seenReasons.add(normalizedReason);
+          }
+        }
 
-        await fastify.prisma.nDRHistory.createMany({
-          data: historyRecords,
-          skipDuplicates: true,
-        });
+        if (historyRecords.length > 0) {
+          await fastify.prisma.nDRHistory.createMany({
+            data: historyRecords,
+            skipDuplicates: true,
+          });
+          
+          fastify.log.info(`Created ${historyRecords.length} unique history records for new NDR ${ndrRecord.id}`);
+        }
       }
 
       fastify.log.info(`Successfully created NDR record ${ndrRecord.id} for AWB ${awb}`);

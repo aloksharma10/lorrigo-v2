@@ -1162,6 +1162,7 @@ model NDROrder {
   action_type    String? // "reattempt", "cancel", "return", etc.
   action_date    DateTime?
   action_comment String?
+  otp_verified   Boolean   @default(false) // Indicates if order is OTP verified (prevents re-attempts)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt

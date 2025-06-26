@@ -18,12 +18,13 @@ import { toast } from '@lorrigo/ui/components';
 import type { ColumnDef } from '@lorrigo/ui/components';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 
-import { 
-  useNDROperations, 
-  type NDROrder, 
+import {
+  useNDROperations,
+  type NDROrder,
   type NDRQueryParams,
 } from '@/lib/apis/ndr';
 import { NDRActionModal } from '@/components/modals/ndr-action-modal';
+import HoverCardToolTip from '@/components/hover-card-tooltip';
 
 interface NDRTableProps {
   initialParams?: NDRQueryParams;
@@ -112,7 +113,7 @@ export default function NDRTable({ initialParams = {} }: NDRTableProps) {
       cell: ({ row }) => {
         const ndr = row.original;
         const raisedDate = new Date(ndr.ndr_raised_at);
-        
+
         return (
           <div className="flex flex-col space-y-1">
             <div className="text-sm">
@@ -136,15 +137,25 @@ export default function NDRTable({ initialParams = {} }: NDRTableProps) {
                 </div>
               </>
             )}
-            <Badge
-              variant={ndr.action_taken ? "default" : "outline"}
-              className={ndr.action_taken 
-                ? "w-fit border-green-200 bg-green-50 text-xs text-green-600 dark:border-green-700 dark:bg-green-900 dark:text-green-50"
-                : "w-fit border-orange-200 bg-orange-50 text-xs text-orange-600 dark:border-orange-700 dark:bg-orange-900 dark:text-orange-50"
-              }
-            >
-              {ndr.action_taken ? `${ndr.action_type?.toUpperCase()} COMPLETED` : 'PENDING ACTION'}
-            </Badge>
+            <div className="flex flex-wrap gap-1">
+              <Badge
+                variant={ndr.action_taken ? "default" : "outline"}
+                className={ndr.action_taken
+                  ? "w-fit border-green-200 bg-green-50 text-xs text-green-600 dark:border-green-700 dark:bg-green-900 dark:text-green-50"
+                  : "w-fit border-orange-200 bg-orange-50 text-xs text-orange-600 dark:border-orange-700 dark:bg-orange-900 dark:text-orange-50"
+                }
+              >
+                {ndr.action_taken ? `${ndr.action_type?.toUpperCase()} COMPLETED` : 'PENDING ACTION'}
+              </Badge>
+              {ndr.otp_verified && (
+                <Badge 
+                  variant="secondary" 
+                  className="w-fit border-blue-200 bg-blue-50 text-xs text-blue-600 dark:border-blue-700 dark:bg-blue-900 dark:text-blue-50"
+                >
+                  OTP VERIFIED
+                </Badge>
+              )}
+            </div>
           </div>
         );
       },
@@ -157,7 +168,7 @@ export default function NDRTable({ initialParams = {} }: NDRTableProps) {
       cell: ({ row }) => {
         const ndr = row.original;
         const order = ndr.shipment?.order || ndr.order;
-        
+
         return (
           <div className="flex flex-col space-y-1">
             <div className="font-medium text-blue-600">
@@ -191,7 +202,7 @@ export default function NDRTable({ initialParams = {} }: NDRTableProps) {
       cell: ({ row }) => {
         const ndr = row.original;
         const customer = ndr.shipment?.order?.customer || ndr.order?.customer || ndr.customer;
-        
+
         return (
           <div className="flex flex-col space-y-1">
             <div className="font-medium">{customer?.name || 'N/A'}</div>
@@ -209,12 +220,12 @@ export default function NDRTable({ initialParams = {} }: NDRTableProps) {
       cell: ({ row }) => {
         const ndr = row.original;
         const address = ndr.shipment?.order?.customer?.address || ndr.order?.customer?.address || ndr.customer?.address;
-        
+
         return (
           <div className="flex flex-col space-y-1">
-            <div className="max-w-xs text-sm">
+            <HoverCardToolTip label="Delivery Address">
               {address ? `${address.address}, ${address.city}, ${address.state} - ${address.pincode}` : 'No address'}
-            </div>
+            </HoverCardToolTip>
           </div>
         );
       },
@@ -227,11 +238,11 @@ export default function NDRTable({ initialParams = {} }: NDRTableProps) {
       cell: ({ row }) => {
         const ndr = row.original;
         const courier = ndr.shipment?.courier || ndr.courier;
-        
+
         return (
           <div className="flex flex-col space-y-1">
             <div className="text-sm font-medium">
-              {courier?.channel_config?.name || 'Unknown Courier'}
+              {courier?.name || 'Unknown Courier'} {courier?.channel_config?.nickname || ''}
             </div>
             <div className="text-sm text-blue-600">{ndr.awb}</div>
           </div>
@@ -245,7 +256,7 @@ export default function NDRTable({ initialParams = {} }: NDRTableProps) {
       header: ({ column }) => <DataTableColumnHeader column={column} title="Action Status" />,
       cell: ({ row }) => {
         const ndr = row.original;
-        
+
         return (
           <div className="flex flex-col space-y-1">
             {ndr.action_taken ? (
@@ -279,7 +290,7 @@ export default function NDRTable({ initialParams = {} }: NDRTableProps) {
       header: ({ column }) => <DataTableColumnHeader column={column} title="Actions" />,
       cell: ({ row }) => {
         const ndr = row.original;
-        
+
         return (
           <div className="flex flex-col items-start gap-2">
             {!ndr.action_taken && (
@@ -287,8 +298,10 @@ export default function NDRTable({ initialParams = {} }: NDRTableProps) {
                 className="w-full bg-blue-600 text-xs hover:bg-blue-700"
                 size="sm"
                 onClick={() => handleNDRAction(ndr)}
+                disabled={ndr.otp_verified}
+                title={ndr.otp_verified ? "Cannot take action on OTP verified orders" : "Take NDR Action"}
               >
-                Take Action
+                {ndr.otp_verified ? "OTP Verified" : "Take Action"}
               </Button>
             )}
             <DropdownMenu>
