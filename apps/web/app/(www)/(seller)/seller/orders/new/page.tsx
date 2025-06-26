@@ -25,8 +25,8 @@ export default function OrderFormPage() {
 
   async function onSubmit(values: OrderFormValues) {
     try {
-      const validatedData = orderFormSchema.parse(values);
-      await createOrder(validatedData);
+      // const validatedData = orderFormSchema.parse(values);
+      await createOrder(values);
       toast.success('Order created successfully');
     } catch (error: any) {
       toast.error(
