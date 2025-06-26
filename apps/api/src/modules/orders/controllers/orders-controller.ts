@@ -23,10 +23,10 @@ export class OrderController {
    */
   async getAllOrders(request: FastifyRequest, reply: FastifyReply) {
     try {
-      const queryParams = OrderQuerySchema.parse(request.query);
+      // const queryParams = OrderQuerySchema.parse(request.query);
       const userId = request.userPayload!.id;
 
-      const result = await this.orderService.getAllOrders(userId, queryParams);
+      const result = await this.orderService.getAllOrders(userId, request.query);
       return result;
     } catch (error) {
       if (error instanceof z.ZodError) {

@@ -8,8 +8,13 @@ import {
   OrderFormValues,
   parseSortField,
   UpdateOrderFormValues,
+  ShipmentBucket,
+  getStatusBuckets,
+  ShipmentBucketManager,
 } from '@lorrigo/utils';
 import { FastifyInstance } from 'fastify';
+
+
 
 /**
  * Order Service handles business logic related to orders
@@ -39,10 +44,26 @@ export class OrderService {
       user_id: userId,
     };
 
-    // Add status filter
-    if (status) {
-      where.status = status;
+    // Add status filter using bucket mapping
+    if (status && status !== 'all') {
+      const buckets = getStatusBuckets(status);
+      if (buckets.length > 0) {
+        // Merge with existing shipment filter if it exists
+        if (where.shipment?.is) {
+          where.shipment.is.bucket = { in: buckets };
+        } else {
+          where.shipment = {
+            is: {
+              bucket: {
+                in: buckets
+              }
+            }
+          };
+        }
+      }
     }
+
+    console.log(where, "where")
 
     // Date filters
     if (from_date || to_date) {
@@ -66,8 +87,10 @@ export class OrderService {
         {
           shipment: {
             is: {
-              pickup_id: { contains: search, mode: 'insensitive' },
-              awb: { contains: search, mode: 'insensitive' },
+              OR: [
+                { pickup_id: { contains: search, mode: 'insensitive' } },
+                { awb: { contains: search, mode: 'insensitive' } },
+              ]
             },
           },
         },
@@ -146,6 +169,8 @@ export class OrderService {
               pickup_date: true,
               edd: true,
               pickup_id: true,
+              bucket: true,
+              status: true,
               courier: {
                 select: {
                   name: true,
@@ -201,7 +226,10 @@ export class OrderService {
     const formatted_orders = orders.map((order) => ({
       id: order.id,
       orderNumber: order.order_number,
-      status: order.shipment?.tracking_events[0]?.status || order.status,
+      status: order.shipment?.bucket !== null && order.shipment?.bucket !== undefined
+        ? ShipmentBucketManager.getBucketStatus(order.shipment.bucket)
+        : order.shipment?.tracking_events?.[0]?.status || order.status,
+      bucket: order.shipment?.bucket ?? ShipmentBucket.AWAITING,
       courier: order.shipment?.courier?.name || '',
       courierNickname: order.shipment?.courier?.channel_config?.nickname || '',
       channel: order.order_channel_config?.channel || '',

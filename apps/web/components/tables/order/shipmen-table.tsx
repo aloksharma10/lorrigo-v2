@@ -7,13 +7,7 @@ import { DataTable } from '@lorrigo/ui/components';
 import { DataTableColumnHeader } from '@lorrigo/ui/components';
 import { Badge } from '@lorrigo/ui/components';
 import { Button } from '@lorrigo/ui/components';
-import { MoreHorizontal, Package, Phone, TruckIcon, UserRound } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@lorrigo/ui/components';
+import { Package, Phone, TruckIcon, UserRound } from 'lucide-react';
 import { toast } from '@lorrigo/ui/components';
 import type { ColumnDef } from '@lorrigo/ui/components';
 import { useDebounce } from '@/lib/hooks/use-debounce';
@@ -28,13 +22,13 @@ import { useDrawer } from '@/components/providers/drawer-provider';
 import { CopyBtn } from '@/components/copy-btn';
 import { useBulkOperations } from '@/components/providers/bulk-operations-provider';
 import { useModalStore } from '@/modal/modal-store';
+import { ShipmentActionButton } from './shipment-action-button';
 
 interface ShipmentsTableProps {
   initialParams: ShipmentParams;
 }
 
 export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
-  const router = useRouter();
   const [activeTab, setActiveTab] = React.useState(initialParams.status || 'all');
   const [pagination, setPagination] = React.useState({
     pageIndex: initialParams.page || 0,
@@ -55,9 +49,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
     }
   );
   const { isTokenReady } = useAuthToken();
-  const { openDrawer } = useDrawer();
   const { openBulkOperation } = useBulkOperations();
-  const { openModal } = useModalStore();
 
   // Fetch shipments with React Query
   const { data, isLoading, isError, isFetching, error } = useQuery({
@@ -353,81 +345,10 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
       id: 'actions',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Action" />,
       cell: ({ row }) => {
+        const shipment = row.original;
         return (
           <div className="flex items-center gap-2">
-            <Button
-              className="w-fit bg-indigo-600 hover:bg-indigo-700"
-              onClick={() => {
-                toast.success('Redirecting to ship now page...');
-                router.push(`/seller/orders/ship/${row.original.id}`);
-              }}
-            >
-              Ship Now
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 p-0">
-                  <span className="sr-only">Open menu</span>
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() =>
-                    openDrawer('clone-order', {
-                      order: row.original,
-                      size: 'greater-mid',
-                      side: 'right',
-                    })
-                  }
-                  className="flex w-full items-center justify-start"
-                >
-                  Clone Order
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() =>
-                    openDrawer('edit-order', {
-                      order: row.original,
-                      size: 'greater-mid',
-                      side: 'right',
-                    })
-                  }
-                  className="flex w-full items-center justify-start"
-                >
-                  Edit Order
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    console.log('Track shipment:', row.original);
-                  }}
-                >
-                  Track shipment
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    openModal('pickup-schedule', {
-                      shipmentId: row.original.id,
-                      orderNumber: row.original.orderNumber,
-                      awb: row.original.awb,
-                    });
-                  }}
-                  className="flex w-full items-center justify-start"
-                >
-                  Schedule Pickup
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    openModal('cancel-shipment', {
-                      shipmentId: row.original.id,
-                      orderNumber: row.original.orderNumber,
-                    });
-                  }}
-                  className="flex w-full items-center justify-start text-red-600 hover:text-red-500"
-                >
-                  Cancel Shipment
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <ShipmentActionButton shipment={shipment} />
           </div>
         );
       },

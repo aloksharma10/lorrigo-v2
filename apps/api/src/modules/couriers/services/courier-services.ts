@@ -90,7 +90,37 @@ export class CourierService {
     });
   }
 
-  async getAllCouriers(userId: string, userRole: Role) {
+  async getAllCouriers(userId: string, userRole: Role, queryParams: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    is_active?: boolean;
+  } = {}) {
+    const {
+      page = 1,
+      limit = 15,
+      search,
+      is_active,
+    } = queryParams;
+
+    const skip = (page - 1) * limit;
+
+    // Build base where clause
+    let where: any = {};
+
+    // Add search filter
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { courier_code: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    // Add status filter
+    if (is_active !== undefined) {
+      where.is_active = is_active;
+    }
+
     // If not an admin, only show couriers available to the specific seller
     if (!ADMIN_ROLES.includes(userRole as any)) {
       // Get all courier pricings for this user
@@ -111,38 +141,22 @@ export class CourierService {
 
       const courierIds = courierPricings.map((pricing) => pricing.courier_id);
 
-      const couriers = await this.fastify.prisma.courier.findMany({
-        where: {
-          id: { in: courierIds },
-          is_active: true,
-        },
-        orderBy: {
-          name: 'asc',
-        },
-        include: {
-          channel_config: {
-            select: {
-              nickname: true,
-            },
-          },
-        },
-      });
-
-      return couriers.map((courier) => ({
-        id: courier.id,
-        name: `${courier.name} (${courier.channel_config?.nickname})`,
-        is_active: courier.is_active,
-        is_reversed_courier: courier.is_reversed_courier,
-        weight_slab: courier.weight_slab,
-        increment_weight: courier.increment_weight,
-      }));
+      where = {
+        ...where,
+        id: { in: courierIds },
+        is_active: true,
+      };
+    } else if (is_active === undefined) {
+      // For admins, default to showing all active couriers unless explicitly filtering
+      where.is_active = true;
     }
 
-    // For admins, show all couriers
+    // Get total count for pagination
+    const total = await this.fastify.prisma.courier.count({ where });
+
+    // Get couriers with pagination
     const couriers = await this.fastify.prisma.courier.findMany({
-      where: {
-        is_active: true,
-      },
+      where,
       orderBy: {
         name: 'asc',
       },
@@ -153,14 +167,26 @@ export class CourierService {
           },
         },
       },
+      skip,
+      take: limit,
     });
 
-    return couriers.map((courier) => ({
+    const formattedCouriers = couriers.map((courier) => ({
       id: courier.id,
       name: `${courier.name} (${courier.channel_config?.nickname})`,
       is_active: courier.is_active,
       is_reversed_courier: courier.is_reversed_courier,
+      weight_slab: courier.weight_slab,
+      increment_weight: courier.increment_weight,
     }));
+
+    return {
+      couriers: formattedCouriers,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async getCourierById(id: string, userId: string, userRole: Role): Promise<any | ErrorResponse> {

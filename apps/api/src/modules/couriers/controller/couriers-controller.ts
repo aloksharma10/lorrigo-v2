@@ -66,8 +66,22 @@ export class CourierController {
     try {
       const userId = request.userPayload!.id;
       const userRole = request.userPayload!.role as Role;
-      const couriers = await this.courierService.getAllCouriers(userId, userRole);
-      return reply.send({ couriers });
+      const queryParams = request.query as {
+        page?: string;
+        limit?: string;
+        search?: string;
+        is_active?: string;
+      };
+
+      const parsedParams = {
+        page: queryParams.page ? parseInt(queryParams.page) : undefined,
+        limit: queryParams.limit ? parseInt(queryParams.limit) : undefined,
+        search: queryParams.search,
+        is_active: queryParams.is_active ? queryParams.is_active === 'true' : undefined,
+      };
+
+      const result = await this.courierService.getAllCouriers(userId, userRole, parsedParams);
+      return reply.send(result);
     } catch (error) {
       request.log.error(error);
       return reply.code(500).send({ error: 'Internal Server Error' });

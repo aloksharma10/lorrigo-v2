@@ -11,7 +11,7 @@ export const useCourierOperations = () => {
   // Fetch all couriers
   const getCouriersQuery = useQuery({
     queryKey: ['couriers'],
-    queryFn: () => api.get('/couriers').then((res: any) => res.couriers || []),
+    queryFn: () => api.get<any>('/couriers'),
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
     retry: 3,

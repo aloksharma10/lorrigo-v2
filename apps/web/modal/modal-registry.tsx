@@ -14,6 +14,7 @@ import { CreateChannelModal } from '@/components/modals/create-channel-modal';
 import { CancelShipmentModal } from '@/components/modals/cancel-shipment-modal';
 import { PickupScheduleModal } from '@/components/modals/pickup-schedule-modal';
 import { RechargeWalletModal } from '@/components/modals/recharge-wallet-modal';
+import { NDRActionModal } from '@/components/modals/ndr-action-modal';
 
 // Store to track registered modals
 interface ModalRegistryState {
@@ -43,7 +44,8 @@ export function ModalRegistry() {
       registerModal('cancel-shipment', CancelShipmentModal);
       registerModal('pickup-schedule', PickupScheduleModal);
       registerModal('recharge-wallet', RechargeWalletModal);
-
+      registerModal('ndr-action', NDRActionModal);
+      
       setRegistered(true);
       console.log('Modal components registered successfully');
     }

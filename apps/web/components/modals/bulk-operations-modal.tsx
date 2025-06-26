@@ -95,7 +95,7 @@ export default function BulkOperationsModal({
   const { createBulkShipments, scheduleBulkPickups, cancelBulkShipments, downloadBulkOperationFile } = useShippingOperations();
 
   const { getCouriersQuery } = useCourierOperations();
-  const availableCouriers = getCouriersQuery.data || [];
+  const availableCouriers = getCouriersQuery.data?.couriers || [];
 
   // Forms for each operation type
   const createShipmentForm = useForm<z.infer<typeof createShipmentSchema>>({

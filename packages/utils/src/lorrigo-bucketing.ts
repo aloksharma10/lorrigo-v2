@@ -32,6 +32,112 @@ export enum ShipmentBucket {
   AWAITING = 100,
 }
 
+export const getStatusBuckets = (status: string): number[] => {
+  const statusMap: Record<string, number[]> = {
+    'NEW': [ShipmentBucket.NEW],
+    'READY-TO-SHIP': [
+      ShipmentBucket.READY_TO_SHIP,
+      ShipmentBucket.COURIER_ASSIGNED,
+      ShipmentBucket.PICKUP_SCHEDULED,
+      ShipmentBucket.PICKED_UP
+    ],
+    'READY_TO_SHIP': [
+      ShipmentBucket.READY_TO_SHIP,
+      ShipmentBucket.COURIER_ASSIGNED,
+      ShipmentBucket.PICKUP_SCHEDULED,
+      ShipmentBucket.PICKED_UP
+    ],
+    'TRANSIT': [
+      ShipmentBucket.IN_TRANSIT,
+      ShipmentBucket.OUT_FOR_DELIVERY
+    ],
+    'IN_TRANSIT': [
+      ShipmentBucket.IN_TRANSIT,
+      ShipmentBucket.OUT_FOR_DELIVERY
+    ],
+    'NDR': [ShipmentBucket.NDR],
+    'DELIVERED': [ShipmentBucket.DELIVERED],
+    'RTO': [
+      ShipmentBucket.RTO,
+      ShipmentBucket.RTO_DELIVERED
+    ],
+    'CANCELLED': [
+      ShipmentBucket.CANCELLED_ORDER,
+      ShipmentBucket.CANCELLED_SHIPMENT
+    ],
+    'CANCELLED_ORDER': [ShipmentBucket.CANCELLED_ORDER],
+    'CANCELLED_SHIPMENT': [ShipmentBucket.CANCELLED_SHIPMENT],
+    'LOST_DAMAGED': [ShipmentBucket.LOST_DAMAGED],
+    'DISPOSED': [ShipmentBucket.DISPOSED],
+    'EXCEPTION': [ShipmentBucket.EXCEPTION],
+    'AWAITING': [ShipmentBucket.AWAITING],
+    'COURIER_ASSIGNED': [ShipmentBucket.COURIER_ASSIGNED],
+    'PICKUP_SCHEDULED': [ShipmentBucket.PICKUP_SCHEDULED],
+    'PICKED_UP': [ShipmentBucket.PICKED_UP],
+    'OUT_FOR_DELIVERY': [ShipmentBucket.OUT_FOR_DELIVERY],
+    'ALL': [] // Special case - no bucket filter
+  };
+
+  const normalizedStatus = status.toUpperCase();
+  return statusMap[normalizedStatus] || [];
+};
+
+/**
+ * Maps bucket number to readable status string
+ */
+export const getBucketStatus = (bucket: number | null | undefined): string => {
+  if (bucket === null || bucket === undefined) return 'AWAITING';
+  
+  const bucketMap: Record<number, string> = {
+    [ShipmentBucket.NEW]: 'NEW',
+    [ShipmentBucket.READY_TO_SHIP]: 'READY_TO_SHIP',
+    [ShipmentBucket.IN_TRANSIT]: 'IN_TRANSIT',
+    [ShipmentBucket.NDR]: 'NDR',
+    [ShipmentBucket.DELIVERED]: 'DELIVERED',
+    [ShipmentBucket.RTO]: 'RTO',
+    [ShipmentBucket.RTO_DELIVERED]: 'RTO_DELIVERED',
+    [ShipmentBucket.CANCELLED_ORDER]: 'CANCELLED',
+    [ShipmentBucket.LOST_DAMAGED]: 'LOST_DAMAGED',
+    [ShipmentBucket.DISPOSED]: 'DISPOSED',
+    [ShipmentBucket.COURIER_ASSIGNED]: 'COURIER_ASSIGNED',
+    [ShipmentBucket.PICKUP_SCHEDULED]: 'PICKUP_SCHEDULED',
+    [ShipmentBucket.PICKED_UP]: 'PICKED_UP',
+    [ShipmentBucket.OUT_FOR_DELIVERY]: 'OUT_FOR_DELIVERY',
+    [ShipmentBucket.EXCEPTION]: 'EXCEPTION',
+    [ShipmentBucket.CANCELLED_SHIPMENT]: 'CANCELLED_SHIPMENT',
+    [ShipmentBucket.AWAITING]: 'AWAITING',
+  };
+  
+  return bucketMap[bucket] || 'AWAITING';
+};
+
+/**
+ * Get bucket from status string
+ */
+export const getShipmentBucket = (status: string): number => {
+  const statusToBucket: Record<string, number> = {
+    "NEW": ShipmentBucket.NEW,
+    "READY_TO_SHIP": ShipmentBucket.READY_TO_SHIP,
+    "COURIER_ASSIGNED": ShipmentBucket.COURIER_ASSIGNED,
+    "PICKUP_SCHEDULED": ShipmentBucket.PICKUP_SCHEDULED,
+    "PICKED_UP": ShipmentBucket.PICKED_UP,
+    "IN_TRANSIT": ShipmentBucket.IN_TRANSIT,
+    "OUT_FOR_DELIVERY": ShipmentBucket.OUT_FOR_DELIVERY,
+    "DELIVERED": ShipmentBucket.DELIVERED,
+    "NDR": ShipmentBucket.NDR,
+    "RTO": ShipmentBucket.RTO,
+    "RTO_DELIVERED": ShipmentBucket.RTO_DELIVERED,
+    "CANCELLED": ShipmentBucket.CANCELLED_ORDER,
+    "CANCELLED_ORDER": ShipmentBucket.CANCELLED_ORDER,
+    "CANCELLED_SHIPMENT": ShipmentBucket.CANCELLED_SHIPMENT,
+    "LOST_DAMAGED": ShipmentBucket.LOST_DAMAGED,
+    "DISPOSED": ShipmentBucket.DISPOSED,
+    "EXCEPTION": ShipmentBucket.EXCEPTION,
+    "AWAITING": ShipmentBucket.AWAITING,
+  };
+  return statusToBucket[status.toUpperCase()] ?? ShipmentBucket.NEW;
+};
+
 // Define the bucket-to-status map (number to string)
 export const bucketToStatusMap: Record<number, string> = {
   [ShipmentBucket.ALL]: 'ALL',
