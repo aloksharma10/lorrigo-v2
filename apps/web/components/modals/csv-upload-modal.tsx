@@ -2,7 +2,7 @@
 
 import type React from 'react';
 import { useState, useEffect, useCallback } from 'react';
-import { X, Upload, AlertCircle, MinusCircle, Check, ChevronsUpDown, Save, Pencil, Trash2, Edit } from 'lucide-react';
+import { X, Upload, AlertCircle, MinusCircle, Check, ChevronsUpDown, Save, Pencil, Trash2 } from 'lucide-react';
 import {
   Button,
   Dialog,
@@ -27,11 +27,6 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -301,7 +296,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
     onMappingChange,
     fields,
     onSubmit,
-    enableMappingPreferences = false,
+    enableMappingPreferences = true,
     preferenceKey,
   } = props;
 
@@ -419,10 +414,10 @@ export function CSVUploadModal(props: CSVUploadProps) {
   };
 
   // Handle delete mapping preference
-  const handleDeletePreference = (preferenceName: string) => {
+  const handleDeletePreference = (preference: MappingPreference) => {
     // Confirm before deleting
-    if (window.confirm(`Are you sure you want to delete the mapping "${preferenceName}"?`)) {
-      deleteMappingPreference(preferenceName, actualPreferenceKey);
+    if (window.confirm(`Are you sure you want to delete the mapping "${preference.name}"?`)) {
+      deleteMappingPreference(preference.name, preference.key);
     }
   };
 
@@ -517,16 +512,33 @@ export function CSVUploadModal(props: CSVUploadProps) {
       }}>
         <DialogContent className={cn("sm:max-w-[700px] max-h-[90vh] overflow-y-auto", dialogClassName)}>
           <DialogHeader>
-            <DialogTitle>
-              {state.step === 'upload' && title}
-              {state.step === 'mapping' && 'Map CSV Fields'}
-              {state.step === 'processing' && 'Processing CSV File'}
-            </DialogTitle>
-            <DialogDescription>
-              {state.step === 'upload' && description}
-              {state.step === 'mapping' && 'Map your CSV columns to the required fields below.'}
-              {state.step === 'processing' && 'Your file is being processed. This may take a few moments.'}
-            </DialogDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle>
+                  {state.step === 'upload' && title}
+                  {state.step === 'mapping' && 'Map CSV Fields'}
+                  {state.step === 'processing' && 'Processing CSV File'}
+                </DialogTitle>
+                <DialogDescription>
+                  {state.step === 'upload' && description}
+                  {state.step === 'mapping' && 'Map your CSV columns to the required fields below.'}
+                  {state.step === 'processing' && 'Your file is being processed. This may take a few moments.'}
+                </DialogDescription>
+              </div>
+              {(showMinimize || state.step === 'processing') && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    toggleMinimized();
+                    setOpen(false);
+                  }}
+                  className="h-6 w-6"
+                >
+                  <MinusCircle className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </DialogHeader>
 
           {state.validationError && (
@@ -563,52 +575,64 @@ export function CSVUploadModal(props: CSVUploadProps) {
               {enableMappingPreferences && mappingPreferences.length > 0 && (
                 <div className="space-y-2">
                   <Label>Load Saved Mapping</Label>
-                  <Select
-                    onValueChange={(value) => {
-                      if (value === "manage") return;
-                      const mapping = mappingPreferences.find(m => m.name === value);
-                      if (mapping) applySavedMapping(mapping.mapping);
-                    }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Choose a saved mapping..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mappingPreferences.map(mapping => (
-                        <SelectItem key={mapping.name} value={mapping.name} className="flex items-center justify-between">
-                          <div className="flex items-center justify-between w-full pr-2">
-                            <span>{mapping.name}</span>
-                            <div className="flex space-x-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleEditPreference(mapping);
-                                }}
-                                className="h-6 w-6"
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className="w-full justify-between"
+                      >
+                        Choose a saved mapping...
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                      <Command>
+                        <CommandInput placeholder="Search saved mappings..." />
+                        <CommandList>
+                          <CommandEmpty>No saved mappings found.</CommandEmpty>
+                          <CommandGroup>
+                            {mappingPreferences.map(mapping => (
+                              <CommandItem
+                                key={mapping.name}
+                                value={mapping.name}
+                                onSelect={() => applySavedMapping(mapping.mapping)}
+                                className="flex items-center justify-between w-full"
                               >
-                                <Edit className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleDeletePreference(mapping.name);
-                                }}
-                                className="h-6 w-6 text-red-500 hover:text-red-700"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                                <span>{mapping.name}</span>
+                                <div className="flex items-center gap-1 ml-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      handleEditPreference(mapping);
+                                    }}
+                                    className="h-6 w-6 opacity-70 hover:opacity-100"
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      handleDeletePreference(mapping);
+                                    }}
+                                    className="h-6 w-6 text-red-500 hover:text-red-700 opacity-70 hover:opacity-100"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               )}
 
@@ -725,21 +749,6 @@ export function CSVUploadModal(props: CSVUploadProps) {
               <p className="text-center text-sm text-muted-foreground">
                 {state.progress < 100 ? `Processing: ${Math.round(state.progress)}%` : 'Complete!'}
               </p>
-              {showMinimize && (
-                <div className="flex justify-end">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      toggleMinimized();
-                      setOpen(false);
-                    }}
-                  >
-                    <MinusCircle className="mr-2 h-4 w-4" />
-                    Minimize
-                  </Button>
-                </div>
-              )}
             </div>
           )}
 

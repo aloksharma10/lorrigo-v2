@@ -392,6 +392,10 @@ export class OrderService {
    * Create a new order
    */
   async createOrder(data: OrderFormValues, userId: string, userName: string) {
+    const MAX_RETRIES = 2;
+    let attempt = 0;
+
+  while (attempt < MAX_RETRIES) {
     try {
       // Create order transaction with schema-aligned optimizations
       return await this.fastify.prisma.$transaction(
@@ -583,7 +587,7 @@ export class OrderService {
                   },
                 },
               },
-              payment_mode:
+              payment_mode: 
                 (data.paymentMethod.paymentMethod?.toUpperCase() as PaymentMethod) || 'COD',
               order_channel_config_id: orderChannelConfig.id,
               total_amount: data.productDetails.taxableValue,
@@ -651,13 +655,26 @@ export class OrderService {
         },
         {
           // OPTIMIZATION 9: Configure transaction settings for better performance
-          maxWait: 5000, // 5 seconds max wait
-          timeout: 10000, // 10 seconds timeout
-          isolationLevel: 'ReadCommitted', // Less strict isolation for better performance
+          maxWait: 5000,
+          timeout: 10000,
+          isolationLevel: 'ReadCommitted',
         }
       );
     } catch (error: any) {
-      // Enhanced error handling
+      // If duplicate code error, increment attempt and retry
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002' &&
+        (error.meta?.target as any)?.includes?.('code')
+      ) {
+        attempt += 1;
+        // Small delay to allow sequence numbers to advance under concurrency
+        await new Promise((res) => setTimeout(res, 10));
+        continue; // retry
+      }
+
+      // Existing error handling below (moved)
+
       if (error.message === 'Order number already exists. Please try another order number.') {
         throw error;
       }
@@ -668,7 +685,7 @@ export class OrderService {
           P2025: 'Required record not found: Customer, address, or hub does not exist.',
           P2003: 'Foreign key constraint failed: Invalid reference to related record.',
           P2034: 'Transaction failed due to a write conflict or deadlock. Please retry.',
-        };
+        } as const;
         throw new Error(
           errorMap[error.code as keyof typeof errorMap] || `Database error: ${error.message}`
         );
@@ -680,6 +697,10 @@ export class OrderService {
           : 'An unexpected error occurred while creating the order. Please try again.'
       );
     }
+  }
+
+    // If we reach here, retries exhausted
+    throw new Error('Failed to create order after multiple retries due to duplicate code.');
   }
 
   // OPTIMIZATION 10: Add method with caching for frequently called operations
@@ -1083,145 +1104,5 @@ export class OrderService {
         RETURNED: status_counts.RETURNED || 0,
       },
     };
-  }
-
-  /**
-   * Bulk upload orders
-   */
-  async bulkUploadOrders(csvContent: string, headerMapping: Record<string, string>, userId: string, userName: string) {
-    try {
-      // Generate operation ID
-      const operationId = generateId({
-        tableName: 'bulk_operation',
-        entityName: 'bulk_order_upload',
-        lastUsedFinancialYear: getFinancialYear(new Date()),
-        lastSequenceNumber: 0,
-      }).id;
-
-      // Create bulk operation record
-      const bulkOperation = await this.fastify.prisma.bulkOperation.create({
-        data: {
-          id: operationId,
-          code: operationId,
-          type: 'BULK_ORDER_UPLOAD',
-          status: 'PENDING',
-          user_id: userId,
-          total_count: 0, // Will be updated after CSV parsing
-          processed_count: 0,
-          success_count: 0,
-          failed_count: 0,
-          created_at: new Date(),
-        },
-      });
-
-      // Add job to queue for processing
-      await addJob(
-        QueueNames.BULK_ORDER_UPLOAD,
-        BulkOrderJobType.PROCESS_BULK_ORDERS,
-        {
-          operationId: bulkOperation.id,
-          userId,
-          userName,
-          csvContent,
-          headerMapping,
-        },
-        {
-          priority: 1, // High priority for bulk uploads
-          attempts: 3,
-        }
-      );
-
-      return {
-        operationId: bulkOperation.id,
-        status: 'PENDING',
-        totalOrders: 0, // Will be determined during processing
-      };
-    } catch (error) {
-      this.fastify.log.error('Error initiating bulk upload:', error);
-      throw new Error(
-        error instanceof Error
-          ? `Failed to initiate bulk upload: ${error.message}`
-          : 'Failed to initiate bulk upload'
-      );
-    }
-  }
-
-  /**
-   * Get bulk upload operation status
-   */
-  async getBulkUploadStatus(operationId: string, userId: string) {
-    try {
-      const operation = await this.fastify.prisma.bulkOperation.findFirst({
-        where: {
-          id: operationId,
-          user_id: userId,
-          type: 'BULK_ORDER_UPLOAD',
-        },
-      });
-
-      if (!operation) {
-        return null;
-      }
-
-      // Calculate progress percentage
-      const progress = operation.total_count > 0 
-        ? Math.floor((operation.processed_count / operation.total_count) * 100)
-        : 0;
-
-      return {
-        id: operation.id,
-        status: operation.status,
-        totalCount: operation.total_count,
-        processedCount: operation.processed_count,
-        successCount: operation.success_count,
-        failedCount: operation.failed_count,
-        progress,
-        createdAt: operation.created_at,
-        reportPath: operation.report_path,
-        errorMessage: operation.error_message,
-      };
-    } catch (error) {
-      this.fastify.log.error('Error getting bulk upload status:', error);
-      throw new Error(
-        error instanceof Error
-          ? `Failed to get bulk upload status: ${error.message}`
-          : 'Failed to get bulk upload status'
-      );
-    }
-  }
-
-  /**
-   * Download bulk upload report
-   */
-  async downloadBulkUploadReport(operationId: string, userId: string) {
-    try {
-      const operation = await this.fastify.prisma.bulkOperation.findFirst({
-        where: {
-          id: operationId,
-          user_id: userId,
-          type: 'BULK_ORDER_UPLOAD',
-        },
-      });
-
-      if (!operation) {
-        throw new Error('Bulk upload operation not found');
-      }
-
-      if (!operation.report_path) {
-        throw new Error('Report not available for this operation');
-      }
-
-      return {
-        filePath: operation.report_path,
-        fileName: `bulk_order_report_${operationId}.csv`,
-      };
-    } catch (error) {
-      this.fastify.log.error('Error downloading bulk upload report:', error);
-      throw new Error(
-        error instanceof Error
-          ? `Failed to download report: ${error.message}`
-          : 'Failed to download report'
-      );
-    }
   }
 }

@@ -3,15 +3,15 @@
 import { useState } from 'react';
 import { CSVUploadModal, type CSVField, type HeaderMapping, type CSVUploadResult } from '@/components/modals/csv-upload-modal';
 import { BulkUploadStatusModal } from '@/components/modals/bulk-upload-status-modal';
-import { useBulkOrderUpload } from '@/lib/hooks/apis/use-bulk-order-upload';
+import { useOrderOperations } from '@/lib/apis/order';
 import { toast } from '@lorrigo/ui/components';
 
 // CSV field definitions for order upload
 const orderCSVFields: CSVField[] = [
   // Order metadata
   { key: 'orderId', label: 'Order ID', required: true, description: 'Unique order identifier' },
-  // { key: 'orderChannel', label: 'Order Channel', description: 'Sales channel (e.g., SHOPIFY, AMAZON)' },
-  // { key: 'orderType', label: 'Order Type', description: 'domestic or international' },
+  { key: 'orderChannel', label: 'Order Channel', description: 'Sales channel (e.g., SHOPIFY, AMAZON)' },
+  { key: 'orderType', label: 'Order Type', description: 'domestic or international' },
   { key: 'pickupAddressId', label: 'Pickup Address ID', required: true, description: 'Hub/pickup location ID' },
   
   // Customer details
@@ -38,8 +38,8 @@ const orderCSVFields: CSVField[] = [
   { key: 'productSku', label: 'Product SKU' },
   { key: 'productQuantity', label: 'Quantity', required: true },
   { key: 'productPrice', label: 'Product Price', required: true },
-  // { key: 'productTax', label: 'Tax Rate (%)' },
-  // { key: 'productHsn', label: 'HSN Code' },
+  { key: 'productTax', label: 'Tax Rate (%)' },
+  { key: 'productHsn', label: 'HSN Code' },
   { key: 'taxableValue', label: 'Taxable Value', required: true },
   
   // Package details
@@ -54,15 +54,15 @@ const orderCSVFields: CSVField[] = [
   
   // Invoice details
   { key: 'orderInvoiceNumber', label: 'Invoice Number' },
-  // { key: 'orderInvoiceDate', label: 'Invoice Date' },
-  // { key: 'ewaybill', label: 'E-waybill Number' },
+  { key: 'orderInvoiceDate', label: 'Invoice Date' },
+  { key: 'ewaybill', label: 'E-waybill Number' },
 ];
 
 export default function BulkOrderUploadPage() {
   const [operationId, setOperationId] = useState<string | null>(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
   
-  const bulkUploadMutation = useBulkOrderUpload();
+  const { bulkOrderUploadMutation } = useOrderOperations();
 
   const handleCSVUpload = async (file: File, mapping: HeaderMapping): Promise<CSVUploadResult> => {
     try {
@@ -81,19 +81,19 @@ export default function BulkOrderUploadPage() {
       }
 
       // Submit to backend
-      const result = await bulkUploadMutation.mutateAsync({
-        csvContent,
-        headerMapping: mapping,
+      const result = await bulkOrderUploadMutation.mutateAsync({
+        file,
+        mapping,
       });
 
       // Set operation ID and show status modal
-      setOperationId(result.operationId);
+      setOperationId(result.operationId || null);
       setShowStatusModal(true);
 
       return {
         success: true,
         processedRows: 0, // Will be updated via status modal
-        data: result,
+        // data: result || {},
       };
     } catch (error) {
       console.error('Upload error:', error);
@@ -165,7 +165,6 @@ export default function BulkOrderUploadPage() {
           title="Upload Order CSV"
           description="Upload your CSV file and map the columns to the required fields."
           buttonLabel="Upload Orders CSV"
-          enableMappingPreferences={true}
           preferenceKey="bulk_orders"
           maxFileSize={50}
           acceptedFileTypes={['.csv']}
@@ -177,9 +176,8 @@ export default function BulkOrderUploadPage() {
       {operationId && (
         <BulkUploadStatusModal
           operationId={operationId}
-          open={showStatusModal}
-          onOpenChange={setShowStatusModal}
-          onComplete={() => {
+          isOpen={showStatusModal}
+          onClose={() => {
             setOperationId(null);
             setShowStatusModal(false);
           }}

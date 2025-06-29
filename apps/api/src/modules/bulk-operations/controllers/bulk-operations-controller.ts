@@ -1,6 +1,10 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { BulkOperationsService } from '../services/bulk-operations-service';
-import fs from 'fs';
+import fs from 'fs-extra';
+import { randomUUID } from 'crypto';
+import path from 'path';
+import { addJob, Job, QueueNames } from '@/lib/queue';
+import { BulkOrderJobType } from '@/modules/orders/queues/bulk-order-worker';
 
 /**
  * Controller for bulk operations API endpoints
@@ -67,9 +71,17 @@ export class BulkOperationsController {
 
       const operation = await this.bulkOperationsService.getBulkOperation(id, userId);
 
+      const progress = operation.total_count > 0 
+      ? Math.floor((operation.processed_count / operation.total_count) * 100)
+      : 0;
+
       return reply.code(200).send({
         success: true,
         data: operation,
+        progress: progress,
+        createdAt: operation.created_at,
+        reportPath: operation.report_path,
+        errorMessage: operation.error_message,
       });
     } catch (error: any) {
       request.log.error(`Error getting bulk operation: ${error.message}`);
@@ -322,6 +334,114 @@ export class BulkOperationsController {
         success: false,
         message: 'Failed to edit bulk pickup addresses',
         error: error.message,
+      });
+    }
+  }
+
+  /**
+   * Bulk upload orders
+   */
+  async bulkUploadOrders(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const userId = request.userPayload!.id;
+      const userName = request.userPayload!.name || 'Unknown';
+
+      // Parse multipart form data
+      const data = await request.file();
+      
+      if (!data) {
+        return reply.status(400).send({ 
+          status: 'error', 
+          message: 'No file uploaded' 
+        });
+      }
+
+      // Validate file type
+      if (!data.mimetype.includes('csv')) {
+        return reply.status(400).send({ 
+          status: 'error', 
+          message: 'Only CSV files are allowed' 
+        });
+      }
+
+      // Create temporary directory if not exists
+      const tmpDir = path.join(process.cwd(), 'tmp');
+      await fs.ensureDir(tmpDir);
+
+      // Generate unique filename
+      const timestamp = Date.now();
+      const uniqueId = randomUUID().split('-')[0];
+      const fileName = `${timestamp}-${uniqueId}-${data.filename}`;
+      const filePath = path.join(tmpDir, fileName);
+
+      // Save file
+      const writeStream = fs.createWriteStream(filePath);
+      await new Promise<void>((res, rej) => {
+        (data.file as any).pipe(writeStream)
+          .on('finish', () => res())
+          .on('error', rej);
+      });
+
+      // Create bulk operation record
+      const operationCode = `BO-${timestamp}-${uniqueId}`;
+      const bulkOperation = await request.server.prisma.bulkOperation.create({
+        data: {
+          code: operationCode,
+          type: 'ORDER_UPLOAD',
+          status: 'PENDING',
+          user_id: userId,
+          total_count: 0,
+          processed_count: 0,
+          success_count: 0,
+          failed_count: 0,
+          file_path: filePath,
+        },
+      });
+
+      // Parse header mapping if provided as form field
+      let headerMapping: Record<string, string> = {};
+      const mappingField = (data as any).fields?.mapping;
+      if (mappingField) {
+        try {
+          const raw = Buffer.isBuffer(mappingField.value) ? mappingField.value.toString() : mappingField.value;
+          headerMapping = JSON.parse(raw);
+        } catch (err) {
+          request.log.warn('Invalid mapping JSON provided, proceeding with empty mapping');
+        }
+      }
+
+      // Enqueue job for processing
+      const job = await addJob(
+        QueueNames.BULK_ORDER_UPLOAD, 
+        BulkOrderJobType.PROCESS_BULK_ORDERS, 
+        { 
+          filePath, 
+          originalFilename: data.filename,
+          userId,
+          userName,
+          operationId: bulkOperation.id,
+          headerMapping,
+        },
+        {
+          priority: 1,
+          attempts: 3,
+        }
+      ) as Job<unknown, unknown, string>;
+
+      const jobIdStr = (job as any).id as string;
+
+      return {
+        status: 'queued',
+        jobId: jobIdStr,
+        operationId: bulkOperation.id,
+        filePath,
+        message: 'CSV file queued for processing',
+      };
+    } catch (error) {
+      return reply.status(500).send({ 
+        status: 'error', 
+        message: 'Failed to upload CSV',
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   }

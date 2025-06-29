@@ -9,6 +9,8 @@ import pLimit from 'p-limit';
 import fs from 'fs/promises';
 import path from 'path';
 import { prisma } from '@lorrigo/db';
+import { parse as parseCsvSync } from 'csv-parse/sync';
+import { parse as parseDateFns, isValid as isValidDateFns } from 'date-fns';
 
 // Job types for bulk order processing
 export enum BulkOrderJobType {
@@ -27,6 +29,7 @@ export interface BulkOrderJobData {
   orders?: OrderFormValues[]; // For backward compatibility
   batchIndex?: number;
   totalBatches?: number;
+  filePath?: string;
 }
 
 export interface BulkOrderResult {
@@ -53,6 +56,7 @@ export function initBulkOrderWorker(fastify: FastifyInstance, orderService: Orde
       try {
         switch (job.name) {
           case BulkOrderJobType.PROCESS_BULK_ORDERS:
+          case 'processBulkOrders': // <- legacy/alias
             return await processBulkOrders(job, fastify, orderService);
           case BulkOrderJobType.VALIDATE_ORDERS:
             return await validateOrders(job, fastify);
@@ -146,16 +150,24 @@ async function processBulkOrders(
   duration: number;
 }> {
   const startTime = Date.now();
-  const { operationId, userId, userName, csvContent, headerMapping } = job.data;
+  const { operationId, userId, userName, csvContent: csvInput, headerMapping, filePath } = job.data as any;
   
   try {
-    if (!csvContent || !headerMapping) {
-      throw new Error('CSV content and header mapping are required');
+    // Load CSV content if only filePath is provided
+    const csvText = csvInput ?? (filePath ? await fs.readFile(filePath, 'utf-8') : null);
+    if (!csvText) {
+      throw new Error('CSV content is required');
+    }
+
+    if (!headerMapping) {
+      // If no mapping provided, assume headers match expected order keys directly
+      console.warn('Header mapping not provided, using auto mapping based on CSV headers');
     }
 
     // Parse CSV and transform to orders
-    const csvData = parseCsvContent(csvContent);
-    const ordersToProcess = transformCsvToOrders(csvData, headerMapping);
+    const csvData = parseCsvContent(csvText);
+    const effectiveMapping = headerMapping || {};
+    const ordersToProcess = transformCsvToOrders(csvData, effectiveMapping);
     
     // Update total count in database
     await fastify.prisma.bulkOperation.update({
@@ -225,6 +237,16 @@ async function processBulkOrders(
 
     await job.updateProgress(100);
 
+    // Delete the uploaded CSV file after processing to free disk space
+    if (filePath) {
+      try {
+        await fs.unlink(filePath);
+        fastify.log.info(`Deleted temporary CSV file: ${filePath}`);
+      } catch (deleteErr) {
+        fastify.log.warn(`Failed to delete temporary CSV file ${filePath}: ${deleteErr instanceof Error ? deleteErr.message : deleteErr}`);
+      }
+    }
+
     const endTime = Date.now();
     const duration = (endTime - startTime) / 1000;
 
@@ -279,11 +301,59 @@ async function processOrderChunk(
           timestamp: new Date(),
         };
       } catch (error) {
+        // Handle duplicate Order ID error by generating a new one and retrying once
+        const errMsg = error instanceof Error ? error.message : String(error);
+        if (errMsg.includes('Order Id already exists')) {
+          try {
+            const newOrderId = `${order.orderId}_${Date.now()}`;
+            order.orderId = newOrderId;
+            const createdOrder = await orderService.createOrder(order, userId, userName);
+            return {
+              orderId: newOrderId,
+              success: true,
+              message: 'Order created successfully (duplicate resolved with new ID)',
+              data: createdOrder,
+              timestamp: new Date(),
+            };
+          } catch (retryErr) {
+            // Retry when order.code duplicate error occurs
+            if (errMsg.includes('Unique constraint failed') && errMsg.includes('code')) {
+              try {
+                // Just retry once – createOrder recomputes code based on fresh order count
+                const createdOrder = await orderService.createOrder(order, userId, userName);
+                return {
+                  orderId: order.orderId,
+                  success: true,
+                  message: 'Order created successfully (duplicate code resolved with retry)',
+                  data: createdOrder,
+                  timestamp: new Date(),
+                };
+              } catch (retryErr2) {
+                return {
+                  orderId: order.orderId,
+                  success: false,
+                  message: 'Failed to create order (duplicate code)',
+                  error: retryErr2 instanceof Error ? retryErr2.message : 'Unknown error',
+                  timestamp: new Date(),
+                };
+              }
+            }
+
+            return {
+              orderId: order.orderId,
+              success: false,
+              message: 'Failed to create order',
+              error: errMsg,
+              timestamp: new Date(),
+            };
+          }
+        }
+
         return {
           orderId: order.orderId,
           success: false,
           message: 'Failed to create order',
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: errMsg,
           timestamp: new Date(),
         };
       }
@@ -430,28 +500,13 @@ async function createOrdersBatch(
 
 // CSV parsing and transformation functions
 function parseCsvContent(csvText: string): any[] {
-  const lines = csvText.split('\n').filter(line => line.trim());
-  if (lines.length < 2) return [];
-  
-  const firstLine = lines[0];
-  if (!firstLine) return [];
-  
-  const headers = firstLine.split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-  const data = [];
-  
-  for (let i = 1; i < lines.length; i++) {
-    const currentLine = lines[i];
-    if (!currentLine) continue;
-    
-    const values = currentLine.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
-    const row: any = {};
-    headers.forEach((header, index) => {
-      row[header] = values[index] || '';
-    });
-    data.push(row);
-  }
-  
-  return data;
+  // Use csv-parse for robust parsing (handles quotes, commas, line breaks)
+  const records = parseCsvSync(csvText, {
+    columns: true,
+    skip_empty_lines: true,
+    trim: true,
+  });
+  return records as any[];
 }
 
 function transformCsvToOrders(csvData: any[], mapping: Record<string, string>): OrderFormValues[] {
@@ -509,10 +564,10 @@ function transformCsvToOrders(csvData: any[], mapping: Record<string, string>): 
         },
         
         packageDetails: {
-          deadWeight: row[mapping.packageWeight || ''] || '0.5',
-          length: row[mapping.packageLength || ''] || '10',
-          breadth: row[mapping.packageBreadth || ''] || '10',
-          height: row[mapping.packageHeight || ''] || '10',
+          deadWeight: sanitizeNumber(row[mapping.packageWeight || ''], 0.5).toString(),
+          length: sanitizeNumber(row[mapping.packageLength || ''], 10).toString(),
+          breadth: sanitizeNumber(row[mapping.packageBreadth || ''], 10).toString(),
+          height: sanitizeNumber(row[mapping.packageHeight || ''], 10).toString(),
           volumetricWeight: '0',
         },
         
@@ -522,7 +577,7 @@ function transformCsvToOrders(csvData: any[], mapping: Record<string, string>): 
         
         amountToCollect: parseFloat(row[mapping.amountToCollect || '']) || 0,
         order_invoice_number: row[mapping.orderInvoiceNumber || ''] || '',
-        order_invoice_date: row[mapping.orderInvoiceDate || ''] || '',
+        order_invoice_date: parseInvoiceDate(row[mapping.orderInvoiceDate || '']),
         ewaybill: row[mapping.ewaybill || ''] || '',
       };
       
@@ -533,10 +588,45 @@ function transformCsvToOrders(csvData: any[], mapping: Record<string, string>): 
   });
 }
 
+function parseInvoiceDate(dateStr: string): string {
+  if (!dateStr) return '';
+
+  const formats = [
+    'dd-MM-yyyy',
+    'dd/MM/yyyy',
+    'MM-dd-yyyy',
+    'MM/dd/yyyy',
+    'yyyy-MM-dd',
+    'yyyy/MM/dd',
+  ];
+
+  for (const fmt of formats) {
+    const parsed = parseDateFns(dateStr, fmt, new Date());
+    if (isValidDateFns(parsed)) {
+      return parsed.toISOString();
+    }
+  }
+
+  // Fallback to native Date parsing
+  const native = new Date(dateStr);
+  if (isValidDateFns(native)) {
+    return native.toISOString();
+  }
+
+  // Invalid date
+  return '';
+}
+
 function chunkArray(array: any[], chunkSize: number): any[][] {
   const result: any[][] = [];
   for (let i = 0; i < array.length; i += chunkSize) {
     result.push(array.slice(i, i + chunkSize));
   }
   return result;
+}
+
+function sanitizeNumber(value: unknown, defaultValue: number = 0): number {
+  const num = typeof value === 'string' ? parseFloat(value.replace(/[^0-9.\-]/g, '')) : Number(value);
+  if (!isFinite(num) || isNaN(num)) return defaultValue;
+  return num;
 } 

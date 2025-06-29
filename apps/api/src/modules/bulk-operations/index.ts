@@ -40,4 +40,7 @@ export async function bulkOperationsRoutes(fastify: FastifyInstance) {
   
   // Edit bulk pickup addresses
   fastify.post('/pickup-addresses', { preHandler }, bulkOperationsController.editBulkPickupAddresses.bind(bulkOperationsController));
+
+  // Bulk upload orders
+  fastify.post('/orders', { preHandler }, bulkOperationsController.bulkUploadOrders.bind(bulkOperationsController));
 } 

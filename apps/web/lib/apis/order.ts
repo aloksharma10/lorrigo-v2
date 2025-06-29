@@ -8,6 +8,34 @@ import {
   ShipmentParams,
 } from '../type/response-types';
 import { useAuthToken } from '@/components/providers/token-provider';
+import { toast } from '@lorrigo/ui/components';
+
+export interface BulkUploadStatus {
+  id: string;
+  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  totalCount: number;
+  processedCount: number;
+  successCount: number;
+  failedCount: number;
+  progress: number;
+  createdAt: string;
+  reportPath?: string;
+  errorMessage?: string;
+}
+
+export interface BulkUploadPayload {
+  file: File;
+  mapping: Record<string, string>;
+}
+
+export interface BulkUploadResponse {
+  status: 'queued' | 'error';
+  jobId?: string;
+  operationId?: string;
+  filePath?: string;
+  message: string;
+}
+
 
 // Comprehensive hook for order operations
 export const useOrderOperations = (queryParams: OrderQueryParams = {}, orderId?: string) => {
@@ -101,6 +129,44 @@ export const useOrderOperations = (queryParams: OrderQueryParams = {}, orderId?:
   //    },
   //  });
 
+  const bulkOrderUploadMutation = useMutation<BulkUploadResponse, Error, BulkUploadPayload>({
+    mutationFn: async ({ file, mapping }): Promise<BulkUploadResponse> => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('mapping', JSON.stringify(mapping));
+
+      const response = await api.post<BulkUploadResponse>('/bulk-operations/orders', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      return response;
+    },
+    onSuccess: (data) => {
+      if (data.operationId) {
+        // Trigger initial status fetch
+        queryClient.invalidateQueries({ 
+          queryKey: ['bulk-operations', data.operationId] 
+        });
+      }
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to upload CSV');
+    }
+  });
+
+  const bulkOrderUploadStatusQuery = (operationId: string) => {
+    return useQuery({
+      queryKey: ['bulk-order-upload-status', operationId],
+      queryFn: async () => {
+        const response = await api.get<any>(`/bulk-operations/${operationId}`);
+        return response;
+      },
+      enabled: !!operationId && isTokenReady,
+      refetchInterval: 3000, // Refetch every 3 seconds
+      refetchOnWindowFocus: false,
+    });
+  };
+
   return {
     ordersQuery,
     orderQuery,
@@ -109,6 +175,8 @@ export const useOrderOperations = (queryParams: OrderQueryParams = {}, orderId?:
     cancelOrder,
     bulkCancelOrders,
     getOrderStats,
+    bulkOrderUploadMutation,
+    bulkOrderUploadStatusQuery,
   };
 };
 

@@ -124,50 +124,43 @@ export function CSVUploadProvider({
   const [mappingPreferences, setMappingPreferences] = useState<MappingPreference[]>([]);
 
   // Helper function to get all mapping preferences from localStorage
-  const getAllMappingPreferences = () => {
-    // Get all keys that start with 'csvMappingPreferences'
+  const getAllMappingPreferences = (): MappingPreference[] => {
     const allPreferences: MappingPreference[] = [];
-    
-    // Loop through localStorage
+
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith('csvMappingPreferences')) {
+      // Only consider keys that contain 'MappingPreferences' in their name
+      if (key && key.toLowerCase().includes('mappingpreferences')) {
         try {
-          const preferences = JSON.parse(localStorage.getItem(key) || '[]');
-          // Add the key to each preference
-          const preferencesWithKey = preferences.map((pref: MappingPreference) => ({
-            ...pref,
-            key: key
-          }));
-          allPreferences.push(...preferencesWithKey);
+          const stored = localStorage.getItem(key);
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            // Validate that it's an array of mapping preferences
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              // Check if the first item has the expected structure
+              const first = parsed[0];
+              if (first && typeof first === 'object' && 'name' in first && 'mapping' in first) {
+                const preferencesWithKey = parsed.map((pref: MappingPreference) => ({
+                  ...pref,
+                  key: key
+                }));
+                allPreferences.push(...preferencesWithKey);
+              }
+            }
+          }
         } catch (error) {
           console.error(`Error parsing preferences for key ${key}:`, error);
         }
       }
     }
-    
+
     return allPreferences;
   };
 
   // Load mapping preferences
   useEffect(() => {
     try {
-      // If we're using the default key, load all preferences
-      if (preferenceKey === 'csvMappingPreferences') {
-        setMappingPreferences(getAllMappingPreferences());
-      } else {
-        // Otherwise, load only preferences for this specific key
-        const saved = localStorage.getItem(preferenceKey);
-        if (saved) {
-          const preferences = JSON.parse(saved);
-          // Add the key to each preference
-          const preferencesWithKey = preferences.map((pref: MappingPreference) => ({
-            ...pref,
-            key: preferenceKey
-          }));
-          setMappingPreferences(preferencesWithKey);
-        }
-      }
+      setMappingPreferences(getAllMappingPreferences());
     } catch (error) {
       console.error('Error loading mapping preferences:', error);
     }
@@ -352,17 +345,8 @@ export function CSVUploadProvider({
       // Save to localStorage
       localStorage.setItem(storageKey, JSON.stringify(updatedPreferences));
       
-      // Update state
-      if (preferenceKey === 'csvMappingPreferences') {
-        // If we're using the default key, refresh all preferences
-        setMappingPreferences(getAllMappingPreferences());
-      } else {
-        // Otherwise, just update this specific preference
-        setMappingPreferences(prev => [
-          ...prev.filter(p => p.name !== name || p.key !== storageKey),
-          newPreference
-        ]);
-      }
+      // Refresh global state so all consumers update
+      setMappingPreferences(getAllMappingPreferences());
       
       toast.success('Mapping preference saved!');
     } catch (error) {
@@ -385,20 +369,8 @@ export function CSVUploadProvider({
       // Save to localStorage
       localStorage.setItem(storageKey, JSON.stringify(updatedPreferences));
       
-      // Update state
-      if (preferenceKey === 'csvMappingPreferences') {
-        // If we're using the default key, refresh all preferences
-        setMappingPreferences(getAllMappingPreferences());
-      } else {
-        // Otherwise, just update this specific preference
-        setMappingPreferences(prev => 
-          prev.map(p => 
-            (p.name === oldName && p.key === storageKey) 
-              ? { ...p, name: newName, mapping } 
-              : p
-          )
-        );
-      }
+      // Refresh global state so all consumers update
+      setMappingPreferences(getAllMappingPreferences());
       
       toast.success('Mapping preference updated!');
     } catch (error) {
@@ -419,16 +391,8 @@ export function CSVUploadProvider({
       // Save to localStorage
       localStorage.setItem(storageKey, JSON.stringify(updatedPreferences));
       
-      // Update state
-      if (preferenceKey === 'csvMappingPreferences') {
-        // If we're using the default key, refresh all preferences
-        setMappingPreferences(getAllMappingPreferences());
-      } else {
-        // Otherwise, just update this specific preference
-        setMappingPreferences(prev => 
-          prev.filter(p => !(p.name === name && p.key === storageKey))
-        );
-      }
+      // Refresh global state so all consumers update
+      setMappingPreferences(getAllMappingPreferences());
       
       toast.success('Mapping preference deleted!');
     } catch (error) {

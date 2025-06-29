@@ -12,7 +12,13 @@ export enum QueueNames {
   REPORT_GENERATION = 'report-generation',
   REMITTANCE_PROCESSING = 'remittance-processing',
   NDR_PROCESSING = 'ndr-processing',
+  CSV_PROCESSING = 'csv-processing',
 }
+
+// Define job types
+export const JobTypes = {
+  BULK_ORDER_UPLOAD: 'bulk-order-upload',
+};
 
 // Queue connection options
 const connectionOptions = {

@@ -4,6 +4,13 @@ import { OrderService } from './services/order-service';
 import { authorizeRoles } from '@/middleware/auth';
 import { Role } from '@lorrigo/db';
 import { initBulkOrderWorker } from './queues/bulk-order-worker';
+import path from 'path';
+import fs from 'fs-extra';
+import { randomUUID } from 'crypto';
+import { addJob, QueueNames } from '@/lib/queue';
+import { BulkOrderJobType } from './queues/bulk-order-worker';
+import { prisma } from '@lorrigo/db';
+import { Job } from 'bullmq';
 
 /**
  * Orders module routes
@@ -316,240 +323,99 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
     handler: (request, reply) => orderController.getOrderStats(request, reply),
   });
 
-  // Bulk upload orders
-  fastify.post('/bulk-upload', {
-    preHandler: [authorizeRoles([Role.SELLER])],
-    // schema: {
-    //   tags: ['Orders'],
-    //   summary: 'Bulk upload orders',
-    //   security: [{ bearerAuth: [] }],
-    //   body: {
-    //     type: 'object',
-    //     required: ['orders'],
-    //     properties: {
-    //       orders: {
-    //         type: 'array',
-    //         items: {
-    //           type: 'object',
-    //           required: [
-    //             'orderId',
-    //             'pickupAddressId',
-    //             'deliveryDetails',
-    //             'sellerDetails',
-    //             'productDetails',
-    //             'packageDetails',
-    //             'paymentMethod',
-    //           ],
-    //           properties: {
-    //             orderId: { type: 'string' },
-    //             orderChannel: { type: 'string' },
-    //             orderType: { type: 'string' },
-    //             pickupAddressId: { type: 'string' },
-    //             deliveryDetails: { type: 'object' },
-    //             sellerDetails: { type: 'object' },
-    //             productDetails: { type: 'object' },
-    //             packageDetails: { type: 'object' },
-    //             paymentMethod: { type: 'object' },
-    //             amountToCollect: { type: 'number' },
-    //             order_invoice_number: { type: 'string' },
-    //             order_invoice_date: { type: 'string' },
-    //             ewaybill: { type: 'string' },
-    //           },
-    //         },
-    //         maxItems: 100000,
-    //       },
-    //     },
-    //   },
-    //   response: {
-    //     202: {
-    //       type: 'object',
-    //       properties: {
-    //         message: { type: 'string' },
-    //         data: {
-    //           type: 'object',
-    //           properties: {
-    //             operationId: { type: 'string' },
-    //             status: { type: 'string' },
-    //             totalOrders: { type: 'integer' },
-    //           },
-    //         },
-    //       },
-    //     },
-    //     400: {
-    //       type: 'object',
-    //       properties: {
-    //         message: { type: 'string' },
-    //       },
-    //     },
-    //   },
-    // },
-    handler: (request, reply) => orderController.bulkUploadOrders(request, reply),
-  });
-
-  // Get bulk upload status
-  fastify.get('/bulk-upload/:operationId/status', {
-    preHandler: [authorizeRoles([Role.SELLER])],
-    schema: {
-      tags: ['Orders'],
-      summary: 'Get bulk upload operation status',
-      security: [{ bearerAuth: [] }],
-      params: {
-        type: 'object',
-        required: ['operationId'],
-        properties: {
-          operationId: { type: 'string' },
-        },
-      },
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            id: { type: 'string' },
-            status: { type: 'string' },
-            totalCount: { type: 'integer' },
-            processedCount: { type: 'integer' },
-            successCount: { type: 'integer' },
-            failedCount: { type: 'integer' },
-            progress: { type: 'integer' },
-            createdAt: { type: 'string', format: 'date-time' },
-            completedAt: { type: 'string', format: 'date-time' },
-            reportPath: { type: 'string' },
-            errorMessage: { type: 'string' },
-          },
-        },
-        404: {
-          type: 'object',
-          properties: {
-            message: { type: 'string' },
-          },
-        },
-      },
-    },
-    handler: (request, reply) => orderController.getBulkUploadStatus(request, reply),
-  });
-
-  // Download bulk upload report
-  fastify.get('/bulk-upload/:operationId/report', {
-    preHandler: [authorizeRoles([Role.SELLER])],
-    schema: {
-      tags: ['Orders'],
-      summary: 'Download bulk upload report',
-      security: [{ bearerAuth: [] }],
-      params: {
-        type: 'object',
-        required: ['operationId'],
-        properties: {
-          operationId: { type: 'string' },
-        },
-      },
-      response: {
-        200: {
-          type: 'string',
-          format: 'binary',
-        },
-        404: {
-          type: 'object',
-          properties: {
-            message: { type: 'string' },
-          },
-        },
-      },
-    },
-    handler: (request, reply) => orderController.downloadBulkUploadReport(request, reply),
-  });
-
+  // Below routes are not required 
   // Update an order
-  fastify.patch('/:id', {
-    schema: {
-      tags: ['Orders'],
-      summary: 'Update an order',
-      security: [{ bearerAuth: [] }],
-      params: {
-        type: 'object',
-        required: ['id'],
-        properties: {
-          id: { type: 'string' },
-        },
-      },
-      body: {
-        type: 'object',
-        required: [
-          'pickupAddressId',
-          'paymentMethod',
-          'deliveryDetails',
-          'sellerDetails',
-          'packageDetails',
-          'productDetails',
-        ],
-        properties: {
-          pickupAddressId: { type: 'string' },
-          paymentMethod: { type: 'object' },
-          deliveryDetails: { type: 'object' },
-          sellerDetails: { type: 'object' },
-          packageDetails: { type: 'object' },
-          productDetails: { type: 'object' },
-        },
-      },
-    },
-    handler: (request: FastifyRequest<{ Params: { id: string } }>, reply) =>
-      orderController.updateOrder(request, reply),
-  });
+  // fastify.patch('/:id', {
+  //   schema: {
+  //     tags: ['Orders'],
+  //     summary: 'Update an order',
+  //     security: [{ bearerAuth: [] }],
+  //     params: {
+  //       type: 'object',
+  //       required: ['id'],
+  //       properties: {
+  //         id: { type: 'string' },
+  //       },
+  //     },
+  //     body: {
+  //       type: 'object',
+  //       required: [
+  //         'pickupAddressId',
+  //         'paymentMethod',
+  //         'deliveryDetails',
+  //         'sellerDetails',
+  //         'packageDetails',
+  //         'productDetails',
+  //       ],
+  //       properties: {
+  //         pickupAddressId: { type: 'string' },
+  //         paymentMethod: { type: 'object' },
+  //         deliveryDetails: { type: 'object' },
+  //         sellerDetails: { type: 'object' },
+  //         packageDetails: { type: 'object' },
+  //         productDetails: { type: 'object' },
+  //       },
+  //     },
+  //   },
+  //   handler: (request: FastifyRequest<{ Params: { id: string } }>, reply) =>
+  //     orderController.updateOrder(request, reply),
+  // });
 
-  // Update an order status
-  fastify.patch('/:id/status', {
-    schema: {
-      tags: ['Orders'],
-      summary: 'Update order status',
-      security: [{ bearerAuth: [] }],
-      params: {
-        type: 'object',
-        required: ['id'],
-        properties: {
-          id: { type: 'string' },
-        },
-      },
-      body: {
-        type: 'object',
-        required: ['status'],
-        properties: {
-          status: {
-            type: 'string',
-            enum: [
-              'NEW',
-              'COURIER_ASSIGNED',
-              'PICKUP_SCHEDULED',
-              'OUT_FOR_PICKUP',
-              'IN_TRANSIT',
-              'OUT_FOR_DELIVERY',
-              'DELIVERED',
-              'NDR',
-              'RETURNED',
-              'EXCEPTION',
-              'CANCELLED_SHIPMENT',
-              'CANCELLED_ORDER',
-            ],
-          },
-          notes: { type: 'string' },
-        },
-      },
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            id: { type: 'string' },
-            orderNumber: { type: 'string' },
-            status: { type: 'string' },
-            updatedAt: { type: 'string', format: 'date-time' },
-          },
-        },
-      },
-    },
-    handler: async (
-      request: FastifyRequest<{
-        Params: { id: string };
-        Body: { status: string; notes?: string };
-      }>,
-      reply
-    ) => orderController.updateOrderStatus(request, reply),
-  });
+  // // Update an order status
+  // fastify.patch('/:id/status', {
+  //   schema: {
+  //     tags: ['Orders'],
+  //     summary: 'Update order status',
+  //     security: [{ bearerAuth: [] }],
+  //     params: {
+  //       type: 'object',
+  //       required: ['id'],
+  //       properties: {
+  //         id: { type: 'string' },
+  //       },
+  //     },
+  //     body: {
+  //       type: 'object',
+  //       required: ['status'],
+  //       properties: {
+  //         status: {
+  //           type: 'string',
+  //           enum: [
+  //             'NEW',
+  //             'COURIER_ASSIGNED',
+  //             'PICKUP_SCHEDULED',
+  //             'OUT_FOR_PICKUP',
+  //             'IN_TRANSIT',
+  //             'OUT_FOR_DELIVERY',
+  //             'DELIVERED',
+  //             'NDR',
+  //             'RETURNED',
+  //             'EXCEPTION',
+  //             'CANCELLED_SHIPMENT',
+  //             'CANCELLED_ORDER',
+  //           ],
+  //         },
+  //         notes: { type: 'string' },
+  //       },
+  //     },
+  //     response: {
+  //       200: {
+  //         type: 'object',
+  //         properties: {
+  //           id: { type: 'string' },
+  //           orderNumber: { type: 'string' },
+  //           status: { type: 'string' },
+  //           updatedAt: { type: 'string', format: 'date-time' },
+  //         },
+  //       },
+  //     },
+  //   },
+  //   handler: async (
+  //     request: FastifyRequest<{
+  //       Params: { id: string };
+  //       Body: { status: string; notes?: string };
+  //     }>,
+  //     reply
+  //   ) => orderController.updateOrderStatus(request, reply),
+  // });
 }

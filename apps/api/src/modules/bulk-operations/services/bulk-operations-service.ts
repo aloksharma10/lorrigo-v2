@@ -1,12 +1,9 @@
 import { FastifyInstance } from 'fastify';
 import fs from 'fs';
-import path from 'path';
-import { generateId } from '@lorrigo/utils';
 import { ShipmentService } from '@/modules/shipments/services/shipmentService';
 import { VendorService } from '@/modules/vendors/vendor.service';
 import { addJob, QueueNames } from '@/lib/queue';
 import { JobType } from '@/modules/shipments/queues/shipmentQueue';
-import { generateCsvReport } from '../utils/file-utils';
 import { OrderService } from '@/modules/orders/services/order-service';
 import { randomUUID } from 'crypto';
 
@@ -16,11 +13,13 @@ import { randomUUID } from 'crypto';
 export class BulkOperationsService {
   private shipmentService: ShipmentService;
   private vendorService: VendorService;
+  private orderService: OrderService;
 
   constructor(private fastify: FastifyInstance) {
     const orderService = new OrderService(fastify);
     this.shipmentService = new ShipmentService(fastify, orderService);
     this.vendorService = new VendorService(fastify);
+    this.orderService = orderService;
   }
 
   /**

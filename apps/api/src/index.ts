@@ -30,6 +30,7 @@ import { setupSellerHooks } from '@/modules/sellers/hooks';
 import { ensureDefaultPlan } from '@/modules/plan/services/default-plan';
 import { queues } from '@/lib/queue';
 import { assignDefaultPlanToAllUsers } from './scripts/assign-default-plan';
+import multipart from '@fastify/multipart';
 
 // Initialize Sentry
 initSentry();
@@ -63,6 +64,12 @@ const registerPlugins = async () => {
   try {
     // Security plugins
     await server.register(helmet);
+    await server.register(multipart, {
+      limits: {
+        fileSize: 50 * 1024 * 1024, // 50MB max file size
+        files: 1 // Limit to single file upload
+      }
+    });
     await server.register(cors, {
       origin: APP_CONFIG.CORS.ORIGIN,
       credentials: APP_CONFIG.CORS.CREDENTIALS,
