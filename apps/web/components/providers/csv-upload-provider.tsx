@@ -1,76 +1,460 @@
 'use client';
 
 import type React from 'react';
-
 import { createContext, useContext, useEffect, useState } from 'react';
+import { toast, Progress, Button } from '@lorrigo/ui/components';
+import { X } from 'lucide-react';
+import type { CSVUploadResult, HeaderMapping } from '../modals/csv-upload-modal';
 
-type CSVUploadStatus = {
+export type CSVUploadStatus = {
   isUploading: boolean;
   progress: number;
   startTime?: number;
+  minimized: boolean;
+  file?: File | null;
+  headerMapping?: HeaderMapping;
+  step: 'upload' | 'mapping' | 'processing' | 'complete';
+  result?: CSVUploadResult;
+};
+
+export type MappingPreference = {
+  name: string;
+  mapping: HeaderMapping;
+  key?: string; // The preference key this mapping belongs to
 };
 
 type CSVUploadContextType = {
   uploadStatus: CSVUploadStatus;
   checkForExistingUpload: () => void;
+  startUpload: (file: File, headerMapping: HeaderMapping) => void;
+  updateProgress: (progress: number) => void;
+  completeUpload: (result: CSVUploadResult) => void;
+  cancelUpload: () => void;
+  toggleMinimized: () => void;
+  resetUpload: () => void;
+  mappingPreferences: MappingPreference[];
+  saveMappingPreference: (name: string, mapping: HeaderMapping, key?: string) => void;
+  updateMappingPreference: (oldName: string, newName: string, mapping: HeaderMapping, key?: string) => void;
+  deleteMappingPreference: (name: string, key?: string) => void;
+  preferenceKey: string;
 };
 
 const CSVUploadContext = createContext<CSVUploadContextType>({
-  uploadStatus: { isUploading: false, progress: 0 },
+  uploadStatus: { isUploading: false, progress: 0, minimized: false, step: 'upload' },
   checkForExistingUpload: () => {},
+  startUpload: () => {},
+  updateProgress: () => {},
+  completeUpload: () => {},
+  cancelUpload: () => {},
+  toggleMinimized: () => {},
+  resetUpload: () => {},
+  mappingPreferences: [],
+  saveMappingPreference: () => {},
+  updateMappingPreference: () => {},
+  deleteMappingPreference: () => {},
+  preferenceKey: 'csvMappingPreferences',
 });
 
-export function CSVUploadProvider({ children }: { children: React.ReactNode }) {
+// Minimized CSV Upload component that stays visible across routes
+export function MinimizedCSVUpload() {
+  const { uploadStatus, toggleMinimized, cancelUpload, resetUpload } = useCSVUpload();
+
+  if (!uploadStatus.isUploading || !uploadStatus.minimized) {
+    return null;
+  }
+
+  const handleReopen = () => {
+    // If the upload is complete, reset the progress
+    if (uploadStatus.step === 'complete') {
+      resetUpload();
+    } else {
+      toggleMinimized();
+    }
+  };
+
+  return (
+    <div className="fixed bottom-4 right-4 z-50 w-64 rounded-lg border bg-background p-4 shadow-lg">
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="text-sm font-medium">CSV Upload</h3>
+        <div className="flex space-x-1">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={handleReopen}
+            className="h-5 w-5"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      <Progress value={uploadStatus.progress} className="mb-2 h-2" />
+      <p className="text-xs text-muted-foreground">
+        {uploadStatus.step === 'complete' 
+          ? 'Complete!' 
+          : `Processing: ${Math.round(uploadStatus.progress)}%`}
+      </p>
+      {uploadStatus.step === 'complete' && (
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={cancelUpload}
+          className="mt-2 w-full"
+        >
+          Close
+        </Button>
+      )}
+    </div>
+  );
+}
+
+export function CSVUploadProvider({ 
+  children,
+  preferenceKey = 'csvMappingPreferences'
+}: { 
+  children: React.ReactNode;
+  preferenceKey?: string;
+}) {
   const [uploadStatus, setUploadStatus] = useState<CSVUploadStatus>({
     isUploading: false,
     progress: 0,
+    minimized: false,
+    step: 'upload',
   });
+
+  const [mappingPreferences, setMappingPreferences] = useState<MappingPreference[]>([]);
+
+  // Helper function to get all mapping preferences from localStorage
+  const getAllMappingPreferences = () => {
+    // Get all keys that start with 'csvMappingPreferences'
+    const allPreferences: MappingPreference[] = [];
+    
+    // Loop through localStorage
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('csvMappingPreferences')) {
+        try {
+          const preferences = JSON.parse(localStorage.getItem(key) || '[]');
+          // Add the key to each preference
+          const preferencesWithKey = preferences.map((pref: MappingPreference) => ({
+            ...pref,
+            key: key
+          }));
+          allPreferences.push(...preferencesWithKey);
+        } catch (error) {
+          console.error(`Error parsing preferences for key ${key}:`, error);
+        }
+      }
+    }
+    
+    return allPreferences;
+  };
+
+  // Load mapping preferences
+  useEffect(() => {
+    try {
+      // If we're using the default key, load all preferences
+      if (preferenceKey === 'csvMappingPreferences') {
+        setMappingPreferences(getAllMappingPreferences());
+      } else {
+        // Otherwise, load only preferences for this specific key
+        const saved = localStorage.getItem(preferenceKey);
+        if (saved) {
+          const preferences = JSON.parse(saved);
+          // Add the key to each preference
+          const preferencesWithKey = preferences.map((pref: MappingPreference) => ({
+            ...pref,
+            key: preferenceKey
+          }));
+          setMappingPreferences(preferencesWithKey);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading mapping preferences:', error);
+    }
+  }, [preferenceKey]);
 
   // Check for existing uploads in localStorage
   const checkForExistingUpload = () => {
-    const savedProgress = localStorage.getItem('csvUploadProgress');
-    if (savedProgress) {
+    const savedUpload = localStorage.getItem('csvUploadStatus');
+    if (savedUpload) {
       try {
-        const progress = JSON.parse(savedProgress);
-        if (progress.status === 'processing') {
+        const status = JSON.parse(savedUpload);
+        // Only restore if the upload is still in progress
+        if (status.isUploading && status.step === 'processing') {
           setUploadStatus({
-            isUploading: true,
-            progress: 0,
-            startTime: progress.startTime,
+            ...status,
+            // File object can't be serialized, so it will be null here
+            file: null,
           });
         }
       } catch (error) {
-        console.error('Error parsing saved progress:', error);
-        localStorage.removeItem('csvUploadProgress');
+        console.error('Error parsing saved upload status:', error);
+        localStorage.removeItem('csvUploadStatus');
       }
     }
   };
+
+  // Save current upload status to localStorage
+  useEffect(() => {
+    if (uploadStatus.isUploading) {
+      const statusToSave = {
+        ...uploadStatus,
+        // Remove file object as it can't be serialized
+        file: null,
+      };
+      localStorage.setItem('csvUploadStatus', JSON.stringify(statusToSave));
+    } else if (uploadStatus.step === 'complete') {
+      // Clean up localStorage when upload is complete
+      localStorage.removeItem('csvUploadStatus');
+    }
+  }, [uploadStatus]);
 
   // Check for existing uploads on mount
   useEffect(() => {
     checkForExistingUpload();
   }, []);
 
-  // Simulate progress updates when uploading
+  // Update the useEffect for progress simulation
   useEffect(() => {
-    if (uploadStatus.isUploading) {
-      const interval = setInterval(() => {
+    let interval: NodeJS.Timeout | undefined;
+    
+    if (uploadStatus.isUploading && uploadStatus.step === 'processing') {
+      // Reset progress to 0 when starting a new upload
+      if (uploadStatus.progress === 0) {
+        setUploadStatus(prev => ({ ...prev, progress: 0 }));
+      }
+      
+      interval = setInterval(() => {
         setUploadStatus((prev) => {
-          const newProgress = prev.progress + (100 - prev.progress) * 0.1;
+          // Don't update progress if we're already at 95% or higher
+          if (prev.progress >= 95) {
+            return prev;
+          }
+          
+          const newProgress = prev.progress + (95 - prev.progress) * 0.1;
           return {
             ...prev,
-            progress: newProgress > 99 ? 99 : newProgress,
+            progress: Math.min(newProgress, 95),
           };
         });
       }, 1000);
-
-      return () => clearInterval(interval);
     }
-  }, [uploadStatus.isUploading]);
+
+    // Clean up the interval when the component unmounts or when the upload is no longer in progress
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [uploadStatus.isUploading, uploadStatus.step, uploadStatus.progress]);
+
+  // Start a new upload
+  const startUpload = (file: File, headerMapping: HeaderMapping) => {
+    setUploadStatus({
+      isUploading: true,
+      progress: 0,
+      minimized: false,
+      startTime: Date.now(),
+      file,
+      headerMapping,
+      step: 'processing',
+    });
+  };
+
+  // Update progress manually
+  const updateProgress = (progress: number) => {
+    setUploadStatus((prev) => ({
+      ...prev,
+      progress,
+    }));
+  };
+
+  // Update the completeUpload function to handle the final state better
+  const completeUpload = (result: CSVUploadResult) => {
+    setUploadStatus((prev) => ({
+      ...prev,
+      isUploading: false,
+      progress: 100,
+      step: 'complete',
+      result,
+    }));
+    
+    // If the modal is not minimized, clean up after a delay
+    if (!uploadStatus.minimized) {
+      setTimeout(() => {
+        resetUpload();
+      }, 3000);
+    } else {
+      // Update localStorage to reflect completion
+      const statusToSave = {
+        ...uploadStatus,
+        isUploading: false,
+        progress: 100,
+        step: 'complete',
+        result,
+        file: null,
+      };
+      localStorage.setItem('csvUploadStatus', JSON.stringify(statusToSave));
+    }
+  };
+
+  // Cancel the upload
+  const cancelUpload = () => {
+    localStorage.removeItem('csvUploadStatus');
+    resetUpload();
+  };
+
+  // Toggle minimized state
+  const toggleMinimized = () => {
+    setUploadStatus((prev) => {
+      const newState = {
+        ...prev,
+        minimized: !prev.minimized,
+      };
+      
+      // If we're un-minimizing and the upload is complete, reset the state
+      if (prev.minimized && prev.step === 'complete') {
+        return {
+          isUploading: false,
+          progress: 0,
+          minimized: false,
+          step: 'upload',
+          result: undefined,
+        };
+      }
+      
+      return newState;
+    });
+  };
+
+  // Reset upload state
+  const resetUpload = () => {
+    localStorage.removeItem('csvUploadStatus');
+    setUploadStatus({
+      isUploading: false,
+      progress: 0,
+      minimized: false,
+      step: 'upload',
+      result: undefined,
+    });
+  };
+
+  // Save a new mapping preference
+  const saveMappingPreference = (name: string, mapping: HeaderMapping, key?: string) => {
+    try {
+      const storageKey = key || preferenceKey;
+      const newPreference = { name, mapping, key: storageKey };
+      
+      // Get current preferences for this key
+      const currentPreferences = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      const updatedPreferences = [...currentPreferences.filter((p: MappingPreference) => p.name !== name), { name, mapping }];
+      
+      // Save to localStorage
+      localStorage.setItem(storageKey, JSON.stringify(updatedPreferences));
+      
+      // Update state
+      if (preferenceKey === 'csvMappingPreferences') {
+        // If we're using the default key, refresh all preferences
+        setMappingPreferences(getAllMappingPreferences());
+      } else {
+        // Otherwise, just update this specific preference
+        setMappingPreferences(prev => [
+          ...prev.filter(p => p.name !== name || p.key !== storageKey),
+          newPreference
+        ]);
+      }
+      
+      toast.success('Mapping preference saved!');
+    } catch (error) {
+      toast.error('Failed to save mapping preference');
+      console.error('Error saving mapping preference:', error);
+    }
+  };
+
+  // Update an existing mapping preference
+  const updateMappingPreference = (oldName: string, newName: string, mapping: HeaderMapping, key?: string) => {
+    try {
+      const storageKey = key || preferenceKey;
+      
+      // Get current preferences for this key
+      const currentPreferences = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      const updatedPreferences = currentPreferences.map((p: MappingPreference) => 
+        p.name === oldName ? { name: newName, mapping } : p
+      );
+      
+      // Save to localStorage
+      localStorage.setItem(storageKey, JSON.stringify(updatedPreferences));
+      
+      // Update state
+      if (preferenceKey === 'csvMappingPreferences') {
+        // If we're using the default key, refresh all preferences
+        setMappingPreferences(getAllMappingPreferences());
+      } else {
+        // Otherwise, just update this specific preference
+        setMappingPreferences(prev => 
+          prev.map(p => 
+            (p.name === oldName && p.key === storageKey) 
+              ? { ...p, name: newName, mapping } 
+              : p
+          )
+        );
+      }
+      
+      toast.success('Mapping preference updated!');
+    } catch (error) {
+      toast.error('Failed to update mapping preference');
+      console.error('Error updating mapping preference:', error);
+    }
+  };
+
+  // Delete a mapping preference
+  const deleteMappingPreference = (name: string, key?: string) => {
+    try {
+      const storageKey = key || preferenceKey;
+      
+      // Get current preferences for this key
+      const currentPreferences = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      const updatedPreferences = currentPreferences.filter((p: MappingPreference) => p.name !== name);
+      
+      // Save to localStorage
+      localStorage.setItem(storageKey, JSON.stringify(updatedPreferences));
+      
+      // Update state
+      if (preferenceKey === 'csvMappingPreferences') {
+        // If we're using the default key, refresh all preferences
+        setMappingPreferences(getAllMappingPreferences());
+      } else {
+        // Otherwise, just update this specific preference
+        setMappingPreferences(prev => 
+          prev.filter(p => !(p.name === name && p.key === storageKey))
+        );
+      }
+      
+      toast.success('Mapping preference deleted!');
+    } catch (error) {
+      toast.error('Failed to delete mapping preference');
+      console.error('Error deleting mapping preference:', error);
+    }
+  };
 
   return (
-    <CSVUploadContext.Provider value={{ uploadStatus, checkForExistingUpload }}>
+    <CSVUploadContext.Provider value={{ 
+      uploadStatus, 
+      checkForExistingUpload,
+      startUpload,
+      updateProgress,
+      completeUpload,
+      cancelUpload,
+      toggleMinimized,
+      resetUpload,
+      mappingPreferences,
+      saveMappingPreference,
+      updateMappingPreference,
+      deleteMappingPreference,
+      preferenceKey
+    }}>
       {children}
+      <MinimizedCSVUpload />
     </CSVUploadContext.Provider>
   );
 }
