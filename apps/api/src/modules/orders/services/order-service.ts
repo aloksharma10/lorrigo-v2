@@ -13,6 +13,8 @@ import {
   ShipmentBucketManager,
 } from '@lorrigo/utils';
 import { FastifyInstance } from 'fastify';
+import { addJob, QueueNames } from '@/lib/queue';
+import { BulkOrderJobType } from '../queues/bulk-order-worker';
 
 
 
@@ -1081,5 +1083,145 @@ export class OrderService {
         RETURNED: status_counts.RETURNED || 0,
       },
     };
+  }
+
+  /**
+   * Bulk upload orders
+   */
+  async bulkUploadOrders(csvContent: string, headerMapping: Record<string, string>, userId: string, userName: string) {
+    try {
+      // Generate operation ID
+      const operationId = generateId({
+        tableName: 'bulk_operation',
+        entityName: 'bulk_order_upload',
+        lastUsedFinancialYear: getFinancialYear(new Date()),
+        lastSequenceNumber: 0,
+      }).id;
+
+      // Create bulk operation record
+      const bulkOperation = await this.fastify.prisma.bulkOperation.create({
+        data: {
+          id: operationId,
+          code: operationId,
+          type: 'BULK_ORDER_UPLOAD',
+          status: 'PENDING',
+          user_id: userId,
+          total_count: 0, // Will be updated after CSV parsing
+          processed_count: 0,
+          success_count: 0,
+          failed_count: 0,
+          created_at: new Date(),
+        },
+      });
+
+      // Add job to queue for processing
+      await addJob(
+        QueueNames.BULK_ORDER_UPLOAD,
+        BulkOrderJobType.PROCESS_BULK_ORDERS,
+        {
+          operationId: bulkOperation.id,
+          userId,
+          userName,
+          csvContent,
+          headerMapping,
+        },
+        {
+          priority: 1, // High priority for bulk uploads
+          attempts: 3,
+        }
+      );
+
+      return {
+        operationId: bulkOperation.id,
+        status: 'PENDING',
+        totalOrders: 0, // Will be determined during processing
+      };
+    } catch (error) {
+      this.fastify.log.error('Error initiating bulk upload:', error);
+      throw new Error(
+        error instanceof Error
+          ? `Failed to initiate bulk upload: ${error.message}`
+          : 'Failed to initiate bulk upload'
+      );
+    }
+  }
+
+  /**
+   * Get bulk upload operation status
+   */
+  async getBulkUploadStatus(operationId: string, userId: string) {
+    try {
+      const operation = await this.fastify.prisma.bulkOperation.findFirst({
+        where: {
+          id: operationId,
+          user_id: userId,
+          type: 'BULK_ORDER_UPLOAD',
+        },
+      });
+
+      if (!operation) {
+        return null;
+      }
+
+      // Calculate progress percentage
+      const progress = operation.total_count > 0 
+        ? Math.floor((operation.processed_count / operation.total_count) * 100)
+        : 0;
+
+      return {
+        id: operation.id,
+        status: operation.status,
+        totalCount: operation.total_count,
+        processedCount: operation.processed_count,
+        successCount: operation.success_count,
+        failedCount: operation.failed_count,
+        progress,
+        createdAt: operation.created_at,
+        reportPath: operation.report_path,
+        errorMessage: operation.error_message,
+      };
+    } catch (error) {
+      this.fastify.log.error('Error getting bulk upload status:', error);
+      throw new Error(
+        error instanceof Error
+          ? `Failed to get bulk upload status: ${error.message}`
+          : 'Failed to get bulk upload status'
+      );
+    }
+  }
+
+  /**
+   * Download bulk upload report
+   */
+  async downloadBulkUploadReport(operationId: string, userId: string) {
+    try {
+      const operation = await this.fastify.prisma.bulkOperation.findFirst({
+        where: {
+          id: operationId,
+          user_id: userId,
+          type: 'BULK_ORDER_UPLOAD',
+        },
+      });
+
+      if (!operation) {
+        throw new Error('Bulk upload operation not found');
+      }
+
+      if (!operation.report_path) {
+        throw new Error('Report not available for this operation');
+      }
+
+      return {
+        filePath: operation.report_path,
+        fileName: `bulk_order_report_${operationId}.csv`,
+      };
+    } catch (error) {
+      this.fastify.log.error('Error downloading bulk upload report:', error);
+      throw new Error(
+        error instanceof Error
+          ? `Failed to download report: ${error.message}`
+          : 'Failed to download report'
+      );
+    }
   }
 }

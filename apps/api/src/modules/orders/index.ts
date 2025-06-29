@@ -3,6 +3,7 @@ import { OrderController } from './controllers/orders-controller';
 import { OrderService } from './services/order-service';
 import { authorizeRoles } from '@/middleware/auth';
 import { Role } from '@lorrigo/db';
+import { initBulkOrderWorker } from './queues/bulk-order-worker';
 
 /**
  * Orders module routes
@@ -10,6 +11,9 @@ import { Role } from '@lorrigo/db';
 export default async function ordersRoutes(fastify: FastifyInstance) {
   const orderService = new OrderService(fastify);
   const orderController = new OrderController(orderService);
+
+  // Initialize bulk order worker
+  const { bulkOrderWorker } = initBulkOrderWorker(fastify, orderService);
 
   // All routes require authentication
   fastify.addHook('onRequest', fastify.authenticate);
@@ -270,6 +274,190 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
     handler: (request, reply) => orderController.createOrder(request, reply),
   });
 
+  // Get order statistics
+  fastify.get('/stats', {
+    preHandler: [authorizeRoles([Role.SELLER])],
+    schema: {
+      tags: ['Orders'],
+      summary: 'Get order statistics',
+      security: [{ bearerAuth: [] }],
+      querystring: {
+        type: 'object',
+        properties: {
+          period: {
+            type: 'string',
+            enum: ['day', 'week', 'month', 'year'],
+            default: 'month',
+          },
+        },
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            total_orders: { type: 'integer' },
+            total_amount: { type: 'number' },
+            status_counts: {
+              type: 'object',
+              properties: {
+                CREATED: { type: 'integer' },
+                CONFIRMED: { type: 'integer' },
+                PROCESSING: { type: 'integer' },
+                SHIPPED: { type: 'integer' },
+                DELIVERED: { type: 'integer' },
+                CANCELLED: { type: 'integer' },
+                RETURNED: { type: 'integer' },
+              },
+            },
+          },
+        },
+      },
+    },
+    handler: (request, reply) => orderController.getOrderStats(request, reply),
+  });
+
+  // Bulk upload orders
+  fastify.post('/bulk-upload', {
+    preHandler: [authorizeRoles([Role.SELLER])],
+    // schema: {
+    //   tags: ['Orders'],
+    //   summary: 'Bulk upload orders',
+    //   security: [{ bearerAuth: [] }],
+    //   body: {
+    //     type: 'object',
+    //     required: ['orders'],
+    //     properties: {
+    //       orders: {
+    //         type: 'array',
+    //         items: {
+    //           type: 'object',
+    //           required: [
+    //             'orderId',
+    //             'pickupAddressId',
+    //             'deliveryDetails',
+    //             'sellerDetails',
+    //             'productDetails',
+    //             'packageDetails',
+    //             'paymentMethod',
+    //           ],
+    //           properties: {
+    //             orderId: { type: 'string' },
+    //             orderChannel: { type: 'string' },
+    //             orderType: { type: 'string' },
+    //             pickupAddressId: { type: 'string' },
+    //             deliveryDetails: { type: 'object' },
+    //             sellerDetails: { type: 'object' },
+    //             productDetails: { type: 'object' },
+    //             packageDetails: { type: 'object' },
+    //             paymentMethod: { type: 'object' },
+    //             amountToCollect: { type: 'number' },
+    //             order_invoice_number: { type: 'string' },
+    //             order_invoice_date: { type: 'string' },
+    //             ewaybill: { type: 'string' },
+    //           },
+    //         },
+    //         maxItems: 100000,
+    //       },
+    //     },
+    //   },
+    //   response: {
+    //     202: {
+    //       type: 'object',
+    //       properties: {
+    //         message: { type: 'string' },
+    //         data: {
+    //           type: 'object',
+    //           properties: {
+    //             operationId: { type: 'string' },
+    //             status: { type: 'string' },
+    //             totalOrders: { type: 'integer' },
+    //           },
+    //         },
+    //       },
+    //     },
+    //     400: {
+    //       type: 'object',
+    //       properties: {
+    //         message: { type: 'string' },
+    //       },
+    //     },
+    //   },
+    // },
+    handler: (request, reply) => orderController.bulkUploadOrders(request, reply),
+  });
+
+  // Get bulk upload status
+  fastify.get('/bulk-upload/:operationId/status', {
+    preHandler: [authorizeRoles([Role.SELLER])],
+    schema: {
+      tags: ['Orders'],
+      summary: 'Get bulk upload operation status',
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: 'object',
+        required: ['operationId'],
+        properties: {
+          operationId: { type: 'string' },
+        },
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            status: { type: 'string' },
+            totalCount: { type: 'integer' },
+            processedCount: { type: 'integer' },
+            successCount: { type: 'integer' },
+            failedCount: { type: 'integer' },
+            progress: { type: 'integer' },
+            createdAt: { type: 'string', format: 'date-time' },
+            completedAt: { type: 'string', format: 'date-time' },
+            reportPath: { type: 'string' },
+            errorMessage: { type: 'string' },
+          },
+        },
+        404: {
+          type: 'object',
+          properties: {
+            message: { type: 'string' },
+          },
+        },
+      },
+    },
+    handler: (request, reply) => orderController.getBulkUploadStatus(request, reply),
+  });
+
+  // Download bulk upload report
+  fastify.get('/bulk-upload/:operationId/report', {
+    preHandler: [authorizeRoles([Role.SELLER])],
+    schema: {
+      tags: ['Orders'],
+      summary: 'Download bulk upload report',
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: 'object',
+        required: ['operationId'],
+        properties: {
+          operationId: { type: 'string' },
+        },
+      },
+      response: {
+        200: {
+          type: 'string',
+          format: 'binary',
+        },
+        404: {
+          type: 'object',
+          properties: {
+            message: { type: 'string' },
+          },
+        },
+      },
+    },
+    handler: (request, reply) => orderController.downloadBulkUploadReport(request, reply),
+  });
+
   // Update an order
   fastify.patch('/:id', {
     schema: {
@@ -363,47 +551,5 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
       }>,
       reply
     ) => orderController.updateOrderStatus(request, reply),
-  });
-
-  // Get order statistics
-  fastify.get('/stats', {
-    schema: {
-      tags: ['Orders'],
-      summary: 'Get order statistics',
-      security: [{ bearerAuth: [] }],
-      querystring: {
-        type: 'object',
-        properties: {
-          period: {
-            type: 'string',
-            enum: ['day', 'week', 'month', 'year'],
-            default: 'month',
-          },
-        },
-      },
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            totalOrders: { type: 'integer' },
-            totalAmount: { type: 'number' },
-            statusCounts: {
-              type: 'object',
-              properties: {
-                CREATED: { type: 'integer' },
-                CONFIRMED: { type: 'integer' },
-                PROCESSING: { type: 'integer' },
-                SHIPPED: { type: 'integer' },
-                DELIVERED: { type: 'integer' },
-                CANCELLED: { type: 'integer' },
-                RETURNED: { type: 'integer' },
-              },
-            },
-          },
-        },
-      },
-    },
-    handler: (request: FastifyRequest, reply: FastifyReply) =>
-      orderController.getOrderStats(request, reply),
   });
 }

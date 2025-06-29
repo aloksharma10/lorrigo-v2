@@ -222,7 +222,23 @@ export default function BulkOperationsModal() {
       
       // Call the onOperationComplete callback if provided
       if (onOperationComplete) {
-        onOperationComplete(result);
+        onOperationComplete({
+          success: result.success,
+          operation: {
+            id: '1',
+            code: 'upload',
+            type: 'CREATE_SHIPMENT',
+            status: 'PENDING',
+            total_count: 1,
+            processed_count: 1,
+            success_count: 0,
+            failed_count: 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            progress: 100,
+            results: [],
+          },
+        });
       }
       
       return result;

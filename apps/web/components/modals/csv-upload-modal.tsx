@@ -515,7 +515,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
           resetUpload();
         }
       }}>
-        <DialogContent className={cn("sm:max-w-[700px]", dialogClassName)}>
+        <DialogContent className={cn("sm:max-w-[700px] max-h-[90vh] overflow-y-auto", dialogClassName)}>
           <DialogHeader>
             <DialogTitle>
               {state.step === 'upload' && title}

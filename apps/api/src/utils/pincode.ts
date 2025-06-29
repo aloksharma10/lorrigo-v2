@@ -9,6 +9,11 @@ export interface PincodeDetails {
 }
 
 export async function getPincodeDetails(pincode: number): Promise<PincodeDetails | null> {
+  // Validate pincode
+  if (!pincode || isNaN(pincode) || pincode < 100000 || pincode > 999999) {
+    return null;
+  }
+
   try {
     // Try to get from cache
     const cached = await redis.get(`pincode:${pincode}`);

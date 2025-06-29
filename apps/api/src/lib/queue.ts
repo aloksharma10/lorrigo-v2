@@ -8,6 +8,7 @@ export enum QueueNames {
   SHIPMENT_TRACKING = 'shipment-tracking',
   NOTIFICATION = 'notification',
   BULK_OPERATION = 'bulk-operation',
+  BULK_ORDER_UPLOAD = 'bulk-order-upload',
   REPORT_GENERATION = 'report-generation',
   REMITTANCE_PROCESSING = 'remittance-processing',
   NDR_PROCESSING = 'ndr-processing',
@@ -56,6 +57,15 @@ export const queues = {
       ...queueConfig.defaultJobOptions,
       // Bulk operations can take longer
       attempts: 5,
+    },
+  }),
+  [QueueNames.BULK_ORDER_UPLOAD]: new Queue(QueueNames.BULK_ORDER_UPLOAD, {
+    ...connectionOptions,
+    defaultJobOptions: {
+      ...queueConfig.defaultJobOptions,
+      // Bulk order uploads are high priority and need more retries
+      attempts: 5,
+      priority: 1,
     },
   }),
   [QueueNames.REPORT_GENERATION]: new Queue(QueueNames.REPORT_GENERATION, {

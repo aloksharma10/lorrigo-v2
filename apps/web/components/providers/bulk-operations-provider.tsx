@@ -44,11 +44,11 @@ export function BulkOperationsProvider({
     >
       {children}
       <BulkOperationsModal
-        isOpen={isOpen}
-        onClose={closeModal}
-        selectedRows={selectedRows}
-        operationType={operationType}
-        onOperationComplete={handleOperationComplete}
+        // isOpen={isOpen}
+        // onClose={closeModal}
+        // selectedRows={selectedRows}
+        // operationType={operationType}
+        // onOperationComplete={handleOperationComplete}
       />
     </BulkOperationsContext.Provider>
   );

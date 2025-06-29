@@ -236,4 +236,126 @@ export class OrderController {
       });
     }
   }
+
+  /**
+   * Bulk upload orders
+   */
+  async bulkUploadOrders(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      await checkAuth(request, reply);
+
+      const userId = request.userPayload!.id;
+      const userName = request.userPayload!.name || 'Unknown';
+
+      // Handle JSON payload (file content + mapping)
+      const { csvContent, headerMapping } = request.body as { 
+        csvContent: string; 
+        headerMapping: Record<string, string>; 
+      };
+
+      if (!csvContent) {
+        return reply.code(400).send({
+          message: 'CSV content is required',
+        });
+      }
+
+      if (!headerMapping || typeof headerMapping !== 'object') {
+        return reply.code(400).send({
+          message: 'Header mapping is required',
+        });
+      }
+
+      // Validate CSV structure
+      const lines = csvContent.split('\n').filter((line: string) => line.trim());
+      
+      if (lines.length < 2) {
+        return reply.code(400).send({
+          message: 'CSV file must contain at least 2 rows (headers and data)',
+        });
+      }
+
+      if (lines.length > 100001) { // Including header
+        return reply.code(400).send({
+          message: 'CSV files cannot exceed 100,000 rows',
+        });
+      }
+
+      // Initiate bulk upload with CSV content and mapping
+      const result = await this.orderService.bulkUploadOrders(
+        csvContent, 
+        headerMapping, 
+        userId, 
+        userName
+      );
+
+      return reply.code(202).send({
+        message: 'Bulk upload initiated successfully',
+        data: result,
+      });
+    } catch (error) {
+      request.log.error(error);
+      captureException(error as Error);
+
+      return reply.code(500).send({
+        message: error instanceof Error ? error.message : 'Internal server error',
+      });
+    }
+  }
+
+  /**
+   * Get bulk upload status
+   */
+  async getBulkUploadStatus(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      await checkAuth(request, reply);
+
+      const { operationId } = request.params as { operationId: string };
+      const userId = request.userPayload!.id;
+
+      const status = await this.orderService.getBulkUploadStatus(operationId, userId);
+
+      if (!status) {
+        return reply.code(404).send({
+          message: 'Bulk upload operation not found',
+        });
+      }
+
+      return status;
+    } catch (error) {
+      request.log.error(error);
+      captureException(error as Error);
+
+      return reply.code(500).send({
+        message: error instanceof Error ? error.message : 'Internal server error',
+      });
+    }
+  }
+
+  /**
+   * Download bulk upload report
+   */
+  async downloadBulkUploadReport(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      await checkAuth(request, reply);
+
+      const { operationId } = request.params as { operationId: string };
+      const userId = request.userPayload!.id;
+
+      const report = await this.orderService.downloadBulkUploadReport(operationId, userId);
+
+      reply.header('Content-Disposition', `attachment; filename="${report.fileName}"`);
+      reply.type('text/csv');
+      
+      const fs = await import('fs');
+      const stream = fs.createReadStream(report.filePath);
+      return reply.send(stream);
+    } catch (error) {
+      request.log.error(error);
+      captureException(error as Error);
+
+      return reply.code(500).send({
+        message: error instanceof Error ? error.message : 'Internal server error',
+      });
+    }
+  }
 }
