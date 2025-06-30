@@ -1,10 +1,11 @@
 "use client"
 
 import type React from "react"
+
 import { useState, useEffect, useCallback, useMemo, useRef } from "react"
+
 import {
   Upload,
-  MinusCircle,
   Check,
   ChevronsUpDown,
   Save,
@@ -16,16 +17,11 @@ import {
   AlertTriangle,
   ArrowLeft,
   Settings,
+  X,
 } from "lucide-react"
 
 import {
   Button,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
   Input,
   Label,
   Alert,
@@ -52,12 +48,15 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
+  Modal,
 } from "@lorrigo/ui/components"
 
 import { cn } from "@lorrigo/ui/lib/utils"
+
 import { useCSVUpload, type MappingPreference } from "../providers/csv-upload-provider"
 
 // Enhanced Types with better structure
+
 export interface CSVField {
   key: string
   label: string
@@ -102,13 +101,13 @@ export interface CSVUploadProps {
   enableDragDrop?: boolean
   onFileSelect?: (file: File) => void
   onMappingChange?: (mapping: HeaderMapping) => void
-  onComplete?: (result: CSVUploadResult) => void
   onError?: (error: string) => void
 }
 
 // Enhanced state management
+
 interface CSVUploadState {
-  step: "upload" | "mapping" | "processing" | "complete"
+  step: "upload" | "mapping" | "processing" | "completed"
   file: File | null
   csvHeaders: string[]
   headerMapping: HeaderMapping
@@ -125,9 +124,11 @@ interface CSVUploadState {
     required: number
     total: number
   }
+  uploadResult: CSVUploadResult | null
 }
 
 // Enhanced validation utilities
+
 const ValidationUtils = {
   validateFileType: (file: File, acceptedTypes: string[]): boolean => {
     return acceptedTypes.some((type) => file.name.toLowerCase().endsWith(type.toLowerCase().replace(".", "")))
@@ -152,7 +153,6 @@ const ValidationUtils = {
 
       for (let i = 0; i < line.length; i++) {
         const char = line[i]
-
         if (char === '"') {
           inQuotes = !inQuotes
         } else if (char === "," && !inQuotes) {
@@ -167,7 +167,7 @@ const ValidationUtils = {
       return result.map((cell) => cell.replace(/^"|"$/g, ""))
     }
 
-    const headers = parseCSVLine(lines[0] || '')
+    const headers = parseCSVLine(lines[0] || "")
     const preview = lines.slice(1, 6).map(parseCSVLine) // First 5 data rows for preview
 
     return { headers, preview }
@@ -228,6 +228,7 @@ const ValidationUtils = {
 }
 
 // Enhanced custom hook with better logic
+
 const useCSVUploadLogic = (props: CSVUploadProps) => {
   const {
     fields,
@@ -276,6 +277,7 @@ const useCSVUploadLogic = (props: CSVUploadProps) => {
     dragActive: false,
     previewData: null,
     mappingStats: { mapped: 0, required: 0, total: 0 },
+    uploadResult: null,
   })
 
   const [editingPreference, setEditingPreference] = useState<MappingPreference | null>(null)
@@ -283,23 +285,47 @@ const useCSVUploadLogic = (props: CSVUploadProps) => {
   const [showSaveMappingDialog, setShowSaveMappingDialog] = useState(false)
 
   // Enhanced state updater with validation
+
   const updateState = useCallback(
     (updates: Partial<CSVUploadState>) => {
       setState((prev) => {
         const newState = { ...prev, ...updates }
-
         // Auto-calculate mapping stats when mapping changes
         if (updates.headerMapping) {
           newState.mappingStats = ValidationUtils.calculateMappingStats(newState.headerMapping, fields)
         }
-
         return newState
       })
     },
     [fields],
   )
 
+  // Reset to initial state for new upload
+  const resetForNewUpload = useCallback(() => {
+    updateState({
+      step: "upload",
+      file: null,
+      csvHeaders: [],
+      headerMapping: {},
+      validationErrors: {},
+      globalError: null,
+      progress: 0,
+      isUploading: false,
+      openComboboxes: {},
+      dragActive: false,
+      previewData: null,
+      mappingStats: { mapped: 0, required: 0, total: 0 },
+      uploadResult: null,
+    })
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+  }, [updateState])
+
   // Enhanced file validation
+
   const validateFileInternal = useCallback(
     async (file: File): Promise<string | null> => {
       try {
@@ -325,6 +351,7 @@ const useCSVUploadLogic = (props: CSVUploadProps) => {
   )
 
   // Enhanced drag and drop handlers
+
   const handleDragEnter = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault()
@@ -360,7 +387,6 @@ const useCSVUploadLogic = (props: CSVUploadProps) => {
     async (e: React.DragEvent) => {
       e.preventDefault()
       e.stopPropagation()
-
       updateState({ dragActive: false })
       dragCounterRef.current = 0
 
@@ -376,6 +402,7 @@ const useCSVUploadLogic = (props: CSVUploadProps) => {
   )
 
   // Enhanced file processing
+
   const processFile = useCallback(
     async (file: File) => {
       updateState({ globalError: null, validationErrors: {} })
@@ -409,6 +436,7 @@ const useCSVUploadLogic = (props: CSVUploadProps) => {
   )
 
   // Sync with global upload status
+
   useEffect(() => {
     if (uploadStatus.isUploading && uploadStatus.step === "processing") {
       updateState({
@@ -417,9 +445,6 @@ const useCSVUploadLogic = (props: CSVUploadProps) => {
         isUploading: true,
         minimized: uploadStatus.minimized,
       })
-    } else if (uploadStatus.step === "complete" && uploadStatus.result) {
-      updateState({ step: "complete" })
-      props.onComplete?.(uploadStatus.result)
     }
   }, [uploadStatus, props, updateState])
 
@@ -435,6 +460,7 @@ const useCSVUploadLogic = (props: CSVUploadProps) => {
     toggleMinimized,
     resetUpload,
     completeUpload,
+    resetForNewUpload,
     editingPreference,
     setEditingPreference,
     newMappingName,
@@ -455,6 +481,7 @@ const useCSVUploadLogic = (props: CSVUploadProps) => {
 }
 
 // Enhanced main component
+
 export function CSVUploadModal(props: CSVUploadProps) {
   const {
     title = "Upload CSV File",
@@ -482,6 +509,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
     toggleMinimized,
     resetUpload,
     completeUpload,
+    resetForNewUpload,
     editingPreference,
     setEditingPreference,
     newMappingName,
@@ -497,6 +525,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
   const { uploadStatus } = useCSVUpload()
 
   // Enhanced file change handler
+
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const selectedFile = e.target.files?.[0]
@@ -508,12 +537,14 @@ export function CSVUploadModal(props: CSVUploadProps) {
   )
 
   // Enhanced mapping change handler
+
   const handleMappingChange = useCallback(
     (fieldKey: string, csvHeader: string) => {
       const newMapping = {
         ...state.headerMapping,
         [fieldKey]: csvHeader,
       }
+
       updateState({ headerMapping: newMapping })
       onMappingChange?.(newMapping)
     },
@@ -521,14 +552,17 @@ export function CSVUploadModal(props: CSVUploadProps) {
   )
 
   // Apply saved mapping with validation
+
   const applySavedMapping = useCallback(
     (mapping: HeaderMapping) => {
       const validMapping: HeaderMapping = {}
+
       Object.entries(mapping).forEach(([key, value]) => {
         if (value && state.csvHeaders.includes(value)) {
           validMapping[key] = value
         }
       })
+
       updateState({ headerMapping: validMapping })
       onMappingChange?.(validMapping)
     },
@@ -536,6 +570,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
   )
 
   // Enhanced mapping validation
+
   const validateMapping = useCallback((): string[] => {
     const errors: string[] = []
     const requiredFields = fields.filter((f) => f.required !== false)
@@ -556,7 +591,8 @@ export function CSVUploadModal(props: CSVUploadProps) {
     return errors
   }, [fields, state.headerMapping])
 
-  // Enhanced form submission
+  // Enhanced form submission with completion handling
+
   const handleSubmit = useCallback(async () => {
     const validationErrors = validateMapping()
 
@@ -589,12 +625,21 @@ export function CSVUploadModal(props: CSVUploadProps) {
 
       if (result.success) {
         completeUpload(result)
+
+        // Update state to completed with result
         updateState({
-          step: "complete",
           progress: 100,
           isUploading: false,
+          step: "completed",
+          uploadResult: result,
         })
-        props.onComplete?.(result)
+
+        // Auto-transition to allow next upload after showing success
+        setTimeout(() => {
+          updateState({
+            step: "completed",
+          })
+        }, 1000)
       } else {
         updateState({
           globalError: result.errors?.join(", ") || "Upload failed",
@@ -625,6 +670,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
   ])
 
   // Enhanced save mapping handler
+
   const handleSaveMapping = useCallback(() => {
     if (!newMappingName.trim()) {
       updateState({ globalError: "Please enter a name for the mapping" })
@@ -661,6 +707,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
   ])
 
   // Step configuration for better organization
+
   const stepConfig = useMemo(
     () => ({
       upload: {
@@ -684,9 +731,9 @@ export function CSVUploadModal(props: CSVUploadProps) {
         showNext: false,
         nextLabel: "",
       },
-      complete: {
+      completed: {
         title: "Upload Complete",
-        description: "Your CSV file has been processed successfully.",
+        description: "Your file has been processed successfully.",
         showBack: false,
         showNext: false,
         nextLabel: "",
@@ -704,62 +751,27 @@ export function CSVUploadModal(props: CSVUploadProps) {
         {buttonLabel}
       </Button>
 
-      <Dialog
-        open={open}
-        onOpenChange={(isOpen) => {
-          if (isOpen && uploadStatus.step === "complete") {
-            resetUpload()
-          }
-
-          if (state.step === "processing" && state.isUploading && !isOpen) {
-            toggleMinimized()
-            setOpen(false)
-            return
-          }
-
-          setOpen(isOpen)
-
-          if (!isOpen && state.step !== "processing") {
-            resetUpload()
-          }
-        }}
-      >
-        <DialogContent className={cn("p-0 sm:max-w-[800px] max-h-[90vh] flex flex-col", dialogClassName)}>
+      <Modal className="max-w-[700px]" showModal={open} setShowModal={setOpen}>
+        <div className={cn("flex flex-col", dialogClassName)}>
           {/* Enhanced Header */}
-          <DialogHeader className="border-b p-6 border-border bg-muted/30">
+          <div className="border-b p-5 border-border bg-muted/30 sticky top-0">
             <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <DialogTitle className="flex items-center gap-2 text-xl">
+              <div>
+                <span className="flex text-xl font-semibold items-center gap-2">
                   {state.step === "upload" && <Upload className="h-5 w-5" />}
                   {state.step === "mapping" && <Settings className="h-5 w-5" />}
                   {state.step === "processing" && <Loader2 className="h-5 w-5 animate-spin" />}
-                  {state.step === "complete" && <CheckCircle2 className="h-5 w-5 text-green-500" />}
+                  {state.step === "completed" && <CheckCircle2 className="h-5 w-5 text-green-500" />}
                   {currentStepConfig.title}
-                </DialogTitle>
-                <DialogDescription className="text-base">{currentStepConfig.description}</DialogDescription>
-
+                </span>
+                <p className="text-base">{currentStepConfig.description}</p>
               </div>
 
-              {(showMinimize || state.step === "processing") && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        toggleMinimized()
-                        setOpen(false)
-                      }}
-                      className="h-8 w-8"
-                    >
-                      <MinusCircle className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Minimize</TooltipContent>
-                </Tooltip>
-              )}
+              <Button variant="ghost" onClick={() => setOpen(false)} size="icon">
+                <X className="h-4 w-4" />
+              </Button>
             </div>
-          </DialogHeader>
+          </div>
 
           {/* Enhanced Content with ScrollArea */}
           <ScrollArea className="flex-1 p-6">
@@ -850,6 +862,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
                             <p className="text-sm text-muted-foreground">{state.csvHeaders.length} columns detected</p>
                           </div>
                         </div>
+
                         <div className="text-right">
                           <p className="text-sm font-medium">
                             {state.mappingStats.mapped}/{state.mappingStats.total} mapped
@@ -965,7 +978,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
                       </div>
                     </CardHeader>
                     <CardContent className="overflow-hidden">
-                      <div className="h-[400px] overflow-y-auto">
+                      <div className="h-[300px] overflow-y-auto">
                         <div className="space-y-4">
                           {fields.map((field) => (
                             <div
@@ -1061,23 +1074,6 @@ export function CSVUploadModal(props: CSVUploadProps) {
                                     </Command>
                                   </PopoverContent>
                                 </Popover>
-
-                                {/* Preview data for mapped column */}
-                                {/* {state.headerMapping[field.key] && state.previewData && (
-                                  <div className="text-xs text-muted-foreground">
-                                    <p className="font-medium mb-1">Preview:</p>
-                                    <div className="space-y-0.5">
-                                      {state.previewData.slice(0, 3).map((row, index) => {
-                                        const columnIndex = state.csvHeaders.indexOf(state.headerMapping[field.key] || '')
-                                        return (
-                                          <p key={index} className="truncate">
-                                            {row[columnIndex] || "(empty)"}
-                                          </p>
-                                        )
-                                      })}
-                                    </div>
-                                  </div>
-                                )} */}
                               </div>
                             </div>
                           ))}
@@ -1109,13 +1105,23 @@ export function CSVUploadModal(props: CSVUploadProps) {
                 </div>
               )}
 
-              {/* Complete Step */}
-              {state.step === "complete" && (
-                <div className="space-y-6 py-8 text-center">
-                  <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-semibold">Upload Complete!</h3>
-                    <p className="text-muted-foreground">Your CSV file has been processed successfully.</p>
+              {/* Completed Step */}
+              {state.step === "completed" && (
+                <div className="space-y-6 py-8">
+                  <div className="text-center space-y-4">
+                    <CheckCircle2 className="h-12 w-12 mx-auto text-green-500" />
+                    <div className="space-y-2">
+                      <h3 className="text-lg font-semibold">Upload Complete!</h3>
+                      <p className="text-muted-foreground">Your CSV file has been processed successfully</p>
+                    </div>
+                  </div>
+
+                  {/* Upload Another File */}
+                  <div className="text-center">
+                    <Button onClick={resetForNewUpload} className="min-w-[160px]">
+                      <Upload className="mr-2 h-4 w-4" />
+                      Upload Another File
+                    </Button>
                   </div>
                 </div>
               )}
@@ -1123,7 +1129,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
           </ScrollArea>
 
           {/* Enhanced Footer */}
-          <DialogFooter className="border-t p-6 bg-muted/30">
+          <div className="border-t sticky bottom-0 bg-background p-6">
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-2">
                 {currentStepConfig.showBack && (
@@ -1144,7 +1150,6 @@ export function CSVUploadModal(props: CSVUploadProps) {
                     Cancel
                   </Button>
                 )}
-
                 {currentStepConfig.showNext && (
                   <Button
                     onClick={handleSubmit}
@@ -1154,31 +1159,33 @@ export function CSVUploadModal(props: CSVUploadProps) {
                     {currentStepConfig.nextLabel}
                   </Button>
                 )}
-
                 {state.step === "processing" && (
                   <Button variant="outline" onClick={resetUpload}>
                     Cancel
                   </Button>
                 )}
-
-                {state.step === "complete" && <Button onClick={() => setOpen(false)}>Close</Button>}
+                {state.step === "completed" && (
+                  <Button variant="outline" onClick={() => setOpen(false)}>
+                    Close
+                  </Button>
+                )}
               </div>
             </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      </Modal>
 
       {/* Save Mapping Dialog */}
-      <Dialog open={showSaveMappingDialog} onOpenChange={setShowSaveMappingDialog}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>{editingPreference ? "Update Mapping" : "Save Mapping"}</DialogTitle>
-            <DialogDescription>
+      <Modal showModal={showSaveMappingDialog} setShowModal={setShowSaveMappingDialog}>
+        <div className="sm:max-w-[400px] flex flex-col">
+          <div className="flex items-center justify-between border-b p-6">
+            <h2>{editingPreference ? "Update Mapping" : "Save Mapping"}</h2>
+            <p>
               {editingPreference
                 ? "Update the name for this mapping configuration."
                 : "Give this mapping configuration a name so you can reuse it later."}
-            </DialogDescription>
-          </DialogHeader>
+            </p>
+          </div>
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -1197,7 +1204,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
             </div>
           </div>
 
-          <DialogFooter>
+          <div>
             <Button
               variant="outline"
               onClick={() => {
@@ -1209,9 +1216,9 @@ export function CSVUploadModal(props: CSVUploadProps) {
               Cancel
             </Button>
             <Button onClick={handleSaveMapping}>{editingPreference ? "Update" : "Save"} Mapping</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      </Modal>
     </TooltipProvider>
   )
 }

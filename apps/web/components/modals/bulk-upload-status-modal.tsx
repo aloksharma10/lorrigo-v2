@@ -22,22 +22,24 @@ import {
 } from 'lucide-react';
 import { useOrderOperations } from '@/lib/apis/order';
 import { formatDistanceToNow } from 'date-fns';
+import { useModalStore } from '@/modal/modal-store';
 
 interface BulkUploadStatusModalProps {
   operationId: string | null;
-  isOpen: boolean;
-  onClose: () => void;
-  allowMinimize?: boolean;
+  isMinimized?: boolean;
+  onClose?: () => void;
+  modalId?: string;
 }
 
 export function BulkUploadStatusModal({ 
   operationId, 
-  isOpen, 
+  isMinimized: initialMinimized = false,
   onClose,
-  allowMinimize = true
+  modalId
 }: BulkUploadStatusModalProps) {
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(initialMinimized);
   const { bulkOrderUploadStatusQuery } = useOrderOperations();
+  const closeModal = useModalStore((state) => state.closeModal);
   
   // Use the hook correctly by calling it conditionally
   const statusQuery = bulkOrderUploadStatusQuery(operationId || '');
@@ -104,6 +106,15 @@ export function BulkUploadStatusModal({
     setIsMinimized(false);
   };
 
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    } else if (modalId) {
+      closeModal(modalId);
+    }
+    localStorage.removeItem('bulkUploadActive');
+  };
+
   // Cleanup localStorage when modal unmounts or closed
   useEffect(() => {
     return () => {
@@ -139,7 +150,7 @@ export function BulkUploadStatusModal({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={onClose}
+                onClick={handleClose}
                 className="h-6 w-6"
               >
                 <X className="h-3 w-3" />
@@ -160,7 +171,7 @@ export function BulkUploadStatusModal({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={true} onOpenChange={() => handleClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center justify-between">
@@ -169,16 +180,14 @@ export function BulkUploadStatusModal({
               Bulk Upload Status
             </DialogTitle>
             <div className="flex gap-1">
-              {allowMinimize && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleMinimize}
-                  className="h-6 w-6"
-                >
-                  <Minus className="h-3 w-3" />
-                </Button>
-              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleMinimize}
+                className="h-6 w-6"
+              >
+                <Minus className="h-3 w-3" />
+              </Button>
             </div>
           </div>
         </DialogHeader>
@@ -311,7 +320,7 @@ export function BulkUploadStatusModal({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={onClose}
+                  onClick={handleClose}
                   className="ml-auto"
                 >
                   Close

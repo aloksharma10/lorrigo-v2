@@ -12,10 +12,12 @@ export type ModalType =
   | 'cancel-shipment'
   | 'pickup-schedule'
   | 'recharge-wallet'
-  | 'ndr-action';
+  | 'ndr-action'
+  | 'bulk-upload-status'
+  | 'bulk-orders-operations';
 export type ModalProps = Record<string, unknown>;
 
-// export type ModalType = "wallet" | "addPickupLocation" | "payForInvoice" | "addSeller" | "addCustomer" | "schedulePickup" | "cancelOrder" | "cloneOrder" | "trackModal" | "editOrder" | "downloadLabel" | "downloadManifest" | "ndrOrder" | "ndrRTOrder" | "BulkHubUpload" | "BulkPincodeUpload" | 'downloadLabels'  | "BulkPickupUpdate" | 'cancelBulkOrder' | "downloadManifests" | "updateShopifyOrders" | "ViewUserDocsAdmin" | "ClientBillingUpload" | "adminRemittanceManage" | "cloneB2BOrder" | "editB2BOrder" | "addB2BCustomer" | "completeKyc" | 'downloadB2BLabel' | 'alert-kyc' | 'alert-payment' | "downloadB2BManifest" | "BulkShipNow" | "B2BClientBillingUpload" | "B2BShipNow" | "raiseDisputeManage" | "disputeDetails" | "DisputeUpload" | "bulkPickupSchedule" | "sellerRemittanceConfig";
+// export type ModalType = "wallet" | "addPickupLocation" | "payForInvoice" | "addSeller" | "addCustomer" | "schedulePickup" | "cancelOrder" | "cloneOrder" | "trackModal" | "editOrder" | "downloadLabel" | "downloadManifest" | "ndrOrder" | "ndrRTOrder" | "BulkHubUpload" | "BulkPincodeUpload" | 'downloadLabels'  | "BulkPickupUpdate" | 'cancelBulkOrder' | "downloadManifests" | "updateShopifyOrders" | "ViewUserDocsAdmin" | "ClientBillingUpload" | "adminRemittanceManage" | "cloneB2BOrder" | "editB2BOrder" | "addB2BCustomer" | "completeKyc" | 'alert-kyc' | 'alert-payment' | "downloadB2BLabel" | "downloadB2BManifest" | "BulkShipNow" | "B2BClientBillingUpload" | "B2BShipNow" | "raiseDisputeManage" | "disputeDetails" | "DisputeUpload" | "bulkPickupSchedule" | "sellerRemittanceConfig";
 
 interface ModalData {}
 type ModalComponent = React.ComponentType<any>;
@@ -57,6 +59,8 @@ export const useModalStore = create<ModalState>((set, get) => ({
     'pickup-schedule': undefined as unknown as ModalComponent,
     'recharge-wallet': undefined as unknown as ModalComponent,
     'ndr-action': undefined as unknown as ModalComponent,
+    'bulk-upload-status': undefined as unknown as ModalComponent,
+    'bulk-orders-operations': undefined as unknown as ModalComponent,
   },
   registerModal: (type, component) =>
     set((state) => ({

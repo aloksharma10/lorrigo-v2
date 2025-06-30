@@ -165,7 +165,6 @@ export default function BulkOrderUploadPage() {
         <CSVUploadModal
           fields={orderCSVFields}
           onSubmit={handleCSVUpload}
-          onComplete={handleUploadComplete}
           onError={handleUploadError}
           title="Upload Order CSV"
           description="Upload your CSV file and map the columns to the required fields."
@@ -181,7 +180,7 @@ export default function BulkOrderUploadPage() {
       {operationId && (
         <BulkUploadStatusModal
           operationId={operationId}
-          isOpen={showStatusModal}
+          isMinimized={showStatusModal}
           onClose={() => {
             setOperationId(null);
             setShowStatusModal(false);
