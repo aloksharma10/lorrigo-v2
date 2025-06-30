@@ -4,13 +4,14 @@ import { useState } from 'react';
 import { CSVUploadModal, type CSVField, type HeaderMapping, type CSVUploadResult } from '@/components/modals/csv-upload-modal';
 import { BulkUploadStatusModal } from '@/components/modals/bulk-upload-status-modal';
 import { useOrderOperations } from '@/lib/apis/order';
+import { useCSVUpload } from '@/components/providers/csv-upload-provider';
 import { toast } from '@lorrigo/ui/components';
 
 // CSV field definitions for order upload
 const orderCSVFields: CSVField[] = [
   // Order metadata
   { key: 'orderId', label: 'Order ID', required: true, description: 'Unique order identifier' },
-  { key: 'orderChannel', label: 'Order Channel', description: 'Sales channel (e.g., SHOPIFY, AMAZON)' },
+  { key: 'orderChannel', label: 'Order Channel', description: 'Sales channel (e.g., CUSTOM, SHOPIFY)' },
   { key: 'orderType', label: 'Order Type', description: 'domestic or international' },
   { key: 'pickupAddressId', label: 'Pickup Address ID', required: true, description: 'Hub/pickup location ID' },
   
@@ -63,6 +64,7 @@ export default function BulkOrderUploadPage() {
   const [showStatusModal, setShowStatusModal] = useState(false);
   
   const { bulkOrderUploadMutation } = useOrderOperations();
+  const { setOperationId: setCSVOperationId } = useCSVUpload();
 
   const handleCSVUpload = async (file: File, mapping: HeaderMapping): Promise<CSVUploadResult> => {
     try {
@@ -86,9 +88,12 @@ export default function BulkOrderUploadPage() {
         mapping,
       });
 
-      // Set operation ID and show status modal
-      setOperationId(result.operationId || null);
-      setShowStatusModal(true);
+      // Set operation ID in both local state and CSV provider
+      if (result.operationId) {
+        setOperationId(result.operationId);
+        setCSVOperationId(result.operationId);
+        setShowStatusModal(true);
+      }
 
       return {
         success: true,

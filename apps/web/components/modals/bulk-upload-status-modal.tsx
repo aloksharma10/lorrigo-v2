@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@lorrigo/ui/components';
 import { 
   Dialog, 
@@ -94,12 +94,24 @@ export function BulkUploadStatusModal({
   };
 
   const handleMinimize = () => {
+    if (operationId) {
+      localStorage.setItem('bulkUploadActive', operationId);
+    }
     setIsMinimized(true);
   };
 
   const handleRestore = () => {
     setIsMinimized(false);
   };
+
+  // Cleanup localStorage when modal unmounts or closed
+  useEffect(() => {
+    return () => {
+      if (!isMinimized) {
+        localStorage.removeItem('bulkUploadActive');
+      }
+    };
+  }, [isMinimized]);
 
   if (!operationId) {
     return null;

@@ -3,8 +3,9 @@
 import type React from 'react';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { toast, Progress, Button } from '@lorrigo/ui/components';
-import { X } from 'lucide-react';
+import { X, RefreshCw } from 'lucide-react';
 import type { CSVUploadResult, HeaderMapping } from '../modals/csv-upload-modal';
+import { useOrderOperations } from '@/lib/apis/order';
 
 export type CSVUploadStatus = {
   isUploading: boolean;
@@ -15,6 +16,8 @@ export type CSVUploadStatus = {
   headerMapping?: HeaderMapping;
   step: 'upload' | 'mapping' | 'processing' | 'complete';
   result?: CSVUploadResult;
+  shouldPersist?: boolean; // New flag to indicate if the upload should persist across routes
+  operationId?: string; // Track the backend operation ID
 };
 
 export type MappingPreference = {
@@ -32,6 +35,7 @@ type CSVUploadContextType = {
   cancelUpload: () => void;
   toggleMinimized: () => void;
   resetUpload: () => void;
+  setOperationId: (operationId: string) => void;
   mappingPreferences: MappingPreference[];
   saveMappingPreference: (name: string, mapping: HeaderMapping, key?: string) => void;
   updateMappingPreference: (oldName: string, newName: string, mapping: HeaderMapping, key?: string) => void;
@@ -40,7 +44,7 @@ type CSVUploadContextType = {
 };
 
 const CSVUploadContext = createContext<CSVUploadContextType>({
-  uploadStatus: { isUploading: false, progress: 0, minimized: false, step: 'upload' },
+  uploadStatus: { isUploading: false, progress: 0, minimized: false, step: 'upload', shouldPersist: false, operationId: undefined },
   checkForExistingUpload: () => {},
   startUpload: () => {},
   updateProgress: () => {},
@@ -48,6 +52,7 @@ const CSVUploadContext = createContext<CSVUploadContextType>({
   cancelUpload: () => {},
   toggleMinimized: () => {},
   resetUpload: () => {},
+  setOperationId: () => {},
   mappingPreferences: [],
   saveMappingPreference: () => {},
   updateMappingPreference: () => {},
@@ -58,22 +63,64 @@ const CSVUploadContext = createContext<CSVUploadContextType>({
 // Minimized CSV Upload component that stays visible across routes
 export function MinimizedCSVUpload() {
   const { uploadStatus, toggleMinimized, cancelUpload, resetUpload } = useCSVUpload();
+  const { bulkOrderUploadStatusQuery } = useOrderOperations();
 
-  if (!uploadStatus.isUploading || !uploadStatus.minimized) {
+  // Get real-time status from backend using a stable hook call
+  const backendStatusQuery = bulkOrderUploadStatusQuery(uploadStatus.operationId || '');
+  const backendStatus = backendStatusQuery.data?.data;
+  const backendProgress = backendStatusQuery.data?.progress || 0;
+
+  // Show minimized widget if it's minimized OR if there's a persisted upload in localStorage
+  const shouldShow = uploadStatus.minimized || (uploadStatus.shouldPersist && uploadStatus.isUploading);
+
+  if (!shouldShow) {
     return null;
   }
 
   const handleReopen = () => {
     // If the upload is complete, reset the progress
-    if (uploadStatus.step === 'complete') {
+    if (uploadStatus.step === 'complete' || backendStatus?.status === 'COMPLETED') {
       resetUpload();
     } else {
       toggleMinimized();
     }
   };
 
+  const handleClose = () => {
+    // Explicitly close and cleanup
+    cancelUpload();
+  };
+
+  // Determine progress display - use backend progress if available
+  const displayProgress = backendStatus ? backendProgress : (uploadStatus.progress || 0);
+  
+  // Determine status text based on backend status or local status
+  let statusText = 'Preparing upload...';
+  if (backendStatus) {
+    switch (backendStatus.status) {
+      case 'PENDING':
+        statusText = 'Queued for processing...';
+        break;
+      case 'PROCESSING':
+        statusText = `Processing: ${Math.round(displayProgress)}%`;
+        break;
+      case 'COMPLETED':
+        statusText = 'Complete!';
+        break;
+      case 'FAILED':
+        statusText = 'Processing failed';
+        break;
+      default:
+        statusText = `Processing: ${Math.round(displayProgress)}%`;
+    }
+  } else if (uploadStatus.step === 'complete') {
+    statusText = 'Complete!';
+  } else if (uploadStatus.step === 'processing') {
+    statusText = `Processing: ${Math.round(displayProgress)}%`;
+  }
+
   return (
-    <div className="fixed bottom-4 right-4 z-50 w-64 rounded-lg border bg-background p-4 shadow-lg">
+    <div className="fixed bottom-4 right-4 z-50 w-72 rounded-lg border bg-background p-4 shadow-lg">
       <div className="mb-2 flex items-center justify-between">
         <h3 className="text-sm font-medium">CSV Upload</h3>
         <div className="flex space-x-1">
@@ -82,22 +129,36 @@ export function MinimizedCSVUpload() {
             size="icon" 
             onClick={handleReopen}
             className="h-5 w-5"
+            title="Restore window"
           >
-            <X className="h-4 w-4" />
+            <RefreshCw className="h-3 w-3" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={handleClose}
+            className="h-5 w-5"
+            title="Close upload"
+          >
+            <X className="h-3 w-3" />
           </Button>
         </div>
       </div>
-      <Progress value={uploadStatus.progress} className="mb-2 h-2" />
+      <Progress value={displayProgress} className="mb-2 h-2" />
       <p className="text-xs text-muted-foreground">
-        {uploadStatus.step === 'complete' 
-          ? 'Complete!' 
-          : `Processing: ${Math.round(uploadStatus.progress)}%`}
+        {statusText}
       </p>
-      {uploadStatus.step === 'complete' && (
+      {backendStatus && (
+        <div className="mt-1 text-xs text-muted-foreground">
+          {backendStatus.success_count > 0 && `✓ ${backendStatus.success_count} successful`}
+          {backendStatus.failed_count > 0 && ` • ✗ ${backendStatus.failed_count} failed`}
+        </div>
+      )}
+      {(uploadStatus.step === 'complete' || backendStatus?.status === 'COMPLETED') && (
         <Button 
           variant="outline" 
           size="sm" 
-          onClick={cancelUpload}
+          onClick={handleClose}
           className="mt-2 w-full"
         >
           Close
@@ -119,6 +180,8 @@ export function CSVUploadProvider({
     progress: 0,
     minimized: false,
     step: 'upload',
+    shouldPersist: false,
+    operationId: undefined,
   });
 
   const [mappingPreferences, setMappingPreferences] = useState<MappingPreference[]>([]);
@@ -172,12 +235,13 @@ export function CSVUploadProvider({
     if (savedUpload) {
       try {
         const status = JSON.parse(savedUpload);
-        // Only restore if the upload is still in progress
-        if (status.isUploading && status.step === 'processing') {
+        // Restore upload if it was minimized or in progress
+        if (status.isUploading || status.minimized) {
           setUploadStatus({
             ...status,
             // File object can't be serialized, so it will be null here
             file: null,
+            shouldPersist: true, // Mark as persistent when restored
           });
         }
       } catch (error) {
@@ -189,15 +253,15 @@ export function CSVUploadProvider({
 
   // Save current upload status to localStorage
   useEffect(() => {
-    if (uploadStatus.isUploading) {
+    if (uploadStatus.isUploading || uploadStatus.minimized || uploadStatus.shouldPersist) {
       const statusToSave = {
         ...uploadStatus,
         // Remove file object as it can't be serialized
         file: null,
       };
       localStorage.setItem('csvUploadStatus', JSON.stringify(statusToSave));
-    } else if (uploadStatus.step === 'complete') {
-      // Clean up localStorage when upload is complete
+    } else if (uploadStatus.step === 'complete' && !uploadStatus.minimized) {
+      // Only clean up localStorage when upload is complete AND not minimized
       localStorage.removeItem('csvUploadStatus');
     }
   }, [uploadStatus]);
@@ -246,11 +310,12 @@ export function CSVUploadProvider({
     setUploadStatus({
       isUploading: true,
       progress: 0,
-      minimized: false,
-      startTime: Date.now(),
+      minimized: true, // Automatically minimize when upload starts
+      step: 'processing',
       file,
       headerMapping,
-      step: 'processing',
+      startTime: Date.now(),
+      shouldPersist: true, // New uploads should persist across routes
     });
   };
 
@@ -293,42 +358,53 @@ export function CSVUploadProvider({
 
   // Cancel the upload
   const cancelUpload = () => {
-    localStorage.removeItem('csvUploadStatus');
-    resetUpload();
-  };
-
-  // Toggle minimized state
-  const toggleMinimized = () => {
-    setUploadStatus((prev) => {
-      const newState = {
-        ...prev,
-        minimized: !prev.minimized,
-      };
-      
-      // If we're un-minimizing and the upload is complete, reset the state
-      if (prev.minimized && prev.step === 'complete') {
-        return {
-          isUploading: false,
-          progress: 0,
-          minimized: false,
-          step: 'upload',
-          result: undefined,
-        };
-      }
-      
-      return newState;
-    });
-  };
-
-  // Reset upload state
-  const resetUpload = () => {
+    // Clean up localStorage when user explicitly cancels
     localStorage.removeItem('csvUploadStatus');
     setUploadStatus({
       isUploading: false,
       progress: 0,
       minimized: false,
       step: 'upload',
-      result: undefined,
+      shouldPersist: false,
+      operationId: undefined,
+    });
+  };
+
+  // Toggle minimized state
+  const toggleMinimized = () => {
+    setUploadStatus((prev) => {
+      const newMinimized = !prev.minimized;
+      
+      // Save to localStorage when minimizing to ensure persistence
+      if (newMinimized) {
+        const statusToSave = {
+          ...prev,
+          minimized: newMinimized,
+          shouldPersist: true,
+          file: null, // Remove file object as it can't be serialized
+        };
+        localStorage.setItem('csvUploadStatus', JSON.stringify(statusToSave));
+      }
+      
+      return {
+        ...prev,
+        minimized: newMinimized,
+        shouldPersist: true, // Always persist when minimized
+      };
+    });
+  };
+
+  // Reset upload state
+  const resetUpload = () => {
+    // Clean up localStorage when user explicitly resets
+    localStorage.removeItem('csvUploadStatus');
+    setUploadStatus({
+      isUploading: false,
+      progress: 0,
+      minimized: false,
+      step: 'upload',
+      shouldPersist: false,
+      operationId: undefined,
     });
   };
 
@@ -401,6 +477,13 @@ export function CSVUploadProvider({
     }
   };
 
+  const setOperationId = (operationId: string) => {
+    setUploadStatus((prev) => ({
+      ...prev,
+      operationId,
+    }));
+  };
+
   return (
     <CSVUploadContext.Provider value={{ 
       uploadStatus, 
@@ -411,6 +494,7 @@ export function CSVUploadProvider({
       cancelUpload,
       toggleMinimized,
       resetUpload,
+      setOperationId,
       mappingPreferences,
       saveMappingPreference,
       updateMappingPreference,

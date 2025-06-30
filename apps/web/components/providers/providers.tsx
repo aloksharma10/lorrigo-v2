@@ -11,11 +11,12 @@ import { ModalRegistry } from '../../modal/modal-registry';
 import { ModalProvider } from '@/modal/modal-provider';
 import { LoadingBar } from './loading-bar';
 import { TokenProvider } from './token-provider';
-import { CSVUploadProvider } from './csv-upload-provider';
+import { CSVUploadProvider, MinimizedCSVUpload } from './csv-upload-provider';
 import { CSVBulkOperationsProvider } from './csv-bulk-operations-provider';
 import DrawerProvider from './drawer-provider';
 import { DrawerRegistry } from '@/drawer/drawer-registry';
 import { BulkOperationsProvider } from './bulk-operations-provider';
+import BulkUploadStatusWidget from './bulk-upload-status-widget';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = React.useState(
@@ -61,6 +62,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
                       <LoadingBar />
                       <CSVUploadProvider preferenceKey="csvMappingPreferences">
                         {children}
+                        <MinimizedCSVUpload />
+                        <BulkUploadStatusWidget />
                       </CSVUploadProvider>
                       <Toaster position="top-right" toastOptions={{ duration: 4000 }} richColors />
                     </CSVBulkOperationsProvider>
