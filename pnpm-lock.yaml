@@ -232,43 +232,6 @@ importers:
         specifier: ^5.7.3
         version: 5.8.3
 
-  apps/workers:
-    dependencies:
-      node-cron:
-        specifier: ^3.0.3
-        version: 3.0.3
-      pino:
-        specifier: ^9.6.0
-        version: 9.7.0
-      pino-pretty:
-        specifier: ^10.3.1
-        version: 10.3.1
-    devDependencies:
-      '@lorrigo/db':
-        specifier: workspace:*
-        version: link:../../packages/db
-      '@lorrigo/typescript-config':
-        specifier: workspace:*
-        version: link:../../packages/typescript-config
-      '@lorrigo/utils':
-        specifier: workspace:*
-        version: link:../../packages/utils
-      '@types/node':
-        specifier: ^20
-        version: 20.19.0
-      '@types/node-cron':
-        specifier: ^3.0.11
-        version: 3.0.11
-      ts-node:
-        specifier: ^10.9.2
-        version: 10.9.2(@types/node@20.19.0)(typescript@5.8.3)
-      typescript:
-        specifier: ^5.7.3
-        version: 5.8.3
-      vitest:
-        specifier: ^1.4.0
-        version: 1.6.1(@types/node@20.19.0)(lightningcss@1.30.1)
-
   packages/db:
     dependencies:
       '@prisma/client':
@@ -2208,9 +2171,6 @@ packages:
   '@types/minimatch@5.1.2':
     resolution: {integrity: sha512-K0VQKziLUWkVKiRVrx4a40iPaxTUefQmjtkQofBkYRcoaaL/8rhwDWww9qWbrgicNOgnpIsMxyNIUM4+n6dUIA==}
 
-  '@types/node-cron@3.0.11':
-    resolution: {integrity: sha512-0ikrnug3/IyneSHqCBeslAhlK2aBfYek1fGo4bP4QnZPmiqSGRK+Oy7ZMisLWkesffJvQ1cqAcBnJC+8+nxIAg==}
-
   '@types/node@20.19.0':
     resolution: {integrity: sha512-hfrc+1tud1xcdVTABC2JiomZJEklMcXYNTVtZLAeqTVWD+qL5jkHKT+1lOtqDdGxt+mB53DTtiz673vfjU8D1Q==}
 
@@ -3550,10 +3510,6 @@ packages:
     resolution: {integrity: sha512-lytcDEdxKjGJPTLEfW4mYMigRezMlyJY8W4wxJK8zE533Jlb8L8dRuObJFWg2P+AuOIxoCgKF+2Oq4d4Zd0OUA==}
     engines: {node: ^18 || ^20 || >= 21}
 
-  node-cron@3.0.3:
-    resolution: {integrity: sha512-dOal67//nohNgYWb+nWmg5dkFdIwDm8EpeGYMekPMrngV3637lqnX0lbUcCtgibHTz6SEz7DAIjKvKDFYCnO1A==}
-    engines: {node: '>=6.0.0'}
-
   node-gyp-build-optional-packages@5.2.2:
     resolution: {integrity: sha512-s+w+rBWnpTMwSFbaE0UXsRlg7hU4FjekKU4eyAih5T8nJuNZT1nNsskXpxmeqSK9UzkBl6UgRlnKc8hz8IEqOw==}
     hasBin: true
@@ -4550,10 +4506,6 @@ packages:
 
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
-
-  uuid@8.3.2:
-    resolution: {integrity: sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==}
-    hasBin: true
 
   uuid@9.0.1:
     resolution: {integrity: sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==}
@@ -6226,8 +6178,6 @@ snapshots:
 
   '@types/minimatch@5.1.2': {}
 
-  '@types/node-cron@3.0.11': {}
-
   '@types/node@20.19.0':
     dependencies:
       undici-types: 6.21.0
@@ -7662,10 +7612,6 @@ snapshots:
 
   node-addon-api@8.3.1: {}
 
-  node-cron@3.0.3:
-    dependencies:
-      uuid: 8.3.2
-
   node-gyp-build-optional-packages@5.2.2:
     dependencies:
       detect-libc: 2.0.4
@@ -8698,8 +8644,6 @@ snapshots:
       react: 19.1.0
 
   util-deprecate@1.0.2: {}
-
-  uuid@8.3.2: {}
 
   uuid@9.0.1: {}
 

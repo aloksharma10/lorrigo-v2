@@ -16,13 +16,12 @@ import ActionTooltip from '@/components/action-tooltip';
 import HoverCardToolTip from '@/components/hover-card-tooltip';
 import { currencyFormatter, formatDateTimeSmart } from '@lorrigo/utils';
 import { Shipment, ShipmentParams } from '@/lib/type/response-types';
-import { useRouter } from 'next/navigation';
 import { useAuthToken } from '@/components/providers/token-provider';
-import { useDrawer } from '@/components/providers/drawer-provider';
 import { CopyBtn } from '@/components/copy-btn';
 import { useBulkOperations } from '@/components/providers/bulk-operations-provider';
-import { useModalStore } from '@/modal/modal-store';
 import { ShipmentActionButton } from './shipment-action-button';
+import { useShippingOperations } from '@/lib/apis/shipment';
+import { useCSVUpload } from '@/components/providers/csv-upload-provider';
 
 interface ShipmentsTableProps {
   initialParams: ShipmentParams;
@@ -50,6 +49,14 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
   );
   const { isTokenReady } = useAuthToken();
   const { openBulkOperation } = useBulkOperations();
+  const { downloadBulkLabels } = useShippingOperations();
+  const csvUploadContext = useCSVUpload();
+  
+  if (!csvUploadContext) {
+    throw new Error('ShipmentsTable must be used within a CSVUploadProvider');
+  }
+  
+  const { showBulkOperationStatus } = csvUploadContext;
 
   // Fetch shipments with React Query
   const { data, isLoading, isError, isFetching, error } = useQuery({
@@ -389,9 +396,19 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
     },
     {
       label: 'Generate Labels',
-      action: (selectedRows: Shipment[]) => {
-        console.log('Generate Labels for:', selectedRows);
-        toast.success(`Generating labels for ${selectedRows.length} orders`);
+      action: async (selectedRows: Shipment[]) => {
+        try {
+          const shipmentIds = selectedRows.map(row => row.id);
+          const result = await downloadBulkLabels.mutateAsync({ shipment_ids: shipmentIds });
+          
+          if (result.operation?.id) {
+            // Show the bulk operation status modal
+            showBulkOperationStatus(result.operation.id, false);
+          }
+        } catch (error) {
+          console.error('Error generating labels:', error);
+          toast.error('Failed to start label generation');
+        }
       },
       isLoading: false,
     },

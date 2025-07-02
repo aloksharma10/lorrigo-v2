@@ -239,6 +239,12 @@ const useCSVUploadLogic = (props: CSVUploadProps) => {
     enableDragDrop = true,
   } = props
 
+  const csvUploadContext = useCSVUpload();
+  
+  if (!csvUploadContext) {
+    throw new Error('useCSVUploadLogic must be used within a CSVUploadProvider');
+  }
+
   const {
     uploadStatus,
     mappingPreferences: allMappingPreferences,
@@ -250,14 +256,14 @@ const useCSVUploadLogic = (props: CSVUploadProps) => {
     resetUpload,
     completeUpload,
     preferenceKey: globalPreferenceKey,
-  } = useCSVUpload()
+  } = csvUploadContext
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const dragCounterRef = useRef(0)
 
   const mappingPreferences = useMemo(
     () =>
-      allMappingPreferences.filter((pref) =>
+      allMappingPreferences.filter((pref: MappingPreference) =>
         preferenceKey ? pref.key === `${preferenceKey}_mappingpreferences` : pref.key === globalPreferenceKey,
       ),
     [allMappingPreferences, preferenceKey, globalPreferenceKey],
@@ -522,7 +528,13 @@ export function CSVUploadModal(props: CSVUploadProps) {
   } = useCSVUploadLogic(props)
 
   const [open, setOpen] = useState(false)
-  const { uploadStatus } = useCSVUpload()
+  const csvUploadContext = useCSVUpload()
+  
+  if (!csvUploadContext) {
+    throw new Error('CSVUploadModal must be used within a CSVUploadProvider');
+  }
+  
+  const { uploadStatus } = csvUploadContext
 
   // Enhanced file change handler
 
@@ -540,9 +552,9 @@ export function CSVUploadModal(props: CSVUploadProps) {
 
   const handleMappingChange = useCallback(
     (fieldKey: string, csvHeader: string) => {
-      const newMapping = {
-        ...state.headerMapping,
-        [fieldKey]: csvHeader,
+    const newMapping = {
+      ...state.headerMapping,
+      [fieldKey]: csvHeader,
       }
 
       updateState({ headerMapping: newMapping })
@@ -616,18 +628,19 @@ export function CSVUploadModal(props: CSVUploadProps) {
     try {
       startUpload(state.file, state.headerMapping)
 
-      setTimeout(() => {
-        toggleMinimized()
-        setOpen(false)
-      }, 500)
-
       const result = await onSubmit(state.file, state.headerMapping)
 
-      if (result.success) {
+        if (result.success) {
         completeUpload(result);
 
+        // Close modal and minimize immediately after successful upload
+        setTimeout(() => {
+          toggleMinimized()
+          setOpen(false)
+        }, 300)
+
         // Update state to completed with result
-        updateState({
+      updateState({ 
           progress: 100,
           isUploading: false,
           step: "completed",
@@ -636,7 +649,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
 
         // Auto-transition to allow next upload after showing success
         setTimeout(() => {
-          updateState({
+    updateState({
             step: "completed",
           })
         }, 1000)
@@ -644,7 +657,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
         updateState({
           globalError: result.errors?.join(", ") || "Upload failed",
           step: "mapping",
-          isUploading: false,
+      isUploading: false,
         })
         props.onError?.(result.errors?.join(", ") || "Upload failed")
       }
@@ -778,14 +791,14 @@ export function CSVUploadModal(props: CSVUploadProps) {
             <div className="space-y-6">
               {/* Global Error Alert */}
               {state.globalError && (
-                <Alert variant="destructive">
+            <Alert variant="destructive">
                   <AlertTriangle className="h-4 w-4" />
-                  <AlertTitle>Error</AlertTitle>
+              <AlertTitle>Error</AlertTitle>
                   <AlertDescription>{state.globalError}</AlertDescription>
-                </Alert>
-              )}
+            </Alert>
+          )}
 
-              {/* Upload Step */}
+          {/* Upload Step */}
               {state.step === "upload" && (
                 <div className="space-y-6">
                   {/* File Upload Area */}
@@ -824,14 +837,14 @@ export function CSVUploadModal(props: CSVUploadProps) {
                           Browse Files
                         </Button>
 
-                        <Input
+                <Input 
                           ref={fileInputRef}
-                          type="file"
+                  type="file" 
                           accept={props.acceptedFileTypes?.join(",")}
-                          onChange={handleFileChange}
+                  onChange={handleFileChange} 
                           className="hidden"
-                        />
-                      </div>
+                />
+              </div>
 
                       <div className="mt-4 flex flex-wrap gap-2 justify-center">
                         <Badge variant="secondary" className="text-xs">
@@ -845,12 +858,12 @@ export function CSVUploadModal(props: CSVUploadProps) {
                       </div>
                     </CardContent>
                   </Card>
-                </div>
-              )}
+            </div>
+          )}
 
-              {/* Mapping Step */}
+          {/* Mapping Step */}
               {state.step === "mapping" && (
-                <div className="space-y-6">
+            <div className="space-y-6">
                   {/* File Info */}
                   <Card>
                     <CardContent className="p-4">
@@ -873,7 +886,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
                     </CardContent>
                   </Card>
 
-                  {/* Saved Mappings */}
+              {/* Saved Mappings */}
                   {enableMappingPreferences && mappingPreferences.length > 0 && (
                     <Card>
                       <CardHeader>
@@ -894,7 +907,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
                               <CommandList>
                                 <CommandEmpty>No saved mappings found.</CommandEmpty>
                                 <CommandGroup>
-                                  {mappingPreferences.map((mapping) => (
+                                  {mappingPreferences.map((mapping: MappingPreference) => (
                                     <CommandItem
                                       key={mapping.name}
                                       value={mapping.name}
@@ -941,7 +954,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
                                           </TooltipTrigger>
                                           <TooltipContent>Delete mapping</TooltipContent>
                                         </Tooltip>
-                                      </div>
+                  </div>
                                     </CommandItem>
                                   ))}
                                 </CommandGroup>
@@ -951,36 +964,36 @@ export function CSVUploadModal(props: CSVUploadProps) {
                         </Popover>
                       </CardContent>
                     </Card>
-                  )}
+              )}
 
-                  {/* Field Mapping */}
+              {/* Field Mapping */}
                   <Card>
                     <CardHeader>
-                      <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between">
                         <div>
                           <CardTitle className="text-base">Column Mapping</CardTitle>
                           <CardDescription>Map CSV columns to your data fields</CardDescription>
                         </div>
                         {enableMappingPreferences && (
-                          <Button
-                            variant="outline"
-                            size="sm"
+                    <Button
+                      variant="outline"
+                      size="sm"
                             onClick={() => {
                               setEditingPreference(null)
                               setNewMappingName("")
                               setShowSaveMappingDialog(true)
                             }}
-                          >
-                            <Save className="mr-2 h-4 w-4" />
-                            Save Mapping
-                          </Button>
-                        )}
-                      </div>
+                    >
+                      <Save className="mr-2 h-4 w-4" />
+                      Save Mapping
+                    </Button>
+                  )}
+                </div>
                     </CardHeader>
                     <CardContent className="overflow-hidden">
                       <div className="h-[300px] overflow-y-auto">
                         <div className="space-y-4">
-                          {fields.map((field) => (
+                {fields.map((field) => (
                             <div
                               key={field.key}
                               className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg"
@@ -999,92 +1012,92 @@ export function CSVUploadModal(props: CSVUploadProps) {
                                     </Badge>
                                   )}
                                 </div>
-                                {field.description && (
+                      {field.description && (
                                   <p className="text-sm text-muted-foreground">{field.description}</p>
-                                )}
-                              </div>
-
+                      )}
+                    </div>
+                    
                               <div className="space-y-2">
-                                <Popover
-                                  open={state.openComboboxes[field.key] || false}
-                                  onOpenChange={(open) =>
-                                    updateState({
+                      <Popover
+                        open={state.openComboboxes[field.key] || false}
+                        onOpenChange={(open) =>
+                          updateState({
                                       openComboboxes: { ...state.openComboboxes, [field.key]: open },
-                                    })
-                                  }
-                                >
-                                  <PopoverTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      role="combobox"
+                          })
+                        }
+                      >
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
                                       className={cn(
                                         "w-full justify-between",
                                         !state.headerMapping[field.key] && field.required !== false && "border-red-200",
                                       )}
-                                    >
+                          >
                                       {state.headerMapping[field.key] || "Select CSV column..."}
-                                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                    </Button>
-                                  </PopoverTrigger>
-                                  <PopoverContent className="w-full p-0">
-                                    <Command>
-                                      <CommandInput placeholder="Search columns..." />
-                                      <CommandList>
-                                        <CommandEmpty>No column found.</CommandEmpty>
-                                        <CommandGroup>
-                                          <CommandItem
-                                            onSelect={() => {
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-full p-0">
+                          <Command>
+                            <CommandInput placeholder="Search columns..." />
+                            <CommandList>
+                              <CommandEmpty>No column found.</CommandEmpty>
+                              <CommandGroup>
+                                <CommandItem
+                                  onSelect={() => {
                                               handleMappingChange(field.key, "")
-                                              updateState({
+                                    updateState({
                                                 openComboboxes: { ...state.openComboboxes, [field.key]: false },
                                               })
-                                            }}
-                                          >
-                                            <Check
-                                              className={cn(
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
                                                 "mr-2 h-4 w-4",
                                                 !state.headerMapping[field.key] ? "opacity-100" : "opacity-0",
-                                              )}
-                                            />
+                                    )}
+                                  />
                                             <span className="text-muted-foreground">-- Not mapped --</span>
-                                          </CommandItem>
-                                          {state.csvHeaders.map((header) => (
-                                            <CommandItem
-                                              key={header}
-                                              onSelect={() => {
+                                </CommandItem>
+                                {state.csvHeaders.map((header) => (
+                                  <CommandItem
+                                    key={header}
+                                    onSelect={() => {
                                                 handleMappingChange(field.key, header)
-                                                updateState({
+                                      updateState({
                                                   openComboboxes: { ...state.openComboboxes, [field.key]: false },
                                                 })
-                                              }}
-                                            >
-                                              <Check
-                                                className={cn(
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
                                                   "mr-2 h-4 w-4",
-                                                  state.headerMapping[field.key] === header
+                                        state.headerMapping[field.key] === header
                                                     ? "opacity-100"
                                                     : "opacity-0",
-                                                )}
-                                              />
-                                              {header}
-                                            </CommandItem>
-                                          ))}
-                                        </CommandGroup>
-                                      </CommandList>
-                                    </Command>
-                                  </PopoverContent>
-                                </Popover>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                                      )}
+                                    />
+                                    {header}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+                ))}
+              </div>
                       </div>
                     </CardContent>
                   </Card>
-                </div>
-              )}
+            </div>
+          )}
 
-              {/* Processing Step */}
+          {/* Processing Step */}
               {state.step === "processing" && (
                 <div className="space-y-6 py-8">
                   <div className="text-center space-y-4">
@@ -1100,7 +1113,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
                       <span>Progress</span>
                       <span>{Math.round(state.progress)}%</span>
                     </div>
-                    <Progress value={state.progress} className="h-2" />
+              <Progress value={state.progress} className="h-2" />
                   </div>
                 </div>
               )}
@@ -1141,15 +1154,15 @@ export function CSVUploadModal(props: CSVUploadProps) {
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back
                   </Button>
-                )}
-              </div>
+              )}
+            </div>
 
               <div className="flex items-center gap-2">
                 {state.step === "upload" && (
-                  <Button variant="outline" onClick={() => setOpen(false)}>
-                    Cancel
-                  </Button>
-                )}
+              <Button variant="outline" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+            )}
                 {currentStepConfig.showNext && (
                   <Button
                     onClick={handleSubmit}
@@ -1157,13 +1170,13 @@ export function CSVUploadModal(props: CSVUploadProps) {
                   >
                     {state.isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {currentStepConfig.nextLabel}
-                  </Button>
-                )}
+                </Button>
+            )}
                 {state.step === "processing" && (
-                  <Button variant="outline" onClick={resetUpload}>
-                    Cancel
-                  </Button>
-                )}
+              <Button variant="outline" onClick={resetUpload}>
+                Cancel
+              </Button>
+            )}
                 {state.step === "completed" && (
                   <Button variant="outline" onClick={() => setOpen(false)}>
                     Close
@@ -1187,22 +1200,22 @@ export function CSVUploadModal(props: CSVUploadProps) {
             </p>
           </div>
 
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="mapping-name">Mapping Name</Label>
-              <Input
-                id="mapping-name"
-                value={newMappingName}
-                onChange={(e) => setNewMappingName(e.target.value)}
-                placeholder="e.g., Order Import Mapping"
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="mapping-name">Mapping Name</Label>
+                <Input
+                  id="mapping-name"
+                  value={newMappingName}
+                  onChange={(e) => setNewMappingName(e.target.value)}
+                  placeholder="e.g., Order Import Mapping"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     handleSaveMapping()
                   }
                 }}
-              />
+                />
+              </div>
             </div>
-          </div>
 
           <div>
             <Button
@@ -1213,8 +1226,8 @@ export function CSVUploadModal(props: CSVUploadProps) {
                 setNewMappingName("")
               }}
             >
-              Cancel
-            </Button>
+                Cancel
+              </Button>
             <Button onClick={handleSaveMapping}>{editingPreference ? "Update" : "Save"} Mapping</Button>
           </div>
         </div>

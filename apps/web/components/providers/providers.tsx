@@ -51,19 +51,19 @@ export function Providers({ children }: { children: React.ReactNode }) {
               disableTransitionOnChange
               enableColorScheme
             >
-              <ModalProvider>
-                <ModalRegistry />
-                <DrawerProvider>
-                  <BulkOperationsProvider>
-                    <DrawerRegistry />
-                    <LoadingBar />
-                    <CSVUploadProvider preferenceKey="csvMappingPreferences">
+              <CSVUploadProvider preferenceKey="csvMappingPreferences">
+                <ModalProvider>
+                  <ModalRegistry />
+                  <DrawerProvider>
+                    <BulkOperationsProvider>
+                      <DrawerRegistry />
+                      <LoadingBar />
                       {children}
-                    </CSVUploadProvider>
-                    <Toaster position="top-right" toastOptions={{ duration: 4000 }} richColors />
-                  </BulkOperationsProvider>
-                </DrawerProvider>
-              </ModalProvider>
+                      <Toaster position="top-right" toastOptions={{ duration: 4000 }} richColors />
+                    </BulkOperationsProvider>
+                  </DrawerProvider>
+                </ModalProvider>
+              </CSVUploadProvider>
             </NextThemesProvider>
           </TokenProvider>
         </QueryClientProvider>

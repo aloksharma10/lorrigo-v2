@@ -194,6 +194,7 @@ export class BulkOperationsService {
   ) {
     const shipment = await this.shipmentService.createShipmentBulk(data, userId)
     return {
+      operationId: shipment.operation?.id,
       operation: shipment.operation
     }
   }

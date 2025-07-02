@@ -60,7 +60,13 @@ const orderCSVFields: CSVField[] = [
 export default function BulkOrderUploadPage() {
   // const { openModal } = useModal();
   const { bulkOrderUploadMutation } = useOrderOperations();
-  const { setOperationId: setCSVOperationId } = useCSVUpload();
+  const csvUploadContext = useCSVUpload();
+  
+  if (!csvUploadContext) {
+    throw new Error('BulkOrderUploadPage must be used within a CSVUploadProvider');
+  }
+  
+  const { setOperationId: setCSVOperationId } = csvUploadContext;
 
   const handleCSVUpload = async (file: File, mapping: HeaderMapping): Promise<CSVUploadResult> => {
     try {

@@ -154,6 +154,9 @@ export const useOrderOperations = (queryParams: OrderQueryParams = {}, orderId?:
     }
   });
 
+  // Bulk-operation status polling (orders, shipments, etc.).
+  // Automatically stops polling once the backend reports a terminal state (COMPLETED | FAILED)
+  // or when the progress reaches 100 %.
   const bulkOrderUploadStatusQuery = (operationId: string) => {
     return useQuery({
       queryKey: ['bulk-order-upload-status', operationId],
@@ -162,7 +165,17 @@ export const useOrderOperations = (queryParams: OrderQueryParams = {}, orderId?:
         return response;
       },
       enabled: !!operationId && isTokenReady,
-      refetchInterval: 3000, // Refetch every 3 seconds
+      // Dynamically decide whether to keep polling based on previous fetch result.
+      // Returning `false` stops the interval.
+      refetchInterval: (lastData: any) => {
+        if (!lastData) return 3000; // no data yet – keep polling
+
+        const { status, progress } = lastData.data ?? {};
+
+        const isFinished = status === 'COMPLETED' || status === 'FAILED' || progress === 100;
+
+        return isFinished ? false : 3000;
+      },
       refetchOnWindowFocus: false,
     });
   };

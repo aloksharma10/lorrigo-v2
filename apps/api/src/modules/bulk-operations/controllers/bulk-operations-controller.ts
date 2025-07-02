@@ -222,6 +222,7 @@ export class BulkOperationsController {
       return reply.code(202).send({
         success: true,
         message: 'Bulk shipment creation started',
+        operationId: result.operationId,
         operation: result.operation,
       });
     } catch (error: any) {

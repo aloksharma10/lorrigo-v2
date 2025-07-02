@@ -35,6 +35,7 @@ import { useShippingOperations, BulkOperationResponse } from '@/lib/apis/shipmen
 import { useCourierOperations } from '@/lib/apis/couriers';
 import { Badge } from '@lorrigo/ui/components';
 import { useModalStore } from '@/modal/modal-store';
+import { useCSVUpload } from '../providers/csv-upload-provider';
 
 // Define the operation types
 type BulkOperationType = 'create-shipment' | 'schedule-pickup' | 'cancel-shipment';
@@ -81,6 +82,13 @@ export function BulkOrdersOperationsModal({
   onOperationComplete,
 }: BulkOrdersOperationsModalProps) {
   const closeModal = useModalStore((state) => state.closeModal);
+  const csvUploadContext = useCSVUpload();
+  
+  if (!csvUploadContext) {
+    throw new Error('BulkOrdersOperationsModal must be used within a CSVUploadProvider');
+  }
+  
+  const { showBulkOperationStatus } = csvUploadContext;
   const [activeTab, setActiveTab] = useState<BulkOperationType>(operationType);
   const [isLoading, setIsLoading] = useState(false);
   const [useFilters, setUseFilters] = useState(selectedRows.length === 0);
@@ -267,13 +275,7 @@ export function BulkOrdersOperationsModal({
         // open the persistent bulk-upload status modal just like the CSV upload flow.
         if (result.operation?.id) {
           localStorage.setItem('bulkUploadActive', result.operation.id);
-          // openModal('bulk-upload-status', {
-          //   operationId: result.operation.id,
-          //   isMinimized: false,
-          //   onClose: () => {
-          //     localStorage.removeItem('bulkUploadActive');
-          //   },
-          // });
+          showBulkOperationStatus(result.operation.id, false);
         }
 
         handleClose();

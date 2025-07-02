@@ -196,6 +196,45 @@ export const useShippingOperations = () => {
     return response;
   };
 
+  // Get bulk operation status
+  const getBulkOperationStatus = (operationId: string) => {
+    return useQuery({
+      queryKey: ['bulk-operation-status', operationId],
+      queryFn: async () => {
+        const data = await api.get<{
+          data: BulkOperation;
+          progress: number;
+          createdAt: string;
+          errorMessage?: string;
+          reportPath?: string;
+        }>(`/bulk-operations/${operationId}`);
+        return data;
+      },
+      enabled: !!operationId && !!operationId.trim() && isTokenReady, // Added operationId.trim() check
+      refetchInterval: (query) => {
+        const result = query.state.data;
+  
+        if (!result) return 2000;
+  
+        const isDone =
+          result.progress >= 100 ||
+          result.data.status === 'COMPLETED' ||
+          result.data.status === 'FAILED';
+  
+        console.log('Refetch interval check:', { 
+          progress: result.progress, 
+          status: result.data.status, 
+          isDone 
+        });
+  
+        return isDone ? false : 2000;
+      },
+      staleTime: 0,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+    });
+  };
+
   // Create bulk shipments - maintaining original functionality
   const createBulkShipments = useMutation({
     mutationFn: async (data: {
@@ -209,7 +248,7 @@ export const useShippingOperations = () => {
       };
     }) => {
       const response = await api.post<any>('/bulk-operations/shipments', data);
-      return response.data as BulkOperationResponse;
+      return response as BulkOperationResponse;
     },
     onSuccess: () => {
       toast.success('Bulk shipment creation started');
@@ -308,6 +347,7 @@ export const useShippingOperations = () => {
     cancelShipment,
     getAllBulkOperations,
     downloadBulkOperationFile,
+    getBulkOperationStatus,
     createBulkShipments,
     scheduleBulkPickups,
     cancelBulkShipments,

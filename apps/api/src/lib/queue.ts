@@ -99,6 +99,15 @@ export const queues = {
       attempts: 3,
     },
   }),
+  [QueueNames.CSV_PROCESSING]: new Queue(QueueNames.CSV_PROCESSING, {
+    ...connectionOptions,
+    defaultJobOptions: {
+      ...queueConfig.defaultJobOptions,
+      // CSV processing can take longer and need more retries
+      attempts: 5,
+      priority: 2,
+    },
+  }),
 };
 
 // Set up repeatable jobs schedulers (using the same Queue instances)
@@ -258,7 +267,7 @@ export const addRecurringJob = async (
     
     // First, check if this recurring job already exists
     const existingJobs = await queues[queueName].getJobSchedulers();
-    const existingJob = existingJobs.find(job => 
+    const existingJob = existingJobs.find((job: any) => 
       job.id === stableJobId || 
       (job.name === jobName && job.pattern === cronPattern)
     );
