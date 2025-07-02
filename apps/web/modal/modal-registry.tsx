@@ -15,6 +15,8 @@ import { CancelShipmentModal } from '@/components/modals/cancel-shipment-modal';
 import { PickupScheduleModal } from '@/components/modals/pickup-schedule-modal';
 import { RechargeWalletModal } from '@/components/modals/recharge-wallet-modal';
 import { NDRActionModal } from '@/components/modals/ndr-action-modal';
+import { BulkUploadStatusModal } from '@/components/modals/bulk-upload-status-modal';
+import { BulkOrdersOperationsModal } from '@/components/modals/bulk-operations-modal';
 
 // Store to track registered modals
 interface ModalRegistryState {
@@ -45,6 +47,8 @@ export function ModalRegistry() {
       registerModal('pickup-schedule', PickupScheduleModal);
       registerModal('recharge-wallet', RechargeWalletModal);
       registerModal('ndr-action', NDRActionModal);
+      registerModal('bulk-upload-status', BulkUploadStatusModal);
+      registerModal('bulk-orders-operations', BulkOrdersOperationsModal);
       
       setRegistered(true);
       console.log('Modal components registered successfully');

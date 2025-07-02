@@ -19,6 +19,7 @@ export function Modal({
   desktopOnly,
   preventDefaultClose,
   drawerRootProps,
+  overlayClassName,
 }: {
   children: React.ReactNode;
   className?: string;
@@ -28,6 +29,7 @@ export function Modal({
   desktopOnly?: boolean;
   preventDefaultClose?: boolean;
   drawerRootProps?: ComponentProps<typeof Drawer.Root>;
+  overlayClassName?: string;
 }) {
   const router = useRouter();
 
@@ -102,7 +104,10 @@ export function Modal({
         <Dialog.Overlay
           // for detecting when there's an active opened modal
           id="modal-backdrop"
-          className="animate-fade-in backdrop-blur-xs fixed inset-0 z-40 bg-neutral-50/15"
+          className={cn(
+            'animate-fade-in backdrop-blur-xs fixed inset-0 z-40 bg-neutral-50/15',
+            overlayClassName
+          )}
         />
         <Dialog.Content
           onOpenAutoFocus={(e) => e.preventDefault()}
@@ -114,7 +119,7 @@ export function Modal({
             }
           }}
           className={cn(
-            'fixed inset-0 z-40 m-auto h-fit w-full max-w-md',
+            'fixed inset-0 z-40 m-auto h-fit w-full max-w-lg',
             'border border-neutral-200 bg-white p-0 shadow-xl sm:rounded-2xl dark:border-neutral-800 dark:bg-stone-900',
             'scrollbar-hide animate-scale-in overflow-y-auto',
             className

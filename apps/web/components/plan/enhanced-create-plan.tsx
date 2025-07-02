@@ -157,7 +157,7 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
     name: "courierPricing",
   })
 
-  const couriers: Courier[] = getCouriersQuery.data || []
+  const couriers: Courier[] = getCouriersQuery.data?.couriers || []
   const isLoadingCouriers = getCouriersQuery.isLoading
   const isSubmitting = isEditing ? updatePlan.isPending : createPlan.isPending
 

@@ -15,7 +15,6 @@ import { CSVUploadProvider } from './csv-upload-provider';
 import DrawerProvider from './drawer-provider';
 import { DrawerRegistry } from '@/drawer/drawer-registry';
 import { BulkOperationsProvider } from './bulk-operations-provider';
-import BulkUploadStatusWidget from './bulk-upload-status-widget';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = React.useState(
@@ -55,13 +54,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
               <ModalProvider>
                 <ModalRegistry />
                 <DrawerProvider>
-                  <DrawerRegistry />
-                  <LoadingBar />
-                  <CSVUploadProvider preferenceKey="csvMappingPreferences">
-                    {children}
-                    <BulkUploadStatusWidget />
-                  </CSVUploadProvider>
-                  <Toaster position="top-right" toastOptions={{ duration: 4000 }} richColors />
+                  <BulkOperationsProvider>
+                    <DrawerRegistry />
+                    <LoadingBar />
+                    <CSVUploadProvider preferenceKey="csvMappingPreferences">
+                      {children}
+                    </CSVUploadProvider>
+                    <Toaster position="top-right" toastOptions={{ duration: 4000 }} richColors />
+                  </BulkOperationsProvider>
                 </DrawerProvider>
               </ModalProvider>
             </NextThemesProvider>

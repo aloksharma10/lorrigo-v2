@@ -1,15 +1,9 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
 import {
   Checkbox,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  Button,
 } from '@lorrigo/ui/components';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@lorrigo/ui/components';
 import {
@@ -28,10 +22,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@lorrigo/ui/components';
-import { Button } from '@lorrigo/ui/components';
 import { Calendar } from '@lorrigo/ui/components';
 import { Popover, PopoverContent, PopoverTrigger } from '@lorrigo/ui/components';
-import { CalendarIcon, Loader2, ChevronUp, ChevronDown, X, Plus, Download } from 'lucide-react';
+import { CalendarIcon, Loader2, ChevronUp, ChevronDown, X, Plus } from 'lucide-react';
 import { cn } from '@lorrigo/ui/lib/utils';
 import { format } from 'date-fns';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -41,14 +34,15 @@ import { toast } from '@lorrigo/ui/components';
 import { useShippingOperations, BulkOperationResponse } from '@/lib/apis/shipment';
 import { useCourierOperations } from '@/lib/apis/couriers';
 import { Badge } from '@lorrigo/ui/components';
+import { useModalStore } from '@/modal/modal-store';
 
 // Define the operation types
 type BulkOperationType = 'create-shipment' | 'schedule-pickup' | 'cancel-shipment';
 
 // Props interface
-interface BulkOperationsModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+interface BulkOrdersOperationsModalProps {
+  modalId?: string;
+  onClose?: () => void;
   selectedRows?: any[];
   operationType?: BulkOperationType;
   onOperationComplete?: (result: BulkOperationResponse) => void;
@@ -79,22 +73,21 @@ const filterSchema = z.object({
   dateRange: z.tuple([z.date().optional(), z.date().optional()]).optional(),
 });
 
-export default function BulkOperationsModal({
-  isOpen,
+export function BulkOrdersOperationsModal({
+  modalId,
   onClose,
   selectedRows = [],
   operationType = 'create-shipment',
   onOperationComplete,
-}: BulkOperationsModalProps) {
+}: BulkOrdersOperationsModalProps) {
+  const closeModal = useModalStore((state) => state.closeModal);
   const [activeTab, setActiveTab] = useState<BulkOperationType>(operationType);
   const [isLoading, setIsLoading] = useState(false);
   const [useFilters, setUseFilters] = useState(selectedRows.length === 0);
   const [selectedCouriers, setSelectedCouriers] = useState<CourierItem[]>([]);
   const [courierToAdd, setCourierToAdd] = useState<string>('');
 
-  // const router = useRouter();
   const { createBulkShipments, scheduleBulkPickups, cancelBulkShipments, downloadBulkOperationFile } = useShippingOperations();
-
   const { getCouriersQuery } = useCourierOperations();
   const availableCouriers = getCouriersQuery.data?.couriers || [];
 
@@ -130,32 +123,39 @@ export default function BulkOperationsModal({
     },
   });
 
+  // Handle close
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    } else if (modalId) {
+      closeModal(modalId);
+    }
+  };
+
   // Reset forms when modal opens
   useEffect(() => {
-    if (isOpen) {
-      createShipmentForm.reset({
-        is_schedule_pickup: true,
-        pickup_date: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      });
+    createShipmentForm.reset({
+      is_schedule_pickup: true,
+      pickup_date: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    });
 
-      schedulePickupForm.reset({
-        pickup_date: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      });
+    schedulePickupForm.reset({
+      pickup_date: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    });
 
-      cancelShipmentForm.reset({
-        reason: 'Cancelled by seller',
-      });
+    cancelShipmentForm.reset({
+      reason: 'Cancelled by seller',
+    });
 
-      filterForm.reset({
-        status: undefined,
-        dateRange: [undefined, undefined],
-      });
+    filterForm.reset({
+      status: undefined,
+      dateRange: [undefined, undefined],
+    });
 
-      setActiveTab(operationType);
-      setUseFilters(selectedRows.length === 0);
-      setSelectedCouriers([]);
-    }
-  }, [isOpen, operationType, selectedRows.length]);
+    setActiveTab(operationType);
+    setUseFilters(selectedRows.length === 0);
+    setSelectedCouriers([]);
+  }, [modalId, operationType, selectedRows.length]);
 
   // Add courier to priority list
   const addCourier = () => {
@@ -203,14 +203,14 @@ export default function BulkOperationsModal({
       // Prepare filters if using them
       const filters = useFilters
         ? {
-          status: filterForm.getValues('status'),
-          dateRange: filterForm.getValues('dateRange')
-            ? ([
-              filterForm.getValues('dateRange')?.[0]?.toISOString() || undefined,
-              filterForm.getValues('dateRange')?.[1]?.toISOString() || undefined,
-            ] as [string | undefined, string | undefined])
-            : undefined,
-        }
+            status: filterForm.getValues('status'),
+            dateRange: filterForm.getValues('dateRange')
+              ? ([
+                  filterForm.getValues('dateRange')?.[0]?.toISOString() || undefined,
+                  filterForm.getValues('dateRange')?.[1]?.toISOString() || undefined,
+                ] as [string | undefined, string | undefined])
+              : undefined,
+          }
         : undefined;
 
       // Handle different operation types
@@ -261,11 +261,22 @@ export default function BulkOperationsModal({
       // Handle successful operation
       if (result && result.success) {
         onOperationComplete?.(result);
-
-        // Navigate to bulk operations log page
         toast.success(`${getOperationTitle(activeTab)} operation started successfully`);
-        // router.push('/seller/bulk-log');
-        // onClose();
+
+        // If the backend responds with an operation object (id/code etc.),
+        // open the persistent bulk-upload status modal just like the CSV upload flow.
+        if (result.operation?.id) {
+          localStorage.setItem('bulkUploadActive', result.operation.id);
+          // openModal('bulk-upload-status', {
+          //   operationId: result.operation.id,
+          //   isMinimized: false,
+          //   onClose: () => {
+          //     localStorage.removeItem('bulkUploadActive');
+          //   },
+          // });
+        }
+
+        handleClose();
       }
     } catch (error: any) {
       toast.error(error.message || 'Operation failed');
@@ -281,7 +292,7 @@ export default function BulkOperationsModal({
 
       // Create a blob from the response data
       const blob = new Blob([response.data], {
-        type: type === 'report' ? 'text/csv' : 'application/pdf'
+        type: type === 'report' ? 'text/csv' : 'application/pdf',
       });
 
       // Create a URL for the blob
@@ -335,263 +346,258 @@ export default function BulkOperationsModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>{getOperationTitle(activeTab)}</DialogTitle>
-          <DialogDescription>{getOperationDescription(activeTab)}</DialogDescription>
-        </DialogHeader>
+    <div className="flex flex-col px-6">
+      <div className="flex items-center justify-between py-4 border-b">
+        <div>
+          <h2 className="text-xl font-semibold">{getOperationTitle(activeTab)}</h2>
+          <p className="text-sm text-muted-foreground">{getOperationDescription(activeTab)}</p>
+        </div>
+        <button onClick={handleClose} className="rounded-full p-1 hover:bg-neutral-100">
+          <X className="h-5 w-5 text-neutral-500" />
+        </button>
+      </div>
 
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as BulkOperationType)}>
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="create-shipment">Create Shipments</TabsTrigger>
-            <TabsTrigger value="schedule-pickup">Schedule Pickup</TabsTrigger>
-            <TabsTrigger value="cancel-shipment">Cancel Shipments</TabsTrigger>
-          </TabsList>
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as BulkOperationType)}>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="create-shipment">Create Shipments</TabsTrigger>
+          <TabsTrigger value="schedule-pickup">Schedule Pickup</TabsTrigger>
+          <TabsTrigger value="cancel-shipment">Cancel Shipments</TabsTrigger>
+        </TabsList>
 
-          <div className="mt-4">
-            {selectedRows.length > 0 && (
-              <div className="mb-4 flex items-center justify-between rounded-md border border-blue-200 bg-blue-50 p-3">
-                <span>
-                  {selectedRows.length} {selectedRows.length === 1 ? 'item' : 'items'} selected
-                </span>
-                <Button variant="outline" size="sm" onClick={() => setUseFilters(!useFilters)}>
-                  {useFilters ? 'Use Selected Items' : 'Use Filters Instead'}
-                </Button>
-              </div>
-            )}
+        <div className="mt-4">
+          {selectedRows.length > 0 && (
+            <div className="mb-4 flex items-center justify-between rounded-md border border-blue-200 bg-blue-50 dark:bg-blue-950 dark:border-blue-800 p-3">
+              <span>
+                {selectedRows.length} {selectedRows.length === 1 ? 'item' : 'items'} selected
+              </span>
+              <Button variant="outline" size="sm" onClick={() => setUseFilters(!useFilters)}>
+                {useFilters ? 'Use Selected Items' : 'Use Filters Instead'}
+              </Button>
+            </div>
+          )}
 
-            {/* Filter Section (common for all tabs) */}
-            {useFilters && (
-              <div className="mb-6 rounded-md border p-4">
-                <h3 className="mb-3 text-sm font-medium">Filter Items</h3>
-                <Form {...filterForm}>
-                  <form className="space-y-4">
+          {/* Filter Section (common for all tabs) */}
+          {useFilters && (
+            <div className="mb-6 rounded-md border p-4">
+              <h3 className="mb-3 text-sm font-medium">Filter Items</h3>
+              <Form {...filterForm}>
+                <form className="space-y-4">
+                  <FormField
+                    control={filterForm.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Status</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="NEW">New</SelectItem>
+                            <SelectItem value="COURIER_ASSIGNED">Courier Assigned</SelectItem>
+                            <SelectItem value="PICKUP_SCHEDULED">Pickup Scheduled</SelectItem>
+                            <SelectItem value="IN_TRANSIT">In Transit</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={filterForm.control}
-                      name="status"
+                      name="dateRange.0"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Status</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select status" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="NEW">New</SelectItem>
-                              <SelectItem value="COURIER_ASSIGNED">Courier Assigned</SelectItem>
-                              <SelectItem value="PICKUP_SCHEDULED">Pickup Scheduled</SelectItem>
-                              <SelectItem value="IN_TRANSIT">In Transit</SelectItem>
-                            </SelectContent>
-                          </Select>
+                        <FormItem className="flex flex-col">
+                          <FormLabel>From Date</FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant={'outline'}
+                                  className={cn(
+                                    'w-full pl-3 text-left font-normal',
+                                    !field.value && 'text-muted-foreground',
+                                  )}
+                                >
+                                  {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) => date > new Date()}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={filterForm.control}
-                        name="dateRange.0"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-col">
-                            <FormLabel>From Date</FormLabel>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <FormControl>
-                                  <Button
-                                    variant={'outline'}
-                                    className={cn(
-                                      'w-full pl-3 text-left font-normal',
-                                      !field.value && 'text-muted-foreground'
-                                    )}
-                                  >
-                                    {field.value ? (
-                                      format(field.value, 'PPP')
-                                    ) : (
-                                      <span>Pick a date</span>
-                                    )}
-                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                  </Button>
-                                </FormControl>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                  mode="single"
-                                  selected={field.value}
-                                  onSelect={field.onChange}
-                                  disabled={(date) => date > new Date()}
-                                  initialFocus
-                                />
-                              </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={filterForm.control}
-                        name="dateRange.1"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-col">
-                            <FormLabel>To Date</FormLabel>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <FormControl>
-                                  <Button
-                                    variant={'outline'}
-                                    className={cn(
-                                      'w-full pl-3 text-left font-normal',
-                                      !field.value && 'text-muted-foreground'
-                                    )}
-                                  >
-                                    {field.value ? (
-                                      format(field.value, 'PPP')
-                                    ) : (
-                                      <span>Pick a date</span>
-                                    )}
-                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                  </Button>
-                                </FormControl>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                  mode="single"
-                                  selected={field.value}
-                                  onSelect={field.onChange}
-                                  disabled={(date) => date > new Date()}
-                                  initialFocus
-                                />
-                              </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-              />
+                    <FormField
+                      control={filterForm.control}
+                      name="dateRange.1"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel>To Date</FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant={'outline'}
+                                  className={cn(
+                                    'w-full pl-3 text-left font-normal',
+                                    !field.value && 'text-muted-foreground',
+                                  )}
+                                >
+                                  {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) => date > new Date()}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </form>
+              </Form>
             </div>
-                  </form>
-                </Form>
-              </div>
-            )}
+          )}
 
-            {/* Operation-specific forms */}
-            <TabsContent value="create-shipment">
-              <Form {...createShipmentForm}>
-                <form className="space-y-4">
-                  {/* Courier Priority Selection */}
-                  <div className="mb-6 rounded-md border p-4">
-                    <h3 className="mb-3 text-sm font-medium">Courier Priority</h3>
-                    <div className="space-y-3">
-                      <p className="text-muted-foreground text-sm">
-                        Select and arrange couriers in order of priority. The system will try to use
-                        the first courier, then fall back to others if needed.
-                      </p>
+          {/* Operation-specific forms */}
+          <TabsContent value="create-shipment">
+            <Form {...createShipmentForm}>
+              <form className="space-y-4">
+                {/* Courier Priority Selection */}
+                <div className="mb-6 rounded-md border p-4">
+                  <h3 className="mb-3 text-sm font-medium">Courier Priority</h3>
+                  <div className="space-y-3">
+                    <p className="text-muted-foreground text-sm">
+                      Select and arrange couriers in order of priority. The system will try to use the
+                      first courier, then fall back to others if needed.
+                    </p>
 
-                      {/* Courier selector */}
-                      <div className="flex gap-2">
-                        <Select value={courierToAdd} onValueChange={setCourierToAdd}>
-                          <SelectTrigger className="flex-1">
-                            <SelectValue placeholder="Select courier" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {getCouriersQuery.isLoading ? (
-                              <SelectItem value="loading" disabled>
-                                Loading couriers...
-                              </SelectItem>
-                            ) : availableCouriers.length === 0 ? (
-                              <SelectItem value="none" disabled>
-                                No couriers available
-                              </SelectItem>
-                            ) : (
-                              availableCouriers
-                                .filter((c: any) => !selectedCouriers.some((sc) => sc.id === c.id))
-                                .map((courier: any) => (
-                                  <SelectItem key={courier.id} value={courier.id}>
-                                    {courier.name}
-                                  </SelectItem>
-                                ))
-                            )}
-                          </SelectContent>
-                        </Select>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={addCourier}
-                          disabled={!courierToAdd}
-                        >
-                          <Plus className="mr-1 h-4 w-4" /> Add
-                        </Button>
-                      </div>
+                    {/* Courier selector */}
+                    <div className="flex gap-2">
+                      <Select value={courierToAdd} onValueChange={setCourierToAdd}>
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Select courier" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getCouriersQuery.isLoading ? (
+                            <SelectItem value="loading" disabled>
+                              Loading couriers...
+                            </SelectItem>
+                          ) : availableCouriers.length === 0 ? (
+                            <SelectItem value="none" disabled>
+                              No couriers available
+                            </SelectItem>
+                          ) : (
+                            availableCouriers
+                              .filter((c: any) => !selectedCouriers.some((sc) => sc.id === c.id))
+                              .map((courier: any) => (
+                                <SelectItem key={courier.id} value={courier.id}>
+                                  {courier.name}
+                                </SelectItem>
+                              ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={addCourier}
+                        disabled={!courierToAdd}
+                      >
+                        <Plus className="mr-1 h-4 w-4" /> Add
+                      </Button>
+                    </div>
 
-                      {/* Courier priority list */}
-                      <div className="mt-3">
-                        {selectedCouriers.length === 0 ? (
-                          <div className="rounded-md border bg-gray-50 py-6 text-center">
-                            <p className="text-muted-foreground text-sm">No couriers selected</p>
+                    {/* Courier priority list */}
+                    <div className="mt-3">
+                      {selectedCouriers.length === 0 ? (
+                        <div className="rounded-md border bg-gray-50 dark:bg-transparent py-6 text-center">
+                          <p className="text-muted-foreground text-sm">No couriers selected</p>
+                          <p className="text-muted-foreground mt-1 text-xs">
+                            Add couriers to set priority order
+                          </p>
+                        </div>
+                      ) : (
+                        <div>
+                          <div className="mb-2">
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                              {selectedCouriers.length} courier
+                              {selectedCouriers.length !== 1 ? 's' : ''} selected
+                            </Badge>
                             <p className="text-muted-foreground mt-1 text-xs">
-                              Add couriers to set priority order
+                              Use arrows to reorder priority (top = highest priority)
                             </p>
                           </div>
-                        ) : (
-                          <div>
-                            <div className="mb-2">
-                              <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                                {selectedCouriers.length} courier
-                                {selectedCouriers.length !== 1 ? 's' : ''} selected
-                              </Badge>
-                              <p className="text-muted-foreground mt-1 text-xs">
-                                Use arrows to reorder priority (top = highest priority)
-                              </p>
-                            </div>
-                            <div className="max-h-60 space-y-2 overflow-y-auto">
-                              {selectedCouriers.map((courier, index) => (
-                                <div
-                                  key={courier.id}
-                                  className="flex items-center justify-between rounded border bg-white p-2"
-                                >
-                                  <span>{courier.name}</span>
-                                  <div className="flex items-center gap-1">
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => moveCourierUp(index)}
-                                      disabled={index === 0}
-                                      className="h-8 w-8 p-0"
-                                    >
-                                      <ChevronUp className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => moveCourierDown(index)}
-                                      disabled={index === selectedCouriers.length - 1}
-                                      className="h-8 w-8 p-0"
-                                    >
-                                      <ChevronDown className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => removeCourier(courier.id)}
-                                      className="h-8 w-8 p-0 text-red-500 hover:bg-red-50 hover:text-red-700"
-                                    >
-                                      <X className="h-4 w-4" />
-                                    </Button>
-                                  </div>
+                          <div className="max-h-60 space-y-2 overflow-y-auto">
+                            {selectedCouriers.map((courier, index) => (
+                              <div
+                                key={courier.id}
+                                className="flex items-center justify-between rounded border bg-white p-2"
+                              >
+                                <span>{courier.name}</span>
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => moveCourierUp(index)}
+                                    disabled={index === 0}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <ChevronUp className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => moveCourierDown(index)}
+                                    disabled={index === selectedCouriers.length - 1}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <ChevronDown className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeCourier(courier.id)}
+                                    className="h-8 w-8 p-0 text-red-500 hover:bg-red-50 hover:text-red-700"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
                                 </div>
-                              ))}
-                            </div>
+                              </div>
+                            ))}
                           </div>
-                        )}
-                      </div>
-              </div>
-            </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
                   <FormField
                     control={createShipmentForm.control}
@@ -614,103 +620,97 @@ export default function BulkOperationsModal({
                       </FormItem>
                     )}
                   />
-                </form>
-              </Form>
-            </TabsContent>
-
-            <TabsContent value="schedule-pickup">
-              <Form {...schedulePickupForm}>
-                <form className="space-y-4">
-                  <FormField
-                    control={schedulePickupForm.control}
-                    name="pickup_date"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Pickup Date</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant={'outline'}
-                                className={cn(
-                                  'w-full pl-3 text-left font-normal',
-                                  !field.value && 'text-muted-foreground'
-                                )}
-                              >
-                                {field.value ? (
-                                  format(field.value, 'PPP')
-                                ) : (
-                                  <span>Pick a date</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              disabled={(date) => date < new Date()}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </form>
-              </Form>
-            </TabsContent>
-
-            <TabsContent value="cancel-shipment">
-              <Form {...cancelShipmentForm}>
-                <form className="space-y-4">
-                  <FormField
-                    control={cancelShipmentForm.control}
-                    name="reason"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Cancellation Reason</FormLabel>
-                        <FormControl>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a reason" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Cancelled by seller">
-                                Cancelled by seller
-                              </SelectItem>
-                              <SelectItem value="Out of stock">Out of stock</SelectItem>
-                              <SelectItem value="Customer requested cancellation">
-                                Customer requested cancellation
-                              </SelectItem>
-                              <SelectItem value="Delivery issue">Delivery issue</SelectItem>
-                              <SelectItem value="Other">Other</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </form>
-              </Form>
+                </div>
+              </form>
+            </Form>
           </TabsContent>
-          </div>
-        </Tabs>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isLoading}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={isLoading}>
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isLoading ? 'Processing...' : 'Start Operation'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <TabsContent value="schedule-pickup">
+            <Form {...schedulePickupForm}>
+              <form className="space-y-4">
+                <FormField
+                  control={schedulePickupForm.control}
+                  name="pickup_date"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Pickup Date</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={'outline'}
+                              className={cn(
+                                'w-full pl-3 text-left font-normal',
+                                !field.value && 'text-muted-foreground',
+                              )}
+                            >
+                              {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) => date < new Date()}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </form>
+            </Form>
+          </TabsContent>
+
+          <TabsContent value="cancel-shipment">
+            <Form {...cancelShipmentForm}>
+              <form className="space-y-4">
+                <FormField
+                  control={cancelShipmentForm.control}
+                  name="reason"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Cancellation Reason</FormLabel>
+                      <FormControl>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a reason" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Cancelled by seller">Cancelled by seller</SelectItem>
+                            <SelectItem value="Out of stock">Out of stock</SelectItem>
+                            <SelectItem value="Customer requested cancellation">
+                              Customer requested cancellation
+                            </SelectItem>
+                            <SelectItem value="Delivery issue">Delivery issue</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </form>
+            </Form>
+          </TabsContent>
+        </div>
+      </Tabs>
+
+      <div className="flex items-center justify-end gap-2 py-4 border-t">
+        <Button variant="outline" onClick={handleClose} disabled={isLoading}>
+          Cancel
+        </Button>
+        <Button onClick={handleSubmit} disabled={isLoading}>
+          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isLoading ? 'Processing...' : 'Start Operation'}
+        </Button>
+      </div>
+    </div>
   );
 }

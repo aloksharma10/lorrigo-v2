@@ -1,8 +1,6 @@
 'use client';
 
-import { useState } from 'react';
 import { CSVUploadModal, type CSVField, type HeaderMapping, type CSVUploadResult } from '@/components/modals/csv-upload-modal';
-import { BulkUploadStatusModal } from '@/components/modals/bulk-upload-status-modal';
 import { useOrderOperations } from '@/lib/apis/order';
 import { useCSVUpload } from '@/components/providers/csv-upload-provider';
 import { toast } from '@lorrigo/ui/components';
@@ -60,9 +58,7 @@ const orderCSVFields: CSVField[] = [
 ];
 
 export default function BulkOrderUploadPage() {
-  const [operationId, setOperationId] = useState<string | null>(null);
-  const [showStatusModal, setShowStatusModal] = useState(false);
-  
+  // const { openModal } = useModal();
   const { bulkOrderUploadMutation } = useOrderOperations();
   const { setOperationId: setCSVOperationId } = useCSVUpload();
 
@@ -90,9 +86,15 @@ export default function BulkOrderUploadPage() {
 
       // Set operation ID in both local state and CSV provider
       if (result.operationId) {
-        setOperationId(result.operationId);
         setCSVOperationId(result.operationId);
-        setShowStatusModal(true);
+        // openModal('bulk-upload-status', {
+        //   operationId: result.operationId,
+        //   overlayClassName: 'backdrop-blur-none',
+        //   isMinimized: false,
+        //   onClose: () => {
+        //     localStorage.removeItem('bulkUploadActive');
+        //   },
+        // });
       }
 
       return {
@@ -107,15 +109,6 @@ export default function BulkOrderUploadPage() {
         success: false,
         errors: [error instanceof Error ? error.message : 'Upload failed'],
       };
-    }
-  };
-
-  const handleUploadComplete = (result: CSVUploadResult) => {
-    if (result.success) {
-      // Status modal is already shown, no need to do anything here
-      console.log('Upload initiated successfully');
-    } else {
-      toast.error('Upload failed: ' + (result.errors?.[0] || 'Unknown error'));
     }
   };
 
@@ -175,18 +168,6 @@ export default function BulkOrderUploadPage() {
           className="w-full"
         />
       </div>
-
-      {/* Status Modal */}
-      {operationId && (
-        <BulkUploadStatusModal
-          operationId={operationId}
-          isMinimized={showStatusModal}
-          onClose={() => {
-            setOperationId(null);
-            setShowStatusModal(false);
-          }}
-        />
-      )}
     </div>
   );
 }

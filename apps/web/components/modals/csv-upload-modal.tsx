@@ -471,11 +471,11 @@ const useCSVUploadLogic = (props: CSVUploadProps) => {
     fileInputRef,
     dragHandlers: enableDragDrop
       ? {
-          onDragEnter: handleDragEnter,
-          onDragLeave: handleDragLeave,
-          onDragOver: handleDragOver,
-          onDrop: handleDrop,
-        }
+        onDragEnter: handleDragEnter,
+        onDragLeave: handleDragLeave,
+        onDragOver: handleDragOver,
+        onDrop: handleDrop,
+      }
       : {},
   }
 }
@@ -624,7 +624,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
       const result = await onSubmit(state.file, state.headerMapping)
 
       if (result.success) {
-        completeUpload(result)
+        completeUpload(result);
 
         // Update state to completed with result
         updateState({

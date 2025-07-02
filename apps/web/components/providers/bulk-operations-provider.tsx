@@ -2,8 +2,8 @@
 
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useBulkOperationsModal } from '@/lib/hooks/use-bulk-operations-modal';
-import BulkOperationsModal from '@/components/modals/bulk-operations-modal';
 import { BulkOperationResponse } from '@/lib/apis/shipment';
+import { useModalStore } from '@/modal/modal-store';
 
 type BulkOperationType = 'create-shipment' | 'schedule-pickup' | 'cancel-shipment';
 
@@ -27,29 +27,35 @@ export function BulkOperationsProvider({
   onOperationComplete,
 }: BulkOperationsProviderProps) {
   const {
-    isOpen,
     operationType,
     selectedRows,
-    openModal,
-    closeModal,
+    openModal: openBulkModal,
+    closeModal: closeBulkModal,
     onOperationComplete: handleOperationComplete,
   } = useBulkOperationsModal(onOperationComplete);
+
+  const openModal = useModalStore((state) => state.openModal);
+
+  const openBulkOperation = (type: BulkOperationType, rows?: any[]) => {
+    openModal('bulk-orders-operations', {
+      operationType: type,
+      selectedRows: rows,
+      onOperationComplete: handleOperationComplete
+    });
+  };
+
+  const closeBulkOperation = () => {
+    closeBulkModal();
+  };
 
   return (
     <BulkOperationsContext.Provider
       value={{
-        openBulkOperation: openModal,
-        closeBulkOperation: closeModal,
+        openBulkOperation,
+        closeBulkOperation,
       }}
     >
       {children}
-      <BulkOperationsModal
-        isOpen={isOpen}
-        onClose={closeModal}
-        selectedRows={selectedRows}
-        operationType={operationType}
-        onOperationComplete={handleOperationComplete}
-      />
     </BulkOperationsContext.Provider>
   );
 }

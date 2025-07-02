@@ -2,10 +2,10 @@
 
 import type React from 'react';
 import { createContext, useContext, useEffect, useState } from 'react';
-import { toast, Progress, Button } from '@lorrigo/ui/components';
-import { X, RefreshCw } from 'lucide-react';
+import { toast } from '@lorrigo/ui/components';
 import type { CSVUploadResult, HeaderMapping } from '../modals/csv-upload-modal';
 import { useOrderOperations } from '@/lib/apis/order';
+import { useModalStore } from '@/modal/modal-store';
 
 export type CSVUploadStatus = {
   isUploading: boolean;
@@ -16,7 +16,7 @@ export type CSVUploadStatus = {
   headerMapping?: HeaderMapping;
   step: 'upload' | 'mapping' | 'processing' | 'complete';
   result?: CSVUploadResult;
-  shouldPersist?: boolean; // New flag to indicate if the upload should persist across routes
+  shouldPersist?: boolean; // Flag to indicate if the upload should persist across routes
   operationId?: string; // Track the backend operation ID
 };
 
@@ -41,6 +41,7 @@ type CSVUploadContextType = {
   updateMappingPreference: (oldName: string, newName: string, mapping: HeaderMapping, key?: string) => void;
   deleteMappingPreference: (name: string, key?: string) => void;
   preferenceKey: string;
+  openCSVUploadModal: () => void;
 };
 
 const CSVUploadContext = createContext<CSVUploadContextType>({
@@ -58,115 +59,8 @@ const CSVUploadContext = createContext<CSVUploadContextType>({
   updateMappingPreference: () => {},
   deleteMappingPreference: () => {},
   preferenceKey: 'csvMappingPreferences',
+  openCSVUploadModal: () => {},
 });
-
-// Minimized CSV Upload component that stays visible across routes
-export function MinimizedCSVUpload() {
-  const { uploadStatus, toggleMinimized, cancelUpload, resetUpload } = useCSVUpload();
-  const { bulkOrderUploadStatusQuery } = useOrderOperations();
-
-  // Get real-time status from backend using a stable hook call
-  const backendStatusQuery = bulkOrderUploadStatusQuery(uploadStatus.operationId || '');
-  const backendStatus = backendStatusQuery.data?.data;
-  const backendProgress = backendStatusQuery.data?.progress || 0;
-
-  // Show minimized widget if it's minimized OR if there's a persisted upload in localStorage
-  const shouldShow = uploadStatus.minimized || (uploadStatus.shouldPersist && uploadStatus.isUploading);
-
-  if (!shouldShow) {
-    return null;
-  }
-
-  const handleReopen = () => {
-    // If the upload is complete, reset the progress
-    if (uploadStatus.step === 'complete' || backendStatus?.status === 'COMPLETED') {
-      resetUpload();
-    } else {
-      toggleMinimized();
-    }
-  };
-
-  const handleClose = () => {
-    // Explicitly close and cleanup
-    cancelUpload();
-  };
-
-  // Determine progress display - use backend progress if available
-  const displayProgress = backendStatus ? backendProgress : (uploadStatus.progress || 0);
-  
-  // Determine status text based on backend status or local status
-  let statusText = 'Preparing upload...';
-  if (backendStatus) {
-    switch (backendStatus.status) {
-      case 'PENDING':
-        statusText = 'Queued for processing...';
-        break;
-      case 'PROCESSING':
-        statusText = `Processing: ${Math.round(displayProgress)}%`;
-        break;
-      case 'COMPLETED':
-        statusText = 'Complete!';
-        break;
-      case 'FAILED':
-        statusText = 'Processing failed';
-        break;
-      default:
-        statusText = `Processing: ${Math.round(displayProgress)}%`;
-    }
-  } else if (uploadStatus.step === 'complete') {
-    statusText = 'Complete!';
-  } else if (uploadStatus.step === 'processing') {
-    statusText = `Processing: ${Math.round(displayProgress)}%`;
-  }
-
-  return (
-    <div className="fixed bottom-4 right-4 z-50 w-72 rounded-lg border bg-background p-4 shadow-lg">
-      <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-sm font-medium">CSV Upload</h3>
-        <div className="flex space-x-1">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={handleReopen}
-            className="h-5 w-5"
-            title="Restore window"
-          >
-            <RefreshCw className="h-3 w-3" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={handleClose}
-            className="h-5 w-5"
-            title="Close upload"
-          >
-            <X className="h-3 w-3" />
-          </Button>
-        </div>
-      </div>
-      <Progress value={displayProgress} className="mb-2 h-2" />
-      <p className="text-xs text-muted-foreground">
-        {statusText}
-      </p>
-      {backendStatus && (
-        <div className="mt-1 text-xs text-muted-foreground">
-          {backendStatus.success_count > 0 && `✓ ${backendStatus.success_count} successful`}
-          {backendStatus.failed_count > 0 && ` • ✗ ${backendStatus.failed_count} failed`}
-        </div>
-      )}
-      {(uploadStatus.step === 'complete' || backendStatus?.status === 'COMPLETED') && (
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleClose}
-          className="mt-2 w-full"
-        >
-          Close
-        </Button>
-      )}
-    </div>
-  );
-}
 
 export function CSVUploadProvider({ 
   children,
@@ -185,6 +79,7 @@ export function CSVUploadProvider({
   });
 
   const [mappingPreferences, setMappingPreferences] = useState<MappingPreference[]>([]);
+  const openModal = useModalStore((state) => state.openModal);
 
   // Helper function to get all mapping preferences from localStorage
   const getAllMappingPreferences = (): MappingPreference[] => {
@@ -243,6 +138,25 @@ export function CSVUploadProvider({
             file: null,
             shouldPersist: true, // Mark as persistent when restored
           });
+
+          // If we have an operation ID and it's minimized, show the status modal
+          if (status.operationId && status.minimized) {
+            openModal('bulk-upload-status', {
+              operationId: status.operationId,
+              isMinimized: true,
+              onClose: () => {
+                localStorage.removeItem('csvUploadStatus');
+                setUploadStatus({
+                  isUploading: false,
+                  progress: 0,
+                  minimized: false,
+                  step: 'upload',
+                  shouldPersist: false,
+                  operationId: undefined,
+                });
+              }
+            });
+          }
         }
       } catch (error) {
         console.error('Error parsing saved upload status:', error);
@@ -304,6 +218,14 @@ export function CSVUploadProvider({
       }
     };
   }, [uploadStatus.isUploading, uploadStatus.step, uploadStatus.progress]);
+
+  // Open CSV upload modal
+  const openCSVUploadModal = () => {
+    // openModal('bulk-orders-operations', {
+    //   onOperationComplete: completeUpload,
+    //   preferenceKey
+    // });
+  };
 
   // Start a new upload
   const startUpload = (file: File, headerMapping: HeaderMapping) => {
@@ -482,6 +404,24 @@ export function CSVUploadProvider({
       ...prev,
       operationId,
     }));
+  
+    if (operationId) {
+      openModal('bulk-upload-status', {
+        operationId,
+        isMinimized: true,
+        onClose: () => {
+          localStorage.removeItem('csvUploadStatus');
+          setUploadStatus({
+            isUploading: false,
+            progress: 0,
+            minimized: false,
+            step: 'upload',
+            shouldPersist: false,
+            operationId: undefined,
+          });
+        }
+      });
+    }
   };
 
   return (
@@ -499,10 +439,10 @@ export function CSVUploadProvider({
       saveMappingPreference,
       updateMappingPreference,
       deleteMappingPreference,
-      preferenceKey
+      preferenceKey,
+      openCSVUploadModal
     }}>
       {children}
-      <MinimizedCSVUpload />
     </CSVUploadContext.Provider>
   );
 }

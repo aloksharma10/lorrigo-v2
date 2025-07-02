@@ -66,6 +66,7 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
             }}
             onClose={() => closeModal(id)}
             className={props.className as string}
+            overlayClassName={props.overlayClassName as string}
             desktopOnly={props.desktopOnly as boolean}
             preventDefaultClose={props.preventDefaultClose as boolean}
           >
