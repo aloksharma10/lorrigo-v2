@@ -65,8 +65,6 @@ export class OrderService {
       }
     }
 
-    console.log(where, "where")
-
     // Date filters
     if (from_date || to_date) {
       where.created_at = {};

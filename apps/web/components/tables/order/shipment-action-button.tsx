@@ -18,24 +18,6 @@ import { useDrawer } from "@/components/providers/drawer-provider";
 import { useModalStore } from "@/modal/modal-store";
 import { ShipmentBucket, ShipmentBucketManager } from "@lorrigo/utils";
 
-// Valid shipment statuses
-const VALID_SHIPMENT_STATUSES = [
-  ShipmentBucket.NEW,
-  ShipmentBucket.READY_TO_SHIP,
-  ShipmentBucket.IN_TRANSIT,
-  ShipmentBucket.DELIVERED,
-  ShipmentBucket.CANCELLED_ORDER,
-  ShipmentBucket.COURIER_ASSIGNED,
-  ShipmentBucket.PICKUP_SCHEDULED,
-  ShipmentBucket.PICKED_UP,
-  ShipmentBucket.OUT_FOR_DELIVERY,
-  ShipmentBucket.NDR,
-  ShipmentBucket.RTO,
-  ShipmentBucket.EXCEPTION,
-];
-
-
-
 // Main ShipmentActionButton Component
 interface ShipmentActionButtonProps {
   shipment: Shipment;
@@ -46,9 +28,13 @@ export const ShipmentActionButton: React.FC<ShipmentActionButtonProps> = ({ ship
   const { openDrawer } = useDrawer();
   const { openModal } = useModalStore();
 
-  // Get shipment bucket from status
-  const shipmentBucket = ShipmentBucketManager.getBucketFromStatus(shipment.status);
-  const latestTrackingEvent = shipment.trackingEvents?.[0];
+  // Get shipment bucket from the bucket number in API response
+  // If bucket is null/undefined, use the status to determine bucket
+  const shipmentBucket = shipment.bucket !== null && shipment.bucket !== undefined 
+    ? shipment.bucket 
+    : ShipmentBucketManager.getBucketFromStatus(shipment.status);
+
+  const latestTrackingEventStatus = shipment.trackingEvents?.[0]?.status;
 
   // Common dropdown trigger
   const renderDropdown = (items: React.ReactNode[]) => (
@@ -89,22 +75,35 @@ export const ShipmentActionButton: React.FC<ShipmentActionButtonProps> = ({ ship
     );
   }
 
-  // READY_TO_SHIP status
-  // if (shipmentBucket === ShipmentBucket.READY_TO_SHIP) {
-  //   return (
-  //     <div className="flex gap-2 items-center">
-  //       {renderDropdown([
-  //         <ShipmentCloneButton key="clone" shipment={shipment} />,
-  //         <DownloadLabelButton key="download" shipment={shipment} />,
-  //         <DropdownMenuSeparator key="sep" />,
-  //         <ShipmentCancelButton key="cancel" shipment={shipment} />,
-  //       ])}
-  //     </div>
-  //   );
-  // }
+  // READY_TO_SHIP status - show Schedule Pickup button  
+  if (shipmentBucket === ShipmentBucket.READY_TO_SHIP) {
+    return (
+      <div className="flex gap-2 items-center">
+        <Button
+          variant="default"
+          size="sm"
+          onClick={() => {
+            openModal('pickup-schedule', {
+              shipmentId: shipment.id,
+              orderNumber: shipment.orderNumber,
+              awb: shipment.awb,
+            });
+          }}
+        >
+          Schedule Pickup
+        </Button>
+        {renderDropdown([
+          <ShipmentCloneButton key="clone" shipment={shipment} />,
+          <DownloadLabelButton key="download" shipment={shipment} />,
+          <DropdownMenuSeparator key="sep" />,
+          <ShipmentCancelButton key="cancel" shipment={shipment} />,
+        ])}
+      </div>
+    );
+  }
 
   // COURIER_ASSIGNED status - show Schedule Pickup button
-  if (shipmentBucket === ShipmentBucket.COURIER_ASSIGNED || shipmentBucket === ShipmentBucket.READY_TO_SHIP) {
+  if (shipmentBucket === ShipmentBucket.COURIER_ASSIGNED) {
     return (
       <div className="flex gap-2 items-center">
         <Button
@@ -245,7 +244,7 @@ export const ShipmentActionButton: React.FC<ShipmentActionButtonProps> = ({ ship
     );
   }
 
-  // Default case
+  // Default case - fallback for any unhandled bucket
   return (
     <div className="flex gap-2 items-center">
       {renderDropdown([
@@ -311,7 +310,6 @@ export const ShipmentEditButton: React.FC<{ shipment: Shipment }> = ({ shipment 
 };
 
 export const DownloadLabelButton: React.FC<{ shipment: Shipment }> = ({ shipment }) => {
-  // TODO: Implement download label functionality
   const handleDownloadLabel = (thermal: boolean = false) => {
     console.log(`Download ${thermal ? 'thermal ' : ''}label for shipment:`, shipment.id);
     toast.success(`${thermal ? 'Thermal ' : ''}Label download initiated`);
@@ -334,7 +332,6 @@ export const TrackShipmentButton: React.FC<{ shipment: Shipment }> = ({ shipment
     <DropdownMenuItem 
       onClick={() => {
         console.log('Track shipment:', shipment);
-        // TODO: Implement tracking functionality
         toast.info('Tracking functionality coming soon');
       }}
     >
@@ -344,16 +341,13 @@ export const TrackShipmentButton: React.FC<{ shipment: Shipment }> = ({ shipment
 };
 
 export const CreateReturnShipmentButton: React.FC<{ shipment: Shipment }> = ({ shipment }) => {
-  const router = useRouter();
   const { openDrawer } = useDrawer();
 
   const handleCreateReturn = () => {
-    // Open clone order drawer with return order flag
     openDrawer('clone-order', {
       order: {
         ...shipment,
         orderNumber: `${shipment.orderNumber}-RT`,
-        // Add return order specific fields
         isReturnOrder: true,
       },
       size: 'greater-mid',
@@ -368,4 +362,4 @@ export const CreateReturnShipmentButton: React.FC<{ shipment: Shipment }> = ({ s
   );
 };
 
-export default memo(ShipmentActionButton); 
+export default memo(ShipmentActionButton);

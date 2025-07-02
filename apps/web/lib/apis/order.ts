@@ -236,6 +236,7 @@ export async function fetchOrders(params: any) {
         orderNumber: order.orderNumber,
         amount: order.totalAmount,
         courier: order?.courier || '',
+        bucket: order?.bucket || 0,
         courierNickname: order?.courierNickname || '',
         channel: order?.channel || '',
         customer: {

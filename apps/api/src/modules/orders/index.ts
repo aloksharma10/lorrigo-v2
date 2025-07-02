@@ -71,6 +71,7 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
                   courier: { type: 'string' },
                   courierNickname: { type: 'string' },
                   channel: { type: 'string' },
+                  bucket: { type: 'number' },
                   trackingEvents: {
                     type: 'array',
                     items: {

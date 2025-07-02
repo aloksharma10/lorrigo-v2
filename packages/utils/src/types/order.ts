@@ -2,6 +2,7 @@ export interface BackendOrder {
   id: string;
   orderNumber: string;
   status: string;
+  bucket: number;
   totalAmount: number;
   customerId: string;
   paymentType: string;

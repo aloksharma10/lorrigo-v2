@@ -7,8 +7,6 @@ import {
   OrderStatsQuerySchema,
 } from '@lorrigo/utils';
 import { z } from 'zod';
-import { addJob } from '@/lib/queue';
-import { QueueNames } from '@/lib/queue';
 import { checkAuth } from '@/middleware/auth';
 import { OrderService } from '../services/order-service';
 

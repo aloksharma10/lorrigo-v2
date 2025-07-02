@@ -3,6 +3,7 @@ import { api, apiDownload } from './axios';
 import { useAuthToken } from '@/components/providers/token-provider';
 import { toast } from '@lorrigo/ui/components';
 import { AxiosResponse } from 'axios';
+import { useRouter } from 'next/navigation';
 
 export interface CourierRate {
   id: string;
@@ -85,6 +86,7 @@ export interface BulkOperationsListResponse {
 }
 
 export const useShippingOperations = () => {
+  const router = useRouter();
   const { isTokenReady } = useAuthToken();
   const queryClient = useQueryClient();
 
@@ -115,6 +117,7 @@ export const useShippingOperations = () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['shipments'] });
       queryClient.invalidateQueries({ queryKey: ['wallet', 'balance'] });
+      router.push(`/seller/orders/forward-shipments/all`);
     },
     onError: (error: any) => {
       toast.error(error.response.data.error);

@@ -38,10 +38,10 @@ export class ShipmentController {
    * Create a new shipment
    */
   async createShipment(request: FastifyRequest, reply: FastifyReply) {
+    const { id: userId } = request.userPayload as { id: string };
     try {
-      const { id: userId } = request.userPayload as { id: string };
+      
       const data = request.body as z.infer<typeof CreateShipmentSchema>;
-
       // Validate data
       try {
         CreateShipmentSchema.parse(data);
@@ -60,6 +60,12 @@ export class ShipmentController {
 
       return reply.code(201).send(result);
     } catch (error) {
+      console.log(error, "error")
+      captureException(error as Error, {
+        userId: userId,
+        data: request.body,
+        error: error,
+      });
       return reply.code(500).send({ error: 'Failed to create shipment' });
     }
   }

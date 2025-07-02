@@ -162,13 +162,6 @@ export class ShopifyController {
       }
 
       const { shop, code, hmac, timestamp, host } = result.data;
-      console.log('Handling Shopify callback with params:', {
-        shop,
-        code: code ? `${code.substring(0, 5)}...` : 'undefined',
-        hmac: hmac ? `${hmac.substring(0, 5)}...` : 'undefined',
-        host: host || 'undefined',
-        timestamp,
-      });
 
       // Get authenticated user from request
       const user = request.userPayload;
@@ -201,7 +194,6 @@ export class ShopifyController {
 
       // Exchange code for token
       try {
-        console.log(`Attempting to exchange code for token for shop: ${shop} and user: ${user.id}`);
         const connection = await shopifyChannel.exchangeCodeForToken(code);
 
         if (!connection) {
@@ -245,7 +237,6 @@ export class ShopifyController {
 
           if (existingConnection) {
             // If we already have a connection, consider this a success
-            console.log('Code already used but connection exists for shop:', shop);
             reply.send({
               success: true,
               connection: {
@@ -259,7 +250,6 @@ export class ShopifyController {
             return;
           } else {
             // No existing connection, generate a new auth URL
-            console.log('Code already used and no connection exists, generating new auth URL');
             const authUrl = shopifyChannel.getAuthUrl();
 
             reply.send({

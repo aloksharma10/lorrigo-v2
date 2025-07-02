@@ -56,11 +56,11 @@ export class ShipmentService {
     this.vendorService = new VendorService(fastify);
     this.transactionService = new TransactionService(fastify);
 
-    this.fastify.redis.flushall().then(() => {
-      this.fastify.log.info('Redis flushed successfully');
-    }).catch((error) => {
-      this.fastify.log.error('Failed to flush Redis:', error);
-    });
+    // this.fastify.redis.flushall().then(() => {
+    //   this.fastify.log.info('Redis flushed successfully');
+    // }).catch((error) => {
+    //   this.fastify.log.error('Failed to flush Redis:', error);
+    // });
   }
 
   /**
@@ -211,6 +211,7 @@ export class ShipmentService {
     const formattedRates = rates.map((rate) => ({
       // Core courier identification
       id: rate.courier.id,
+     
       name: rate.courier.name,
       nickname: rate.courier.nickname,
       courier_code: rate.courier.courier_code,
@@ -253,6 +254,7 @@ export class ShipmentService {
     // Prepare cache data
     const cacheData = {
       rates: formattedRates,
+      internalRates: rates,
       serviceableCount: serviceabilityResult.serviceableCouriers.length,
       timestamp: Date.now(),
       orderId: id,
@@ -292,7 +294,7 @@ export class ShipmentService {
 
     const cachedRates = JSON.parse(cachedRatesString);
     const selectedCourierRate = normalizeCourierRate(
-      cachedRates.rates.find((rate: any) => rate.courier.id === data.courier_id)
+      cachedRates.internalRates.find((rate: any) => rate.courier.id === data.courier_id)
     );
     const courier_curr_zone_pricing = selectedCourierRate.pricing.pricing.zone_pricing.find(
       (zone: any) => zone.zone === selectedCourierRate.zone
@@ -716,6 +718,7 @@ export class ShipmentService {
       await this.fastify.prisma.shipment.update({
         where: { id: shipment.id }, // Use shipment.id from the found record
         data: {
+          bucket: ShipmentBucketManager.getBucketFromStatus(ShipmentStatus.PICKUP_SCHEDULED),
           status: ShipmentStatus.PICKUP_SCHEDULED,
           pickup_date: pickup_date,
           edd: estimated_delivery_date ? new Date(estimated_delivery_date) : undefined,
