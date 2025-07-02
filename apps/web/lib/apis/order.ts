@@ -36,7 +36,6 @@ export interface BulkUploadResponse {
   message: string;
 }
 
-
 // Comprehensive hook for order operations
 export const useOrderOperations = (queryParams: OrderQueryParams = {}, orderId?: string) => {
   const { isTokenReady } = useAuthToken();
@@ -136,7 +135,7 @@ export const useOrderOperations = (queryParams: OrderQueryParams = {}, orderId?:
       formData.append('mapping', JSON.stringify(mapping));
 
       const response = await api.post<BulkUploadResponse>('/bulk-operations/orders', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
 
       return response;
@@ -144,14 +143,14 @@ export const useOrderOperations = (queryParams: OrderQueryParams = {}, orderId?:
     onSuccess: (data) => {
       if (data.operationId) {
         // Trigger initial status fetch
-        queryClient.invalidateQueries({ 
-          queryKey: ['bulk-operations', data.operationId] 
+        queryClient.invalidateQueries({
+          queryKey: ['bulk-operations', data.operationId],
         });
       }
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to upload CSV');
-    }
+    },
   });
 
   // Bulk-operation status polling (orders, shipments, etc.).

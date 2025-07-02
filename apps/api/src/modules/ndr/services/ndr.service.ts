@@ -105,38 +105,48 @@ export class NDRService {
         comment,
         customer_name: ndrRecord.shipment?.order?.customer?.name || ndrRecord.order?.customer?.name,
         phone: ndrRecord.shipment?.order?.customer?.phone || ndrRecord.order?.customer?.phone,
-        address: ndrRecord.shipment?.order?.customer?.address?.address || ndrRecord.order?.customer?.address?.address,
+        address:
+          ndrRecord.shipment?.order?.customer?.address?.address ||
+          ndrRecord.order?.customer?.address?.address,
         next_attempt_date: nextAttemptDate,
-        client_order_reference_id: ndrRecord.shipment?.order?.order_reference_id || ndrRecord.order?.order_reference_id || "",
+        client_order_reference_id:
+          ndrRecord.shipment?.order?.order_reference_id ||
+          ndrRecord.order?.order_reference_id ||
+          '',
         // @ts-ignore
-        shipment: ndrRecord.shipment ? {
-          id: ndrRecord.shipment.id,
-          order: {
-            id: ndrRecord.shipment.order?.id || '',
-            code: ndrRecord.shipment.order?.code || '',
-            order_reference_id: ndrRecord.shipment.order?.order_reference_id,
-            customer: ndrRecord.shipment.order?.customer ? {
-              name: ndrRecord.shipment.order.customer.name,
-              phone: ndrRecord.shipment.order.customer.phone,
-              address: {
-                address: ndrRecord.shipment.order.customer.address?.address || '',
-                city: ndrRecord.shipment.order.customer.address?.city || '',
-                state: ndrRecord.shipment.order.customer.address?.state || '',
-                pincode: ndrRecord.shipment.order.customer.address?.pincode || '',
+        shipment: ndrRecord.shipment
+          ? {
+              id: ndrRecord.shipment.id,
+              order: {
+                id: ndrRecord.shipment.order?.id || '',
+                code: ndrRecord.shipment.order?.code || '',
+                order_reference_id: ndrRecord.shipment.order?.order_reference_id,
+                customer: ndrRecord.shipment.order?.customer
+                  ? {
+                      name: ndrRecord.shipment.order.customer.name,
+                      phone: ndrRecord.shipment.order.customer.phone,
+                      address: {
+                        address: ndrRecord.shipment.order.customer.address?.address || '',
+                        city: ndrRecord.shipment.order.customer.address?.city || '',
+                        state: ndrRecord.shipment.order.customer.address?.state || '',
+                        pincode: ndrRecord.shipment.order.customer.address?.pincode || '',
+                      },
+                    }
+                  : undefined,
               },
-            } : undefined,
-          },
-        } : undefined,
+            }
+          : undefined,
       };
 
       // Process NDR action via vendor service
       const result = await this.vendorService.handleNDRAction(vendorName, ndrData);
 
       // Check for OTP verified condition in the response
-      const isOtpVerified = result.message?.includes('Cannot Raise Re-Attempt for OTP Verified') || 
-                           result.message?.includes('OTP Verified') ||
-                           result.data?.message?.includes('Cannot Raise Re-Attempt for OTP Verified') ||
-                           result.data?.message?.includes('OTP Verified');
+      const isOtpVerified =
+        result.message?.includes('Cannot Raise Re-Attempt for OTP Verified') ||
+        result.message?.includes('OTP Verified') ||
+        result.data?.message?.includes('Cannot Raise Re-Attempt for OTP Verified') ||
+        result.data?.message?.includes('OTP Verified');
 
       if (result.success) {
         // Update NDR record with action details
@@ -254,7 +264,7 @@ export class NDRService {
     success: boolean;
     message: string;
     operationId: string;
-  }> {  
+  }> {
     try {
       // Create bulk operation record
       const bulkOperation = await this.fastify.prisma.bulkOperation.create({
@@ -590,4 +600,4 @@ export class NDRService {
       };
     }
   }
-} 
+}

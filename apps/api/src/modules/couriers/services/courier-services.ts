@@ -90,18 +90,17 @@ export class CourierService {
     });
   }
 
-  async getAllCouriers(userId: string, userRole: Role, queryParams: {
-    page?: number;
-    limit?: number;
-    search?: string;
-    is_active?: boolean;
-  } = {}) {
-    const {
-      page = 1,
-      limit = 15,
-      search,
-      is_active,
-    } = queryParams;
+  async getAllCouriers(
+    userId: string,
+    userRole: Role,
+    queryParams: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      is_active?: boolean;
+    } = {}
+  ) {
+    const { page = 1, limit = 15, search, is_active } = queryParams;
 
     const skip = (page - 1) * limit;
 

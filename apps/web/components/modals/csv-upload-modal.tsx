@@ -1,8 +1,8 @@
-"use client"
+'use client';
 
-import type React from "react"
+import type React from 'react';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
 import {
   Upload,
@@ -18,7 +18,7 @@ import {
   ArrowLeft,
   Settings,
   X,
-} from "lucide-react"
+} from 'lucide-react';
 
 import {
   Button,
@@ -49,183 +49,186 @@ import {
   TooltipProvider,
   TooltipTrigger,
   Modal,
-} from "@lorrigo/ui/components"
+} from '@lorrigo/ui/components';
 
-import { cn } from "@lorrigo/ui/lib/utils"
+import { cn } from '@lorrigo/ui/lib/utils';
 
-import { useCSVUpload, type MappingPreference } from "../providers/csv-upload-provider"
+import { useCSVUpload, type MappingPreference } from '../providers/csv-upload-provider';
 
 // Enhanced Types with better structure
 
 export interface CSVField {
-  key: string
-  label: string
-  required?: boolean
-  description?: string
-  type?: "string" | "number" | "date" | "email" | "phone"
-  validation?: (value: string) => string | null
+  key: string;
+  label: string;
+  required?: boolean;
+  description?: string;
+  type?: 'string' | 'number' | 'date' | 'email' | 'phone';
+  validation?: (value: string) => string | null;
 }
 
 export interface HeaderMapping {
-  [expectedHeader: string]: string
+  [expectedHeader: string]: string;
 }
 
 export interface CSVUploadResult {
-  success: boolean
-  processedRows?: number
-  errors?: string[]
-  warnings?: string[]
-  data?: any[]
+  success: boolean;
+  processedRows?: number;
+  errors?: string[];
+  warnings?: string[];
+  data?: any[];
   summary?: {
-    total: number
-    successful: number
-    failed: number
-    skipped: number
-  }
+    total: number;
+    successful: number;
+    failed: number;
+    skipped: number;
+  };
 }
 
 export interface CSVUploadProps {
-  fields: CSVField[]
-  onSubmit: (file: File, mapping: HeaderMapping) => Promise<CSVUploadResult>
-  title?: string
-  description?: string
-  buttonLabel?: string
-  acceptedFileTypes?: string[]
-  maxFileSize?: number
-  validateFile?: (file: File) => Promise<string | null>
-  enableMappingPreferences?: boolean
-  preferenceKey?: string
-  className?: string
-  dialogClassName?: string
-  showMinimize?: boolean
-  enableDragDrop?: boolean
-  onFileSelect?: (file: File) => void
-  onMappingChange?: (mapping: HeaderMapping) => void
-  onError?: (error: string) => void
+  fields: CSVField[];
+  onSubmit: (file: File, mapping: HeaderMapping) => Promise<CSVUploadResult>;
+  title?: string;
+  description?: string;
+  buttonLabel?: string;
+  acceptedFileTypes?: string[];
+  maxFileSize?: number;
+  validateFile?: (file: File) => Promise<string | null>;
+  enableMappingPreferences?: boolean;
+  preferenceKey?: string;
+  className?: string;
+  dialogClassName?: string;
+  showMinimize?: boolean;
+  enableDragDrop?: boolean;
+  onFileSelect?: (file: File) => void;
+  onMappingChange?: (mapping: HeaderMapping) => void;
+  onError?: (error: string) => void;
 }
 
 // Enhanced state management
 
 interface CSVUploadState {
-  step: "upload" | "mapping" | "processing" | "completed"
-  file: File | null
-  csvHeaders: string[]
-  headerMapping: HeaderMapping
-  validationErrors: Record<string, string>
-  globalError: string | null
-  minimized: boolean
-  progress: number
-  isUploading: boolean
-  openComboboxes: Record<string, boolean>
-  dragActive: boolean
-  previewData: string[][] | null
+  step: 'upload' | 'mapping' | 'processing' | 'completed';
+  file: File | null;
+  csvHeaders: string[];
+  headerMapping: HeaderMapping;
+  validationErrors: Record<string, string>;
+  globalError: string | null;
+  minimized: boolean;
+  progress: number;
+  isUploading: boolean;
+  openComboboxes: Record<string, boolean>;
+  dragActive: boolean;
+  previewData: string[][] | null;
   mappingStats: {
-    mapped: number
-    required: number
-    total: number
-  }
-  uploadResult: CSVUploadResult | null
+    mapped: number;
+    required: number;
+    total: number;
+  };
+  uploadResult: CSVUploadResult | null;
 }
 
 // Enhanced validation utilities
 
 const ValidationUtils = {
   validateFileType: (file: File, acceptedTypes: string[]): boolean => {
-    return acceptedTypes.some((type) => file.name.toLowerCase().endsWith(type.toLowerCase().replace(".", "")))
+    return acceptedTypes.some((type) =>
+      file.name.toLowerCase().endsWith(type.toLowerCase().replace('.', ''))
+    );
   },
 
   validateFileSize: (file: File, maxSizeMB: number): boolean => {
-    return file.size <= maxSizeMB * 1024 * 1024
+    return file.size <= maxSizeMB * 1024 * 1024;
   },
 
   parseCSVSafely: async (file: File): Promise<{ headers: string[]; preview: string[][] }> => {
-    const text = await file.text()
-    const lines = text.split("\n").filter((line) => line.trim())
+    const text = await file.text();
+    const lines = text.split('\n').filter((line) => line.trim());
 
     if (lines.length < 2) {
-      throw new Error("CSV file must contain at least 2 rows (headers and data).")
+      throw new Error('CSV file must contain at least 2 rows (headers and data).');
     }
 
     const parseCSVLine = (line: string): string[] => {
-      const result: string[] = []
-      let current = ""
-      let inQuotes = false
+      const result: string[] = [];
+      let current = '';
+      let inQuotes = false;
 
       for (let i = 0; i < line.length; i++) {
-        const char = line[i]
+        const char = line[i];
         if (char === '"') {
-          inQuotes = !inQuotes
-        } else if (char === "," && !inQuotes) {
-          result.push(current.trim())
-          current = ""
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim());
+          current = '';
         } else {
-          current += char
+          current += char;
         }
       }
 
-      result.push(current.trim())
-      return result.map((cell) => cell.replace(/^"|"$/g, ""))
-    }
+      result.push(current.trim());
+      return result.map((cell) => cell.replace(/^"|"$/g, ''));
+    };
 
-    const headers = parseCSVLine(lines[0] || "")
-    const preview = lines.slice(1, 6).map(parseCSVLine) // First 5 data rows for preview
+    const headers = parseCSVLine(lines[0] || '');
+    const preview = lines.slice(1, 6).map(parseCSVLine); // First 5 data rows for preview
 
-    return { headers, preview }
+    return { headers, preview };
   },
 
   calculateMappingStats: (mapping: HeaderMapping, fields: CSVField[]) => {
-    const mapped = Object.values(mapping).filter(Boolean).length
-    const required = fields.filter((f) => f.required !== false).length
-    const total = fields.length
+    const mapped = Object.values(mapping).filter(Boolean).length;
+    const required = fields.filter((f) => f.required !== false).length;
+    const total = fields.length;
 
-    return { mapped, required, total }
+    return { mapped, required, total };
   },
 
   autoMapHeaders: (csvHeaders: string[], fields: CSVField[]): HeaderMapping => {
-    const mapping: HeaderMapping = {}
-    const usedHeaders = new Set<string>()
+    const mapping: HeaderMapping = {};
+    const usedHeaders = new Set<string>();
 
     // Exact matches first
     fields.forEach((field) => {
       const exactMatch = csvHeaders.find(
         (header) =>
-          header.toLowerCase() === field.key.toLowerCase() || header.toLowerCase() === field.label.toLowerCase(),
-      )
+          header.toLowerCase() === field.key.toLowerCase() ||
+          header.toLowerCase() === field.label.toLowerCase()
+      );
 
       if (exactMatch && !usedHeaders.has(exactMatch)) {
-        mapping[field.key] = exactMatch
-        usedHeaders.add(exactMatch)
+        mapping[field.key] = exactMatch;
+        usedHeaders.add(exactMatch);
       }
-    })
+    });
 
     // Fuzzy matches for unmapped fields
     fields.forEach((field) => {
-      if (mapping[field.key]) return
+      if (mapping[field.key]) return;
 
       const fuzzyMatch = csvHeaders.find((header) => {
-        if (usedHeaders.has(header)) return false
+        if (usedHeaders.has(header)) return false;
 
-        const normalizedHeader = header.toLowerCase().replace(/[_\s-]/g, "")
-        const normalizedField = field.key.toLowerCase().replace(/[_\s-]/g, "")
-        const normalizedLabel = field.label.toLowerCase().replace(/[_\s-]/g, "")
+        const normalizedHeader = header.toLowerCase().replace(/[_\s-]/g, '');
+        const normalizedField = field.key.toLowerCase().replace(/[_\s-]/g, '');
+        const normalizedLabel = field.label.toLowerCase().replace(/[_\s-]/g, '');
 
         return (
           normalizedHeader.includes(normalizedField) ||
           normalizedField.includes(normalizedHeader) ||
           normalizedHeader.includes(normalizedLabel) ||
           normalizedLabel.includes(normalizedHeader)
-        )
-      })
+        );
+      });
 
       if (fuzzyMatch) {
-        mapping[field.key] = fuzzyMatch
-        usedHeaders.add(fuzzyMatch)
+        mapping[field.key] = fuzzyMatch;
+        usedHeaders.add(fuzzyMatch);
       }
-    })
+    });
 
-    return mapping
+    return mapping;
   },
-}
+};
 
 // Enhanced custom hook with better logic
 
@@ -234,13 +237,13 @@ const useCSVUploadLogic = (props: CSVUploadProps) => {
     fields,
     validateFile,
     maxFileSize = 10,
-    acceptedFileTypes = [".csv"],
+    acceptedFileTypes = ['.csv'],
     preferenceKey,
     enableDragDrop = true,
-  } = props
+  } = props;
 
   const csvUploadContext = useCSVUpload();
-  
+
   if (!csvUploadContext) {
     throw new Error('useCSVUploadLogic must be used within a CSVUploadProvider');
   }
@@ -256,21 +259,23 @@ const useCSVUploadLogic = (props: CSVUploadProps) => {
     resetUpload,
     completeUpload,
     preferenceKey: globalPreferenceKey,
-  } = csvUploadContext
+  } = csvUploadContext;
 
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const dragCounterRef = useRef(0)
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragCounterRef = useRef(0);
 
   const mappingPreferences = useMemo(
     () =>
       allMappingPreferences.filter((pref: MappingPreference) =>
-        preferenceKey ? pref.key === `${preferenceKey}_mappingpreferences` : pref.key === globalPreferenceKey,
+        preferenceKey
+          ? pref.key === `${preferenceKey}_mappingpreferences`
+          : pref.key === globalPreferenceKey
       ),
-    [allMappingPreferences, preferenceKey, globalPreferenceKey],
-  )
+    [allMappingPreferences, preferenceKey, globalPreferenceKey]
+  );
 
   const [state, setState] = useState<CSVUploadState>({
-    step: "upload",
+    step: 'upload',
     file: null,
     csvHeaders: [],
     headerMapping: {},
@@ -284,32 +289,35 @@ const useCSVUploadLogic = (props: CSVUploadProps) => {
     previewData: null,
     mappingStats: { mapped: 0, required: 0, total: 0 },
     uploadResult: null,
-  })
+  });
 
-  const [editingPreference, setEditingPreference] = useState<MappingPreference | null>(null)
-  const [newMappingName, setNewMappingName] = useState("")
-  const [showSaveMappingDialog, setShowSaveMappingDialog] = useState(false)
+  const [editingPreference, setEditingPreference] = useState<MappingPreference | null>(null);
+  const [newMappingName, setNewMappingName] = useState('');
+  const [showSaveMappingDialog, setShowSaveMappingDialog] = useState(false);
 
   // Enhanced state updater with validation
 
   const updateState = useCallback(
     (updates: Partial<CSVUploadState>) => {
       setState((prev) => {
-        const newState = { ...prev, ...updates }
+        const newState = { ...prev, ...updates };
         // Auto-calculate mapping stats when mapping changes
         if (updates.headerMapping) {
-          newState.mappingStats = ValidationUtils.calculateMappingStats(newState.headerMapping, fields)
+          newState.mappingStats = ValidationUtils.calculateMappingStats(
+            newState.headerMapping,
+            fields
+          );
         }
-        return newState
-      })
+        return newState;
+      });
     },
-    [fields],
-  )
+    [fields]
+  );
 
   // Reset to initial state for new upload
   const resetForNewUpload = useCallback(() => {
     updateState({
-      step: "upload",
+      step: 'upload',
       file: null,
       csvHeaders: [],
       headerMapping: {},
@@ -322,13 +330,13 @@ const useCSVUploadLogic = (props: CSVUploadProps) => {
       previewData: null,
       mappingStats: { mapped: 0, required: 0, total: 0 },
       uploadResult: null,
-    })
+    });
 
     // Reset file input
     if (fileInputRef.current) {
-      fileInputRef.current.value = ""
+      fileInputRef.current.value = '';
     }
-  }, [updateState])
+  }, [updateState]);
 
   // Enhanced file validation
 
@@ -336,123 +344,123 @@ const useCSVUploadLogic = (props: CSVUploadProps) => {
     async (file: File): Promise<string | null> => {
       try {
         if (!ValidationUtils.validateFileType(file, acceptedFileTypes)) {
-          return `Please upload a file with one of these extensions: ${acceptedFileTypes.join(", ")}`
+          return `Please upload a file with one of these extensions: ${acceptedFileTypes.join(', ')}`;
         }
 
         if (!ValidationUtils.validateFileSize(file, maxFileSize)) {
-          return `File size must be less than ${maxFileSize}MB`
+          return `File size must be less than ${maxFileSize}MB`;
         }
 
         if (validateFile) {
-          const customValidation = await validateFile(file)
-          if (customValidation) return customValidation
+          const customValidation = await validateFile(file);
+          if (customValidation) return customValidation;
         }
 
-        return null
+        return null;
       } catch (error) {
-        return error instanceof Error ? error.message : "File validation failed"
+        return error instanceof Error ? error.message : 'File validation failed';
       }
     },
-    [acceptedFileTypes, maxFileSize, validateFile],
-  )
+    [acceptedFileTypes, maxFileSize, validateFile]
+  );
 
   // Enhanced drag and drop handlers
 
   const handleDragEnter = useCallback(
     (e: React.DragEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
-      dragCounterRef.current++
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounterRef.current++;
 
       if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
-        updateState({ dragActive: true })
+        updateState({ dragActive: true });
       }
     },
-    [updateState],
-  )
+    [updateState]
+  );
 
   const handleDragLeave = useCallback(
     (e: React.DragEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
-      dragCounterRef.current--
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounterRef.current--;
 
       if (dragCounterRef.current === 0) {
-        updateState({ dragActive: false })
+        updateState({ dragActive: false });
       }
     },
-    [updateState],
-  )
+    [updateState]
+  );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-  }, [])
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
 
   const handleDrop = useCallback(
     async (e: React.DragEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
-      updateState({ dragActive: false })
-      dragCounterRef.current = 0
+      e.preventDefault();
+      e.stopPropagation();
+      updateState({ dragActive: false });
+      dragCounterRef.current = 0;
 
-      const files = Array.from(e.dataTransfer.files)
+      const files = Array.from(e.dataTransfer.files);
       if (files.length > 0) {
-        const file = files[0]
+        const file = files[0];
         if (file) {
-          await processFile(file)
+          await processFile(file);
         }
       }
     },
-    [updateState],
-  )
+    [updateState]
+  );
 
   // Enhanced file processing
 
   const processFile = useCallback(
     async (file: File) => {
-      updateState({ globalError: null, validationErrors: {} })
+      updateState({ globalError: null, validationErrors: {} });
 
       try {
-        const validationError = await validateFileInternal(file)
+        const validationError = await validateFileInternal(file);
         if (validationError) {
-          updateState({ globalError: validationError })
-          return
+          updateState({ globalError: validationError });
+          return;
         }
 
-        const { headers, preview } = await ValidationUtils.parseCSVSafely(file)
-        const autoMapping = ValidationUtils.autoMapHeaders(headers, fields)
+        const { headers, preview } = await ValidationUtils.parseCSVSafely(file);
+        const autoMapping = ValidationUtils.autoMapHeaders(headers, fields);
 
         updateState({
           file,
           csvHeaders: headers,
           headerMapping: autoMapping,
           previewData: preview,
-          step: "mapping",
-        })
+          step: 'mapping',
+        });
 
-        props.onFileSelect?.(file)
+        props.onFileSelect?.(file);
       } catch (error) {
         updateState({
-          globalError: error instanceof Error ? error.message : "Failed to parse CSV file",
-        })
+          globalError: error instanceof Error ? error.message : 'Failed to parse CSV file',
+        });
       }
     },
-    [validateFileInternal, fields, props, updateState],
-  )
+    [validateFileInternal, fields, props, updateState]
+  );
 
   // Sync with global upload status
 
   useEffect(() => {
-    if (uploadStatus.isUploading && uploadStatus.step === "processing") {
+    if (uploadStatus.isUploading && uploadStatus.step === 'processing') {
       updateState({
-        step: "processing",
+        step: 'processing',
         progress: uploadStatus.progress,
         isUploading: true,
         minimized: uploadStatus.minimized,
-      })
+      });
     }
-  }, [uploadStatus, props, updateState])
+  }, [uploadStatus, props, updateState]);
 
   return {
     state,
@@ -477,22 +485,22 @@ const useCSVUploadLogic = (props: CSVUploadProps) => {
     fileInputRef,
     dragHandlers: enableDragDrop
       ? {
-        onDragEnter: handleDragEnter,
-        onDragLeave: handleDragLeave,
-        onDragOver: handleDragOver,
-        onDrop: handleDrop,
-      }
+          onDragEnter: handleDragEnter,
+          onDragLeave: handleDragLeave,
+          onDragOver: handleDragOver,
+          onDrop: handleDrop,
+        }
       : {},
-  }
-}
+  };
+};
 
 // Enhanced main component
 
 export function CSVUploadModal(props: CSVUploadProps) {
   const {
-    title = "Upload CSV File",
-    description = "Upload a CSV file and map the columns to required fields.",
-    buttonLabel = "Upload CSV",
+    title = 'Upload CSV File',
+    description = 'Upload a CSV file and map the columns to required fields.',
+    buttonLabel = 'Upload CSV',
     showMinimize = true,
     className,
     dialogClassName,
@@ -501,7 +509,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
     onSubmit,
     enableMappingPreferences = true,
     enableDragDrop = true,
-  } = props
+  } = props;
 
   const {
     state,
@@ -525,150 +533,152 @@ export function CSVUploadModal(props: CSVUploadProps) {
     preferenceKey: actualPreferenceKey,
     fileInputRef,
     dragHandlers,
-  } = useCSVUploadLogic(props)
+  } = useCSVUploadLogic(props);
 
-  const [open, setOpen] = useState(false)
-  const csvUploadContext = useCSVUpload()
-  
+  const [open, setOpen] = useState(false);
+  const csvUploadContext = useCSVUpload();
+
   if (!csvUploadContext) {
     throw new Error('CSVUploadModal must be used within a CSVUploadProvider');
   }
-  
-  const { uploadStatus } = csvUploadContext
+
+  const { uploadStatus } = csvUploadContext;
 
   // Enhanced file change handler
 
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const selectedFile = e.target.files?.[0]
+      const selectedFile = e.target.files?.[0];
       if (selectedFile) {
-        await processFile(selectedFile)
+        await processFile(selectedFile);
       }
     },
-    [processFile],
-  )
+    [processFile]
+  );
 
   // Enhanced mapping change handler
 
   const handleMappingChange = useCallback(
     (fieldKey: string, csvHeader: string) => {
-    const newMapping = {
-      ...state.headerMapping,
-      [fieldKey]: csvHeader,
-      }
+      const newMapping = {
+        ...state.headerMapping,
+        [fieldKey]: csvHeader,
+      };
 
-      updateState({ headerMapping: newMapping })
-      onMappingChange?.(newMapping)
+      updateState({ headerMapping: newMapping });
+      onMappingChange?.(newMapping);
     },
-    [state.headerMapping, updateState, onMappingChange],
-  )
+    [state.headerMapping, updateState, onMappingChange]
+  );
 
   // Apply saved mapping with validation
 
   const applySavedMapping = useCallback(
     (mapping: HeaderMapping) => {
-      const validMapping: HeaderMapping = {}
+      const validMapping: HeaderMapping = {};
 
       Object.entries(mapping).forEach(([key, value]) => {
         if (value && state.csvHeaders.includes(value)) {
-          validMapping[key] = value
+          validMapping[key] = value;
         }
-      })
+      });
 
-      updateState({ headerMapping: validMapping })
-      onMappingChange?.(validMapping)
+      updateState({ headerMapping: validMapping });
+      onMappingChange?.(validMapping);
     },
-    [state.csvHeaders, updateState, onMappingChange],
-  )
+    [state.csvHeaders, updateState, onMappingChange]
+  );
 
   // Enhanced mapping validation
 
   const validateMapping = useCallback((): string[] => {
-    const errors: string[] = []
-    const requiredFields = fields.filter((f) => f.required !== false)
-    const unmappedRequired = requiredFields.filter((field) => !state.headerMapping[field.key])
+    const errors: string[] = [];
+    const requiredFields = fields.filter((f) => f.required !== false);
+    const unmappedRequired = requiredFields.filter((field) => !state.headerMapping[field.key]);
 
     if (unmappedRequired.length > 0) {
-      errors.push(`Missing required fields: ${unmappedRequired.map((f) => f.label).join(", ")}`)
+      errors.push(`Missing required fields: ${unmappedRequired.map((f) => f.label).join(', ')}`);
     }
 
     // Check for duplicate mappings
-    const mappedHeaders = Object.values(state.headerMapping).filter(Boolean)
-    const duplicates = mappedHeaders.filter((header, index) => mappedHeaders.indexOf(header) !== index)
+    const mappedHeaders = Object.values(state.headerMapping).filter(Boolean);
+    const duplicates = mappedHeaders.filter(
+      (header, index) => mappedHeaders.indexOf(header) !== index
+    );
 
     if (duplicates.length > 0) {
-      errors.push(`Duplicate column mappings: ${[...new Set(duplicates)].join(", ")}`)
+      errors.push(`Duplicate column mappings: ${[...new Set(duplicates)].join(', ')}`);
     }
 
-    return errors
-  }, [fields, state.headerMapping])
+    return errors;
+  }, [fields, state.headerMapping]);
 
   // Enhanced form submission with completion handling
 
   const handleSubmit = useCallback(async () => {
-    const validationErrors = validateMapping()
+    const validationErrors = validateMapping();
 
     if (validationErrors.length > 0) {
-      updateState({ globalError: validationErrors.join("; ") })
-      return
+      updateState({ globalError: validationErrors.join('; ') });
+      return;
     }
 
     if (!state.file) {
-      updateState({ globalError: "Please select a file first." })
-      return
+      updateState({ globalError: 'Please select a file first.' });
+      return;
     }
 
     updateState({
       globalError: null,
-      step: "processing",
+      step: 'processing',
       isUploading: true,
       progress: 0,
-    })
+    });
 
     try {
-      startUpload(state.file, state.headerMapping)
+      startUpload(state.file, state.headerMapping);
 
-      const result = await onSubmit(state.file, state.headerMapping)
+      const result = await onSubmit(state.file, state.headerMapping);
 
-        if (result.success) {
+      if (result.success) {
         completeUpload(result);
 
         // Close modal and minimize immediately after successful upload
         setTimeout(() => {
-          toggleMinimized()
-          setOpen(false)
-        }, 300)
+          toggleMinimized();
+          setOpen(false);
+        }, 300);
 
         // Update state to completed with result
-      updateState({ 
+        updateState({
           progress: 100,
           isUploading: false,
-          step: "completed",
+          step: 'completed',
           uploadResult: result,
-        })
+        });
 
         // Auto-transition to allow next upload after showing success
         setTimeout(() => {
-    updateState({
-            step: "completed",
-          })
-        }, 1000)
+          updateState({
+            step: 'completed',
+          });
+        }, 1000);
       } else {
         updateState({
-          globalError: result.errors?.join(", ") || "Upload failed",
-          step: "mapping",
-      isUploading: false,
-        })
-        props.onError?.(result.errors?.join(", ") || "Upload failed")
+          globalError: result.errors?.join(', ') || 'Upload failed',
+          step: 'mapping',
+          isUploading: false,
+        });
+        props.onError?.(result.errors?.join(', ') || 'Upload failed');
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Upload failed"
+      const errorMessage = error instanceof Error ? error.message : 'Upload failed';
       updateState({
         globalError: errorMessage,
-        step: "mapping",
+        step: 'mapping',
         isUploading: false,
-      })
-      props.onError?.(errorMessage)
+      });
+      props.onError?.(errorMessage);
     }
   }, [
     validateMapping,
@@ -680,14 +690,14 @@ export function CSVUploadModal(props: CSVUploadProps) {
     onSubmit,
     completeUpload,
     props,
-  ])
+  ]);
 
   // Enhanced save mapping handler
 
   const handleSaveMapping = useCallback(() => {
     if (!newMappingName.trim()) {
-      updateState({ globalError: "Please enter a name for the mapping" })
-      return
+      updateState({ globalError: 'Please enter a name for the mapping' });
+      return;
     }
 
     try {
@@ -696,18 +706,22 @@ export function CSVUploadModal(props: CSVUploadProps) {
           editingPreference.name,
           newMappingName.trim(),
           state.headerMapping,
-          `${actualPreferenceKey}_mappingpreferences`,
-        )
+          `${actualPreferenceKey}_mappingpreferences`
+        );
       } else {
-        saveMappingPreference(newMappingName.trim(), state.headerMapping, `${actualPreferenceKey}_mappingpreferences`)
+        saveMappingPreference(
+          newMappingName.trim(),
+          state.headerMapping,
+          `${actualPreferenceKey}_mappingpreferences`
+        );
       }
 
-      setNewMappingName("")
-      setEditingPreference(null)
-      setShowSaveMappingDialog(false)
-      updateState({ globalError: null })
+      setNewMappingName('');
+      setEditingPreference(null);
+      setShowSaveMappingDialog(false);
+      updateState({ globalError: null });
     } catch (error) {
-      updateState({ globalError: "Failed to save mapping preference" })
+      updateState({ globalError: 'Failed to save mapping preference' });
     }
   }, [
     newMappingName,
@@ -717,7 +731,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
     updateMappingPreference,
     saveMappingPreference,
     updateState,
-  ])
+  ]);
 
   // Step configuration for better organization
 
@@ -728,34 +742,34 @@ export function CSVUploadModal(props: CSVUploadProps) {
         description,
         showBack: false,
         showNext: false,
-        nextLabel: "",
+        nextLabel: '',
       },
       mapping: {
-        title: "Map CSV Fields",
-        description: "Map your CSV columns to the required fields below.",
+        title: 'Map CSV Fields',
+        description: 'Map your CSV columns to the required fields below.',
         showBack: true,
         showNext: true,
-        nextLabel: "Process File",
+        nextLabel: 'Process File',
       },
       processing: {
-        title: "Processing CSV File",
-        description: "Your file is being processed. This may take a few moments.",
+        title: 'Processing CSV File',
+        description: 'Your file is being processed. This may take a few moments.',
         showBack: false,
         showNext: false,
-        nextLabel: "",
+        nextLabel: '',
       },
       completed: {
-        title: "Upload Complete",
-        description: "Your file has been processed successfully.",
+        title: 'Upload Complete',
+        description: 'Your file has been processed successfully.',
         showBack: false,
         showNext: false,
-        nextLabel: "",
+        nextLabel: '',
       },
     }),
-    [title, description],
-  )
+    [title, description]
+  );
 
-  const currentStepConfig = stepConfig[state.step]
+  const currentStepConfig = stepConfig[state.step];
 
   return (
     <TooltipProvider>
@@ -765,16 +779,18 @@ export function CSVUploadModal(props: CSVUploadProps) {
       </Button>
 
       <Modal className="max-w-[700px]" showModal={open} setShowModal={setOpen}>
-        <div className={cn("flex flex-col", dialogClassName)}>
+        <div className={cn('flex flex-col', dialogClassName)}>
           {/* Enhanced Header */}
-          <div className="border-b p-5 border-border bg-muted/30 sticky top-0">
+          <div className="border-border bg-muted/30 sticky top-0 border-b p-5">
             <div className="flex items-center justify-between">
               <div>
-                <span className="flex text-xl font-semibold items-center gap-2">
-                  {state.step === "upload" && <Upload className="h-5 w-5" />}
-                  {state.step === "mapping" && <Settings className="h-5 w-5" />}
-                  {state.step === "processing" && <Loader2 className="h-5 w-5 animate-spin" />}
-                  {state.step === "completed" && <CheckCircle2 className="h-5 w-5 text-green-500" />}
+                <span className="flex items-center gap-2 text-xl font-semibold">
+                  {state.step === 'upload' && <Upload className="h-5 w-5" />}
+                  {state.step === 'mapping' && <Settings className="h-5 w-5" />}
+                  {state.step === 'processing' && <Loader2 className="h-5 w-5 animate-spin" />}
+                  {state.step === 'completed' && (
+                    <CheckCircle2 className="h-5 w-5 text-green-500" />
+                  )}
                   {currentStepConfig.title}
                 </span>
                 <p className="text-base">{currentStepConfig.description}</p>
@@ -791,22 +807,22 @@ export function CSVUploadModal(props: CSVUploadProps) {
             <div className="space-y-6">
               {/* Global Error Alert */}
               {state.globalError && (
-            <Alert variant="destructive">
+                <Alert variant="destructive">
                   <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Error</AlertTitle>
+                  <AlertTitle>Error</AlertTitle>
                   <AlertDescription>{state.globalError}</AlertDescription>
-            </Alert>
-          )}
+                </Alert>
+              )}
 
-          {/* Upload Step */}
-              {state.step === "upload" && (
+              {/* Upload Step */}
+              {state.step === 'upload' && (
                 <div className="space-y-6">
                   {/* File Upload Area */}
                   <Card
                     className={cn(
-                      "border-2 border-dashed transition-colors cursor-pointer hover:border-primary/50",
-                      state.dragActive && "border-primary bg-primary/5",
-                      enableDragDrop && "min-h-[200px]",
+                      'hover:border-primary/50 cursor-pointer border-2 border-dashed transition-colors',
+                      state.dragActive && 'border-primary bg-primary/5',
+                      enableDragDrop && 'min-h-[200px]'
                     )}
                     {...dragHandlers}
                   >
@@ -814,41 +830,44 @@ export function CSVUploadModal(props: CSVUploadProps) {
                       <div className="mb-4">
                         <FileText
                           className={cn(
-                            "h-12 w-12 transition-colors",
-                            state.dragActive ? "text-primary" : "text-muted-foreground",
+                            'h-12 w-12 transition-colors',
+                            state.dragActive ? 'text-primary' : 'text-muted-foreground'
                           )}
                         />
                       </div>
 
                       <div className="space-y-2">
                         <h3 className="text-lg font-semibold">
-                          {state.dragActive ? "Drop your CSV file here" : "Upload CSV File"}
+                          {state.dragActive ? 'Drop your CSV file here' : 'Upload CSV File'}
                         </h3>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-muted-foreground text-sm">
                           {enableDragDrop
-                            ? "Drag and drop your file here, or click to browse"
-                            : "Click to browse for your file"}
+                            ? 'Drag and drop your file here, or click to browse'
+                            : 'Click to browse for your file'}
                         </p>
                       </div>
 
                       <div className="mt-6 space-y-4">
-                        <Button onClick={() => fileInputRef.current?.click()} className="min-w-[120px]">
+                        <Button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="min-w-[120px]"
+                        >
                           <Upload className="mr-2 h-4 w-4" />
                           Browse Files
                         </Button>
 
-                <Input 
+                        <Input
                           ref={fileInputRef}
-                  type="file" 
-                          accept={props.acceptedFileTypes?.join(",")}
-                  onChange={handleFileChange} 
+                          type="file"
+                          accept={props.acceptedFileTypes?.join(',')}
+                          onChange={handleFileChange}
                           className="hidden"
-                />
-              </div>
+                        />
+                      </div>
 
-                      <div className="mt-4 flex flex-wrap gap-2 justify-center">
+                      <div className="mt-4 flex flex-wrap justify-center gap-2">
                         <Badge variant="secondary" className="text-xs">
-                          {props.acceptedFileTypes?.join(", ") || ".csv"}
+                          {props.acceptedFileTypes?.join(', ') || '.csv'}
                         </Badge>
                         {props.maxFileSize && (
                           <Badge variant="secondary" className="text-xs">
@@ -858,12 +877,12 @@ export function CSVUploadModal(props: CSVUploadProps) {
                       </div>
                     </CardContent>
                   </Card>
-            </div>
-          )}
+                </div>
+              )}
 
-          {/* Mapping Step */}
-              {state.step === "mapping" && (
-            <div className="space-y-6">
+              {/* Mapping Step */}
+              {state.step === 'mapping' && (
+                <div className="space-y-6">
                   {/* File Info */}
                   <Card>
                     <CardContent className="p-4">
@@ -872,7 +891,9 @@ export function CSVUploadModal(props: CSVUploadProps) {
                           <FileText className="h-5 w-5 text-green-500" />
                           <div>
                             <p className="font-medium">{state.file?.name}</p>
-                            <p className="text-sm text-muted-foreground">{state.csvHeaders.length} columns detected</p>
+                            <p className="text-muted-foreground text-sm">
+                              {state.csvHeaders.length} columns detected
+                            </p>
                           </div>
                         </div>
 
@@ -880,13 +901,15 @@ export function CSVUploadModal(props: CSVUploadProps) {
                           <p className="text-sm font-medium">
                             {state.mappingStats.mapped}/{state.mappingStats.total} mapped
                           </p>
-                          <p className="text-xs text-muted-foreground">{state.mappingStats.required} required</p>
+                          <p className="text-muted-foreground text-xs">
+                            {state.mappingStats.required} required
+                          </p>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
-              {/* Saved Mappings */}
+                  {/* Saved Mappings */}
                   {enableMappingPreferences && mappingPreferences.length > 0 && (
                     <Card>
                       <CardHeader>
@@ -896,7 +919,10 @@ export function CSVUploadModal(props: CSVUploadProps) {
                       <CardContent>
                         <Popover>
                           <PopoverTrigger asChild>
-                            <Button variant="outline" className="w-full justify-between bg-transparent">
+                            <Button
+                              variant="outline"
+                              className="w-full justify-between bg-transparent"
+                            >
                               Choose a saved mapping...
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
@@ -922,11 +948,11 @@ export function CSVUploadModal(props: CSVUploadProps) {
                                               variant="ghost"
                                               size="icon"
                                               onClick={(e) => {
-                                                e.preventDefault()
-                                                e.stopPropagation()
-                                                setEditingPreference(mapping)
-                                                setNewMappingName(mapping.name)
-                                                setShowSaveMappingDialog(true)
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                setEditingPreference(mapping);
+                                                setNewMappingName(mapping.name);
+                                                setShowSaveMappingDialog(true);
                                               }}
                                               className="h-6 w-6"
                                             >
@@ -941,10 +967,17 @@ export function CSVUploadModal(props: CSVUploadProps) {
                                               variant="ghost"
                                               size="icon"
                                               onClick={(e) => {
-                                                e.preventDefault()
-                                                e.stopPropagation()
-                                                if (window.confirm(`Delete mapping "${mapping.name}"?`)) {
-                                                  deleteMappingPreference(mapping.name, mapping.key)
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                if (
+                                                  window.confirm(
+                                                    `Delete mapping "${mapping.name}"?`
+                                                  )
+                                                ) {
+                                                  deleteMappingPreference(
+                                                    mapping.name,
+                                                    mapping.key
+                                                  );
                                                 }
                                               }}
                                               className="h-6 w-6 text-red-500 hover:text-red-700"
@@ -954,7 +987,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
                                           </TooltipTrigger>
                                           <TooltipContent>Delete mapping</TooltipContent>
                                         </Tooltip>
-                  </div>
+                                      </div>
                                     </CommandItem>
                                   ))}
                                 </CommandGroup>
@@ -964,147 +997,166 @@ export function CSVUploadModal(props: CSVUploadProps) {
                         </Popover>
                       </CardContent>
                     </Card>
-              )}
+                  )}
 
-              {/* Field Mapping */}
+                  {/* Field Mapping */}
                   <Card>
                     <CardHeader>
-                <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between">
                         <div>
                           <CardTitle className="text-base">Column Mapping</CardTitle>
                           <CardDescription>Map CSV columns to your data fields</CardDescription>
                         </div>
                         {enableMappingPreferences && (
-                    <Button
-                      variant="outline"
-                      size="sm"
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => {
-                              setEditingPreference(null)
-                              setNewMappingName("")
-                              setShowSaveMappingDialog(true)
+                              setEditingPreference(null);
+                              setNewMappingName('');
+                              setShowSaveMappingDialog(true);
                             }}
-                    >
-                      <Save className="mr-2 h-4 w-4" />
-                      Save Mapping
-                    </Button>
-                  )}
-                </div>
+                          >
+                            <Save className="mr-2 h-4 w-4" />
+                            Save Mapping
+                          </Button>
+                        )}
+                      </div>
                     </CardHeader>
                     <CardContent className="overflow-hidden">
                       <div className="h-[300px] overflow-y-auto">
                         <div className="space-y-4">
-                {fields.map((field) => (
+                          {fields.map((field) => (
                             <div
                               key={field.key}
-                              className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg"
+                              className="grid grid-cols-1 gap-4 rounded-lg border p-4 md:grid-cols-2"
                             >
                               <div className="space-y-2">
                                 <div className="flex items-center gap-2">
                                   <Label className="font-medium">{field.label}</Label>
                                   {field.required !== false && (
-                                    <Badge variant="destructive" className="text-xs px-1.5 py-0.5">
+                                    <Badge variant="destructive" className="px-1.5 py-0.5 text-xs">
                                       Required
                                     </Badge>
                                   )}
                                   {field.type && (
-                                    <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
+                                    <Badge variant="secondary" className="px-1.5 py-0.5 text-xs">
                                       {field.type}
                                     </Badge>
                                   )}
                                 </div>
-                      {field.description && (
-                                  <p className="text-sm text-muted-foreground">{field.description}</p>
-                      )}
-                    </div>
-                    
+                                {field.description && (
+                                  <p className="text-muted-foreground text-sm">
+                                    {field.description}
+                                  </p>
+                                )}
+                              </div>
+
                               <div className="space-y-2">
-                      <Popover
-                        open={state.openComboboxes[field.key] || false}
-                        onOpenChange={(open) =>
-                          updateState({
-                                      openComboboxes: { ...state.openComboboxes, [field.key]: open },
-                          })
-                        }
-                      >
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                                      className={cn(
-                                        "w-full justify-between",
-                                        !state.headerMapping[field.key] && field.required !== false && "border-red-200",
-                                      )}
-                          >
-                                      {state.headerMapping[field.key] || "Select CSV column..."}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-full p-0">
-                          <Command>
-                            <CommandInput placeholder="Search columns..." />
-                            <CommandList>
-                              <CommandEmpty>No column found.</CommandEmpty>
-                              <CommandGroup>
-                                <CommandItem
-                                  onSelect={() => {
-                                              handleMappingChange(field.key, "")
+                                <Popover
+                                  open={state.openComboboxes[field.key] || false}
+                                  onOpenChange={(open) =>
                                     updateState({
-                                                openComboboxes: { ...state.openComboboxes, [field.key]: false },
-                                              })
-                                  }}
+                                      openComboboxes: {
+                                        ...state.openComboboxes,
+                                        [field.key]: open,
+                                      },
+                                    })
+                                  }
                                 >
-                                  <Check
-                                    className={cn(
-                                                "mr-2 h-4 w-4",
-                                                !state.headerMapping[field.key] ? "opacity-100" : "opacity-0",
-                                    )}
-                                  />
-                                            <span className="text-muted-foreground">-- Not mapped --</span>
-                                </CommandItem>
-                                {state.csvHeaders.map((header) => (
-                                  <CommandItem
-                                    key={header}
-                                    onSelect={() => {
-                                                handleMappingChange(field.key, header)
-                                      updateState({
-                                                  openComboboxes: { ...state.openComboboxes, [field.key]: false },
-                                                })
-                                    }}
-                                  >
-                                    <Check
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      role="combobox"
                                       className={cn(
-                                                  "mr-2 h-4 w-4",
-                                        state.headerMapping[field.key] === header
-                                                    ? "opacity-100"
-                                                    : "opacity-0",
+                                        'w-full justify-between',
+                                        !state.headerMapping[field.key] &&
+                                          field.required !== false &&
+                                          'border-red-200'
                                       )}
-                                    />
-                                    {header}
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                                    >
+                                      {state.headerMapping[field.key] || 'Select CSV column...'}
+                                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-full p-0">
+                                    <Command>
+                                      <CommandInput placeholder="Search columns..." />
+                                      <CommandList>
+                                        <CommandEmpty>No column found.</CommandEmpty>
+                                        <CommandGroup>
+                                          <CommandItem
+                                            onSelect={() => {
+                                              handleMappingChange(field.key, '');
+                                              updateState({
+                                                openComboboxes: {
+                                                  ...state.openComboboxes,
+                                                  [field.key]: false,
+                                                },
+                                              });
+                                            }}
+                                          >
+                                            <Check
+                                              className={cn(
+                                                'mr-2 h-4 w-4',
+                                                !state.headerMapping[field.key]
+                                                  ? 'opacity-100'
+                                                  : 'opacity-0'
+                                              )}
+                                            />
+                                            <span className="text-muted-foreground">
+                                              -- Not mapped --
+                                            </span>
+                                          </CommandItem>
+                                          {state.csvHeaders.map((header) => (
+                                            <CommandItem
+                                              key={header}
+                                              onSelect={() => {
+                                                handleMappingChange(field.key, header);
+                                                updateState({
+                                                  openComboboxes: {
+                                                    ...state.openComboboxes,
+                                                    [field.key]: false,
+                                                  },
+                                                });
+                                              }}
+                                            >
+                                              <Check
+                                                className={cn(
+                                                  'mr-2 h-4 w-4',
+                                                  state.headerMapping[field.key] === header
+                                                    ? 'opacity-100'
+                                                    : 'opacity-0'
+                                                )}
+                                              />
+                                              {header}
+                                            </CommandItem>
+                                          ))}
+                                        </CommandGroup>
+                                      </CommandList>
+                                    </Command>
+                                  </PopoverContent>
+                                </Popover>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
-            </div>
-          )}
+                </div>
+              )}
 
-          {/* Processing Step */}
-              {state.step === "processing" && (
+              {/* Processing Step */}
+              {state.step === 'processing' && (
                 <div className="space-y-6 py-8">
-                  <div className="text-center space-y-4">
-                    <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
+                  <div className="space-y-4 text-center">
+                    <Loader2 className="text-primary mx-auto h-12 w-12 animate-spin" />
                     <div className="space-y-2">
                       <h3 className="text-lg font-semibold">Processing your file...</h3>
-                      <p className="text-muted-foreground">This may take a few moments depending on file size</p>
+                      <p className="text-muted-foreground">
+                        This may take a few moments depending on file size
+                      </p>
                     </div>
                   </div>
 
@@ -1113,19 +1165,21 @@ export function CSVUploadModal(props: CSVUploadProps) {
                       <span>Progress</span>
                       <span>{Math.round(state.progress)}%</span>
                     </div>
-              <Progress value={state.progress} className="h-2" />
+                    <Progress value={state.progress} className="h-2" />
                   </div>
                 </div>
               )}
 
               {/* Completed Step */}
-              {state.step === "completed" && (
+              {state.step === 'completed' && (
                 <div className="space-y-6 py-8">
-                  <div className="text-center space-y-4">
-                    <CheckCircle2 className="h-12 w-12 mx-auto text-green-500" />
+                  <div className="space-y-4 text-center">
+                    <CheckCircle2 className="mx-auto h-12 w-12 text-green-500" />
                     <div className="space-y-2">
                       <h3 className="text-lg font-semibold">Upload Complete!</h3>
-                      <p className="text-muted-foreground">Your CSV file has been processed successfully</p>
+                      <p className="text-muted-foreground">
+                        Your CSV file has been processed successfully
+                      </p>
                     </div>
                   </div>
 
@@ -1142,42 +1196,44 @@ export function CSVUploadModal(props: CSVUploadProps) {
           </ScrollArea>
 
           {/* Enhanced Footer */}
-          <div className="border-t sticky bottom-0 bg-background p-6">
-            <div className="flex items-center justify-between w-full">
+          <div className="bg-background sticky bottom-0 border-t p-6">
+            <div className="flex w-full items-center justify-between">
               <div className="flex items-center gap-2">
                 {currentStepConfig.showBack && (
                   <Button
                     variant="outline"
-                    onClick={() => updateState({ step: "upload" })}
+                    onClick={() => updateState({ step: 'upload' })}
                     disabled={state.isUploading}
                   >
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back
                   </Button>
-              )}
-            </div>
+                )}
+              </div>
 
               <div className="flex items-center gap-2">
-                {state.step === "upload" && (
-              <Button variant="outline" onClick={() => setOpen(false)}>
-                Cancel
-              </Button>
-            )}
+                {state.step === 'upload' && (
+                  <Button variant="outline" onClick={() => setOpen(false)}>
+                    Cancel
+                  </Button>
+                )}
                 {currentStepConfig.showNext && (
                   <Button
                     onClick={handleSubmit}
-                    disabled={state.isUploading || state.mappingStats.mapped < state.mappingStats.required}
+                    disabled={
+                      state.isUploading || state.mappingStats.mapped < state.mappingStats.required
+                    }
                   >
                     {state.isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {currentStepConfig.nextLabel}
-                </Button>
-            )}
-                {state.step === "processing" && (
-              <Button variant="outline" onClick={resetUpload}>
-                Cancel
-              </Button>
-            )}
-                {state.step === "completed" && (
+                  </Button>
+                )}
+                {state.step === 'processing' && (
+                  <Button variant="outline" onClick={resetUpload}>
+                    Cancel
+                  </Button>
+                )}
+                {state.step === 'completed' && (
                   <Button variant="outline" onClick={() => setOpen(false)}>
                     Close
                   </Button>
@@ -1190,48 +1246,50 @@ export function CSVUploadModal(props: CSVUploadProps) {
 
       {/* Save Mapping Dialog */}
       <Modal showModal={showSaveMappingDialog} setShowModal={setShowSaveMappingDialog}>
-        <div className="sm:max-w-[400px] flex flex-col">
+        <div className="flex flex-col sm:max-w-[400px]">
           <div className="flex items-center justify-between border-b p-6">
-            <h2>{editingPreference ? "Update Mapping" : "Save Mapping"}</h2>
+            <h2>{editingPreference ? 'Update Mapping' : 'Save Mapping'}</h2>
             <p>
               {editingPreference
-                ? "Update the name for this mapping configuration."
-                : "Give this mapping configuration a name so you can reuse it later."}
+                ? 'Update the name for this mapping configuration.'
+                : 'Give this mapping configuration a name so you can reuse it later.'}
             </p>
           </div>
 
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="mapping-name">Mapping Name</Label>
-                <Input
-                  id="mapping-name"
-                  value={newMappingName}
-                  onChange={(e) => setNewMappingName(e.target.value)}
-                  placeholder="e.g., Order Import Mapping"
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="mapping-name">Mapping Name</Label>
+              <Input
+                id="mapping-name"
+                value={newMappingName}
+                onChange={(e) => setNewMappingName(e.target.value)}
+                placeholder="e.g., Order Import Mapping"
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    handleSaveMapping()
+                  if (e.key === 'Enter') {
+                    handleSaveMapping();
                   }
                 }}
-                />
-              </div>
+              />
             </div>
+          </div>
 
           <div>
             <Button
               variant="outline"
               onClick={() => {
-                setShowSaveMappingDialog(false)
-                setEditingPreference(null)
-                setNewMappingName("")
+                setShowSaveMappingDialog(false);
+                setEditingPreference(null);
+                setNewMappingName('');
               }}
             >
-                Cancel
-              </Button>
-            <Button onClick={handleSaveMapping}>{editingPreference ? "Update" : "Save"} Mapping</Button>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveMapping}>
+              {editingPreference ? 'Update' : 'Save'} Mapping
+            </Button>
           </div>
         </div>
       </Modal>
     </TooltipProvider>
-  )
+  );
 }

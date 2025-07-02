@@ -1,5 +1,10 @@
 import { prisma } from '@lorrigo/db';
-import { delhiveryStatusMappings, shiprocketB2BStatusMappings, shiprocketStatusMappings, smartshipStatusMappings } from './data/couriers';
+import {
+  delhiveryStatusMappings,
+  shiprocketB2BStatusMappings,
+  shiprocketStatusMappings,
+  smartshipStatusMappings,
+} from './data/couriers';
 
 async function main() {
   console.log('Seeding courier status mappings...');
@@ -40,4 +45,4 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
-  }); 
+  });

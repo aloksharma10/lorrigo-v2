@@ -16,7 +16,7 @@ export class PhonePeService {
 
   constructor(fastify: FastifyInstance) {
     this.fastify = fastify;
-    
+
     // Get PhonePe configuration from environment
     // this.isProduction = process.env.NODE_ENV === 'production';
 
@@ -24,7 +24,6 @@ export class PhonePeService {
     this.merchantId = APP_CONFIG.PHONEPE.MERCHANT_ID;
     this.saltKey = APP_CONFIG.PHONEPE.SALT_KEY;
     this.saltIndex = APP_CONFIG.PHONEPE.SALT_INDEX;
-
   }
 
   /**
@@ -74,11 +73,7 @@ export class PhonePeService {
       };
 
       // Make API call to PhonePe
-      const response = await axios.post(
-        `${this.apiBaseUrl}/pg/v1/pay`,
-        requestBody,
-        { headers }
-      );
+      const response = await axios.post(`${this.apiBaseUrl}/pg/v1/pay`, requestBody, { headers });
 
       // Check response
       if (response.data.success) {
@@ -88,7 +83,9 @@ export class PhonePeService {
           merchantTransactionId,
         };
       } else {
-        this.fastify.log.error(`PhonePe payment link generation failed: ${JSON.stringify(response.data)}`);
+        this.fastify.log.error(
+          `PhonePe payment link generation failed: ${JSON.stringify(response.data)}`
+        );
         return {
           success: false,
           error: response.data.message || 'Failed to generate payment link',
@@ -111,7 +108,10 @@ export class PhonePeService {
   async checkPaymentStatus(merchantTransactionId: string) {
     try {
       // Generate checksum for status check
-      const checksum = this.generateChecksum('', `/pg/v1/status/${this.merchantId}/${merchantTransactionId}`);
+      const checksum = this.generateChecksum(
+        '',
+        `/pg/v1/status/${this.merchantId}/${merchantTransactionId}`
+      );
 
       // Prepare request headers
       const headers = {
@@ -130,7 +130,7 @@ export class PhonePeService {
       if (response.data.success) {
         const paymentStatus = response.data.data.responseCode;
         const gatewayReference = response.data.data.transactionId;
-        
+
         return {
           success: true,
           paymentStatus: paymentStatus === 'SUCCESS' ? 'SUCCESS' : 'FAILURE',
@@ -138,7 +138,9 @@ export class PhonePeService {
           data: response.data.data,
         };
       } else {
-        this.fastify.log.error(`PhonePe payment status check failed: ${JSON.stringify(response.data)}`);
+        this.fastify.log.error(
+          `PhonePe payment status check failed: ${JSON.stringify(response.data)}`
+        );
         return {
           success: false,
           error: response.data.message || 'Failed to check payment status',
@@ -162,7 +164,7 @@ export class PhonePeService {
     try {
       // Verify callback data
       const { merchantTransactionId, transactionId, status } = callbackData;
-      
+
       if (!merchantTransactionId || !transactionId || !status) {
         return {
           success: false,
@@ -222,11 +224,11 @@ export class PhonePeService {
         .createHash('sha256')
         .update(dataString + this.saltKey)
         .digest('hex');
-      
+
       return signature === expectedSignature;
     } catch (error) {
       this.fastify.log.error(`Error verifying callback signature: ${error}`);
       return false;
     }
   }
-} 
+}

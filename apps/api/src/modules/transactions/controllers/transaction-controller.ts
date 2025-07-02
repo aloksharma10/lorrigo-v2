@@ -1,5 +1,9 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { TransactionService, TransactionType, TransactionEntityType } from '../services/transaction-service';
+import {
+  TransactionService,
+  TransactionType,
+  TransactionEntityType,
+} from '../services/transaction-service';
 import { z } from 'zod';
 import { TransactionStatus } from '@lorrigo/db';
 
@@ -13,12 +17,14 @@ export const CreateShipmentTransactionSchema = z.object({
   srShipmentId: z.string().optional(),
   paymentId: z.string().optional(),
   currency: z.string().optional(),
-  status: z.enum([
-    TransactionStatus.PENDING,
-    TransactionStatus.COMPLETED,
-    TransactionStatus.FAILED,
-    TransactionStatus.REFUNDED,
-  ]).optional(),
+  status: z
+    .enum([
+      TransactionStatus.PENDING,
+      TransactionStatus.COMPLETED,
+      TransactionStatus.FAILED,
+      TransactionStatus.REFUNDED,
+    ])
+    .optional(),
   merchantTransactionId: z.string().optional(),
 });
 
@@ -30,12 +36,14 @@ export const CreateInvoiceTransactionSchema = z.object({
   invoiceNumber: z.string().optional(),
   paymentId: z.string().optional(),
   currency: z.string().optional(),
-  status: z.enum([
-    TransactionStatus.PENDING,
-    TransactionStatus.COMPLETED,
-    TransactionStatus.FAILED,
-    TransactionStatus.REFUNDED,
-  ]).optional(),
+  status: z
+    .enum([
+      TransactionStatus.PENDING,
+      TransactionStatus.COMPLETED,
+      TransactionStatus.FAILED,
+      TransactionStatus.REFUNDED,
+    ])
+    .optional(),
   merchantTransactionId: z.string().optional(),
 });
 
@@ -45,12 +53,14 @@ export const CreateWalletRechargeTransactionSchema = z.object({
   description: z.string(),
   paymentId: z.string().optional(),
   currency: z.string().optional(),
-  status: z.enum([
-    TransactionStatus.PENDING,
-    TransactionStatus.COMPLETED,
-    TransactionStatus.FAILED,
-    TransactionStatus.REFUNDED,
-  ]).optional(),
+  status: z
+    .enum([
+      TransactionStatus.PENDING,
+      TransactionStatus.COMPLETED,
+      TransactionStatus.FAILED,
+      TransactionStatus.REFUNDED,
+    ])
+    .optional(),
   merchantTransactionId: z.string().optional(),
 });
 
@@ -67,11 +77,13 @@ export const VerifyWalletRechargeSchema = z.object({
 });
 
 export const GetTransactionHistorySchema = z.object({
-  type: z.enum([
-    TransactionEntityType.SHIPMENT,
-    TransactionEntityType.INVOICE,
-    TransactionEntityType.WALLET,
-  ]).optional(),
+  type: z
+    .enum([
+      TransactionEntityType.SHIPMENT,
+      TransactionEntityType.INVOICE,
+      TransactionEntityType.WALLET,
+    ])
+    .optional(),
   page: z.number().int().positive().optional(),
   limit: z.number().int().positive().max(100).optional(),
 });
@@ -206,7 +218,7 @@ export class TransactionController {
       // Format response to match old application
       return reply.code(200).send({
         valid: true,
-        message: "Wallet recharge initiated successfully",
+        message: 'Wallet recharge initiated successfully',
         url: result.paymentLink,
         merchantTransactionId: result.merchantTransactionId,
         transaction: result.transaction,
@@ -235,7 +247,7 @@ export class TransactionController {
       const result = await this.transactionService.verifyWalletRecharge(
         merchantTransactionId,
         undefined as any, // Let the service determine the payment status
-        undefined as any  // Let the service determine the gateway reference
+        undefined as any // Let the service determine the gateway reference
       );
 
       if (!result.success) {
@@ -390,9 +402,15 @@ export class TransactionController {
   async verifyInvoicePayment(request: FastifyRequest, reply: FastifyReply) {
     try {
       const userId = request.userPayload!.id;
-      const { merchantTransactionId, invoiceId } = request.query as z.infer<typeof VerifyInvoicePaymentSchema>;
+      const { merchantTransactionId, invoiceId } = request.query as z.infer<
+        typeof VerifyInvoicePaymentSchema
+      >;
 
-      const result = await this.transactionService.verifyInvoicePayment(userId, merchantTransactionId, invoiceId);
+      const result = await this.transactionService.verifyInvoicePayment(
+        userId,
+        merchantTransactionId,
+        invoiceId
+      );
 
       if (!result.success) {
         return reply.code(400).send({
@@ -415,4 +433,4 @@ export class TransactionController {
       });
     }
   }
-} 
+}

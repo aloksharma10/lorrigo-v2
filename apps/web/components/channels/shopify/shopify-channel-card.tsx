@@ -186,12 +186,7 @@ export function ShopifyChannelCard() {
     }
 
     return (
-      <Button
-        onClick={handleConnect}
-        disabled={isConnecting}
-        className="w-full"
-        icon={LinkIcon}
-      >
+      <Button onClick={handleConnect} disabled={isConnecting} className="w-full" icon={LinkIcon}>
         {isConnecting ? 'Connecting...' : 'Connect Shopify Store'}
       </Button>
     );

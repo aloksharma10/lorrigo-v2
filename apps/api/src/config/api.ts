@@ -33,7 +33,7 @@ export const APIs = {
     ORDER_STATUS: '/shipments/status',
     ORDER_NDR: '/courier/track',
     TRACK_SHIPMENT: '/courier/track/awb/',
-    NDR_DETAILS: '/ndr',  // For getting NDR details by AWB
+    NDR_DETAILS: '/ndr', // For getting NDR details by AWB
 
     CREATE_ORDER: '/orders/create/adhoc',
     GENRATE_AWB: '/courier/assign/awb',

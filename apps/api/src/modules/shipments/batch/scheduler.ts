@@ -33,10 +33,10 @@ const DEFAULT_CONFIG: TrackingSchedulerConfig = {
     retryDelay: 60000, // 1 minute between retries
     rtoProcessingEnabled: true,
     updateFrequency: {
-      inTransit: 4,      // Check in-transit shipments every 4 hours
-      delivered: 24,     // Check delivered shipments once a day
-      rto: 12           // Check RTO shipments every 12 hours
-    }
+      inTransit: 4, // Check in-transit shipments every 4 hours
+      delivered: 24, // Check delivered shipments once a day
+      rto: 12, // Check RTO shipments every 12 hours
+    },
   },
 };
 
@@ -77,20 +77,20 @@ export async function initTrackingScheduler(
         schedulerConfig.cronPattern
       );
 
-      fastify.log.info(`Scheduled shipment tracking job with cron pattern: ${schedulerConfig.cronPattern}`);
+      fastify.log.info(
+        `Scheduled shipment tracking job with cron pattern: ${schedulerConfig.cronPattern}`
+      );
     } else {
       // Use interval
       // Schedule first job immediately
-      await addJob(
-        QueueNames.SHIPMENT_TRACKING,
-        JobType.TRACK_SHIPMENTS,
-        {
-          batchSize: schedulerConfig.processor.batchSize,
-          config: schedulerConfig.processor,
-        }
-      );
+      await addJob(QueueNames.SHIPMENT_TRACKING, JobType.TRACK_SHIPMENTS, {
+        batchSize: schedulerConfig.processor.batchSize,
+        config: schedulerConfig.processor,
+      });
 
-      fastify.log.info(`Scheduled initial shipment tracking job, will repeat every ${schedulerConfig.intervalMinutes} minutes`);
+      fastify.log.info(
+        `Scheduled initial shipment tracking job, will repeat every ${schedulerConfig.intervalMinutes} minutes`
+      );
     }
 
     // Set up RTO processing if enabled
@@ -169,9 +169,13 @@ export async function scheduleRtoChargesProcessing(
       }
     );
 
-    fastify.log.info(`Scheduled RTO charges processing for shipment ${shipmentId} with delay ${delayMs}ms`);
+    fastify.log.info(
+      `Scheduled RTO charges processing for shipment ${shipmentId} with delay ${delayMs}ms`
+    );
   } catch (error) {
-    fastify.log.error(`Error scheduling RTO charges processing for shipment ${shipmentId}: ${error}`);
+    fastify.log.error(
+      `Error scheduling RTO charges processing for shipment ${shipmentId}: ${error}`
+    );
     throw error;
   }
-} 
+}

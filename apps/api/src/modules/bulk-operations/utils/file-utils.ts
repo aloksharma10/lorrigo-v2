@@ -31,15 +31,19 @@ export async function generateCsvReport(
     const header = 'ID,Success,Message,Error,Timestamp\n';
 
     // Format data for CSV
-    const rows = results.map(result => {
-      const id = result.id || '';
-      const success = result.success ? 'Yes' : 'No';
-      const message = (result.message || '').replace(/,/g, ';').replace(/\n/g, ' ');
-      const error = (result.error || '').replace(/,/g, ';').replace(/\n/g, ' ');
-      const timestamp = result.timestamp ? result.timestamp.toISOString() : new Date().toISOString();
+    const rows = results
+      .map((result) => {
+        const id = result.id || '';
+        const success = result.success ? 'Yes' : 'No';
+        const message = (result.message || '').replace(/,/g, ';').replace(/\n/g, ' ');
+        const error = (result.error || '').replace(/,/g, ';').replace(/\n/g, ' ');
+        const timestamp = result.timestamp
+          ? result.timestamp.toISOString()
+          : new Date().toISOString();
 
-      return `"${id}","${success}","${message}","${error}","${timestamp}"`;
-    }).join('\n');
+        return `"${id}","${success}","${message}","${error}","${timestamp}"`;
+      })
+      .join('\n');
 
     // Generate CSV content
     const csvContent = header + rows;
@@ -127,4 +131,4 @@ export async function mergePdfBuffers(
     fastify.log.error(`Error merging PDF buffers: ${error}`);
     return null;
   }
-} 
+}

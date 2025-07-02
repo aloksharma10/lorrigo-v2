@@ -27,7 +27,7 @@ export default function OrderFormPage() {
     try {
       // Validate the data with the schema first
       const validatedData = orderFormSchema.parse(values);
-      
+
       // Use type assertion to bypass strict TypeScript checking in production
       // while ensuring the data structure is correct
       await createOrder(validatedData as any);

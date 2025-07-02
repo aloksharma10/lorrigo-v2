@@ -18,7 +18,7 @@ interface ErrorResponse {
 }
 
 export class SellerService {
-  constructor(private fastify: FastifyInstance) { }
+  constructor(private fastify: FastifyInstance) {}
 
   async getAllSellers(page: number, limit: number, search: string) {
     const skip = (page - 1) * limit;
@@ -26,12 +26,12 @@ export class SellerService {
     // Build the where clause based on search parameter
     const searchCondition: Prisma.UserWhereInput = search
       ? {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
-          { email: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
-          { phone: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
-        ],
-      }
+          OR: [
+            { name: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
+            { email: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
+            { phone: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
+          ],
+        }
       : {};
 
     // Get sellers with pagination

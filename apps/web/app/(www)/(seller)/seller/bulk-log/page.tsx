@@ -45,55 +45,58 @@ export default function BulkLogPage() {
   const [status, setStatus] = useState<string | undefined>(undefined);
 
   const shippingOps = useShippingOperations();
-  const { data: operationsData, isLoading, error } = shippingOps.getAllBulkOperations({ 
-    page, 
+  const {
+    data: operationsData,
+    isLoading,
+    error,
+  } = shippingOps.getAllBulkOperations({
+    page,
     pageSize,
     type,
     status,
-    dateRange: dateRange[0] && dateRange[1] ? dateRange as [Date, Date] : undefined
+    dateRange: dateRange[0] && dateRange[1] ? (dateRange as [Date, Date]) : undefined,
   });
-
 
   const handleDownload = async (operationId: string, type: 'report' | 'file') => {
     try {
       setDownloading(`${operationId}-${type}`);
       const response = await shippingOps.downloadBulkOperationFile(operationId, type);
-      
+
       // Get the filename from the Content-Disposition header if available
       const contentDisposition = response.headers['content-disposition'];
 
       console.log(response.headers);
 
       let filename = `bulk_operation_${type === 'report' ? 'report.csv' : 'file.pdf'}`;
-      
+
       if (contentDisposition) {
         const filenameMatch = contentDisposition.match(/filename="(.+?)"/);
         if (filenameMatch && filenameMatch[1]) {
           filename = filenameMatch[1];
         }
       }
-      
+
       // Create a blob from the response data
-      const blob = new Blob([response.data as BlobPart], { 
-        type: type === 'report' ? 'text/csv' : 'application/pdf' 
+      const blob = new Blob([response.data as BlobPart], {
+        type: type === 'report' ? 'text/csv' : 'application/pdf',
       });
-      
+
       // Create a URL for the blob
       const url = window.URL.createObjectURL(blob);
-      
+
       // Create a temporary link element to trigger the download
       const link = document.createElement('a');
       link.href = url;
       link.download = filename;
       document.body.appendChild(link);
-      
+
       // Trigger the download
       link.click();
-      
+
       // Clean up
       window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
-      
+
       toast.success(`${type === 'report' ? 'Report' : 'File'} downloaded successfully`);
     } catch (error: any) {
       toast.error(`Failed to download ${type}: ${error.message || 'Unknown error'}`);
@@ -141,9 +144,9 @@ export default function BulkLogPage() {
   };
 
   return (
-    <div className="mx-auto py-6 w-full">
-      <Card className='w-full'>
-        <CardHeader className="w-full flex flex-row items-center justify-between">
+    <div className="mx-auto w-full py-6">
+      <Card className="w-full">
+        <CardHeader className="flex w-full flex-row items-center justify-between">
           <CardTitle>Bulk Operations Log</CardTitle>
           <div className="flex items-center space-x-2">
             {/* <DataTableDateRangePicker
@@ -152,8 +155,8 @@ export default function BulkLogPage() {
               placeholder="Filter by date"
               align="end"
             /> */}
-            <select 
-              className="border rounded p-2 text-sm"
+            <select
+              className="rounded border p-2 text-sm"
               value={type || ''}
               onChange={(e) => handleFilter(e.target.value || undefined, status)}
             >
@@ -164,8 +167,8 @@ export default function BulkLogPage() {
               <option value="DOWNLOAD_LABEL">Download Labels</option>
               <option value="EDIT_PICKUP_ADDRESS">Edit Pickup Address</option>
             </select>
-            <select 
-              className="border rounded p-2 text-sm"
+            <select
+              className="rounded border p-2 text-sm"
               value={status || ''}
               onChange={(e) => handleFilter(type, e.target.value || undefined)}
             >
@@ -202,7 +205,7 @@ export default function BulkLogPage() {
                 <TableBody>
                   {operationsData?.data?.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={5} className="py-8 text-center text-gray-500">
                         No bulk operations found
                       </TableCell>
                     </TableRow>
@@ -216,9 +219,9 @@ export default function BulkLogPage() {
                         <TableCell>{getStatusBadge(operation.status)}</TableCell>
                         <TableCell>
                           <div className="flex items-center">
-                            <div className="w-full bg-gray-200 rounded-full h-2.5 mr-2">
+                            <div className="mr-2 h-2.5 w-full rounded-full bg-gray-200">
                               <div
-                                className="bg-blue-600 h-2.5 rounded-full"
+                                className="h-2.5 rounded-full bg-blue-600"
                                 style={{
                                   width: `${
                                     operation.total_count > 0
@@ -232,7 +235,7 @@ export default function BulkLogPage() {
                               {operation.processed_count}/{operation.total_count}
                             </span>
                           </div>
-                          <div className="text-xs text-gray-500 mt-1">
+                          <div className="mt-1 text-xs text-gray-500">
                             {operation.success_count} succeeded, {operation.failed_count} failed
                           </div>
                         </TableCell>
@@ -245,12 +248,15 @@ export default function BulkLogPage() {
                               variant="outline"
                               size="sm"
                               onClick={() => handleDownload(operation.id, 'report')}
-                              disabled={operation.status !== 'COMPLETED' || downloading === `${operation.id}-report`}
+                              disabled={
+                                operation.status !== 'COMPLETED' ||
+                                downloading === `${operation.id}-report`
+                              }
                             >
                               {downloading === `${operation.id}-report` ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
                               ) : (
-                                <FileText className="h-4 w-4 mr-1" />
+                                <FileText className="mr-1 h-4 w-4" />
                               )}
                               Report
                             </Button>
@@ -259,12 +265,15 @@ export default function BulkLogPage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleDownload(operation.id, 'file')}
-                                disabled={operation.status !== 'COMPLETED' || downloading === `${operation.id}-file`}
+                                disabled={
+                                  operation.status !== 'COMPLETED' ||
+                                  downloading === `${operation.id}-file`
+                                }
                               >
                                 {downloading === `${operation.id}-file` ? (
                                   <Loader2 className="h-4 w-4 animate-spin" />
                                 ) : (
-                                  <Download className="h-4 w-4 mr-1" />
+                                  <Download className="mr-1 h-4 w-4" />
                                 )}
                                 Labels
                               </Button>
@@ -279,7 +288,7 @@ export default function BulkLogPage() {
 
               {/* Pagination */}
               {operationsData?.meta && (
-                <div className="flex items-center justify-between mt-4">
+                <div className="mt-4 flex items-center justify-between">
                   <div className="text-sm text-gray-500">
                     Showing {(page - 1) * pageSize + 1} to{' '}
                     {Math.min(page * pageSize, operationsData.meta.total)} of{' '}

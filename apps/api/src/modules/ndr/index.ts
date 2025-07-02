@@ -11,4 +11,4 @@ export default async function ndrModule(fastify: FastifyInstance) {
 
 // Export services for other modules to use
 export { NDRService } from './services/ndr.service';
-export { NDRController } from './controllers/ndr.controller'; 
+export { NDRController } from './controllers/ndr.controller';

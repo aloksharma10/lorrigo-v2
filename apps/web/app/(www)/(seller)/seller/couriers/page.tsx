@@ -21,7 +21,6 @@ interface Courier {
   increment_weight?: number;
 }
 
-
 export default function CouriersPage() {
   const searchParams = useSearchParams();
   const initialParams = {
@@ -101,13 +100,13 @@ export default function CouriersPage() {
         const courier = row.original;
         return (
           <div className="flex items-center space-x-3">
-            <div className="flex items-center justify-center w-8 h-8 bg-blue-50 rounded-full">
-              <Truck className="w-4 h-4 text-blue-600" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50">
+              <Truck className="h-4 w-4 text-blue-600" />
             </div>
             <div className="flex flex-col space-y-1">
               <div className="font-medium">{courier.name}</div>
               {courier.is_reversed_courier && (
-                <Badge variant="outline" className="text-xs w-fit">
+                <Badge variant="outline" className="w-fit text-xs">
                   Reverse Courier
                 </Badge>
               )}
@@ -125,10 +124,11 @@ export default function CouriersPage() {
         const courier = row.original;
         return (
           <Badge
-            variant={courier.is_active ? "default" : "secondary"}
-            className={courier.is_active
-              ? "w-fit border-green-200 bg-green-50 text-green-600 dark:border-green-700 dark:bg-green-900 dark:text-green-50"
-              : "w-fit border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-50"
+            variant={courier.is_active ? 'default' : 'secondary'}
+            className={
+              courier.is_active
+                ? 'w-fit border-green-200 bg-green-50 text-green-600 dark:border-green-700 dark:bg-green-900 dark:text-green-50'
+                : 'w-fit border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-50'
             }
           >
             {courier.is_active ? 'Active' : 'Inactive'}
@@ -144,9 +144,7 @@ export default function CouriersPage() {
       cell: ({ row }) => {
         const courier = row.original;
         return (
-          <div className="text-sm">
-            {courier.weight_slab ? `${courier.weight_slab} kg` : 'N/A'}
-          </div>
+          <div className="text-sm">{courier.weight_slab ? `${courier.weight_slab} kg` : 'N/A'}</div>
         );
       },
       enableSorting: true,
@@ -170,7 +168,7 @@ export default function CouriersPage() {
 
   return (
     <div className="container mx-auto py-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Couriers</h1>
           <p className="text-muted-foreground">
@@ -199,4 +197,4 @@ export default function CouriersPage() {
       />
     </div>
   );
-} 
+}

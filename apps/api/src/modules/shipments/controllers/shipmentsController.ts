@@ -12,7 +12,7 @@ import { processShipmentTracking } from '../batch/processor';
  * Controller for shipment-related API endpoints
  */
 export class ShipmentController {
-  constructor(private shipmentService: ShipmentService) { }
+  constructor(private shipmentService: ShipmentService) {}
   /**
    * Get rates for an order
    */
@@ -40,7 +40,6 @@ export class ShipmentController {
   async createShipment(request: FastifyRequest, reply: FastifyReply) {
     const { id: userId } = request.userPayload as { id: string };
     try {
-      
       const data = request.body as z.infer<typeof CreateShipmentSchema>;
       // Validate data
       try {
@@ -60,7 +59,7 @@ export class ShipmentController {
 
       return reply.code(201).send(result);
     } catch (error) {
-      console.log(error, "error")
+      console.log(error, 'error');
       captureException(error as Error, {
         userId: userId,
         data: request.body,
@@ -272,12 +271,12 @@ export class ShipmentController {
       // Convert date strings to Date objects if provided
       const processedFilters = filters
         ? {
-          ...filters,
-          status: filters.status as ShipmentStatus,
-          dateRange: filters.dateRange
-            ? ([new Date(filters.dateRange[0]), new Date(filters.dateRange[1])] as [Date, Date])
-            : undefined,
-        }
+            ...filters,
+            status: filters.status as ShipmentStatus,
+            dateRange: filters.dateRange
+              ? ([new Date(filters.dateRange[0]), new Date(filters.dateRange[1])] as [Date, Date])
+              : undefined,
+          }
         : undefined;
 
       const result = await this.shipmentService.schedulePickupBulk(
@@ -316,12 +315,12 @@ export class ShipmentController {
       // Convert date strings to Date objects if provided
       const processedFilters = filters
         ? {
-          ...filters,
-          status: filters.status as ShipmentStatus,
-          dateRange: filters.dateRange
-            ? ([new Date(filters.dateRange[0]), new Date(filters.dateRange[1])] as [Date, Date])
-            : undefined,
-        }
+            ...filters,
+            status: filters.status as ShipmentStatus,
+            dateRange: filters.dateRange
+              ? ([new Date(filters.dateRange[0]), new Date(filters.dateRange[1])] as [Date, Date])
+              : undefined,
+          }
         : undefined;
 
       const result = await this.shipmentService.cancelShipmentBulk(
@@ -440,16 +439,14 @@ export class ShipmentController {
     try {
       const { batchSize } = request.body as { batchSize?: number };
 
-      const result = await processShipmentTracking(
-        request.server,
-        this.shipmentService,
-        { batchSize: batchSize || 50 }
-      );
+      const result = await processShipmentTracking(request.server, this.shipmentService, {
+        batchSize: batchSize || 50,
+      });
 
       return reply.send({
         success: true,
         message: `Processed ${result.processed} shipments: ${result.updated} updated, ${result.skipped} skipped, ${result.failed} failed`,
-        ...result
+        ...result,
       });
     } catch (error) {
       request.log.error('Error in trackShipmentBatch:', error);
@@ -458,7 +455,7 @@ export class ShipmentController {
       return reply.code(500).send({
         success: false,
         message: 'Failed to process shipment tracking batch',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -500,7 +497,7 @@ export class ShipmentController {
       if (!trackingResult.success) {
         return reply.code(400).send({
           error: trackingResult.message || 'Failed to track shipment',
-          status: shipment.status
+          status: shipment.status,
         });
       }
 
@@ -515,7 +512,7 @@ export class ShipmentController {
         status: trackingResult.newStatus || shipment.status,
         bucket: trackingResult.newBucket || shipment.bucket,
         tracking_events: trackingResult.events || [],
-        edd: updatedShipment?.edd || null
+        edd: updatedShipment?.edd || null,
       });
     } catch (error) {
       request.log.error(error);
@@ -667,4 +664,4 @@ export class ShipmentController {
       });
     }
   }
-} 
+}

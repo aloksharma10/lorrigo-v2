@@ -132,4 +132,4 @@ export interface VerifyWalletRechargeRequest {
   merchantTransactionId: string;
   paymentStatus: 'SUCCESS' | 'FAILURE';
   gatewayReference: string;
-} 
+}

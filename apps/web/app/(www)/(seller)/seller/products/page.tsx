@@ -104,12 +104,12 @@ export default function ProductsPage() {
         const product = row.original;
         return (
           <div className="flex items-center space-x-3">
-            <div className="flex items-center justify-center w-8 h-8 bg-blue-50 rounded-full">
-              <Package className="w-4 h-4 text-blue-600" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50">
+              <Package className="h-4 w-4 text-blue-600" />
             </div>
             <div className="flex flex-col space-y-1">
               <div className="font-medium">{product.name}</div>
-              <div className="text-sm text-muted-foreground">{product.id}</div>
+              <div className="text-muted-foreground text-sm">{product.id}</div>
             </div>
           </div>
         );
@@ -124,7 +124,7 @@ export default function ProductsPage() {
         const product = row.original;
         return (
           <div className="flex items-center space-x-2">
-            <DollarSign className="w-3 h-3 text-green-600" />
+            <DollarSign className="h-3 w-3 text-green-600" />
             <span className="font-medium">
               {currencyFormatter(product.selling_price || product.price)}
             </span>
@@ -141,10 +141,8 @@ export default function ProductsPage() {
         const product = row.original;
         return (
           <div className="flex items-center space-x-2">
-            <Weight className="w-3 h-3 text-gray-500" />
-            <span className="text-sm">
-              {product.weight || 0} kg
-            </span>
+            <Weight className="h-3 w-3 text-gray-500" />
+            <span className="text-sm">{product.weight || 0} kg</span>
           </div>
         );
       },
@@ -189,7 +187,7 @@ export default function ProductsPage() {
             {product.category}
           </Badge>
         ) : (
-          <span className="text-sm text-muted-foreground">No category</span>
+          <span className="text-muted-foreground text-sm">No category</span>
         );
       },
       enableSorting: true,
@@ -211,11 +209,11 @@ export default function ProductsPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => handleEditProduct(product)}>
-                <Edit className="w-4 h-4 mr-2" />
+                <Edit className="mr-2 h-4 w-4" />
                 Edit Product
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <Package className="w-4 h-4 mr-2" />
+                <Package className="mr-2 h-4 w-4" />
                 View Orders
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -223,7 +221,7 @@ export default function ProductsPage() {
                 onClick={() => handleDeleteProduct(product.id)}
                 className="text-red-600 hover:text-red-500"
               >
-                <Trash2 className="w-4 h-4 mr-2" />
+                <Trash2 className="mr-2 h-4 w-4" />
                 Delete Product
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -235,12 +233,10 @@ export default function ProductsPage() {
 
   return (
     <div className="container mx-auto py-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Products</h1>
-          <p className="text-muted-foreground">
-            Manage your product catalog and inventory
-          </p>
+          <p className="text-muted-foreground">Manage your product catalog and inventory</p>
         </div>
         <Button onClick={handleCreateProduct} className="flex items-center gap-2">
           <Plus className="h-4 w-4" />
@@ -268,4 +264,4 @@ export default function ProductsPage() {
       />
     </div>
   );
-} 
+}

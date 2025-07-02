@@ -31,11 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@lorrigo/ui/components';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@lorrigo/ui/components';
+import { Popover, PopoverContent, PopoverTrigger } from '@lorrigo/ui/components';
 import { Calendar } from '@lorrigo/ui/components';
 import { Button } from '@lorrigo/ui/components';
 import { Textarea } from '@lorrigo/ui/components';
@@ -54,7 +50,10 @@ const ndrActionSchema = z.object({
   actionType: z.enum(['reattempt', 'return', 'cancel', 'fake-attempt'], {
     required_error: 'Please select an action type',
   }),
-  comment: z.string().min(5, 'Comment must be at least 5 characters').max(500, 'Comment must be less than 500 characters'),
+  comment: z
+    .string()
+    .min(5, 'Comment must be at least 5 characters')
+    .max(500, 'Comment must be less than 500 characters'),
   nextAttemptDate: z.date().optional(),
 });
 
@@ -113,7 +112,9 @@ export function NDRActionModal({
   });
 
   const selectedActionType = form.watch('actionType');
-  const requiresDate = selectedActionType ? actionTypeConfig[selectedActionType]?.requiresDate || false : false;
+  const requiresDate = selectedActionType
+    ? actionTypeConfig[selectedActionType]?.requiresDate || false
+    : false;
 
   // Reset form when modal opens/closes
   React.useEffect(() => {
@@ -133,8 +134,8 @@ export function NDRActionModal({
     try {
       if (isBulkAction || selectedOrders.length > 1) {
         // Bulk action
-        const ndrIds = selectedOrders.map(order => order.id);
-        
+        const ndrIds = selectedOrders.map((order) => order.id);
+
         const result = await takeBulkNDRAction.mutateAsync({
           ndrIds,
           actionType: values.actionType,
@@ -143,7 +144,9 @@ export function NDRActionModal({
         });
 
         if (result.success) {
-          toast.success(`Bulk NDR action queued for ${selectedOrders.length} orders. Operation ID: ${result.operationId}`);
+          toast.success(
+            `Bulk NDR action queued for ${selectedOrders.length} orders. Operation ID: ${result.operationId}`
+          );
           onOpenChange(false);
         } else {
           toast.error(result.message || 'Failed to queue bulk action');
@@ -175,7 +178,9 @@ export function NDRActionModal({
       }
     } catch (error: any) {
       console.error('Error taking NDR action:', error);
-      toast.error(error?.response?.data?.message || 'An error occurred while processing the NDR action');
+      toast.error(
+        error?.response?.data?.message || 'An error occurred while processing the NDR action'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -198,8 +203,8 @@ export function NDRActionModal({
         <div className="space-y-4">
           {/* Selected Orders Summary */}
           <div className="rounded-lg border p-4">
-            <h4 className="text-sm font-medium mb-3">Selected Orders</h4>
-            <div className="space-y-2 max-h-40 overflow-y-auto">
+            <h4 className="mb-3 text-sm font-medium">Selected Orders</h4>
+            <div className="max-h-40 space-y-2 overflow-y-auto">
               {selectedOrders.map((order) => (
                 <div key={order.id} className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
@@ -208,27 +213,33 @@ export function NDRActionModal({
                       {order.attempts} attempt{order.attempts !== 1 ? 's' : ''}
                     </Badge>
                     {order.otp_verified && (
-                      <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-600 border-blue-200">
+                      <Badge
+                        variant="secondary"
+                        className="border-blue-200 bg-blue-50 text-xs text-blue-600"
+                      >
                         OTP Verified
                       </Badge>
                     )}
                   </div>
                   <div className="text-muted-foreground">
-                    {order.shipment?.order?.customer?.name || order.order?.customer?.name || order.customer?.name}
+                    {order.shipment?.order?.customer?.name ||
+                      order.order?.customer?.name ||
+                      order.customer?.name}
                   </div>
                 </div>
               ))}
             </div>
-            
+
             {/* OTP Verification Warning */}
-            {selectedOrders.some(order => order.otp_verified) && (
-              <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+            {selectedOrders.some((order) => order.otp_verified) && (
+              <div className="mt-3 rounded-md border border-yellow-200 bg-yellow-50 p-3">
                 <div className="flex items-start gap-2">
-                  <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                  <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-yellow-600" />
                   <div className="text-sm">
                     <p className="font-medium text-yellow-800">OTP Verified Orders Detected</p>
-                    <p className="text-yellow-700 mt-1">
-                      Some selected orders are OTP verified. Re-attempt actions may not be successful for these orders.
+                    <p className="mt-1 text-yellow-700">
+                      Some selected orders are OTP verified. Re-attempt actions may not be
+                      successful for these orders.
                     </p>
                   </div>
                 </div>
@@ -258,16 +269,20 @@ export function NDRActionModal({
                         {Object.entries(actionTypeConfig).map(([value, config]) => (
                           <SelectItem key={value} value={value}>
                             <div className="flex items-center gap-2">
-                              <div className={cn(
-                                'w-2 h-2 rounded-full',
-                                config.color === 'blue' && 'bg-blue-500',
-                                config.color === 'orange' && 'bg-orange-500',
-                                config.color === 'red' && 'bg-red-500',
-                                config.color === 'yellow' && 'bg-yellow-500'
-                              )} />
+                              <div
+                                className={cn(
+                                  'h-2 w-2 rounded-full',
+                                  config.color === 'blue' && 'bg-blue-500',
+                                  config.color === 'orange' && 'bg-orange-500',
+                                  config.color === 'red' && 'bg-red-500',
+                                  config.color === 'yellow' && 'bg-yellow-500'
+                                )}
+                              />
                               <div>
                                 <div className="font-medium">{config.label}</div>
-                                <div className="text-xs text-muted-foreground">{config.description}</div>
+                                <div className="text-muted-foreground text-xs">
+                                  {config.description}
+                                </div>
                               </div>
                             </div>
                           </SelectItem>
@@ -297,11 +312,7 @@ export function NDRActionModal({
                                 !field.value && 'text-muted-foreground'
                               )}
                             >
-                              {field.value ? (
-                                format(field.value, 'PPP')
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
+                              {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
                               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                             </Button>
                           </FormControl>
@@ -311,9 +322,7 @@ export function NDRActionModal({
                             mode="single"
                             selected={field.value}
                             onSelect={field.onChange}
-                            disabled={(date) =>
-                              date < new Date() || date < new Date('1900-01-01')
-                            }
+                            disabled={(date) => date < new Date() || date < new Date('1900-01-01')}
                             initialFocus
                           />
                         </PopoverContent>
@@ -372,4 +381,4 @@ export function NDRActionModal({
       </DialogContent>
     </Dialog>
   );
-} 
+}

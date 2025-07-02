@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import { Button } from '@lorrigo/ui/components';
 import { Input } from '@lorrigo/ui/components';
 import { Separator } from '@lorrigo/ui/components';
@@ -12,17 +12,17 @@ import { useModalStore } from '@/modal/modal-store';
 export function SiteHeader() {
   const { getWalletBalance } = useWalletOperations();
   const { openModal } = useModalStore();
-  
+
   // Get wallet balance from API
   const { data: walletData, isLoading } = getWalletBalance;
   const walletBalance = walletData?.balance || 0;
-  
+
   // Open recharge wallet modal
   const handleRechargeWallet = () => {
     openModal('recharge-wallet', {
       onSuccess: () => {
         // Wallet balance will be automatically refreshed due to query invalidation
-      }
+      },
     });
   };
 
@@ -51,7 +51,7 @@ export function SiteHeader() {
                 <div className="bg-secondary/50 flex items-center rounded-md border px-3 py-1">
                   <IndianRupee className="text-muted-foreground mr-1.5 h-3.5 w-3.5" />
                   <span className="text-secondary-foreground text-sm font-medium">
-                    {isLoading ? "Loading..." : walletBalance.toLocaleString('en-IN')}
+                    {isLoading ? 'Loading...' : walletBalance.toLocaleString('en-IN')}
                   </span>
                 </div>
               }
@@ -66,11 +66,11 @@ export function SiteHeader() {
                 <p>₹0.00</p>
               </div>
             </HoverCardToolTip>
-            
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="h-8 px-2 py-0 flex items-center gap-1"
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex h-8 items-center gap-1 px-2 py-0"
               onClick={handleRechargeWallet}
             >
               <Plus className="h-3.5 w-3.5" />

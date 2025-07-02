@@ -8,7 +8,7 @@ import {
   getFinancialYearStartDate,
   getFinancialYear,
   compareDates,
-  ShipmentBucketManager
+  ShipmentBucketManager,
 } from '@lorrigo/utils';
 import { OrderService } from '@/modules/orders/services/order-service';
 import { VendorService } from '@/modules/vendors/vendor.service';
@@ -25,7 +25,11 @@ import { normalizeCourierRate } from '@/utils/normalize';
 import { addJob, QueueNames } from '@/lib/queue';
 import { queues } from '@/lib/queue';
 import { format } from 'date-fns';
-import { TransactionService, TransactionType, TransactionEntityType } from '@/modules/transactions/services/transaction-service';
+import {
+  TransactionService,
+  TransactionType,
+  TransactionEntityType,
+} from '@/modules/transactions/services/transaction-service';
 import { JobType } from '../queues/shipmentQueue';
 import { TrackingEventData } from '@/types/vendor';
 import { scheduleRtoChargesProcessing } from '../batch/scheduler';
@@ -95,7 +99,7 @@ export class ShipmentService {
       return {
         rates: parsedCache.formattedRates || parsedCache.rates || [],
         order,
-        cached: true
+        cached: true,
       };
     }
 
@@ -161,11 +165,16 @@ export class ShipmentService {
       };
 
       // Cache empty rates for shorter duration (1 hour)
-      await this.fastify.redis.set(ratesKey, JSON.stringify({
-        rates: [],
-        message: emptyResult.message,
-        timestamp: Date.now()
-      }), 'EX', 3600);
+      await this.fastify.redis.set(
+        ratesKey,
+        JSON.stringify({
+          rates: [],
+          message: emptyResult.message,
+          timestamp: Date.now(),
+        }),
+        'EX',
+        3600
+      );
 
       return emptyResult;
     }
@@ -211,7 +220,7 @@ export class ShipmentService {
     const formattedRates = rates.map((rate) => ({
       // Core courier identification
       id: rate.courier.id,
-     
+
       name: rate.courier.name,
       nickname: rate.courier.nickname,
       courier_code: rate.courier.courier_code,
@@ -494,20 +503,17 @@ export class ShipmentService {
         )
         .then(async (result) => {
           // Create transaction record for the shipment after the transaction is complete
-          await this.transactionService.createTransaction(
-            TransactionEntityType.SHIPMENT,
-            {
-              amount: shippingCost,
-              type: TransactionType.DEBIT,
-              description: `Shipping charges for AWB: ${awb}`,
-              userId: userId,
-              shipmentId: result.shipment.id,
-              awb: awb,
-              srShipmentId: vendorResult.data?.sr_shipment_id?.toString(),
-              status: TransactionStatus.COMPLETED,
-              currency: 'INR',
-            }
-          );
+          await this.transactionService.createTransaction(TransactionEntityType.SHIPMENT, {
+            amount: shippingCost,
+            type: TransactionType.DEBIT,
+            description: `Shipping charges for AWB: ${awb}`,
+            userId: userId,
+            shipmentId: result.shipment.id,
+            awb: awb,
+            srShipmentId: vendorResult.data?.sr_shipment_id?.toString(),
+            status: TransactionStatus.COMPLETED,
+            currency: 'INR',
+          });
           return result;
         })
         .catch((error) => {
@@ -785,123 +791,125 @@ export class ShipmentService {
     }
 
     try {
-      return await this.fastify.prisma.$transaction(
-        async (prisma) => {
+      return await this.fastify.prisma
+        .$transaction(
+          async (prisma) => {
+            const shipmentStatus =
+              cancelType === 'shipment'
+                ? ShipmentStatus.CANCELLED_SHIPMENT
+                : ShipmentStatus.CANCELLED_ORDER;
 
-          const shipmentStatus =
-            cancelType === 'shipment'
-              ? ShipmentStatus.CANCELLED_SHIPMENT
-              : ShipmentStatus.CANCELLED_ORDER;
+            // Cancel shipment with vendor if needed
+            if (shipment.status !== ShipmentStatus.NEW) {
+              const channelName = shipment.courier?.channel_config?.name || '';
+              const awbToUse = shipment.awb || '';
 
-          // Cancel shipment with vendor if needed
-          if (shipment.status !== ShipmentStatus.NEW) {
-            const channelName = shipment.courier?.channel_config?.name || '';
-            const awbToUse = shipment.awb || '';
+              const cancelResult = await this.vendorService.cancelShipment(channelName, {
+                awb: awbToUse,
+                shipment,
+              });
 
-            const cancelResult = await this.vendorService.cancelShipment(channelName, {
-              awb: awbToUse,
-              shipment,
+              if (!cancelResult.success) {
+                return { error: cancelResult.message || 'Failed to cancel shipment with vendor' };
+              }
+            }
+
+            // Determine refund amount based on shipment status
+            // let refundAmount = 0;
+            // let refundDescription = '';
+            // if (
+            //   shipment.status === ShipmentStatus.NEW ||
+            //   shipment.status === ShipmentStatus.PICKUP_SCHEDULED
+            // ) {
+            // Full refund for shipments that haven't been picked up
+            // refundAmount =
+            //   (shipment.fw_charge || 0) +
+            //   (shipment.order.payment_mode === 'COD' ? shipment.cod_charge || 0 : 0);
+            // refundDescription = `Full refund for cancelled shipment: ${shipment.awb || 'No AWB'}`;
+            // }
+
+            const refundAmount =
+              (shipment.fw_charge || 0) +
+              (shipment.order.payment_mode === 'COD' ? shipment.cod_charge || 0 : 0);
+            const refundDescription = `Full refund for cancelled shipment: ${shipment.awb || 'No AWB'}`;
+
+            // else if (shipment.status === ShipmentStatus.IN_TRANSIT) {
+            // Partial refund for picked-up shipments (no COD refund)
+            //   refundAmount = (shipment.fw_charge || 0) * 0.5; // 50% of forward charge
+            //   refundDescription = `Partial refund for cancelled picked-up shipment: ${shipment.awb || 'No AWB'}`;
+            // }
+
+            // Update shipment status
+            await prisma.shipment.update({
+              where: { id: shipment.id }, // Use shipment.id, not the input id
+              data: {
+                status: shipmentStatus,
+                cancel_reason: reason,
+                ...(cancelType === 'shipment' &&
+                  shipment.status !== ShipmentStatus.NEW && {
+                    is_reshipped: true,
+                    courier: { disconnect: true },
+                    awb: null,
+                    shipping_charge: null,
+                    fw_charge: null,
+                    cod_charge: null,
+                    rto_charge: null,
+                    order_zone: null,
+                    edd: null,
+                    pickup_date: null,
+                    pickup_id: null,
+                    routing_code: null,
+                  }),
+              },
             });
 
-            if (!cancelResult.success) {
-              return { error: cancelResult.message || 'Failed to cancel shipment with vendor' };
-            }
+            await prisma.shipmentPricing.deleteMany({
+              where: { shipment_id: shipment.id },
+            });
+
+            // Add tracking event
+            await prisma.trackingEvent.create({
+              data: {
+                status: shipmentStatus,
+                location: 'System',
+                description: reason || 'Shipment cancelled by seller',
+                shipment_id: shipment.id, // Use shipment.id
+              },
+            });
+
+            // Update order status
+            await prisma.order.update({
+              where: { id: shipment.order_id },
+              data: { status: shipmentStatus },
+            });
+
+            return {
+              success: true,
+              message: 'Shipment cancelled successfully',
+              refundAmount: refundAmount > 0 ? refundAmount : undefined,
+              // Return additional data for transaction creation
+              _transactionData:
+                refundAmount > 0
+                  ? {
+                      amount: refundAmount,
+                      description: refundDescription,
+                      shipmentId: shipment.id,
+                      awb: shipment.awb,
+                      srShipmentId: shipment.sr_shipment_id,
+                    }
+                  : undefined,
+            };
+          },
+          {
+            maxWait: 5000,
+            timeout: 10000,
+            isolationLevel: 'ReadCommitted',
           }
-
-
-          // Determine refund amount based on shipment status
-          // let refundAmount = 0;
-          // let refundDescription = '';
-          // if (
-          //   shipment.status === ShipmentStatus.NEW ||
-          //   shipment.status === ShipmentStatus.PICKUP_SCHEDULED
-          // ) {
-          // Full refund for shipments that haven't been picked up
-          // refundAmount =
-          //   (shipment.fw_charge || 0) +
-          //   (shipment.order.payment_mode === 'COD' ? shipment.cod_charge || 0 : 0);
-          // refundDescription = `Full refund for cancelled shipment: ${shipment.awb || 'No AWB'}`;
-          // }
-
-          const refundAmount = (shipment.fw_charge || 0) +
-            (shipment.order.payment_mode === 'COD' ? shipment.cod_charge || 0 : 0);
-          const refundDescription = `Full refund for cancelled shipment: ${shipment.awb || 'No AWB'}`;
-
-          // else if (shipment.status === ShipmentStatus.IN_TRANSIT) {
-          // Partial refund for picked-up shipments (no COD refund)
-          //   refundAmount = (shipment.fw_charge || 0) * 0.5; // 50% of forward charge
-          //   refundDescription = `Partial refund for cancelled picked-up shipment: ${shipment.awb || 'No AWB'}`;
-          // }
-
-          // Update shipment status
-          await prisma.shipment.update({
-            where: { id: shipment.id }, // Use shipment.id, not the input id
-            data: {
-              status: shipmentStatus,
-              cancel_reason: reason,
-              ...(cancelType === 'shipment' &&
-                shipment.status !== ShipmentStatus.NEW && {
-                is_reshipped: true,
-                courier: { disconnect: true },
-                awb: null,
-                shipping_charge: null,
-                fw_charge: null,
-                cod_charge: null,
-                rto_charge: null,
-                order_zone: null,
-                edd: null,
-                pickup_date: null,
-                pickup_id: null,
-                routing_code: null,
-              }),
-            },
-          });
-
-          await prisma.shipmentPricing.deleteMany({
-            where: { shipment_id: shipment.id },
-          });
-
-          // Add tracking event
-          await prisma.trackingEvent.create({
-            data: {
-              status: shipmentStatus,
-              location: 'System',
-              description: reason || 'Shipment cancelled by seller',
-              shipment_id: shipment.id, // Use shipment.id
-            },
-          });
-
-          // Update order status
-          await prisma.order.update({
-            where: { id: shipment.order_id },
-            data: { status: shipmentStatus },
-          });
-
-          return {
-            success: true,
-            message: 'Shipment cancelled successfully',
-            refundAmount: refundAmount > 0 ? refundAmount : undefined,
-            // Return additional data for transaction creation
-            _transactionData: refundAmount > 0 ? {
-              amount: refundAmount,
-              description: refundDescription,
-              shipmentId: shipment.id,
-              awb: shipment.awb,
-              srShipmentId: shipment.sr_shipment_id,
-            } : undefined,
-          };
-        },
-        {
-          maxWait: 5000,
-          timeout: 10000,
-          isolationLevel: 'ReadCommitted',
-        }
-      ).then(async (result) => {
-        // Create transaction record after the transaction is complete
-        if (result.success && result._transactionData) {
-          await this.transactionService.createTransaction(
-            TransactionEntityType.SHIPMENT,
-            {
+        )
+        .then(async (result) => {
+          // Create transaction record after the transaction is complete
+          if (result.success && result._transactionData) {
+            await this.transactionService.createTransaction(TransactionEntityType.SHIPMENT, {
               amount: result._transactionData.amount,
               type: TransactionType.CREDIT,
               description: result._transactionData.description,
@@ -911,15 +919,14 @@ export class ShipmentService {
               srShipmentId: result._transactionData.srShipmentId || undefined,
               status: TransactionStatus.COMPLETED,
               currency: 'INR',
-            }
-          );
+            });
 
-          // Remove the internal transaction data before returning
-          const { _transactionData, ...cleanResult } = result;
-          return cleanResult;
-        }
-        return result;
-      });
+            // Remove the internal transaction data before returning
+            const { _transactionData, ...cleanResult } = result;
+            return cleanResult;
+          }
+          return result;
+        });
     } catch (error) {
       this.fastify.log.error(`Error cancelling shipment for order ${id}: ${error}`);
       return { error: 'Failed to cancel shipment' };
@@ -1362,7 +1369,7 @@ export class ShipmentService {
               ShipmentStatus.COURIER_ASSIGNED,
               ShipmentStatus.PICKUP_SCHEDULED,
               ShipmentStatus.OUT_FOR_PICKUP,
-            ]
+            ],
           },
           // Only consider shipments with AWB
           awb: { not: null },
@@ -1413,7 +1420,7 @@ export class ShipmentService {
                   ShipmentStatus.COURIER_ASSIGNED,
                   ShipmentStatus.PICKUP_SCHEDULED,
                   ShipmentStatus.OUT_FOR_PICKUP,
-                ]
+                ],
               },
             },
             select: { id: true },
@@ -1694,11 +1701,11 @@ export class ShipmentService {
         updated: 0,
         skipped: 0,
         failed: shipments.length,
-        results: shipments.map(shipment => ({
+        results: shipments.map((shipment) => ({
           shipmentId: shipment.id,
           success: false,
           message: error instanceof Error ? error.message : 'Unknown error occurred',
-        }))
+        })),
       };
     }
   }
@@ -1763,7 +1770,9 @@ export class ShipmentService {
       }
 
       // Sort events by timestamp (newest first)
-      events.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      events.sort(
+        (a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
 
       // Get the latest event
       const latestEvent = events[0];
@@ -1784,11 +1793,19 @@ export class ShipmentService {
       }
 
       // Determine if status needs to be updated
-      let newStatus = latestEvent?.description || latestEvent?.activity || latestEvent?.status_code || shipment.status;
+      let newStatus =
+        latestEvent?.description ||
+        latestEvent?.activity ||
+        latestEvent?.status_code ||
+        shipment.status;
       const status_code = latestEvent?.status_code || ShipmentStatus.AWAITING;
       let statusUpdated = false;
 
-      if (bucket !== undefined && bucket !== null && (shipment.status !== status_code || bucket !== shipment.bucket)) {
+      if (
+        bucket !== undefined &&
+        bucket !== null &&
+        (shipment.status !== status_code || bucket !== shipment.bucket)
+      ) {
         // Map bucket to status
         const bucketStatus = ShipmentBucketManager.getStatusFromBucket(bucket);
         if (bucketStatus && bucketStatus !== shipment.status) {
@@ -1858,7 +1875,10 @@ export class ShipmentService {
    * @param userId User ID
    * @returns Promise resolving to creation result
    */
-  async createNDRRecord(data: any, userId: string): Promise<{
+  async createNDRRecord(
+    data: any,
+    userId: string
+  ): Promise<{
     success: boolean;
     message: string;
     ndr?: any;
@@ -1871,22 +1891,22 @@ export class ShipmentService {
         where: {
           id: shipment_id,
           order: {
-            user_id: userId
-          }
+            user_id: userId,
+          },
         },
         include: {
           order: {
             include: {
-              customer: true
-            }
-          }
-        }
+              customer: true,
+            },
+          },
+        },
       });
 
       if (!shipment) {
         return {
           success: false,
-          message: 'Shipment not found or access denied'
+          message: 'Shipment not found or access denied',
         };
       }
 
@@ -1899,20 +1919,20 @@ export class ShipmentService {
           awb: shipment.awb || '',
           cancellation_reason: reason || 'Customer not available',
           ndr_raised_at: new Date(),
-          action_taken: false
-        }
+          action_taken: false,
+        },
       });
 
       return {
         success: true,
         message: 'NDR record created successfully',
-        ndr
+        ndr,
       };
     } catch (error) {
       this.fastify.log.error('Error creating NDR record:', error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to create NDR record'
+        message: error instanceof Error ? error.message : 'Failed to create NDR record',
       };
     }
   }
@@ -1952,8 +1972,8 @@ export class ShipmentService {
       // Build filter conditions for NDROrder
       const where: any = {
         order: {
-          user_id: userId
-        }
+          user_id: userId,
+        },
       };
 
       if (actionTaken !== undefined) {
@@ -1963,7 +1983,7 @@ export class ShipmentService {
       if (awb) {
         where.awb = {
           contains: awb,
-          mode: 'insensitive'
+          mode: 'insensitive',
         };
       }
 
@@ -1982,21 +2002,21 @@ export class ShipmentService {
         include: {
           shipment: {
             include: {
-              courier: true
-            }
+              courier: true,
+            },
           },
           order: {
             include: {
-              customer: true
-            }
+              customer: true,
+            },
           },
-          customer: true
+          customer: true,
         },
         orderBy: {
-          created_at: 'desc'
+          created_at: 'desc',
         },
         skip,
-        take: limit
+        take: limit,
       });
 
       const totalPages = Math.ceil(total / limit);
@@ -2007,7 +2027,7 @@ export class ShipmentService {
         total,
         page,
         limit,
-        totalPages
+        totalPages,
       };
     } catch (error) {
       this.fastify.log.error('Error getting NDR orders:', error);
@@ -2017,7 +2037,7 @@ export class ShipmentService {
         total: 0,
         page,
         limit,
-        totalPages: 0
+        totalPages: 0,
       };
     }
   }
@@ -2046,26 +2066,26 @@ export class ShipmentService {
         where: {
           id: ndrId,
           order: {
-            user_id: userId
-          }
+            user_id: userId,
+          },
         },
         include: {
           shipment: true,
-          order: true
-        }
+          order: true,
+        },
       });
 
       if (!ndr) {
         return {
           success: false,
-          message: 'NDR record not found or access denied'
+          message: 'NDR record not found or access denied',
         };
       }
 
       if (ndr.action_taken) {
         return {
           success: false,
-          message: 'Action has already been taken on this NDR'
+          message: 'Action has already been taken on this NDR',
         };
       }
 
@@ -2077,8 +2097,8 @@ export class ShipmentService {
           action_comment: comment,
           action_taken: true,
           action_date: new Date(),
-          updated_at: new Date()
-        }
+          updated_at: new Date(),
+        },
       });
 
       // Handle different action types
@@ -2095,8 +2115,8 @@ export class ShipmentService {
               where: { id: ndr.shipment_id! },
               data: {
                 status: ShipmentStatus.RTO,
-                updated_at: new Date()
-              }
+                updated_at: new Date(),
+              },
             });
           }
           message = 'Return to origin has been initiated';
@@ -2108,8 +2128,8 @@ export class ShipmentService {
               where: { id: ndr.shipment_id! },
               data: {
                 status: ShipmentStatus.CANCELLED_SHIPMENT,
-                updated_at: new Date()
-              }
+                updated_at: new Date(),
+              },
             });
           }
           message = 'Shipment has been cancelled';
@@ -2119,13 +2139,13 @@ export class ShipmentService {
       return {
         success: true,
         message,
-        ndr: updatedNdr
+        ndr: updatedNdr,
       };
     } catch (error) {
       this.fastify.log.error('Error taking NDR action:', error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to take action on NDR'
+        message: error instanceof Error ? error.message : 'Failed to take action on NDR',
       };
     }
   }

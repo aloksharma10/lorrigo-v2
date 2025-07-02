@@ -192,11 +192,11 @@ export class BulkOperationsService {
     },
     userId: string
   ) {
-    const shipment = await this.shipmentService.createShipmentBulk(data, userId)
+    const shipment = await this.shipmentService.createShipmentBulk(data, userId);
     return {
       operationId: shipment.operation?.id,
-      operation: shipment.operation
-    }
+      operation: shipment.operation,
+    };
   }
 
   /**
@@ -403,4 +403,4 @@ export class BulkOperationsService {
     const random = randomUUID()?.split('-')?.[0]?.toUpperCase();
     return `BLK-${timestamp}-${random}`;
   }
-} 
+}

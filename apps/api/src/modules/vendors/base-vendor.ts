@@ -205,11 +205,14 @@ export abstract class BaseVendor {
    * @param statusCode Optional status code
    * @returns Bucket number or undefined if no match
    */
-  protected async mapStatusToBucket(status: string, statusCode?: string): Promise<number | undefined> {
+  protected async mapStatusToBucket(
+    status: string,
+    statusCode?: string
+  ): Promise<number | undefined> {
     // Fallback to keyword-based detection if bucket mapping service is not available
     return ShipmentBucketManager.detectBucketFromVendorStatus(
-      status, 
-      statusCode || '', 
+      status,
+      statusCode || '',
       this.name.toUpperCase()
     );
   }
@@ -220,11 +223,15 @@ export abstract class BaseVendor {
    * @param vendorName Vendor name for error message
    * @returns Registration result with appropriate success/failure status
    */
-  protected handleHubRegistrationError(error: any, vendorName: string = this.name): VendorRegistrationResult {
+  protected handleHubRegistrationError(
+    error: any,
+    vendorName: string = this.name
+  ): VendorRegistrationResult {
     // Check for common patterns indicating hub already exists
-    const errorMessage = error?.response?.data?.message || error?.response?.data?.error || error?.message || '';
+    const errorMessage =
+      error?.response?.data?.message || error?.response?.data?.error || error?.message || '';
     const errorData = error?.response?.data || {};
-    
+
     // Check for various error patterns that indicate hub already exists
     const hubExistsPatterns = [
       /already exists/i,
@@ -233,10 +240,10 @@ export abstract class BaseVendor {
       /already in use/i,
       /already added/i,
     ];
-    
+
     // Check if any pattern matches the error message
-    const isHubExists = hubExistsPatterns.some(pattern => pattern.test(errorMessage));
-    
+    const isHubExists = hubExistsPatterns.some((pattern) => pattern.test(errorMessage));
+
     // If hub already exists, return success
     if (isHubExists) {
       return {
@@ -245,7 +252,7 @@ export abstract class BaseVendor {
         data: errorData,
       };
     }
-    
+
     // Otherwise return failure with error message
     return {
       success: false,

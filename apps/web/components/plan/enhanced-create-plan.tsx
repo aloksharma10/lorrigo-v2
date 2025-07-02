@@ -1,7 +1,7 @@
-"use client"
+'use client';
 
-import { useForm, useFieldArray } from "react-hook-form"
-import { useState, useEffect, useCallback } from "react"
+import { useForm, useFieldArray } from 'react-hook-form';
+import { useState, useEffect, useCallback } from 'react';
 
 import {
   toast,
@@ -30,7 +30,7 @@ import {
   TabsList,
   TabsTrigger,
   Checkbox,
-} from "@lorrigo/ui/components"
+} from '@lorrigo/ui/components';
 import {
   Trash2,
   Truck,
@@ -44,106 +44,113 @@ import {
   Plus,
   Settings,
   Target,
-} from "lucide-react"
+} from 'lucide-react';
 
 // Import our modular components and utilities
-import { FormHeader } from "./shipping-plan/form-header"
-import { BulkAdjustmentPanel } from "./shipping-plan/bulk-adjustment-panel"
-import { CourierSelector } from "./shipping-plan/courier-selector"
-import { ZonePricingCard } from "./shipping-plan/zone-pricing-card"
-import { type ShippingPlanFormData } from "./schemas/shipping-plan-schema"
-import { defaultCourierPricing, defaultZonePricing, zoneLabels } from "./constants/shipping-plan-constants"
-import { formatZonePricing, applyBulkPriceAdjustment } from "./utils/shipping-plan-utils"
-import type { EnhancedCreatePlanFormProps, Courier, CourierPricing } from "./types/shipping-plan"
-import { usePlanOperations } from "@/lib/apis/plans"
-import { useCourierOperations } from "@/lib/apis/couriers"
+import { FormHeader } from './shipping-plan/form-header';
+import { BulkAdjustmentPanel } from './shipping-plan/bulk-adjustment-panel';
+import { CourierSelector } from './shipping-plan/courier-selector';
+import { ZonePricingCard } from './shipping-plan/zone-pricing-card';
+import { type ShippingPlanFormData } from './schemas/shipping-plan-schema';
+import {
+  defaultCourierPricing,
+  defaultZonePricing,
+  zoneLabels,
+} from './constants/shipping-plan-constants';
+import { formatZonePricing, applyBulkPriceAdjustment } from './utils/shipping-plan-utils';
+import type { EnhancedCreatePlanFormProps, Courier, CourierPricing } from './types/shipping-plan';
+import { usePlanOperations } from '@/lib/apis/plans';
+import { useCourierOperations } from '@/lib/apis/couriers';
 
-export function EnhancedCreatePlanForm({ planData, isEditing = false }: EnhancedCreatePlanFormProps) {
-  const { createPlan, updatePlan, getDefaultPlanCourierPricing } = usePlanOperations()
-  const { getCouriersQuery } = useCourierOperations()
-  const [isApplyingBulkAdjustment, setIsApplyingBulkAdjustment] = useState(false)
-  const [showCourierSelector, setShowCourierSelector] = useState(false)
-  const [activeTab, setActiveTab] = useState("basic")
-  const [originalPricing, setOriginalPricing] = useState<CourierPricing[]>([])
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
-  const [selectedCourierIndices, setSelectedCourierIndices] = useState<Set<number>>(new Set())
+export function EnhancedCreatePlanForm({
+  planData,
+  isEditing = false,
+}: EnhancedCreatePlanFormProps) {
+  const { createPlan, updatePlan, getDefaultPlanCourierPricing } = usePlanOperations();
+  const { getCouriersQuery } = useCourierOperations();
+  const [isApplyingBulkAdjustment, setIsApplyingBulkAdjustment] = useState(false);
+  const [showCourierSelector, setShowCourierSelector] = useState(false);
+  const [activeTab, setActiveTab] = useState('basic');
+  const [originalPricing, setOriginalPricing] = useState<CourierPricing[]>([]);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [selectedCourierIndices, setSelectedCourierIndices] = useState<Set<number>>(new Set());
 
   // Add accordion state management
-  const [expandedAccordions, setExpandedAccordions] = useState<string[]>([])
+  const [expandedAccordions, setExpandedAccordions] = useState<string[]>([]);
 
   // Prepare default values for form based on whether we're editing or creating
   const getDefaultValues = (): ShippingPlanFormData => {
     if (isEditing && planData) {
       return {
-        name: planData.name || "",
-        description: planData.description || "",
+        name: planData.name || '',
+        description: planData.description || '',
         isDefault: planData.isDefault || false,
-        features: planData.features?.length ? planData.features : [""],
+        features: planData.features?.length ? planData.features : [''],
         courierPricing: planData.plan_courier_pricings?.length
           ? planData.plan_courier_pricings.map((pricing: any) => ({
-            courierId: pricing.courier_id,
-            cod_charge_hard: pricing.cod_charge_hard || 0,
-            cod_charge_percent: pricing.cod_charge_percent || 0,
-            is_fw_applicable: pricing.is_fw_applicable,
-            is_rto_applicable: pricing.is_rto_applicable,
-            is_cod_applicable: pricing.is_cod_applicable,
-            is_cod_reversal_applicable: pricing.is_cod_reversal_applicable,
-            weight_slab: pricing.weight_slab || 0.5,
-            increment_weight: pricing.increment_weight || 0.5,
-            increment_price: pricing.increment_price || 0,
-            zonePricing: formatZonePricing(pricing.zone_pricing),
-          }))
+              courierId: pricing.courier_id,
+              cod_charge_hard: pricing.cod_charge_hard || 0,
+              cod_charge_percent: pricing.cod_charge_percent || 0,
+              is_fw_applicable: pricing.is_fw_applicable,
+              is_rto_applicable: pricing.is_rto_applicable,
+              is_cod_applicable: pricing.is_cod_applicable,
+              is_cod_reversal_applicable: pricing.is_cod_reversal_applicable,
+              weight_slab: pricing.weight_slab || 0.5,
+              increment_weight: pricing.increment_weight || 0.5,
+              increment_price: pricing.increment_price || 0,
+              zonePricing: formatZonePricing(pricing.zone_pricing),
+            }))
           : [],
-      }
+      };
     }
 
     // For new plan creation, don't initialize with any couriers
     // The user will need to select at least one courier
     return {
-      name: "",
-      description: "",
+      name: '',
+      description: '',
       isDefault: false,
-      features: [""],
+      features: [''],
       courierPricing: [],
-    }
-  }
+    };
+  };
 
   const form = useForm<ShippingPlanFormData>({
     defaultValues: getDefaultValues(),
-    mode: "onChange" as const
-  })
+    mode: 'onChange' as const,
+  });
 
   useEffect(() => {
     if (isEditing && planData) {
-      const defaultValues = getDefaultValues()
-      form.reset(defaultValues)
-      setOriginalPricing(defaultValues.courierPricing)
+      const defaultValues = getDefaultValues();
+      form.reset(defaultValues);
+      setOriginalPricing(defaultValues.courierPricing);
     }
-  }, [planData, isEditing])
+  }, [planData, isEditing]);
 
   // Store original pricing when form is initialized
   useEffect(() => {
     const subscription = form.watch((value) => {
       if (value.courierPricing && originalPricing.length === 0) {
-        setOriginalPricing(JSON.parse(JSON.stringify(value.courierPricing)))
+        setOriginalPricing(JSON.parse(JSON.stringify(value.courierPricing)));
       }
-    })
-    return () => subscription.unsubscribe()
-  }, [form, originalPricing.length])
+    });
+    return () => subscription.unsubscribe();
+  }, [form, originalPricing.length]);
 
   // Instead of using useFieldArray for features, use direct form manipulation
-  const featureFields = form.watch("features") || [];
+  const featureFields = form.watch('features') || [];
 
   const appendFeature = () => {
-    const currentFeatures = form.getValues("features") || [];
-    form.setValue("features", [...currentFeatures, ""], { shouldValidate: true });
+    const currentFeatures = form.getValues('features') || [];
+    form.setValue('features', [...currentFeatures, ''], { shouldValidate: true });
   };
 
   const removeFeature = (index: number) => {
-    const currentFeatures = form.getValues("features") || [];
+    const currentFeatures = form.getValues('features') || [];
     const newFeatures = [...currentFeatures];
     newFeatures.splice(index, 1);
-    form.setValue("features", newFeatures, { shouldValidate: true });
+    form.setValue('features', newFeatures, { shouldValidate: true });
   };
 
   const {
@@ -154,60 +161,63 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
     replace: replaceCourierPricing,
   } = useFieldArray({
     control: form.control,
-    name: "courierPricing",
-  })
+    name: 'courierPricing',
+  });
 
-  const couriers: Courier[] = getCouriersQuery.data?.couriers || []
-  const isLoadingCouriers = getCouriersQuery.isLoading
-  const isSubmitting = isEditing ? updatePlan.isPending : createPlan.isPending
+  const couriers: Courier[] = getCouriersQuery.data?.couriers || [];
+  const isLoadingCouriers = getCouriersQuery.isLoading;
+  const isSubmitting = isEditing ? updatePlan.isPending : createPlan.isPending;
 
   // Get selected couriers
   const selectedCouriers = courierFields
     .map((field, index) => {
-      const courierId = form.watch(`courierPricing.${index}.courierId`)
-      const courier = couriers.find((c) => c.id === courierId)
-      return { ...field, courier, index }
+      const courierId = form.watch(`courierPricing.${index}.courierId`);
+      const courier = couriers.find((c) => c.id === courierId);
+      return { ...field, courier, index };
     })
-    .filter((item) => item.courier)
+    .filter((item) => item.courier);
 
   // Get available couriers (not yet selected)
   const availableCouriers = couriers.filter(
-    (courier) => !courierFields.some((_, index) => form.watch(`courierPricing.${index}.courierId`) === courier.id),
-  )
+    (courier) =>
+      !courierFields.some(
+        (_, index) => form.watch(`courierPricing.${index}.courierId`) === courier.id
+      )
+  );
 
   // Selection handlers
   const toggleCourierSelection = (index: number) => {
-    const newSelection = new Set(selectedCourierIndices)
+    const newSelection = new Set(selectedCourierIndices);
     if (newSelection.has(index)) {
-      newSelection.delete(index)
+      newSelection.delete(index);
     } else {
-      newSelection.add(index)
+      newSelection.add(index);
     }
-    setSelectedCourierIndices(newSelection)
-  }
+    setSelectedCourierIndices(newSelection);
+  };
 
   const selectAllCouriers = () => {
-    const allIndices = selectedCouriers.map((_, index) => index)
-    setSelectedCourierIndices(new Set(allIndices))
-  }
+    const allIndices = selectedCouriers.map((_, index) => index);
+    setSelectedCourierIndices(new Set(allIndices));
+  };
 
   const deselectAllCouriers = () => {
-    setSelectedCourierIndices(new Set())
-  }
+    setSelectedCourierIndices(new Set());
+  };
 
   // Add accordion control functions
   const expandAllAccordions = () => {
-    const allItems = selectedCouriers.map((_, index) => `item-${index}`)
-    setExpandedAccordions(allItems)
-  }
+    const allItems = selectedCouriers.map((_, index) => `item-${index}`);
+    setExpandedAccordions(allItems);
+  };
 
   const collapseAllAccordions = () => {
-    setExpandedAccordions([])
-  }
+    setExpandedAccordions([]);
+  };
 
   const loadDefaultPricing = async (courierId: string, index: number) => {
     try {
-      const defaultPricing = await getDefaultPlanCourierPricing(courierId)
+      const defaultPricing = await getDefaultPlanCourierPricing(courierId);
 
       if (defaultPricing) {
         // Map the API response to the form structure
@@ -264,20 +274,20 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
               flat_rto_charge: defaultPricing.zonePricing?.Z_E?.flat_rto_charge || 0,
             },
           },
-        }
+        };
 
         // Get current form values
-        const currentFormValues = form.getValues()
+        const currentFormValues = form.getValues();
 
         // Update the courier pricing at the specific index
-        const updatedCourierPricing = [...currentFormValues.courierPricing]
-        updatedCourierPricing[index] = updatedPricing
+        const updatedCourierPricing = [...currentFormValues.courierPricing];
+        updatedCourierPricing[index] = updatedPricing;
 
         // Create new form values with updated pricing
         const newFormValues = {
           ...currentFormValues,
-          courierPricing: updatedCourierPricing
-        }
+          courierPricing: updatedCourierPricing,
+        };
 
         // Reset form with new values - this forces UI re-render
         form.reset(newFormValues, {
@@ -287,80 +297,83 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
           keepIsSubmitted: false,
           keepTouched: false,
           keepIsValid: false,
-          keepSubmitCount: false
-        })
+          keepSubmitCount: false,
+        });
 
         // Force a re-render by updating state
-        setHasUnsavedChanges(true)
+        setHasUnsavedChanges(true);
 
-        toast.success("Default pricing loaded successfully")
+        toast.success('Default pricing loaded successfully');
       } else {
-        toast.warning("No default pricing found for this courier")
+        toast.warning('No default pricing found for this courier');
       }
     } catch (error) {
-      toast.error("Failed to load default pricing")
+      toast.error('Failed to load default pricing');
     }
-  }
+  };
 
   // Update the applyBulkAdjustment function to properly trigger form updates
   const applyBulkAdjustment = useCallback(
     (adjustmentPercent: number) => {
       if (adjustmentPercent === 0) {
-        toast.warning("Please enter a percentage value")
-        return
+        toast.warning('Please enter a percentage value');
+        return;
       }
 
       if (selectedCourierIndices.size === 0) {
-        toast.warning("Please select at least one courier to apply pricing changes")
-        return
+        toast.warning('Please select at least one courier to apply pricing changes');
+        return;
       }
 
-      setIsApplyingBulkAdjustment(true)
+      setIsApplyingBulkAdjustment(true);
 
       try {
-        const currentPricing = form.getValues("courierPricing") as CourierPricing[]
-        const updatedPricing = applyBulkPriceAdjustment(currentPricing, selectedCourierIndices, adjustmentPercent)
+        const currentPricing = form.getValues('courierPricing') as CourierPricing[];
+        const updatedPricing = applyBulkPriceAdjustment(
+          currentPricing,
+          selectedCourierIndices,
+          adjustmentPercent
+        );
 
         // Update the entire courierPricing array at once
-        form.setValue("courierPricing", updatedPricing, { shouldValidate: true })
-        setHasUnsavedChanges(true)
+        form.setValue('courierPricing', updatedPricing, { shouldValidate: true });
+        setHasUnsavedChanges(true);
 
         const selectedCourierNames = Array.from(selectedCourierIndices)
           .map((index) => selectedCouriers[index]?.courier?.name)
-          .filter(Boolean)
+          .filter(Boolean);
 
         toast.success(
-          `Applied ${adjustmentPercent}% adjustment to ${selectedCourierIndices.size} selected courier${selectedCourierIndices.size > 1 ? "s" : ""
-          }: ${selectedCourierNames.join(", ")}`,
-        )
+          `Applied ${adjustmentPercent}% adjustment to ${selectedCourierIndices.size} selected courier${
+            selectedCourierIndices.size > 1 ? 's' : ''
+          }: ${selectedCourierNames.join(', ')}`
+        );
       } catch (error) {
-        toast.error("Failed to apply bulk adjustment")
-        console.error("Error applying bulk adjustment:", error)
+        toast.error('Failed to apply bulk adjustment');
+        console.error('Error applying bulk adjustment:', error);
       } finally {
-        setIsApplyingBulkAdjustment(false)
+        setIsApplyingBulkAdjustment(false);
       }
     },
-    [form, selectedCourierIndices, selectedCouriers],
-  )
+    [form, selectedCourierIndices, selectedCouriers]
+  );
 
   const resetPricing = useCallback(() => {
     if (originalPricing.length > 0) {
-      replaceCourierPricing(JSON.parse(JSON.stringify(originalPricing)))
-      setHasUnsavedChanges(false)
-      setSelectedCourierIndices(new Set())
-      toast.success("Pricing reset to original values")
+      replaceCourierPricing(JSON.parse(JSON.stringify(originalPricing)));
+      setHasUnsavedChanges(false);
+      setSelectedCourierIndices(new Set());
+      toast.success('Pricing reset to original values');
     } else {
-      toast.warning("No original pricing to reset to")
+      toast.warning('No original pricing to reset to');
     }
-  }, [originalPricing, replaceCourierPricing])
-
+  }, [originalPricing, replaceCourierPricing]);
 
   const handleSubmit = async (data: ShippingPlanFormData) => {
     try {
-
       const payload = {
         ...data,
-        features: data.features.filter((feature) => feature.trim() !== ""),
+        features: data.features.filter((feature) => feature.trim() !== ''),
         courierPricing: data.courierPricing.map((courier) => ({
           ...courier,
           cod_charge_hard: Number(courier.cod_charge_hard),
@@ -379,27 +392,29 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
                 rto_increment_price: Number(pricing.rto_increment_price),
                 flat_rto_charge: Number(pricing.flat_rto_charge),
               },
-            ]),
+            ])
           ),
         })),
-      }
+      };
 
       if (isEditing && planData) {
-        await updatePlan.mutateAsync({ id: planData.id, ...payload })
+        await updatePlan.mutateAsync({ id: planData.id, ...payload });
       } else {
-        await createPlan.mutateAsync(payload)
+        await createPlan.mutateAsync(payload);
       }
-      setHasUnsavedChanges(false)
-      setSelectedCourierIndices(new Set())
+      setHasUnsavedChanges(false);
+      setSelectedCourierIndices(new Set());
     } catch (error: any) {
-      console.error("Error submitting form:", error);
-      toast.error(error?.response?.data?.message || `Failed to ${isEditing ? "update" : "create"} plan`)
+      console.error('Error submitting form:', error);
+      toast.error(
+        error?.response?.data?.message || `Failed to ${isEditing ? 'update' : 'create'} plan`
+      );
     }
-  }
+  };
 
   // Add function to handle multiple courier selection
   const handleSelectMultipleCouriers = (courierIds: string[]) => {
-    const newCouriers = courierIds.map(courierId => {
+    const newCouriers = courierIds.map((courierId) => {
       // Create a new courier with default pricing
       const newCourier = {
         ...defaultCourierPricing,
@@ -410,14 +425,14 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
           Z_C: { ...defaultZonePricing },
           Z_D: { ...defaultZonePricing },
           Z_E: { ...defaultZonePricing },
-        }
+        },
       };
 
       return newCourier;
     });
 
     // Append all new couriers
-    newCouriers.forEach(courier => {
+    newCouriers.forEach((courier) => {
       appendCourier(courier);
     });
 
@@ -425,12 +440,16 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
   };
 
   return (
-    <div className="min-w-full mx-auto p-6 space-y-6 bg-gradient-to-br from-background to-muted/20 min-h-screen">
+    <div className="from-background to-muted/20 mx-auto min-h-screen min-w-full space-y-6 bg-gradient-to-br p-6">
       {/* Header */}
-      <FormHeader isEditing={isEditing} isSubmitting={isSubmitting} onSubmit={() => {
-        const formData = form.getValues() as ShippingPlanFormData
-        handleSubmit(formData)
-      }} />
+      <FormHeader
+        isEditing={isEditing}
+        isSubmitting={isSubmitting}
+        onSubmit={() => {
+          const formData = form.getValues() as ShippingPlanFormData;
+          handleSubmit(formData);
+        }}
+      />
 
       {/* Bulk Adjustment */}
       <BulkAdjustmentPanel
@@ -449,24 +468,24 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-card shadow-md">
+            <TabsList className="bg-card grid w-full grid-cols-3 shadow-md">
               <TabsTrigger
                 value="basic"
-                className="flex items-center space-x-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground flex items-center space-x-2"
               >
                 <Info className="h-4 w-4" />
                 <span>Basic Info</span>
               </TabsTrigger>
               <TabsTrigger
                 value="features"
-                className="flex items-center space-x-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground flex items-center space-x-2"
               >
                 <CheckCircle className="h-4 w-4" />
                 <span>Features</span>
               </TabsTrigger>
               <TabsTrigger
                 value="pricing"
-                className="flex items-center space-x-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground flex items-center space-x-2"
               >
                 <DollarSign className="h-4 w-4" />
                 <span>Courier Pricing</span>
@@ -475,14 +494,14 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
 
             <TabsContent value="basic" className="space-y-4">
               <Card className="border-0 shadow-lg">
-                <CardHeader className="bg-gradient-to-r from-muted/50 to-muted/30 rounded-t-lg">
+                <CardHeader className="from-muted/50 to-muted/30 rounded-t-lg bg-gradient-to-r">
                   <CardTitle className="flex items-center space-x-2">
-                    <Edit3 className="h-5 w-5 text-primary" />
+                    <Edit3 className="text-primary h-5 w-5" />
                     <span>Plan Details</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6 p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <FormField
                       control={form.control}
                       name="name"
@@ -490,7 +509,11 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
                         <FormItem>
                           <FormLabel className="text-sm font-semibold">Plan Name</FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter plan name" className="border-2 focus:border-primary" {...field} />
+                            <Input
+                              placeholder="Enter plan name"
+                              className="focus:border-primary border-2"
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -501,10 +524,12 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
                       control={form.control}
                       name="isDefault"
                       render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border-2 p-4 bg-gradient-to-r from-primary/5 to-primary/10">
+                        <FormItem className="from-primary/5 to-primary/10 flex flex-row items-center justify-between rounded-lg border-2 bg-gradient-to-r p-4">
                           <div className="space-y-0.5">
                             <FormLabel className="text-base font-semibold">Default Plan</FormLabel>
-                            <FormDescription className="text-sm">Set as default for new users</FormDescription>
+                            <FormDescription className="text-sm">
+                              Set as default for new users
+                            </FormDescription>
                           </div>
                           <FormControl>
                             <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -523,7 +548,7 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
                         <FormControl>
                           <Textarea
                             placeholder="Describe the plan benefits and features"
-                            className="min-h-[120px] border-2 focus:border-primary"
+                            className="focus:border-primary min-h-[120px] border-2"
                             {...field}
                           />
                         </FormControl>
@@ -537,7 +562,7 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
 
             <TabsContent value="features" className="space-y-4">
               <Card className="border-0 shadow-lg">
-                <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-t-lg dark:from-green-950/20 dark:to-emerald-950/20">
+                <CardHeader className="rounded-t-lg bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20">
                   <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center space-x-2">
                       <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
@@ -594,7 +619,7 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
             <TabsContent value="pricing" className="space-y-4">
               {/* Selected Couriers */}
               <Card className="border-0 shadow-lg">
-                <CardHeader className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-t-lg dark:from-purple-950/20 dark:to-indigo-950/20">
+                <CardHeader className="rounded-t-lg bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20">
                   <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center space-x-2">
                       <Truck className="h-5 w-5 text-purple-600 dark:text-purple-400" />
@@ -612,7 +637,7 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
                             Z_C: { ...defaultZonePricing },
                             Z_D: { ...defaultZonePricing },
                             Z_E: { ...defaultZonePricing },
-                          }
+                          },
                         };
                         appendCourier(newCourier);
                       }}
@@ -624,11 +649,11 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
                 </CardHeader>
                 <CardContent className="p-6">
                   {selectedCouriers.length === 0 ? (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <div className="p-4 bg-muted/50 rounded-full w-24 h-24 mx-auto mb-4 flex items-center justify-center">
+                    <div className="text-muted-foreground py-12 text-center">
+                      <div className="bg-muted/50 mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full p-4">
                         <Truck className="h-12 w-12 opacity-50" />
                       </div>
-                      <h3 className="text-lg font-semibold mb-2">No couriers selected</h3>
+                      <h3 className="mb-2 text-lg font-semibold">No couriers selected</h3>
                       <p className="text-sm">Add a courier to configure pricing</p>
                     </div>
                   ) : (
@@ -642,13 +667,14 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
                         <AccordionItem
                           key={`courier-${index}`}
                           value={`item-${index}`}
-                          className={`border-2 rounded-lg shadow-sm transition-all duration-200 ${selectedCourierIndices.has(index)
-                            ? "border-orange-500 bg-orange-50 dark:border-orange-400 dark:bg-orange-950/20"
-                            : "border-border"
-                            }`}
+                          className={`rounded-lg border-2 shadow-sm transition-all duration-200 ${
+                            selectedCourierIndices.has(index)
+                              ? 'border-orange-500 bg-orange-50 dark:border-orange-400 dark:bg-orange-950/20'
+                              : 'border-border'
+                          }`}
                         >
-                          <AccordionTrigger className="hover:no-underline px-4 py-3">
-                            <div className="flex items-center justify-between w-full pr-4">
+                          <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                            <div className="flex w-full items-center justify-between pr-4">
                               <div className="flex items-center space-x-4">
                                 <Checkbox
                                   checked={selectedCourierIndices.has(index)}
@@ -656,15 +682,16 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
                                   onCheckedChange={() => toggleCourierSelection(index)}
                                 />
                                 <div
-                                  className={`p-3 rounded-lg ${selectedCourierIndices.has(index)
-                                    ? "bg-gradient-to-r from-orange-500 to-orange-600"
-                                    : "bg-gradient-to-r from-primary to-primary/80"
-                                    }`}
+                                  className={`rounded-lg p-3 ${
+                                    selectedCourierIndices.has(index)
+                                      ? 'bg-gradient-to-r from-orange-500 to-orange-600'
+                                      : 'from-primary to-primary/80 bg-gradient-to-r'
+                                  }`}
                                 >
-                                  <Truck className="h-5 w-5 text-primary-foreground" />
+                                  <Truck className="text-primary-foreground h-5 w-5" />
                                 </div>
                                 <div className="text-left">
-                                  <div className="font-semibold text-lg flex items-center space-x-2">
+                                  <div className="flex items-center space-x-2 text-lg font-semibold">
                                     <span>{courier?.name}</span>
                                     {selectedCourierIndices.has(index) && (
                                       <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400">
@@ -672,19 +699,21 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
                                       </Badge>
                                     )}
                                   </div>
-                                  <div className="text-sm text-muted-foreground">Code: {courier?.code}</div>
+                                  <div className="text-muted-foreground text-sm">
+                                    Code: {courier?.code}
+                                  </div>
                                 </div>
                               </div>
                               <div className="flex items-center space-x-3">
                                 <Badge
-                                  variant={courier?.is_active ? "default" : "secondary"}
+                                  variant={courier?.is_active ? 'default' : 'secondary'}
                                   className={
                                     courier?.is_active
-                                      ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-                                      : ""
+                                      ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                                      : ''
                                   }
                                 >
-                                  {courier?.is_active ? "Active" : "Inactive"}
+                                  {courier?.is_active ? 'Active' : 'Inactive'}
                                 </Badge>
                                 {selectedCouriers.length > 1 && (
                                   <Button
@@ -692,12 +721,12 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
                                     variant="ghost"
                                     size="icon"
                                     onClick={(e) => {
-                                      e.stopPropagation()
-                                      removeCourier(index)
+                                      e.stopPropagation();
+                                      removeCourier(index);
                                       // Remove from selection if it was selected
-                                      const newSelection = new Set(selectedCourierIndices)
-                                      newSelection.delete(index)
-                                      setSelectedCourierIndices(newSelection)
+                                      const newSelection = new Set(selectedCourierIndices);
+                                      newSelection.delete(index);
+                                      setSelectedCourierIndices(newSelection);
                                     }}
                                     className="hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20"
                                   >
@@ -722,12 +751,14 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
                                   Load Defaults
                                 </Button>
                                 {selectedCourierIndices.has(index) && (
-                                  <Badge variant="secondary">This courier will be affected by bulk adjustments</Badge>
+                                  <Badge variant="secondary">
+                                    This courier will be affected by bulk adjustments
+                                  </Badge>
                                 )}
                               </div>
 
                               {/* Weight & Pricing Settings */}
-                              <Card className="bg-gradient-to-r from-muted/30 to-muted/20">
+                              <Card className="from-muted/30 to-muted/20 bg-gradient-to-r">
                                 <CardHeader className="pb-3">
                                   <CardTitle className="flex items-center space-x-2 text-base">
                                     <Settings className="h-4 w-4" />
@@ -735,19 +766,21 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
                                   </CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                                     <FormField
                                       control={form.control}
                                       name={`courierPricing.${index}.weight_slab`}
                                       render={({ field }) => (
                                         <FormItem>
-                                          <FormLabel className="text-sm font-semibold">Weight Slab (kg)</FormLabel>
+                                          <FormLabel className="text-sm font-semibold">
+                                            Weight Slab (kg)
+                                          </FormLabel>
                                           <FormControl>
                                             <Input
                                               type="number"
                                               step="0.1"
                                               min="0.1"
-                                              className="border-2 focus:border-primary"
+                                              className="focus:border-primary border-2"
                                               {...field}
                                             />
                                           </FormControl>
@@ -761,13 +794,15 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
                                       name={`courierPricing.${index}.increment_weight`}
                                       render={({ field }) => (
                                         <FormItem>
-                                          <FormLabel className="text-sm font-semibold">Increment Weight (kg)</FormLabel>
+                                          <FormLabel className="text-sm font-semibold">
+                                            Increment Weight (kg)
+                                          </FormLabel>
                                           <FormControl>
                                             <Input
                                               type="number"
                                               step="0.1"
                                               min="0.1"
-                                              className="border-2 focus:border-primary"
+                                              className="focus:border-primary border-2"
                                               {...field}
                                             />
                                           </FormControl>
@@ -781,13 +816,15 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
                                       name={`courierPricing.${index}.increment_price`}
                                       render={({ field }) => (
                                         <FormItem>
-                                          <FormLabel className="text-sm font-semibold">Increment Price (₹)</FormLabel>
+                                          <FormLabel className="text-sm font-semibold">
+                                            Increment Price (₹)
+                                          </FormLabel>
                                           <FormControl>
                                             <Input
                                               type="number"
                                               step="0.01"
                                               min="0"
-                                              className="border-2 focus:border-primary"
+                                              className="focus:border-primary border-2"
                                               {...field}
                                             />
                                           </FormControl>
@@ -800,7 +837,7 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
                               </Card>
 
                               {/* Service Settings */}
-                              <Card className="bg-gradient-to-r from-primary/5 to-primary/10">
+                              <Card className="from-primary/5 to-primary/10 bg-gradient-to-r">
                                 <CardHeader className="pb-3">
                                   <CardTitle className="flex items-center space-x-2 text-base">
                                     <Target className="h-4 w-4" />
@@ -808,15 +845,20 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
                                   </CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                  <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                                     <FormField
                                       control={form.control}
                                       name={`courierPricing.${index}.is_fw_applicable`}
                                       render={({ field }) => (
-                                        <FormItem className="flex flex-row items-center justify-between space-y-0 rounded-lg border-2 p-3 bg-card">
-                                          <FormLabel className="text-sm font-semibold">Forward</FormLabel>
+                                        <FormItem className="bg-card flex flex-row items-center justify-between space-y-0 rounded-lg border-2 p-3">
+                                          <FormLabel className="text-sm font-semibold">
+                                            Forward
+                                          </FormLabel>
                                           <FormControl>
-                                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                            <Switch
+                                              checked={field.value}
+                                              onCheckedChange={field.onChange}
+                                            />
                                           </FormControl>
                                         </FormItem>
                                       )}
@@ -826,10 +868,15 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
                                       control={form.control}
                                       name={`courierPricing.${index}.is_rto_applicable`}
                                       render={({ field }) => (
-                                        <FormItem className="flex flex-row items-center justify-between space-y-0 rounded-lg border-2 p-3 bg-card">
-                                          <FormLabel className="text-sm font-semibold">RTO</FormLabel>
+                                        <FormItem className="bg-card flex flex-row items-center justify-between space-y-0 rounded-lg border-2 p-3">
+                                          <FormLabel className="text-sm font-semibold">
+                                            RTO
+                                          </FormLabel>
                                           <FormControl>
-                                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                            <Switch
+                                              checked={field.value}
+                                              onCheckedChange={field.onChange}
+                                            />
                                           </FormControl>
                                         </FormItem>
                                       )}
@@ -839,10 +886,15 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
                                       control={form.control}
                                       name={`courierPricing.${index}.is_cod_applicable`}
                                       render={({ field }) => (
-                                        <FormItem className="flex flex-row items-center justify-between space-y-0 rounded-lg border-2 p-3 bg-card">
-                                          <FormLabel className="text-sm font-semibold">COD</FormLabel>
+                                        <FormItem className="bg-card flex flex-row items-center justify-between space-y-0 rounded-lg border-2 p-3">
+                                          <FormLabel className="text-sm font-semibold">
+                                            COD
+                                          </FormLabel>
                                           <FormControl>
-                                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                            <Switch
+                                              checked={field.value}
+                                              onCheckedChange={field.onChange}
+                                            />
                                           </FormControl>
                                         </FormItem>
                                       )}
@@ -852,10 +904,15 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
                                       control={form.control}
                                       name={`courierPricing.${index}.is_cod_reversal_applicable`}
                                       render={({ field }) => (
-                                        <FormItem className="flex flex-row items-center justify-between space-y-0 rounded-lg border-2 p-3 bg-card">
-                                          <FormLabel className="text-sm font-semibold">COD Reversal</FormLabel>
+                                        <FormItem className="bg-card flex flex-row items-center justify-between space-y-0 rounded-lg border-2 p-3">
+                                          <FormLabel className="text-sm font-semibold">
+                                            COD Reversal
+                                          </FormLabel>
                                           <FormControl>
-                                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                            <Switch
+                                              checked={field.value}
+                                              onCheckedChange={field.onChange}
+                                            />
                                           </FormControl>
                                         </FormItem>
                                       )}
@@ -873,13 +930,15 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
                                   </CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <FormField
                                       control={form.control}
                                       name={`courierPricing.${index}.cod_charge_hard`}
                                       render={({ field }) => (
                                         <FormItem>
-                                          <FormLabel className="text-sm font-semibold">COD Charge (₹)</FormLabel>
+                                          <FormLabel className="text-sm font-semibold">
+                                            COD Charge (₹)
+                                          </FormLabel>
                                           <FormControl>
                                             <Input
                                               type="number"
@@ -899,7 +958,9 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
                                       name={`courierPricing.${index}.cod_charge_percent`}
                                       render={({ field }) => (
                                         <FormItem>
-                                          <FormLabel className="text-sm font-semibold">COD Charge (%)</FormLabel>
+                                          <FormLabel className="text-sm font-semibold">
+                                            COD Charge (%)
+                                          </FormLabel>
                                           <FormControl>
                                             <Input
                                               type="number"
@@ -920,12 +981,12 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
 
                               {/* Zone Pricing */}
                               <div className="space-y-6">
-                                <h4 className="font-semibold text-lg flex items-center space-x-2">
-                                  <MapPin className="h-5 w-5 text-primary" />
+                                <h4 className="flex items-center space-x-2 text-lg font-semibold">
+                                  <MapPin className="text-primary h-5 w-5" />
                                   <span>Zone-wise Pricing Configuration</span>
                                 </h4>
 
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                                   {Object.entries(zoneLabels).map(([zone, config]) => (
                                     <ZonePricingCard
                                       key={zone}
@@ -950,5 +1011,5 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
         </form>
       </Form>
     </div>
-  )
+  );
 }

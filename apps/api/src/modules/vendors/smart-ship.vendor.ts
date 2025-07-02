@@ -340,11 +340,13 @@ export class SmartShipVendor extends BaseVendor {
       const { order, hub, orderItems, paymentMethod, dimensions, courier } = shipmentData;
 
       const isExpressCourier = [DeliveryType.EXPRESS, DeliveryType.AIR].includes(courier.type);
-      const isHeavyCouier = courier.weight_slab >= 10
+      const isHeavyCouier = courier.weight_slab >= 10;
 
-      const hubCode = isHeavyCouier ? hub.hub_config.smart_ship_hub_code_heavy : isExpressCourier
-        ? hub.hub_config.smart_ship_hub_code_express
-        : hub.hub_config.smart_ship_hub_code_surface;
+      const hubCode = isHeavyCouier
+        ? hub.hub_config.smart_ship_hub_code_heavy
+        : isExpressCourier
+          ? hub.hub_config.smart_ship_hub_code_express
+          : hub.hub_config.smart_ship_hub_code_surface;
 
       const productValueWithTax = orderItems.reduce((acc: number, item: any) => {
         return (
@@ -647,7 +649,7 @@ export class SmartShipVendor extends BaseVendor {
       // Check cache for tracking data to avoid unnecessary API calls
       const cacheKey = `tracking:${this.name.toLowerCase()}:${trackingInput.awb}`;
       const cachedData = await redis.get(cacheKey);
-      
+
       if (cachedData) {
         try {
           const parsedData = JSON.parse(cachedData);
@@ -684,7 +686,7 @@ export class SmartShipVendor extends BaseVendor {
       const payload = {
         awb_number: trackingInput.awb,
       };
-      
+
       const response = await this.makeRequest(endpoint, 'POST', payload, apiConfig);
 
       // Check if response is valid
@@ -700,15 +702,15 @@ export class SmartShipVendor extends BaseVendor {
       // Extract tracking data
       const trackingData = response.data.data;
       const statusHistory = trackingData.status_history || [];
-      
+
       // Process tracking events
       const trackingEvents: TrackingEventData[] = [];
-      
+
       // Map status history to tracking events
       if (Array.isArray(statusHistory) && statusHistory.length > 0) {
         for (const status of statusHistory) {
           if (!status.status || !status.timestamp) continue;
-          
+
           // Parse date string to Date object
           let timestamp: Date;
           try {
@@ -716,86 +718,97 @@ export class SmartShipVendor extends BaseVendor {
           } catch (e) {
             timestamp = new Date();
           }
-          
+
           // Extract status and status code
           const statusText = status.status;
           const statusCode = status.status_code || statusText.toUpperCase().replace(/\s+/g, '_');
-          
-                     // Determine if this is an RTO status
-           const isRTO = this.isRTOStatus(statusText, statusCode);
-           
-           // Determine if this is an NDR status
-           const isNDR = ShipmentBucketManager.isNDRStatus(statusText, statusCode);
-           
-           // Map to bucket using helper method
-           const bucket = this.bucketMappingService 
-             ? await this.bucketMappingService.detectBucket(statusText, statusCode, this.name.toUpperCase())
-             : await this.mapStatusToBucket(statusText, statusCode);
-           
-           trackingEvents.push({
-             status: statusText,
-             status_code: statusCode,
-             description: status.description || statusText,
-             location: status.location || '',
-             timestamp,
-             activity: statusText,
-             isRTO,
-             isNDR,
-             bucket,
-           });
+
+          // Determine if this is an RTO status
+          const isRTO = this.isRTOStatus(statusText, statusCode);
+
+          // Determine if this is an NDR status
+          const isNDR = ShipmentBucketManager.isNDRStatus(statusText, statusCode);
+
+          // Map to bucket using helper method
+          const bucket = this.bucketMappingService
+            ? await this.bucketMappingService.detectBucket(
+                statusText,
+                statusCode,
+                this.name.toUpperCase()
+              )
+            : await this.mapStatusToBucket(statusText, statusCode);
+
+          trackingEvents.push({
+            status: statusText,
+            status_code: statusCode,
+            description: status.description || statusText,
+            location: status.location || '',
+            timestamp,
+            activity: statusText,
+            isRTO,
+            isNDR,
+            bucket,
+          });
         }
       }
-      
+
       // Add current status if not already included in status history
-      if (trackingData.current_status && !trackingEvents.some(e => e.status === trackingData.current_status)) {
+      if (
+        trackingData.current_status &&
+        !trackingEvents.some((e) => e.status === trackingData.current_status)
+      ) {
         const currentStatus = trackingData.current_status;
-        const currentStatusCode = trackingData.current_status_code || 
-          currentStatus.toUpperCase().replace(/\s+/g, '_');
-        
-        const currentBucket = this.bucketMappingService 
-          ? await this.bucketMappingService.detectBucket(currentStatus, currentStatusCode, this.name.toUpperCase())
+        const currentStatusCode =
+          trackingData.current_status_code || currentStatus.toUpperCase().replace(/\s+/g, '_');
+
+        const currentBucket = this.bucketMappingService
+          ? await this.bucketMappingService.detectBucket(
+              currentStatus,
+              currentStatusCode,
+              this.name.toUpperCase()
+            )
           : await this.mapStatusToBucket(currentStatus, currentStatusCode);
-          
-                 trackingEvents.push({
-           status: currentStatus,
-           status_code: currentStatusCode,
-           description: trackingData.current_status_description || currentStatus,
-           location: trackingData.current_location || '',
-           timestamp: new Date(),
-           activity: currentStatus,
-           isRTO: this.isRTOStatus(currentStatus, currentStatusCode),
-           isNDR: ShipmentBucketManager.isNDRStatus(currentStatus, currentStatusCode),
-           bucket: currentBucket,
-         });
+
+        trackingEvents.push({
+          status: currentStatus,
+          status_code: currentStatusCode,
+          description: trackingData.current_status_description || currentStatus,
+          location: trackingData.current_location || '',
+          timestamp: new Date(),
+          activity: currentStatus,
+          isRTO: this.isRTOStatus(currentStatus, currentStatusCode),
+          isNDR: ShipmentBucketManager.isNDRStatus(currentStatus, currentStatusCode),
+          bucket: currentBucket,
+        });
       }
-      
+
       // Sort events by timestamp (oldest first)
       trackingEvents.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-      
+
       // If no events found, add a default event
       if (trackingEvents.length === 0) {
-                 trackingEvents.push({
-           status: 'Pending',
-           status_code: 'PENDING',
-           description: 'Tracking information not available',
-           location: '',
-           timestamp: new Date(),
-           activity: 'Tracking information not available',
-           isRTO: false,
-           isNDR: false,
-           bucket: ShipmentBucketManager.getBucketFromStatus('NEW'),
-         });
+        trackingEvents.push({
+          status: 'Pending',
+          status_code: 'PENDING',
+          description: 'Tracking information not available',
+          location: '',
+          timestamp: new Date(),
+          activity: 'Tracking information not available',
+          isRTO: false,
+          isNDR: false,
+          bucket: ShipmentBucketManager.getBucketFromStatus('NEW'),
+        });
       }
-      
+
       // Cache the result
       // Use a longer TTL for delivered/RTO shipments (24 hours) as they won't change
       // Use a shorter TTL for in-transit shipments (30 minutes)
-      const isDelivered = trackingEvents.some(event => this.isDeliveredStatus(event.status));
-      const isRTO = trackingEvents.some(event => event.isRTO);
+      const isDelivered = trackingEvents.some((event) => this.isDeliveredStatus(event.status));
+      const isRTO = trackingEvents.some((event) => event.isRTO);
       const cacheTTL = isDelivered || isRTO ? 86400 : 1800; // 24 hours or 30 minutes
-      
+
       await redis.set(
-        cacheKey, 
+        cacheKey,
         JSON.stringify({
           data: response.data,
           trackingEvents,
@@ -803,7 +816,7 @@ export class SmartShipVendor extends BaseVendor {
         'EX',
         cacheTTL
       );
-      
+
       return {
         success: true,
         message: 'Tracking data retrieved successfully',
@@ -880,36 +893,36 @@ export class SmartShipVendor extends BaseVendor {
         formattedDate = tomorrow.toISOString().split('T')[0];
       }
 
-                    // Extract customer details from shipment data or use provided data
-       const customerName = String(ndrData.customer_name ?? 
-                                  ndrData.shipment?.order?.customer?.name ?? 
-                                  'Customer');
-       const customerPhone = String(ndrData.phone ?? 
-                                   ndrData.shipment?.order?.customer?.phone ?? 
-                                   '');
-       const customerAddress = String(ndrData.address ?? 
-                                     ndrData.shipment?.order?.customer?.address?.address ?? 
-                                     '');
+      // Extract customer details from shipment data or use provided data
+      const customerName = String(
+        ndrData.customer_name ?? ndrData.shipment?.order?.customer?.name ?? 'Customer'
+      );
+      const customerPhone = String(ndrData.phone ?? ndrData.shipment?.order?.customer?.phone ?? '');
+      const customerAddress = String(
+        ndrData.address ?? ndrData.shipment?.order?.customer?.address?.address ?? ''
+      );
 
-       // Get the client order reference ID
-       const clientOrderReferenceId = String(ndrData.client_order_reference_id ?? 
-                                            ndrData.shipment?.order?.order_reference_id ??
-                                            ndrData.shipment?.order?.code ??
-                                            '');
+      // Get the client order reference ID
+      const clientOrderReferenceId = String(
+        ndrData.client_order_reference_id ??
+          ndrData.shipment?.order?.order_reference_id ??
+          ndrData.shipment?.order?.code ??
+          ''
+      );
 
-       const requestBody = {
-         orders: [
-           {
-             action_id: actionId,
-             names: customerName,
-             phone: customerPhone,
-             comments: ndrData.comment || 'NDR action requested',
-             next_attempt_date: formattedDate,
-             client_order_reference_id: [clientOrderReferenceId],
-             address: customerAddress,
-           },
-         ],
-       };
+      const requestBody = {
+        orders: [
+          {
+            action_id: actionId,
+            names: customerName,
+            phone: customerPhone,
+            comments: ndrData.comment || 'NDR action requested',
+            next_attempt_date: formattedDate,
+            client_order_reference_id: [clientOrderReferenceId],
+            address: customerAddress,
+          },
+        ],
+      };
 
       // Make API request to SmartShip NDR endpoint
       const response = await this.makeRequest(

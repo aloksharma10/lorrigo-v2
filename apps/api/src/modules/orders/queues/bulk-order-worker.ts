@@ -101,7 +101,7 @@ export function initBulkOrderWorker(fastify: FastifyInstance, orderService: Orde
           // Exponential backoff with jitter
           const expDelay = Math.min(maxDelay, baseDelay * Math.pow(2, attemptsMade));
           return Math.floor(Math.random() * expDelay);
-        }
+        },
       },
       maxStalledCount: 2,
       stalledInterval: 15000,
@@ -150,8 +150,15 @@ async function processBulkOrders(
   duration: number;
 }> {
   const startTime = Date.now();
-  const { operationId, userId, userName, csvContent: csvInput, headerMapping, filePath } = job.data as any;
-  
+  const {
+    operationId,
+    userId,
+    userName,
+    csvContent: csvInput,
+    headerMapping,
+    filePath,
+  } = job.data as any;
+
   try {
     // Load CSV content if only filePath is provided
     const csvText = csvInput ?? (filePath ? await fs.readFile(filePath, 'utf-8') : null);
@@ -168,13 +175,13 @@ async function processBulkOrders(
     const csvData = parseCsvContent(csvText);
     const effectiveMapping = headerMapping || {};
     const ordersToProcess = transformCsvToOrders(csvData, effectiveMapping);
-    
+
     // Update total count in database
     await fastify.prisma.bulkOperation.update({
       where: { id: operationId },
-      data: { 
+      data: {
         total_count: ordersToProcess.length,
-        status: 'PROCESSING' 
+        status: 'PROCESSING',
       },
     });
 
@@ -193,7 +200,7 @@ async function processBulkOrders(
     for (let i = 0; i < totalChunks; i++) {
       const chunk = chunks[i];
       if (!chunk || chunk.length === 0) continue;
-      
+
       const chunkResults = await processOrderChunk(chunk, userId, userName, orderService);
       results.push(...chunkResults);
 
@@ -202,9 +209,9 @@ async function processBulkOrders(
       await job.updateProgress(progress);
 
       // Update database with current progress
-      const successCount = results.filter(r => r.success).length;
-      const failedCount = results.filter(r => !r.success).length;
-      
+      const successCount = results.filter((r) => r.success).length;
+      const failedCount = results.filter((r) => !r.success).length;
+
       await fastify.prisma.bulkOperation.update({
         where: { id: operationId },
         data: {
@@ -220,9 +227,9 @@ async function processBulkOrders(
     await job.updateProgress(95);
 
     // Final update
-    const successCount = results.filter(r => r.success).length;
-    const failedCount = results.filter(r => !r.success).length;
-    
+    const successCount = results.filter((r) => r.success).length;
+    const failedCount = results.filter((r) => !r.success).length;
+
     await fastify.prisma.bulkOperation.update({
       where: { id: operationId },
       data: {
@@ -243,14 +250,18 @@ async function processBulkOrders(
         await fs.unlink(filePath);
         fastify.log.info(`Deleted temporary CSV file: ${filePath}`);
       } catch (deleteErr) {
-        fastify.log.warn(`Failed to delete temporary CSV file ${filePath}: ${deleteErr instanceof Error ? deleteErr.message : deleteErr}`);
+        fastify.log.warn(
+          `Failed to delete temporary CSV file ${filePath}: ${deleteErr instanceof Error ? deleteErr.message : deleteErr}`
+        );
       }
     }
 
     const endTime = Date.now();
     const duration = (endTime - startTime) / 1000;
 
-    job.log(`Bulk order upload completed: ${successCount} successful, ${failedCount} failed in ${duration}s`);
+    job.log(
+      `Bulk order upload completed: ${successCount} successful, ${failedCount} failed in ${duration}s`
+    );
 
     return {
       operationId,
@@ -260,10 +271,11 @@ async function processBulkOrders(
       reportPath,
       duration,
     };
-
   } catch (error) {
-    job.log(`Bulk order upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    
+    job.log(
+      `Bulk order upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+
     // Update operation status to failed
     await fastify.prisma.bulkOperation.update({
       where: { id: operationId },
@@ -292,7 +304,7 @@ async function processOrderChunk(
     limit(async () => {
       try {
         const createdOrder = await orderService.createOrder(order, userId, userName);
-        
+
         return {
           orderId: order.orderId,
           success: true,
@@ -398,26 +410,23 @@ async function processBatchOrders(
 }
 
 // Generate CSV report function
-async function generateCsvReport(
-  results: BulkOrderResult[],
-  operationId: string
-): Promise<string> {
+async function generateCsvReport(results: BulkOrderResult[], operationId: string): Promise<string> {
   const fs = require('fs').promises;
   const path = require('path');
-  
+
   try {
     // Ensure uploads directory exists
     const uploadsDir = path.join(process.cwd(), 'uploads', 'reports');
     await fs.mkdir(uploadsDir, { recursive: true });
-    
+
     const fileName = `bulk_order_report_${operationId}.csv`;
     const filePath = path.join(uploadsDir, fileName);
-    
+
     // Generate CSV content
     const headers = ['Order ID', 'Status', 'Message', 'Error', 'Timestamp'];
     const csvRows = [headers.join(',')];
-    
-    results.forEach(result => {
+
+    results.forEach((result) => {
       const row = [
         result.orderId,
         result.success ? 'SUCCESS' : 'FAILED',
@@ -425,12 +434,12 @@ async function generateCsvReport(
         result.error || '',
         result.timestamp.toISOString(),
       ];
-      csvRows.push(row.map(field => `"${field}"`).join(','));
+      csvRows.push(row.map((field) => `"${field}"`).join(','));
     });
-    
+
     const csvContent = csvRows.join('\n');
     await fs.writeFile(filePath, csvContent, 'utf8');
-    
+
     return filePath;
   } catch (error) {
     console.error('Error generating CSV report:', error);
@@ -492,7 +501,7 @@ async function createOrdersBatch(
   orderService: OrderService
 ): Promise<BulkOrderResult[]> {
   const { orders, userId, userName } = job.data;
-  
+
   // This is a placeholder for future implementation of true bulk insert
   // For now, we'll use the chunk processing approach
   return await processOrdersChunk(orders, userId, userName, fastify, orderService);
@@ -517,7 +526,7 @@ function transformCsvToOrders(csvData: any[], mapping: Record<string, string>): 
         orderChannel: row[mapping.orderChannel || ''] || 'CUSTOM',
         orderType: (row[mapping.orderType || ''] || 'domestic') as 'domestic' | 'international',
         pickupAddressId: row[mapping.pickupAddressId || ''],
-        
+
         deliveryDetails: {
           isBusiness: false,
           fullName: row[mapping.customerName || ''],
@@ -537,7 +546,7 @@ function transformCsvToOrders(csvData: any[], mapping: Record<string, string>): 
           billingCity: '',
           billingState: '',
         },
-        
+
         sellerDetails: {
           name: row[mapping.sellerName || ''],
           isAddressAvailable: true,
@@ -549,20 +558,22 @@ function transformCsvToOrders(csvData: any[], mapping: Record<string, string>): 
           state: '',
           country: 'India',
         },
-        
+
         productDetails: {
-          products: [{
-            id: `product_${index}`,
-            name: row[mapping.productName || ''],
-            sku: row[mapping.productSku || ''] || '',
-            quantity: parseInt(row[mapping.productQuantity || '']) || 1,
-            price: parseFloat(row[mapping.productPrice || '']) || 0,
-            taxRate: parseFloat(row[mapping.productTax || '']) || 0,
-            hsnCode: row[mapping.productHsn || ''] || '',
-          }],
+          products: [
+            {
+              id: `product_${index}`,
+              name: row[mapping.productName || ''],
+              sku: row[mapping.productSku || ''] || '',
+              quantity: parseInt(row[mapping.productQuantity || '']) || 1,
+              price: parseFloat(row[mapping.productPrice || '']) || 0,
+              taxRate: parseFloat(row[mapping.productTax || '']) || 0,
+              hsnCode: row[mapping.productHsn || ''] || '',
+            },
+          ],
           taxableValue: parseFloat(row[mapping.taxableValue || '']) || 0,
         },
-        
+
         packageDetails: {
           deadWeight: sanitizeNumber(row[mapping.packageWeight || ''], 0.5).toString(),
           length: sanitizeNumber(row[mapping.packageLength || ''], 10).toString(),
@@ -570,20 +581,22 @@ function transformCsvToOrders(csvData: any[], mapping: Record<string, string>): 
           height: sanitizeNumber(row[mapping.packageHeight || ''], 10).toString(),
           volumetricWeight: '0',
         },
-        
+
         paymentMethod: {
           paymentMethod: (row[mapping.paymentMethod || ''] || 'prepaid').toLowerCase(),
         },
-        
+
         amountToCollect: parseFloat(row[mapping.amountToCollect || '']) || 0,
         order_invoice_number: row[mapping.orderInvoiceNumber || ''] || '',
         order_invoice_date: parseInvoiceDate(row[mapping.orderInvoiceDate || '']),
         ewaybill: row[mapping.ewaybill || ''] || '',
       };
-      
+
       return order;
     } catch (error) {
-      throw new Error(`Error processing row ${index + 1}: ${error instanceof Error ? error.message : 'Invalid data'}`);
+      throw new Error(
+        `Error processing row ${index + 1}: ${error instanceof Error ? error.message : 'Invalid data'}`
+      );
     }
   });
 }
@@ -626,7 +639,8 @@ function chunkArray(array: any[], chunkSize: number): any[][] {
 }
 
 function sanitizeNumber(value: unknown, defaultValue: number = 0): number {
-  const num = typeof value === 'string' ? parseFloat(value.replace(/[^0-9.\-]/g, '')) : Number(value);
+  const num =
+    typeof value === 'string' ? parseFloat(value.replace(/[^0-9.\-]/g, '')) : Number(value);
   if (!isFinite(num) || isNaN(num)) return defaultValue;
   return num;
-} 
+}

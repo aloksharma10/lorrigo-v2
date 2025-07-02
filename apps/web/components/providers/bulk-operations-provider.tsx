@@ -40,7 +40,7 @@ export function BulkOperationsProvider({
     openModal('bulk-orders-operations', {
       operationType: type,
       selectedRows: rows,
-      onOperationComplete: handleOperationComplete
+      onOperationComplete: handleOperationComplete,
     });
   };
 

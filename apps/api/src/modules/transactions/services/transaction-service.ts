@@ -787,13 +787,16 @@ export class TransactionService {
    * @returns Job ID for tracking
    */
   async processBulkTransactions(
-    transactions: (ShipmentTransactionData | InvoiceTransactionData | WalletRechargeTransactionData)[],
+    transactions: (
+      | ShipmentTransactionData
+      | InvoiceTransactionData
+      | WalletRechargeTransactionData
+    )[],
     entityType: TransactionEntityType
   ) {
     // try {
     //   // Generate operation code
     //   const operationCode = `BO-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-
     //   // Create bulk operation record
     //   const bulkOperation = await this.prisma.bulkOperation.create({
     //     data: {
@@ -807,7 +810,6 @@ export class TransactionService {
     //       user_id: transactions[0]?.userId, // Use the first transaction's user ID
     //     },
     //   });
-
     //   // Add job to queue
     //   await addJob(
     //     QueueNames.BULK_OPERATION,
@@ -821,7 +823,6 @@ export class TransactionService {
     //       attempts: 3,
     //     }
     //   );
-
     //   return {
     //     success: true,
     //     operationId: bulkOperation.id,
@@ -914,7 +915,8 @@ export class TransactionService {
       }
 
       // Calculate new balance
-      const newBalance = type === TransactionType.CREDIT ? wallet.balance + amount : wallet.balance - amount;
+      const newBalance =
+        type === TransactionType.CREDIT ? wallet.balance + amount : wallet.balance - amount;
 
       // Check if balance would go negative
       if (newBalance < 0) {
@@ -1019,7 +1021,7 @@ export class TransactionService {
         return {
           success: true,
           message: 'No failed transactions found',
-          transactions: []
+          transactions: [],
         };
       }
 
@@ -1033,7 +1035,9 @@ export class TransactionService {
         const phonePeService = new PhonePeService(this.fastify);
 
         // Check payment status with PhonePe
-        const statusResult = await phonePeService.checkPaymentStatus(transaction.merchant_transaction_id);
+        const statusResult = await phonePeService.checkPaymentStatus(
+          transaction.merchant_transaction_id
+        );
 
         if (!statusResult.success) continue;
 
@@ -1189,7 +1193,7 @@ export class TransactionService {
         where: {
           merchant_transaction_id: merchantTransactionId,
           invoice_id: invoiceId,
-          user_id: userId
+          user_id: userId,
         },
       });
 
@@ -1270,4 +1274,4 @@ export class TransactionService {
       return { success: false, error: 'Failed to verify invoice payment' };
     }
   }
-} 
+}

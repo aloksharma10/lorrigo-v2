@@ -324,7 +324,7 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
     handler: (request, reply) => orderController.getOrderStats(request, reply),
   });
 
-  // Below routes are not required 
+  // Below routes are not required
   // Update an order
   // fastify.patch('/:id', {
   //   schema: {

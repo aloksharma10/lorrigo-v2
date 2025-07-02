@@ -1,5 +1,5 @@
-import { Building2, MapPin } from "lucide-react"
-import type { ZonePricing, CourierPricing } from "../types/shipping-plan"
+import { Building2, MapPin } from 'lucide-react';
+import type { ZonePricing, CourierPricing } from '../types/shipping-plan';
 
 export const defaultZonePricing: ZonePricing = {
   base_price: 0,
@@ -8,10 +8,10 @@ export const defaultZonePricing: ZonePricing = {
   rto_base_price: 0,
   rto_increment_price: 0,
   flat_rto_charge: 0,
-}
+};
 
 export const defaultCourierPricing: CourierPricing = {
-  courierId: "",
+  courierId: '',
   cod_charge_hard: 40,
   cod_charge_percent: 1.5,
   is_fw_applicable: true,
@@ -28,35 +28,35 @@ export const defaultCourierPricing: CourierPricing = {
     Z_D: { ...defaultZonePricing, is_rto_same_as_fw: false },
     Z_E: { ...defaultZonePricing, is_rto_same_as_fw: false },
   },
-}
+};
 
 export const zoneLabels = {
   Z_A: {
-    name: "Zone A - Within City",
+    name: 'Zone A - Within City',
     icon: Building2,
   },
   Z_B: {
-    name: "Zone B - Within State",
+    name: 'Zone B - Within State',
     icon: MapPin,
   },
   Z_C: {
-    name: "Zone C - Metro Cities",
+    name: 'Zone C - Metro Cities',
     icon: Building2,
   },
   Z_D: {
-    name: "Zone D - Rest of India",
+    name: 'Zone D - Rest of India',
     icon: MapPin,
   },
   Z_E: {
-    name: "Zone E - North East",
+    name: 'Zone E - North East',
     icon: MapPin,
   },
-} as const
+} as const;
 
 export const zoneMapping: Record<string, string> = {
-  WITHIN_CITY: "Z_A",
-  WITHIN_STATE: "Z_B",
-  WITHIN_METRO: "Z_C",
-  WITHIN_ROI: "Z_D",
-  NORTH_EAST: "Z_E",
-}
+  WITHIN_CITY: 'Z_A',
+  WITHIN_STATE: 'Z_B',
+  WITHIN_METRO: 'Z_C',
+  WITHIN_ROI: 'Z_D',
+  NORTH_EAST: 'Z_E',
+};

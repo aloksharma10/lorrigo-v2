@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthToken } from '@/components/providers/token-provider';
 import { useSession } from 'next-auth/react';
@@ -57,7 +57,12 @@ export const useWalletOperations = () => {
   // Recharge wallet
   const rechargeWallet = useMutation({
     mutationFn: async (data: { amount: number; redirectUrl: string }) => {
-      const response = await api.post<{ valid: boolean, message: string, merchantTransactionId: string, url: string }>('/transactions/wallet/recharge', {
+      const response = await api.post<{
+        valid: boolean;
+        message: string;
+        merchantTransactionId: string;
+        url: string;
+      }>('/transactions/wallet/recharge', {
         amount: data.amount,
         origin: window.location.origin, // Using origin similar to old code
         redirectUrl: data.redirectUrl,
@@ -71,28 +76,31 @@ export const useWalletOperations = () => {
   });
 
   // Get transaction history
-  const getTransactionHistory = ({ page, limit }: { page: number, limit: number }) => {
+  const getTransactionHistory = ({ page, limit }: { page: number; limit: number }) => {
     return useQuery({
       queryKey: ['wallet', 'transactions'],
       queryFn: async () => {
-        const response = await api.get<{ transactions: any[] }>('/transactions/history', { params: { page, limit } });
+        const response = await api.get<{ transactions: any[] }>('/transactions/history', {
+          params: { page, limit },
+        });
         return response;
       },
       enabled: status === 'authenticated' && isTokenReady,
       refetchOnWindowFocus: false,
       staleTime: 5 * 60 * 1000, // 5 minutes
     });
-  }
+  };
 
   // Verify wallet recharge (can be called from callback page)
   const verifyWalletRecharge = useMutation({
-    mutationFn: async (data: {
-      merchantTransactionId: string;
-    }) => {
+    mutationFn: async (data: { merchantTransactionId: string }) => {
       // Using GET with query params like in the old code
-      const response = await api.get<{ valid: boolean, message: string }>(`/transactions/wallet/verify`, {
-        params: data
-      });
+      const response = await api.get<{ valid: boolean; message: string }>(
+        `/transactions/wallet/verify`,
+        {
+          params: data,
+        }
+      );
       return response;
     },
     onSuccess: () => {
@@ -115,10 +123,7 @@ export const useWalletOperations = () => {
 
   // Pay invoice (from old code)
   const payInvoice = useMutation({
-    mutationFn: async (data: {
-      amount: number;
-      invoiceId: string;
-    }) => {
+    mutationFn: async (data: { amount: number; invoiceId: string }) => {
       const response = await api.post('/transactions/invoice/pay', {
         amount: data.amount,
         invoiceId: data.invoiceId,
@@ -130,12 +135,9 @@ export const useWalletOperations = () => {
 
   // Confirm invoice payment (from old code)
   const confirmInvoicePayment = useMutation({
-    mutationFn: async (data: {
-      merchantTransactionId: string;
-      invoiceId: string;
-    }) => {
+    mutationFn: async (data: { merchantTransactionId: string; invoiceId: string }) => {
       const response = await api.get(`/transactions/invoice/verify`, {
-        params: data
+        params: data,
       });
       return response;
     },

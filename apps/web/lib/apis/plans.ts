@@ -17,7 +17,7 @@ export const usePlanOperations = () => {
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
       enabled: isTokenReady, // Only run query when token is ready
     });
-  }
+  };
 
   const getPlanById = (id: string) => {
     return useQuery({
@@ -28,12 +28,12 @@ export const usePlanOperations = () => {
       gcTime: 1000 * 60 * 10,
       retry: 3,
     });
-  }
+  };
 
   const getUsersQuery = ({
     queryKey,
     search,
-    enabled = true
+    enabled = true,
   }: {
     queryKey: string[];
     search?: string;
@@ -46,7 +46,7 @@ export const usePlanOperations = () => {
       gcTime: 1000 * 60 * 2,
       queryFn: async () => {
         const response: any = await api.get('/sellers', {
-          params: search ? { search } : {}
+          params: search ? { search } : {},
         });
         return response?.sellers || [];
       },
@@ -60,7 +60,7 @@ export const usePlanOperations = () => {
     queryFn: () => {
       const plans = queryClient.getQueryData<any[]>(['plans']);
       if (plans) {
-        const defaultPlan = plans.find(plan => plan.isDefault);
+        const defaultPlan = plans.find((plan) => plan.isDefault);
         if (defaultPlan) return defaultPlan;
       }
 

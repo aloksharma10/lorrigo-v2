@@ -5,13 +5,17 @@ import { CreateShipmentSchema } from '@lorrigo/utils';
 import { QueueNames, initQueueEvents } from '@/lib/queue';
 import { APP_CONFIG } from '@/config/app';
 import { redis } from '@/lib/redis';
-import { generateCsvReport, mergePdfBuffers, BulkOperationResult } from '@/modules/bulk-operations/utils/file-utils';
+import {
+  generateCsvReport,
+  mergePdfBuffers,
+  BulkOperationResult,
+} from '@/modules/bulk-operations/utils/file-utils';
 import pLimit from 'p-limit';
-import { 
-  processShipmentTracking, 
-  processTrackingRetry, 
-  TrackingProcessor, 
-  TrackingProcessorConfig 
+import {
+  processShipmentTracking,
+  processTrackingRetry,
+  TrackingProcessor,
+  TrackingProcessorConfig,
 } from '../batch/processor';
 import { ShipmentStatus } from '@lorrigo/db';
 
@@ -80,19 +84,29 @@ interface NdrDetailsJobData {
 export function initShipmentQueue(fastify: FastifyInstance, shipmentService: ShipmentService) {
   // Initialize the bulk operation queue
   const bulkOperationQueue = fastify.queues[QueueNames.BULK_OPERATION];
-  
+
   // Initialize the shipment tracking queue
   const trackingQueue = fastify.queues[QueueNames.SHIPMENT_TRACKING];
-  
+
   // Initialize the workers
   if (!bulkOperationQueue) {
     fastify.log.error('Bulk operation queue not initialized in queue.ts');
-    return { bulkOperationQueue: null, bulkOperationWorker: null, trackingQueue: null, trackingWorker: null };
+    return {
+      bulkOperationQueue: null,
+      bulkOperationWorker: null,
+      trackingQueue: null,
+      trackingWorker: null,
+    };
   }
 
   if (!trackingQueue) {
     fastify.log.error('Shipment tracking queue not initialized in queue.ts');
-    return { bulkOperationQueue, bulkOperationWorker: null, trackingQueue: null, trackingWorker: null };
+    return {
+      bulkOperationQueue,
+      bulkOperationWorker: null,
+      trackingQueue: null,
+      trackingWorker: null,
+    };
   }
 
   // Initialize queue events for monitoring
@@ -139,27 +153,29 @@ export function initShipmentQueue(fastify: FastifyInstance, shipmentService: Shi
 
         throw error;
       }
-    }, {
-    connection: redis,
-    prefix: APP_CONFIG.REDIS.PREFIX,
-    concurrency: 10, // Process up to 10 bulk operations concurrently
-    limiter: {
-      max: 5, // Maximum number of jobs to process per time window
-      duration: 1000, // Time window in ms (1 second)
     },
-    // Custom backoff strategy for retries
-    settings: {
-      backoffStrategy: (attemptsMade: number) => {
-        const baseDelay = 5000; // 5 seconds
-        const maxDelay = 300000; // 5 minutes
-        // Exponential backoff with full jitter
-        const expDelay = Math.min(maxDelay, baseDelay * Math.pow(2, attemptsMade));
-        return Math.floor(Math.random() * expDelay);
-      }
-    },
-    maxStalledCount: 2, // Consider a job stalled after 2 checks
-    stalledInterval: 15000, // Check for stalled jobs every 15 seconds
-  });
+    {
+      connection: redis,
+      prefix: APP_CONFIG.REDIS.PREFIX,
+      concurrency: 10, // Process up to 10 bulk operations concurrently
+      limiter: {
+        max: 5, // Maximum number of jobs to process per time window
+        duration: 1000, // Time window in ms (1 second)
+      },
+      // Custom backoff strategy for retries
+      settings: {
+        backoffStrategy: (attemptsMade: number) => {
+          const baseDelay = 5000; // 5 seconds
+          const maxDelay = 300000; // 5 minutes
+          // Exponential backoff with full jitter
+          const expDelay = Math.min(maxDelay, baseDelay * Math.pow(2, attemptsMade));
+          return Math.floor(Math.random() * expDelay);
+        },
+      },
+      maxStalledCount: 2, // Consider a job stalled after 2 checks
+      stalledInterval: 15000, // Check for stalled jobs every 15 seconds
+    }
+  );
 
   // Create the tracking worker with optimized settings
   const trackingWorker = new Worker(
@@ -171,49 +187,57 @@ export function initShipmentQueue(fastify: FastifyInstance, shipmentService: Shi
         switch (job.name) {
           case JobType.TRACK_SHIPMENTS:
             const { batchSize, config } = job.data as TrackingJobData;
-            return await processShipmentTracking(
-              fastify, 
-              shipmentService, 
-              { 
-                batchSize: batchSize || 50,
-                ...config
-              }
-            );
-          
+            return await processShipmentTracking(fastify, shipmentService, {
+              batchSize: batchSize || 50,
+              ...config,
+            });
+
           case JobType.RETRY_TRACK_SHIPMENT:
             const { shipmentId } = job.data as TrackingJobData;
             if (!shipmentId) {
               throw new Error('Missing shipment ID for retry tracking');
             }
             return await processTrackingRetry(fastify, shipmentService, shipmentId);
-          
+
           case JobType.PROCESS_RTO_CHARGES:
             const { shipmentId: rtoShipmentId, orderId } = job.data as RtoChargesJobData;
             if (!rtoShipmentId || !orderId) {
               throw new Error('Missing shipment ID or order ID for RTO charges');
             }
             return await TrackingProcessor.processRtoCharges(rtoShipmentId, orderId);
-          
+
           case JobType.PROCESS_BULK_STATUS_UPDATES:
             return await TrackingProcessor.processBulkStatusUpdates(fastify);
-          
+
           case JobType.PROCESS_UNMAPPED_STATUSES:
             return await TrackingProcessor.processUnmappedStatuses(fastify);
-          
+
           case JobType.PROCESS_EDD_UPDATES:
             return await TrackingProcessor.processBulkEddUpdates(fastify);
-          
+
           case JobType.PROCESS_RTO:
             const { batchSize: rtoBatchSize } = job.data as TrackingJobData;
             return await TrackingProcessor.processRtoShipments(fastify, rtoBatchSize || 100);
-          
+
           case JobType.PROCESS_NDR_DETAILS:
-            const { shipmentId: ndrShipmentId, awb, vendorName, orderId: ndrOrderId } = job.data as NdrDetailsJobData;
+            const {
+              shipmentId: ndrShipmentId,
+              awb,
+              vendorName,
+              orderId: ndrOrderId,
+            } = job.data as NdrDetailsJobData;
             if (!ndrShipmentId || !awb || !vendorName) {
               throw new Error('Missing required data for NDR details processing');
             }
-            return await TrackingProcessor.processNdrDetails(fastify, shipmentService, ndrShipmentId, awb, vendorName, ndrOrderId);
-          
+            return await TrackingProcessor.processNdrDetails(
+              fastify,
+              shipmentService,
+              ndrShipmentId,
+              awb,
+              vendorName,
+              ndrOrderId
+            );
+
           default:
             throw new Error(`Unknown tracking job type: ${job.name}`);
         }
@@ -221,24 +245,26 @@ export function initShipmentQueue(fastify: FastifyInstance, shipmentService: Shi
         fastify.log.error(`Error processing tracking job ${job.id}: ${error}`);
         throw error;
       }
-    }, {
-    connection: redis,
-    prefix: APP_CONFIG.REDIS.PREFIX,
-    concurrency: 3, // Process up to 3 tracking jobs concurrently
-    limiter: {
-      max: 10, // Maximum number of jobs to process per time window
-      duration: 1000, // Time window in ms (1 second)
     },
-    settings: {
-      backoffStrategy: (attemptsMade: number) => {
-        const baseDelay = 3000; // 3 seconds
-        const maxDelay = 60000; // 1 minute
-        return maxDelay * Math.pow(2, attemptsMade);
-      }
-    },
-    maxStalledCount: 2, // Consider a job stalled after 2 checks
-    stalledInterval: 15000, // Check for stalled jobs every 15 seconds
-  });
+    {
+      connection: redis,
+      prefix: APP_CONFIG.REDIS.PREFIX,
+      concurrency: 3, // Process up to 3 tracking jobs concurrently
+      limiter: {
+        max: 10, // Maximum number of jobs to process per time window
+        duration: 1000, // Time window in ms (1 second)
+      },
+      settings: {
+        backoffStrategy: (attemptsMade: number) => {
+          const baseDelay = 3000; // 3 seconds
+          const maxDelay = 60000; // 1 minute
+          return maxDelay * Math.pow(2, attemptsMade);
+        },
+      },
+      maxStalledCount: 2, // Consider a job stalled after 2 checks
+      stalledInterval: 15000, // Check for stalled jobs every 15 seconds
+    }
+  );
 
   // Log bulk operation worker events
   bulkOperationWorker.on('completed', (job) => {
@@ -260,13 +286,15 @@ export function initShipmentQueue(fastify: FastifyInstance, shipmentService: Shi
 
   trackingWorker.on('failed', (job, err) => {
     fastify.log.error(`Tracking job ${job?.id} failed with error: ${err.message}`);
-    
+
     // Handle "Missing key for job repeat" error by attempting to recover
     if (err.message?.includes('Missing key for job repeat')) {
       try {
         // Attempt to recover by cleaning up orphaned repeat jobs
         // const { cleanupOrphanedRepeatJobs } = require('@/lib/queue');
-        fastify.log.warn(`Detected "Missing key for job repeat" error for job ${job?.id}, attempting recovery...`);
+        fastify.log.warn(
+          `Detected "Missing key for job repeat" error for job ${job?.id}, attempting recovery...`
+        );
         // cleanupOrphanedRepeatJobs().then(() => {
         //   fastify.log.info(`Recovery attempt completed for job ${job?.id}`);
         // }).catch((cleanupErr: Error) => {
@@ -281,7 +309,7 @@ export function initShipmentQueue(fastify: FastifyInstance, shipmentService: Shi
 
   trackingWorker.on('error', (err) => {
     fastify.log.error(`Tracking worker error: ${err.message}`);
-    
+
     // Handle "Missing key for job repeat" error by attempting to recover
     if (err.message?.includes('Missing key for job repeat')) {
       try {
@@ -303,19 +331,13 @@ export function initShipmentQueue(fastify: FastifyInstance, shipmentService: Shi
   // Setup graceful shutdown
   const gracefulShutdown = async () => {
     fastify.log.info('Shutting down queue workers gracefully...');
-    
+
     // Close the workers
-    await Promise.all([
-      bulkOperationWorker.close(),
-      trackingWorker.close()
-    ]);
-    
+    await Promise.all([bulkOperationWorker.close(), trackingWorker.close()]);
+
     // Close the queue events
-    await Promise.all([
-      bulkOperationQueueEvents.close(),
-      trackingQueueEvents.close()
-    ]);
-    
+    await Promise.all([bulkOperationQueueEvents.close(), trackingQueueEvents.close()]);
+
     fastify.log.info('Queue workers shut down successfully');
   };
 
@@ -323,12 +345,12 @@ export function initShipmentQueue(fastify: FastifyInstance, shipmentService: Shi
   process.on('SIGTERM', gracefulShutdown);
   process.on('SIGINT', gracefulShutdown);
 
-  return { 
-    bulkOperationQueue, 
-    bulkOperationWorker, 
-    trackingQueue, 
+  return {
+    bulkOperationQueue,
+    bulkOperationWorker,
+    trackingQueue,
     trackingWorker,
-    gracefulShutdown
+    gracefulShutdown,
   };
 }
 
@@ -347,7 +369,7 @@ async function processBulkCreateShipment(
   const results: BulkOperationResult[] = [];
   let successCount = 0;
   let failedCount = 0;
-  
+
   // Update bulk operation status to processing
   await fastify.prisma.bulkOperation.update({
     where: { id: operationId },
@@ -404,10 +426,14 @@ async function processBulkCreateShipment(
         // Try each courier in order until one succeeds
         for (const courierId of courierIds) {
           // Find the courier rate that matches the courier ID
-          const selectedRate = ratesResult.rates.find((rate: { id: string }) => rate.id === courierId);
+          const selectedRate = ratesResult.rates.find(
+            (rate: { id: string }) => rate.id === courierId
+          );
 
           if (!selectedRate) {
-            fastify.log.info(`Courier ${courierId} not available for order ${orderId}, trying next courier`);
+            fastify.log.info(
+              `Courier ${courierId} not available for order ${orderId}, trying next courier`
+            );
             continue; // Try next courier
           }
 
@@ -430,7 +456,9 @@ async function processBulkCreateShipment(
           const result = await shipmentService.createShipment(shipmentCreateData, userId);
 
           if (result.error) {
-            fastify.log.error(`Failed to create shipment for order ${orderId} with courier ${courierId}: ${result.error}`);
+            fastify.log.error(
+              `Failed to create shipment for order ${orderId} with courier ${courierId}: ${result.error}`
+            );
             // Continue to next courier if this one failed
             continue;
           } else {
@@ -819,7 +847,7 @@ async function processBulkDownloadLabel(
     } else {
       failedCount++;
     }
-    
+
     // Remove the pdfBuffer before storing the result to avoid large JSON
     const { pdfBuffer, ...resultWithoutBuffer } = result;
     results.push(resultWithoutBuffer);
@@ -893,7 +921,7 @@ async function processBulkEditPickupAddress(
               in: [
                 ShipmentStatus.NEW,
                 ShipmentStatus.COURIER_ASSIGNED,
-                ShipmentStatus.PICKUP_SCHEDULED
+                ShipmentStatus.PICKUP_SCHEDULED,
               ],
             },
           },

@@ -46,7 +46,8 @@ export default function CustomersPage() {
   const debouncedGlobalFilter = useDebounce(globalFilter, 500);
 
   // API hooks
-  const { getCustomersQuery, createCustomer, updateCustomer, deleteCustomer } = useCustomerOperations();
+  const { getCustomersQuery, createCustomer, updateCustomer, deleteCustomer } =
+    useCustomerOperations();
 
   const customersQuery = getCustomersQuery(
     pagination.pageIndex + 1,
@@ -112,12 +113,12 @@ export default function CustomersPage() {
         const customer = row.original;
         return (
           <div className="flex items-center space-x-3">
-            <div className="flex items-center justify-center w-8 h-8 bg-blue-50 rounded-full">
-              <User className="w-4 h-4 text-blue-600" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50">
+              <User className="h-4 w-4 text-blue-600" />
             </div>
             <div className="flex flex-col space-y-1">
               <div className="font-medium">{customer.name}</div>
-              <div className="text-sm text-muted-foreground">{customer.id}</div>
+              <div className="text-muted-foreground text-sm">{customer.id}</div>
             </div>
           </div>
         );
@@ -134,18 +135,18 @@ export default function CustomersPage() {
           <div className="flex flex-col space-y-2">
             {customer.email && (
               <div className="flex items-center space-x-2">
-                <Mail className="w-3 h-3 text-gray-500" />
+                <Mail className="h-3 w-3 text-gray-500" />
                 <span className="text-sm">{customer.email}</span>
               </div>
             )}
             {customer.phone && (
               <div className="flex items-center space-x-2">
-                <Phone className="w-3 h-3 text-gray-500" />
+                <Phone className="h-3 w-3 text-gray-500" />
                 <span className="text-sm">{customer.phone}</span>
               </div>
             )}
             {!customer.email && !customer.phone && (
-              <span className="text-sm text-muted-foreground">No contact info</span>
+              <span className="text-muted-foreground text-sm">No contact info</span>
             )}
           </div>
         );
@@ -159,18 +160,18 @@ export default function CustomersPage() {
       cell: ({ row }) => {
         const customer = row.original;
         const address = customer.address;
-        
+
         if (!address) {
-          return <span className="text-sm text-muted-foreground">No address</span>;
+          return <span className="text-muted-foreground text-sm">No address</span>;
         }
 
         const fullAddress = `${address.address}, ${address.city}, ${address.state} - ${address.pincode}`;
-        
+
         return (
-          <div className="flex items-start space-x-2 max-w-xs">
-            <MapPin className="w-3 h-3 text-gray-500 mt-1 flex-shrink-0" />
+          <div className="flex max-w-xs items-start space-x-2">
+            <MapPin className="mt-1 h-3 w-3 flex-shrink-0 text-gray-500" />
             <HoverCardToolTip label="Customer Address">
-              <span className="text-sm truncate">{fullAddress}</span>
+              <span className="truncate text-sm">{fullAddress}</span>
             </HoverCardToolTip>
           </div>
         );
@@ -183,11 +184,7 @@ export default function CustomersPage() {
       header: ({ column }) => <DataTableColumnHeader column={column} title="Created" />,
       cell: ({ row }) => {
         // Note: The Customer interface doesn't have created_at, this is for future enhancement
-        return (
-          <div className="text-sm text-muted-foreground">
-            N/A
-          </div>
-        );
+        return <div className="text-muted-foreground text-sm">N/A</div>;
       },
       enableSorting: true,
       enableHiding: true,
@@ -208,19 +205,19 @@ export default function CustomersPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => handleEditCustomer(customer)}>
-                <Edit className="w-4 h-4 mr-2" />
+                <Edit className="mr-2 h-4 w-4" />
                 Edit Customer
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <User className="w-4 h-4 mr-2" />
+                <User className="mr-2 h-4 w-4" />
                 View Orders
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={() => handleDeleteCustomer(customer.id)}
                 className="text-red-600 hover:text-red-500"
               >
-                <Trash2 className="w-4 h-4 mr-2" />
+                <Trash2 className="mr-2 h-4 w-4" />
                 Delete Customer
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -232,7 +229,7 @@ export default function CustomersPage() {
 
   return (
     <div className="container mx-auto py-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Customers</h1>
           <p className="text-muted-foreground">
@@ -265,4 +262,4 @@ export default function CustomersPage() {
       />
     </div>
   );
-} 
+}

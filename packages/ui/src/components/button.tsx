@@ -47,7 +47,7 @@ function Button({
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean;
     isLoading?: boolean;
-    icon?: React.ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>;
+    icon?: React.ForwardRefExoticComponent<Omit<LucideProps, 'ref'> & RefAttributes<SVGSVGElement>>;
   }) {
   const Comp = asChild ? Slot : 'button';
 
@@ -65,7 +65,7 @@ function Button({
     >
       <span className="flex items-center gap-2">
         {isLoading && <Loader2Icon className="animate-spin" />}
-        {Icon && !isLoading && <Icon className={cn("h-4 w-4")} />}
+        {Icon && !isLoading && <Icon className={cn('h-4 w-4')} />}
         {children}
       </span>
     </Comp>

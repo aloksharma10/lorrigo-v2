@@ -1,6 +1,6 @@
 /**
  * Lorrigo Shipment Bucketing System
- * 
+ *
  * This module provides a robust, flexible system for mapping between
  * shipment statuses and bucket IDs. It supports bidirectional mapping,
  * keyword-based status detection, and caching for performance.
@@ -34,48 +34,36 @@ export enum ShipmentBucket {
 
 export const getStatusBuckets = (status: string): number[] => {
   const statusMap: Record<string, number[]> = {
-    'NEW': [ShipmentBucket.NEW],
+    NEW: [ShipmentBucket.NEW],
     'READY-TO-SHIP': [
       ShipmentBucket.READY_TO_SHIP,
       ShipmentBucket.COURIER_ASSIGNED,
       ShipmentBucket.PICKUP_SCHEDULED,
-      ShipmentBucket.PICKED_UP
+      ShipmentBucket.PICKED_UP,
     ],
-    'READY_TO_SHIP': [
+    READY_TO_SHIP: [
       ShipmentBucket.READY_TO_SHIP,
       ShipmentBucket.COURIER_ASSIGNED,
       ShipmentBucket.PICKUP_SCHEDULED,
-      ShipmentBucket.PICKED_UP
+      ShipmentBucket.PICKED_UP,
     ],
-    'TRANSIT': [
-      ShipmentBucket.IN_TRANSIT,
-      ShipmentBucket.OUT_FOR_DELIVERY
-    ],
-    'IN_TRANSIT': [
-      ShipmentBucket.IN_TRANSIT,
-      ShipmentBucket.OUT_FOR_DELIVERY
-    ],
-    'NDR': [ShipmentBucket.NDR],
-    'DELIVERED': [ShipmentBucket.DELIVERED],
-    'RTO': [
-      ShipmentBucket.RTO,
-      ShipmentBucket.RTO_DELIVERED
-    ],
-    'CANCELLED': [
-      ShipmentBucket.CANCELLED_ORDER,
-      ShipmentBucket.CANCELLED_SHIPMENT
-    ],
-    'CANCELLED_ORDER': [ShipmentBucket.CANCELLED_ORDER],
-    'CANCELLED_SHIPMENT': [ShipmentBucket.CANCELLED_SHIPMENT],
-    'LOST_DAMAGED': [ShipmentBucket.LOST_DAMAGED],
-    'DISPOSED': [ShipmentBucket.DISPOSED],
-    'EXCEPTION': [ShipmentBucket.EXCEPTION],
-    'AWAITING': [ShipmentBucket.AWAITING],
-    'COURIER_ASSIGNED': [ShipmentBucket.COURIER_ASSIGNED],
-    'PICKUP_SCHEDULED': [ShipmentBucket.PICKUP_SCHEDULED],
-    'PICKED_UP': [ShipmentBucket.PICKED_UP],
-    'OUT_FOR_DELIVERY': [ShipmentBucket.OUT_FOR_DELIVERY],
-    'ALL': [] // Special case - no bucket filter
+    TRANSIT: [ShipmentBucket.IN_TRANSIT, ShipmentBucket.OUT_FOR_DELIVERY],
+    IN_TRANSIT: [ShipmentBucket.IN_TRANSIT, ShipmentBucket.OUT_FOR_DELIVERY],
+    NDR: [ShipmentBucket.NDR],
+    DELIVERED: [ShipmentBucket.DELIVERED],
+    RTO: [ShipmentBucket.RTO, ShipmentBucket.RTO_DELIVERED],
+    CANCELLED: [ShipmentBucket.CANCELLED_ORDER, ShipmentBucket.CANCELLED_SHIPMENT],
+    CANCELLED_ORDER: [ShipmentBucket.CANCELLED_ORDER],
+    CANCELLED_SHIPMENT: [ShipmentBucket.CANCELLED_SHIPMENT],
+    LOST_DAMAGED: [ShipmentBucket.LOST_DAMAGED],
+    DISPOSED: [ShipmentBucket.DISPOSED],
+    EXCEPTION: [ShipmentBucket.EXCEPTION],
+    AWAITING: [ShipmentBucket.AWAITING],
+    COURIER_ASSIGNED: [ShipmentBucket.COURIER_ASSIGNED],
+    PICKUP_SCHEDULED: [ShipmentBucket.PICKUP_SCHEDULED],
+    PICKED_UP: [ShipmentBucket.PICKED_UP],
+    OUT_FOR_DELIVERY: [ShipmentBucket.OUT_FOR_DELIVERY],
+    ALL: [], // Special case - no bucket filter
   };
 
   const normalizedStatus = status.toUpperCase();
@@ -87,7 +75,7 @@ export const getStatusBuckets = (status: string): number[] => {
  */
 export const getBucketStatus = (bucket: number | null | undefined): string => {
   if (bucket === null || bucket === undefined) return 'AWAITING';
-  
+
   const bucketMap: Record<number, string> = {
     [ShipmentBucket.NEW]: 'NEW',
     [ShipmentBucket.READY_TO_SHIP]: 'READY_TO_SHIP',
@@ -107,7 +95,7 @@ export const getBucketStatus = (bucket: number | null | undefined): string => {
     [ShipmentBucket.CANCELLED_SHIPMENT]: 'CANCELLED_SHIPMENT',
     [ShipmentBucket.AWAITING]: 'AWAITING',
   };
-  
+
   return bucketMap[bucket] || 'AWAITING';
 };
 
@@ -116,24 +104,24 @@ export const getBucketStatus = (bucket: number | null | undefined): string => {
  */
 export const getShipmentBucket = (status: string): number => {
   const statusToBucket: Record<string, number> = {
-    "NEW": ShipmentBucket.NEW,
-    "READY_TO_SHIP": ShipmentBucket.READY_TO_SHIP,
-    "COURIER_ASSIGNED": ShipmentBucket.COURIER_ASSIGNED,
-    "PICKUP_SCHEDULED": ShipmentBucket.PICKUP_SCHEDULED,
-    "PICKED_UP": ShipmentBucket.PICKED_UP,
-    "IN_TRANSIT": ShipmentBucket.IN_TRANSIT,
-    "OUT_FOR_DELIVERY": ShipmentBucket.OUT_FOR_DELIVERY,
-    "DELIVERED": ShipmentBucket.DELIVERED,
-    "NDR": ShipmentBucket.NDR,
-    "RTO": ShipmentBucket.RTO,
-    "RTO_DELIVERED": ShipmentBucket.RTO_DELIVERED,
-    "CANCELLED": ShipmentBucket.CANCELLED_ORDER,
-    "CANCELLED_ORDER": ShipmentBucket.CANCELLED_ORDER,
-    "CANCELLED_SHIPMENT": ShipmentBucket.CANCELLED_SHIPMENT,
-    "LOST_DAMAGED": ShipmentBucket.LOST_DAMAGED,
-    "DISPOSED": ShipmentBucket.DISPOSED,
-    "EXCEPTION": ShipmentBucket.EXCEPTION,
-    "AWAITING": ShipmentBucket.AWAITING,
+    NEW: ShipmentBucket.NEW,
+    READY_TO_SHIP: ShipmentBucket.READY_TO_SHIP,
+    COURIER_ASSIGNED: ShipmentBucket.COURIER_ASSIGNED,
+    PICKUP_SCHEDULED: ShipmentBucket.PICKUP_SCHEDULED,
+    PICKED_UP: ShipmentBucket.PICKED_UP,
+    IN_TRANSIT: ShipmentBucket.IN_TRANSIT,
+    OUT_FOR_DELIVERY: ShipmentBucket.OUT_FOR_DELIVERY,
+    DELIVERED: ShipmentBucket.DELIVERED,
+    NDR: ShipmentBucket.NDR,
+    RTO: ShipmentBucket.RTO,
+    RTO_DELIVERED: ShipmentBucket.RTO_DELIVERED,
+    CANCELLED: ShipmentBucket.CANCELLED_ORDER,
+    CANCELLED_ORDER: ShipmentBucket.CANCELLED_ORDER,
+    CANCELLED_SHIPMENT: ShipmentBucket.CANCELLED_SHIPMENT,
+    LOST_DAMAGED: ShipmentBucket.LOST_DAMAGED,
+    DISPOSED: ShipmentBucket.DISPOSED,
+    EXCEPTION: ShipmentBucket.EXCEPTION,
+    AWAITING: ShipmentBucket.AWAITING,
   };
   return statusToBucket[status.toUpperCase()] ?? ShipmentBucket.NEW;
 };
@@ -159,87 +147,42 @@ export const bucketToStatusMap: Record<number, string> = {
 
 // Define the status-to-bucket map (string to number)
 export const statusToBucketMap: Record<string, number> = {
-  'ALL': ShipmentBucket.ALL,
-  'NEW': ShipmentBucket.NEW,
-  'COURIER_ASSIGNED': ShipmentBucket.COURIER_ASSIGNED,
-  'PICKUP_SCHEDULED': ShipmentBucket.PICKUP_SCHEDULED,
-  'PICKED_UP': ShipmentBucket.PICKED_UP,
-  'IN_TRANSIT': ShipmentBucket.IN_TRANSIT,
-  'OUT_FOR_DELIVERY': ShipmentBucket.OUT_FOR_DELIVERY,
-  'DELIVERED': ShipmentBucket.DELIVERED,
-  'NDR': ShipmentBucket.NDR,
-  'RTO': ShipmentBucket.RTO,
-  'RTO_DELIVERED': ShipmentBucket.RTO_DELIVERED,
-  'EXCEPTION': ShipmentBucket.EXCEPTION,
-  'CANCELLED_SHIPMENT': ShipmentBucket.CANCELLED_SHIPMENT,
-  'CANCELLED_ORDER': ShipmentBucket.CANCELLED_ORDER,
+  ALL: ShipmentBucket.ALL,
+  NEW: ShipmentBucket.NEW,
+  COURIER_ASSIGNED: ShipmentBucket.COURIER_ASSIGNED,
+  PICKUP_SCHEDULED: ShipmentBucket.PICKUP_SCHEDULED,
+  PICKED_UP: ShipmentBucket.PICKED_UP,
+  IN_TRANSIT: ShipmentBucket.IN_TRANSIT,
+  OUT_FOR_DELIVERY: ShipmentBucket.OUT_FOR_DELIVERY,
+  DELIVERED: ShipmentBucket.DELIVERED,
+  NDR: ShipmentBucket.NDR,
+  RTO: ShipmentBucket.RTO,
+  RTO_DELIVERED: ShipmentBucket.RTO_DELIVERED,
+  EXCEPTION: ShipmentBucket.EXCEPTION,
+  CANCELLED_SHIPMENT: ShipmentBucket.CANCELLED_SHIPMENT,
+  CANCELLED_ORDER: ShipmentBucket.CANCELLED_ORDER,
 };
 
 // Define keyword patterns for status detection
 export const statusKeywordPatterns: Record<number, RegExp[]> = {
-  [ShipmentBucket.ALL]: [
-    /all/i
-  ],
-  [ShipmentBucket.NEW]: [
-    /new/i,
-    /created/i,
-    /placed/i,
-    /manifested/i
-  ],
-  [ShipmentBucket.COURIER_ASSIGNED]: [
-    /assigned/i,
-    /pending/i,
-    /ready/i
-  ],
+  [ShipmentBucket.ALL]: [/all/i],
+  [ShipmentBucket.NEW]: [/new/i, /created/i, /placed/i, /manifested/i],
+  [ShipmentBucket.COURIER_ASSIGNED]: [/assigned/i, /pending/i, /ready/i],
   [ShipmentBucket.PICKUP_SCHEDULED]: [
     /pickup[_ ]scheduled/i,
     /scheduled[_ ]pickup/i,
-    /out[_ ]for[_ ]pickup/i
+    /out[_ ]for[_ ]pickup/i,
   ],
-  [ShipmentBucket.PICKED_UP]: [
-    /picked[_ ]up/i,
-    /pickup[_ ]complete/i
-  ],
-  [ShipmentBucket.IN_TRANSIT]: [
-    /transit/i,
-    /shipped/i,
-    /dispatched/i,
-    /intransit/i
-  ],
-  [ShipmentBucket.OUT_FOR_DELIVERY]: [
-    /out[_ ]for[_ ]delivery/i
-  ],
-  [ShipmentBucket.DELIVERED]: [
-    /delivered/i
-  ],
-  [ShipmentBucket.NDR]: [
-    /undelivered/i,
-    /ndr/i,
-    /not[_ ]delivered/i,
-    /delivery[_ ]failed/i
-  ],
-  [ShipmentBucket.RTO]: [
-    /rto[^_]/i,
-    /return[_ ]to[_ ]origin/i,
-    /returned/i,
-    /^rt$/i
-  ],
-  [ShipmentBucket.RTO_DELIVERED]: [
-    /rto[_ ]delivered/i,
-    /return[_ ]delivered/i
-  ],
-  [ShipmentBucket.EXCEPTION]: [
-    /exception/i,
-    /lost/i,
-    /damaged/i,
-    /failed/i
-  ],
-  [ShipmentBucket.CANCELLED_SHIPMENT]: [
-    /cancel/i
-  ],
-  [ShipmentBucket.CANCELLED_ORDER]: [
-    /cancel[_ ]order/i
-  ],
+  [ShipmentBucket.PICKED_UP]: [/picked[_ ]up/i, /pickup[_ ]complete/i],
+  [ShipmentBucket.IN_TRANSIT]: [/transit/i, /shipped/i, /dispatched/i, /intransit/i],
+  [ShipmentBucket.OUT_FOR_DELIVERY]: [/out[_ ]for[_ ]delivery/i],
+  [ShipmentBucket.DELIVERED]: [/delivered/i],
+  [ShipmentBucket.NDR]: [/undelivered/i, /ndr/i, /not[_ ]delivered/i, /delivery[_ ]failed/i],
+  [ShipmentBucket.RTO]: [/rto[^_]/i, /return[_ ]to[_ ]origin/i, /returned/i, /^rt$/i],
+  [ShipmentBucket.RTO_DELIVERED]: [/rto[_ ]delivered/i, /return[_ ]delivered/i],
+  [ShipmentBucket.EXCEPTION]: [/exception/i, /lost/i, /damaged/i, /failed/i],
+  [ShipmentBucket.CANCELLED_SHIPMENT]: [/cancel/i],
+  [ShipmentBucket.CANCELLED_ORDER]: [/cancel[_ ]order/i],
 };
 
 // Cache for vendor status mappings
@@ -249,87 +192,87 @@ const vendorStatusCache: Record<string, number> = {};
 // This avoids database queries by having common mappings in memory
 const vendorSpecificMappings: Record<string, Record<string, number>> = {
   // Shiprocket mappings
-  'SHIPROCKET': {
-    'ALL': ShipmentBucket.ALL,
-    'NEW': ShipmentBucket.NEW,
-    'PICKUP_GENERATED': ShipmentBucket.COURIER_ASSIGNED,
-    'PICKUP': ShipmentBucket.PICKUP_SCHEDULED,
-    'PICKED': ShipmentBucket.PICKED_UP,
-    'SHIPPED': ShipmentBucket.IN_TRANSIT,
-    'IN_TRANSIT': ShipmentBucket.IN_TRANSIT,
-    'OUT_FOR_DELIVERY': ShipmentBucket.OUT_FOR_DELIVERY,
-    'DELIVERED': ShipmentBucket.DELIVERED,
-    'UNDELIVERED': ShipmentBucket.NDR,
-    'NDR': ShipmentBucket.NDR,
-    'RTO_INITIATED': ShipmentBucket.RTO,
-    'RTO': ShipmentBucket.RTO,
-    'RTO_DELIVERED': ShipmentBucket.RTO_DELIVERED,
-    'PICKUP_EXCEPTION': ShipmentBucket.EXCEPTION,
-    'LOST': ShipmentBucket.EXCEPTION,
-    'DAMAGED': ShipmentBucket.EXCEPTION,
-    'CANCELLED': ShipmentBucket.CANCELLED_SHIPMENT,
+  SHIPROCKET: {
+    ALL: ShipmentBucket.ALL,
+    NEW: ShipmentBucket.NEW,
+    PICKUP_GENERATED: ShipmentBucket.COURIER_ASSIGNED,
+    PICKUP: ShipmentBucket.PICKUP_SCHEDULED,
+    PICKED: ShipmentBucket.PICKED_UP,
+    SHIPPED: ShipmentBucket.IN_TRANSIT,
+    IN_TRANSIT: ShipmentBucket.IN_TRANSIT,
+    OUT_FOR_DELIVERY: ShipmentBucket.OUT_FOR_DELIVERY,
+    DELIVERED: ShipmentBucket.DELIVERED,
+    UNDELIVERED: ShipmentBucket.NDR,
+    NDR: ShipmentBucket.NDR,
+    RTO_INITIATED: ShipmentBucket.RTO,
+    RTO: ShipmentBucket.RTO,
+    RTO_DELIVERED: ShipmentBucket.RTO_DELIVERED,
+    PICKUP_EXCEPTION: ShipmentBucket.EXCEPTION,
+    LOST: ShipmentBucket.EXCEPTION,
+    DAMAGED: ShipmentBucket.EXCEPTION,
+    CANCELLED: ShipmentBucket.CANCELLED_SHIPMENT,
   },
 
   // Delhivery mappings
-  'DELHIVERY': {
-    'ALL': ShipmentBucket.ALL,
-    'Manifested': ShipmentBucket.NEW,
-    'Assigned': ShipmentBucket.COURIER_ASSIGNED,
-    'PENDING': ShipmentBucket.COURIER_ASSIGNED,
-    'Pickup': ShipmentBucket.PICKUP_SCHEDULED,
-    'Picked': ShipmentBucket.PICKED_UP,
+  DELHIVERY: {
+    ALL: ShipmentBucket.ALL,
+    Manifested: ShipmentBucket.NEW,
+    Assigned: ShipmentBucket.COURIER_ASSIGNED,
+    PENDING: ShipmentBucket.COURIER_ASSIGNED,
+    Pickup: ShipmentBucket.PICKUP_SCHEDULED,
+    Picked: ShipmentBucket.PICKED_UP,
     'In Transit': ShipmentBucket.IN_TRANSIT,
-    'Dispatched': ShipmentBucket.IN_TRANSIT,
+    Dispatched: ShipmentBucket.IN_TRANSIT,
     'Out for Delivery': ShipmentBucket.OUT_FOR_DELIVERY,
-    'Delivered': ShipmentBucket.DELIVERED,
-    'Undelivered': ShipmentBucket.NDR,
-    'NDR': ShipmentBucket.NDR,
-    'RTO': ShipmentBucket.RTO,
-    'RT': ShipmentBucket.RTO,
+    Delivered: ShipmentBucket.DELIVERED,
+    Undelivered: ShipmentBucket.NDR,
+    NDR: ShipmentBucket.NDR,
+    RTO: ShipmentBucket.RTO,
+    RT: ShipmentBucket.RTO,
     'RTO Delivered': ShipmentBucket.RTO_DELIVERED,
-    'Lost': ShipmentBucket.EXCEPTION,
-    'Damaged': ShipmentBucket.EXCEPTION,
-    'Exception': ShipmentBucket.EXCEPTION,
-    'Cancelled': ShipmentBucket.CANCELLED_SHIPMENT,
+    Lost: ShipmentBucket.EXCEPTION,
+    Damaged: ShipmentBucket.EXCEPTION,
+    Exception: ShipmentBucket.EXCEPTION,
+    Cancelled: ShipmentBucket.CANCELLED_SHIPMENT,
   },
 
   // SmartShip mappings
-  'SMARTSHIP': {
-    'ALL': ShipmentBucket.ALL,
-    'NEW': ShipmentBucket.NEW,
-    'ASSIGNED': ShipmentBucket.COURIER_ASSIGNED,
-    'PENDING': ShipmentBucket.COURIER_ASSIGNED,
-    'PICKUP': ShipmentBucket.PICKUP_SCHEDULED,
-    'PICKED': ShipmentBucket.PICKED_UP,
-    'PICKUP_COMPLETE': ShipmentBucket.PICKED_UP,
-    'IN_TRANSIT': ShipmentBucket.IN_TRANSIT,
-    'INTRANSIT': ShipmentBucket.IN_TRANSIT,
-    'OUT_FOR_DELIVERY': ShipmentBucket.OUT_FOR_DELIVERY,
-    'DELIVERED': ShipmentBucket.DELIVERED,
-    'UNDELIVERED': ShipmentBucket.NDR,
-    'NDR': ShipmentBucket.NDR,
-    'RTO': ShipmentBucket.RTO,
-    'RTO_DELIVERED': ShipmentBucket.RTO_DELIVERED,
-    'EXCEPTION': ShipmentBucket.EXCEPTION,
-    'LOST': ShipmentBucket.EXCEPTION,
-    'DAMAGED': ShipmentBucket.EXCEPTION,
-    'CANCELLED': ShipmentBucket.CANCELLED_SHIPMENT,
+  SMARTSHIP: {
+    ALL: ShipmentBucket.ALL,
+    NEW: ShipmentBucket.NEW,
+    ASSIGNED: ShipmentBucket.COURIER_ASSIGNED,
+    PENDING: ShipmentBucket.COURIER_ASSIGNED,
+    PICKUP: ShipmentBucket.PICKUP_SCHEDULED,
+    PICKED: ShipmentBucket.PICKED_UP,
+    PICKUP_COMPLETE: ShipmentBucket.PICKED_UP,
+    IN_TRANSIT: ShipmentBucket.IN_TRANSIT,
+    INTRANSIT: ShipmentBucket.IN_TRANSIT,
+    OUT_FOR_DELIVERY: ShipmentBucket.OUT_FOR_DELIVERY,
+    DELIVERED: ShipmentBucket.DELIVERED,
+    UNDELIVERED: ShipmentBucket.NDR,
+    NDR: ShipmentBucket.NDR,
+    RTO: ShipmentBucket.RTO,
+    RTO_DELIVERED: ShipmentBucket.RTO_DELIVERED,
+    EXCEPTION: ShipmentBucket.EXCEPTION,
+    LOST: ShipmentBucket.EXCEPTION,
+    DAMAGED: ShipmentBucket.EXCEPTION,
+    CANCELLED: ShipmentBucket.CANCELLED_SHIPMENT,
   },
 
   // ShiprocketB2B mappings
-  'SHIPROCKET_B2B': {
-    'ALL': ShipmentBucket.ALL,
-    'NEW': ShipmentBucket.NEW,
-    'PENDING': ShipmentBucket.COURIER_ASSIGNED,
-    'PICKUP_SCHEDULED': ShipmentBucket.PICKUP_SCHEDULED,
-    'IN_TRANSIT': ShipmentBucket.IN_TRANSIT,
-    'OUT_FOR_DELIVERY': ShipmentBucket.OUT_FOR_DELIVERY,
-    'DELIVERED': ShipmentBucket.DELIVERED,
-    'UNDELIVERED': ShipmentBucket.NDR,
-    'RTO': ShipmentBucket.RTO,
-    'RTO_DELIVERED': ShipmentBucket.RTO_DELIVERED,
-    'CANCELLED': ShipmentBucket.CANCELLED_SHIPMENT,
-  }
+  SHIPROCKET_B2B: {
+    ALL: ShipmentBucket.ALL,
+    NEW: ShipmentBucket.NEW,
+    PENDING: ShipmentBucket.COURIER_ASSIGNED,
+    PICKUP_SCHEDULED: ShipmentBucket.PICKUP_SCHEDULED,
+    IN_TRANSIT: ShipmentBucket.IN_TRANSIT,
+    OUT_FOR_DELIVERY: ShipmentBucket.OUT_FOR_DELIVERY,
+    DELIVERED: ShipmentBucket.DELIVERED,
+    UNDELIVERED: ShipmentBucket.NDR,
+    RTO: ShipmentBucket.RTO,
+    RTO_DELIVERED: ShipmentBucket.RTO_DELIVERED,
+    CANCELLED: ShipmentBucket.CANCELLED_SHIPMENT,
+  },
 };
 
 // External status mappings that can be loaded from Redis or DB
@@ -341,7 +284,7 @@ let externalStatusMappings: Record<string, Record<string, number>> = {};
 export class ShipmentBucketManager {
   /**
    * Get bucket ID from shipment status
-   * 
+   *
    * @param status - The shipment status string
    * @returns The corresponding bucket ID
    */
@@ -360,7 +303,7 @@ export class ShipmentBucketManager {
 
   /**
    * Get status string from bucket ID
-   * 
+   *
    * @param bucket - The bucket ID
    * @returns The corresponding status string
    */
@@ -370,7 +313,7 @@ export class ShipmentBucketManager {
 
   /**
    * Get status string from bucket ID (alias for getStatusFromBucket)
-   * 
+   *
    * @param bucket - The bucket ID
    * @returns The corresponding status string
    */
@@ -381,7 +324,7 @@ export class ShipmentBucketManager {
   /**
    * Load external status mappings from a JSON object
    * This can be used to load mappings from Redis or DB
-   * 
+   *
    * @param mappings - Object containing vendor-specific status mappings
    */
   static loadExternalMappings(mappings: Record<string, Record<string, number>>): void {
@@ -394,7 +337,7 @@ export class ShipmentBucketManager {
   /**
    * Get bucket from vendor-specific status code with high performance
    * Uses in-memory mappings to avoid database queries
-   * 
+   *
    * @param statusCode - Status code from vendor
    * @param vendorName - Vendor name (e.g., 'SHIPROCKET', 'DELHIVERY')
    * @returns Bucket number or undefined if not found
@@ -434,7 +377,7 @@ export class ShipmentBucketManager {
 
   /**
    * Detect bucket from vendor status using keyword matching
-   * 
+   *
    * @param status - The status string from vendor
    * @param statusCode - Optional status code from vendor
    * @param vendorName - Optional vendor name for more specific matching
@@ -493,7 +436,7 @@ export class ShipmentBucketManager {
 
   /**
    * Check if a status indicates an RTO (Return to Origin) condition
-   * 
+   *
    * @param status - The status string
    * @param statusCode - Optional status code
    * @returns Boolean indicating if the status is an RTO status
@@ -507,7 +450,7 @@ export class ShipmentBucketManager {
 
   /**
    * Check if a status indicates an NDR (Not Delivered) condition
-   * 
+   *
    * @param status - The status string
    * @param statusCode - Optional status code
    * @returns Boolean indicating if the status is an NDR status
@@ -521,7 +464,7 @@ export class ShipmentBucketManager {
 
   /**
    * Check if a status indicates delivery completion
-   * 
+   *
    * @param status - The status string
    * @param statusCode - Optional status code
    * @returns Boolean indicating if the status is a delivered status
@@ -535,7 +478,7 @@ export class ShipmentBucketManager {
 
   /**
    * Check if a status is a final status that doesn't need tracking
-   * 
+   *
    * @param status - The shipment status
    * @returns Boolean indicating if the status is a final status
    */
@@ -551,7 +494,7 @@ export class ShipmentBucketManager {
    * Clear the vendor status cache
    */
   static clearCache(): void {
-    Object.keys(vendorStatusCache).forEach(key => {
+    Object.keys(vendorStatusCache).forEach((key) => {
       delete vendorStatusCache[key];
     });
   }

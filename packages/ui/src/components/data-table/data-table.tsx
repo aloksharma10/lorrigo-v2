@@ -264,19 +264,21 @@ export function DataTable<TData, TValue>({
   return (
     <Card>
       <CardContent className="space-y-4 p-1">
-        {showToolbar && <DataTableToolbar
-          table={table}
-          filterableColumns={filterableColumns}
-          searchableColumns={searchableColumns}
-          advancedFilter={advancedFilter}
-          dateRangeFilter={dateRangeFilter}
-          dateRange={dateRange}
-          setDateRange={handleDateRangeChange}
-          searchPlaceholder={searchPlaceholder}
-          globalFilter={globalFilter}
-          setGlobalFilter={handleGlobalFilterChange}
-          isLoading={isLoading}
-        />}
+        {showToolbar && (
+          <DataTableToolbar
+            table={table}
+            filterableColumns={filterableColumns}
+            searchableColumns={searchableColumns}
+            advancedFilter={advancedFilter}
+            dateRangeFilter={dateRangeFilter}
+            dateRange={dateRange}
+            setDateRange={handleDateRangeChange}
+            searchPlaceholder={searchPlaceholder}
+            globalFilter={globalFilter}
+            setGlobalFilter={handleGlobalFilterChange}
+            isLoading={isLoading}
+          />
+        )}
 
         {selectable && Object.keys(rowSelection).length > 0 && (
           <DataTableSelectedActions table={table} bulkActions={bulkActions} />

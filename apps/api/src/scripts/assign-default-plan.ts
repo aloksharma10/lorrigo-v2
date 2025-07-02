@@ -55,7 +55,9 @@ export async function assignDefaultPlanToAllUsers() {
           where: { id: summary.plan_id },
           select: { name: true, isDefault: true },
         });
-        console.log(`  ${plan?.name || 'Unknown'} (${plan?.isDefault ? 'Default' : 'Custom'}): ${summary._count.id} users`);
+        console.log(
+          `  ${plan?.name || 'Unknown'} (${plan?.isDefault ? 'Default' : 'Custom'}): ${summary._count.id} users`
+        );
       } else {
         console.log(`  No Plan: ${summary._count.id} users`);
       }

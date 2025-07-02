@@ -8,8 +8,14 @@ const GetNDROrdersSchema = z.object({
   limit: z.coerce.number().min(1).max(100).default(10),
   status: z.string().optional(),
   awb: z.string().optional(),
-  startDate: z.string().transform((str) => new Date(str)).optional(),
-  endDate: z.string().transform((str) => new Date(str)).optional(),
+  startDate: z
+    .string()
+    .transform((str) => new Date(str))
+    .optional(),
+  endDate: z
+    .string()
+    .transform((str) => new Date(str))
+    .optional(),
   actionTaken: z.coerce.boolean().optional(),
   actionType: z.enum(['reattempt', 'return', 'cancel', 'fake-attempt']).optional(),
 });
@@ -39,7 +45,10 @@ const CreateNDRRecordSchema = z.object({
   courierId: z.string().optional(),
   awb: z.string().min(1, 'AWB is required'),
   cancellationReason: z.string().optional(),
-  ndrRaisedAt: z.string().transform((str) => new Date(str)).optional(),
+  ndrRaisedAt: z
+    .string()
+    .transform((str) => new Date(str))
+    .optional(),
 });
 
 /**
@@ -319,4 +328,4 @@ export class NDRController {
       });
     }
   }
-} 
+}

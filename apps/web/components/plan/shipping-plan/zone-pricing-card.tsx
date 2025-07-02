@@ -1,25 +1,42 @@
-import { Card, CardContent, CardHeader, Badge, Input, Switch, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@lorrigo/ui/components"
-import type { UseFormReturn } from "react-hook-form"
-import type { ShippingPlanFormData } from "../schemas/shipping-plan-schema"
-import { zoneLabels } from "../constants/shipping-plan-constants"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  Badge,
+  Input,
+  Switch,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@lorrigo/ui/components';
+import type { UseFormReturn } from 'react-hook-form';
+import type { ShippingPlanFormData } from '../schemas/shipping-plan-schema';
+import { zoneLabels } from '../constants/shipping-plan-constants';
 
 interface ZonePricingCardProps {
-  zone: keyof typeof zoneLabels
-  courierIndex: number
-  form: UseFormReturn<ShippingPlanFormData>
-  originalPricing?: any[] // Add this
+  zone: keyof typeof zoneLabels;
+  courierIndex: number;
+  form: UseFormReturn<ShippingPlanFormData>;
+  originalPricing?: any[]; // Add this
 }
 
-export function ZonePricingCard({ zone, courierIndex, form, originalPricing }: ZonePricingCardProps) {
-  const config = zoneLabels[zone]
+export function ZonePricingCard({
+  zone,
+  courierIndex,
+  form,
+  originalPricing,
+}: ZonePricingCardProps) {
+  const config = zoneLabels[zone];
 
   return (
-    <Card className="border-l-4 shadow-md border-l-primary/50">
+    <Card className="border-l-primary/50 border-l-4 shadow-md">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <config.icon className="h-4 w-4 text-primary" />
+            <div className="bg-primary/10 rounded-lg p-2">
+              <config.icon className="text-primary h-4 w-4" />
             </div>
             <span className="font-semibold">{config.name}</span>
           </div>
@@ -27,7 +44,7 @@ export function ZonePricingCard({ zone, courierIndex, form, originalPricing }: Z
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <FormField
             control={form.control}
             name={`courierPricing.${courierIndex}.zonePricing.${zone}.base_price`}
@@ -39,7 +56,7 @@ export function ZonePricingCard({ zone, courierIndex, form, originalPricing }: Z
                     type="number"
                     step="0.01"
                     min="0"
-                    className="border-2 border-primary/20 focus:border-primary"
+                    className="border-primary/20 focus:border-primary border-2"
                     {...field}
                   />
                 </FormControl>
@@ -59,7 +76,7 @@ export function ZonePricingCard({ zone, courierIndex, form, originalPricing }: Z
                     type="number"
                     step="0.01"
                     min="0"
-                    className="border-2 border-primary/20 focus:border-primary"
+                    className="border-primary/20 focus:border-primary border-2"
                     {...field}
                   />
                 </FormControl>
@@ -73,7 +90,7 @@ export function ZonePricingCard({ zone, courierIndex, form, originalPricing }: Z
           control={form.control}
           name={`courierPricing.${courierIndex}.zonePricing.${zone}.is_rto_same_as_fw`}
           render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between space-y-0 rounded-lg border-2 p-3 bg-card">
+            <FormItem className="bg-card flex flex-row items-center justify-between space-y-0 rounded-lg border-2 p-3">
               <FormLabel className="font-semibold">RTO Same as Forward</FormLabel>
               <FormControl>
                 <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -83,7 +100,7 @@ export function ZonePricingCard({ zone, courierIndex, form, originalPricing }: Z
         />
 
         {!form.watch(`courierPricing.${courierIndex}.zonePricing.${zone}.is_rto_same_as_fw`) && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg border-2">
+          <div className="bg-muted/50 grid grid-cols-1 gap-4 rounded-lg border-2 p-4 md:grid-cols-3">
             <FormField
               control={form.control}
               name={`courierPricing.${courierIndex}.zonePricing.${zone}.rto_base_price`}
@@ -91,7 +108,13 @@ export function ZonePricingCard({ zone, courierIndex, form, originalPricing }: Z
                 <FormItem>
                   <FormLabel className="text-sm font-semibold">RTO Base (₹)</FormLabel>
                   <FormControl>
-                    <Input type="number" step="0.01" min="0" className="border-2 bg-background" {...field} />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="bg-background border-2"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -105,7 +128,13 @@ export function ZonePricingCard({ zone, courierIndex, form, originalPricing }: Z
                 <FormItem>
                   <FormLabel className="text-sm font-semibold">RTO Increment (₹)</FormLabel>
                   <FormControl>
-                    <Input type="number" step="0.01" min="0" className="border-2 bg-background" {...field} />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="bg-background border-2"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -119,7 +148,13 @@ export function ZonePricingCard({ zone, courierIndex, form, originalPricing }: Z
                 <FormItem>
                   <FormLabel className="text-sm font-semibold">Flat RTO (₹)</FormLabel>
                   <FormControl>
-                    <Input type="number" step="0.01" min="0" className="border-2 bg-background" {...field} />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="bg-background border-2"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -127,8 +162,7 @@ export function ZonePricingCard({ zone, courierIndex, form, originalPricing }: Z
             />
           </div>
         )}
-
       </CardContent>
     </Card>
-  )
+  );
 }

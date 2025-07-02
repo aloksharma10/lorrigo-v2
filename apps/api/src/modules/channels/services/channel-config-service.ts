@@ -13,7 +13,7 @@ interface ErrorResponse {
 }
 
 export class ChannelConfigService {
-  constructor() { }
+  constructor() {}
 
   /**
    * Get all channel configurations with pagination and search
@@ -30,11 +30,11 @@ export class ChannelConfigService {
     const searchCondition: Prisma.ChannelConfigWhereInput = {
       ...(search
         ? {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
-            { nickname: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
-          ],
-        }
+            OR: [
+              { name: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
+              { nickname: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
+            ],
+          }
         : {}),
       ...(is_active !== undefined ? { is_active } : {}),
     };
@@ -250,13 +250,13 @@ export class ChannelConfigService {
                     : []),
                   ...(data.nickname
                     ? [
-                      {
-                        nickname: {
-                          equals: data.nickname,
-                          mode: 'insensitive' as Prisma.QueryMode,
+                        {
+                          nickname: {
+                            equals: data.nickname,
+                            mode: 'insensitive' as Prisma.QueryMode,
+                          },
                         },
-                      },
-                    ]
+                      ]
                     : []),
                 ],
               },
@@ -400,7 +400,7 @@ export class ChannelConfigService {
     });
 
     // 2. Get all affected courier IDs
-    const courierIds = channelConfig.couriers.map(c => c.id);
+    const courierIds = channelConfig.couriers.map((c) => c.id);
 
     if (courierIds.length > 0) {
       // 3. Find plans using these couriers
@@ -413,7 +413,7 @@ export class ChannelConfigService {
         },
       });
 
-      const planIds = [...new Set(plans.map(p => p.plan_id))];
+      const planIds = [...new Set(plans.map((p) => p.plan_id))];
 
       if (planIds.length > 0) {
         // 4. Find users assigned to these plans
@@ -427,12 +427,14 @@ export class ChannelConfigService {
         });
 
         // 5. Flush both serviceability and rates cache for affected users
-        await Promise.all(users.map(user =>
-          Promise.all([
-            flushKeysByPattern(`serviceability-${user.id}-*`),
-            flushKeysByPattern(`rates-${user.id}-*`)
-          ])
-        ));
+        await Promise.all(
+          users.map((user) =>
+            Promise.all([
+              flushKeysByPattern(`serviceability-${user.id}-*`),
+              flushKeysByPattern(`rates-${user.id}-*`),
+            ])
+          )
+        );
       }
     }
 
@@ -445,7 +447,6 @@ export class ChannelConfigService {
       updated_at: updatedConfig.updated_at,
     };
   }
-
 
   /**
    * Get active channel configurations (for dropdowns/selection)

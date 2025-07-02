@@ -114,24 +114,24 @@ export const queues = {
 export const setupSchedulers = async (): Promise<void> => {
   // We're using the same Queue instances for scheduling
   console.log('Setting up job schedulers');
-  
+
   try {
     // Clean up any orphaned repeat jobs
     await cleanupOrphanedRepeatJobs();
-    
+
     // Additional safety: pause all queues briefly during cleanup
     for (const queueName of Object.values(QueueNames)) {
       await queues[queueName].pause();
     }
-    
+
     // Give Redis time to process any pending operations
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
     // Resume all queues
     for (const queueName of Object.values(QueueNames)) {
       await queues[queueName].resume();
     }
-    
+
     console.log('Job schedulers setup complete');
   } catch (error) {
     console.error('Error setting up job schedulers:', error);
@@ -143,27 +143,27 @@ export const setupSchedulers = async (): Promise<void> => {
  */
 export const cleanupOrphanedRepeatJobs = async (): Promise<void> => {
   console.log('Cleaning up orphaned repeat jobs');
-  
+
   try {
     const prefix = APP_CONFIG.REDIS.PREFIX || '';
-    
+
     // Get all repeat job keys
     const repeatKeys = await redis.keys(`${prefix}:repeat:*`);
-    
+
     for (const key of repeatKeys) {
       const parts = key.split(':');
       const jobId = parts[parts.length - 1];
-      
+
       // For each repeat key, check if the corresponding job exists
       for (const queueName of Object.values(QueueNames)) {
         const jobKey = `${prefix}:${queueName}:${jobId}`;
         const exists = await redis.exists(jobKey);
-        
+
         if (!exists) {
           // If job doesn't exist, check if there's a corresponding repeat job key
           const repeatJobKey = `${prefix}:repeat:${queueName}:${jobId}`;
           const repeatExists = await redis.exists(repeatJobKey);
-          
+
           if (repeatExists) {
             // Remove the orphaned repeat job key
             console.log(`Removing orphaned repeat job key: ${repeatJobKey}`);
@@ -172,7 +172,7 @@ export const cleanupOrphanedRepeatJobs = async (): Promise<void> => {
         }
       }
     }
-    
+
     // Also check for orphaned repeat job hashes
     const repeatJobHashes = await redis.keys(`${prefix}:*:repeat:*`);
     for (const hashKey of repeatJobHashes) {
@@ -188,7 +188,7 @@ export const cleanupOrphanedRepeatJobs = async (): Promise<void> => {
         }
       }
     }
-    
+
     console.log('Orphaned repeat jobs cleanup completed');
   } catch (error) {
     console.error('Error cleaning up orphaned repeat jobs:', error);
@@ -221,8 +221,9 @@ export const addJob = async (
   }
 ): Promise<Job> => {
   // Generate a unique job ID if not provided
-  const jobId = options?.jobId || `${jobName}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-  
+  const jobId =
+    options?.jobId || `${jobName}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
   // Merge options with defaults
   const jobOptions: JobsOptions = {
     delay: options?.delay,
@@ -263,24 +264,24 @@ export const addRecurringJob = async (
 ): Promise<Job> => {
   try {
     // Generate a stable job ID for recurring jobs to prevent duplicates
-    const stableJobId = options?.jobId || `${jobName}-recurring-${cronPattern.replace(/\s+/g, '-')}`;
-    
+    const stableJobId =
+      options?.jobId || `${jobName}-recurring-${cronPattern.replace(/\s+/g, '-')}`;
+
     // First, check if this recurring job already exists
     const existingJobs = await queues[queueName].getJobSchedulers();
-    const existingJob = existingJobs.find((job: any) => 
-      job.id === stableJobId || 
-      (job.name === jobName && job.pattern === cronPattern)
+    const existingJob = existingJobs.find(
+      (job: any) => job.id === stableJobId || (job.name === jobName && job.pattern === cronPattern)
     );
-    
+
     // If it exists, remove it first to prevent orphaned keys
     if (existingJob) {
       console.log(`Removing existing recurring job: ${existingJob.key}`);
       await queues[queueName].removeJobScheduler(existingJob.key);
-      
+
       // Give Redis a moment to process the deletion
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
-    
+
     // Now add the new recurring job with a stable ID
     return addJob(queueName, jobName, data, {
       ...options,

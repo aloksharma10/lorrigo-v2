@@ -9,7 +9,7 @@ import { format } from 'date-fns';
 export default function WalletPage() {
   const {
     getWalletBalance: { data: walletData, isLoading: isLoadingBalance },
-    getTransactionHistory
+    getTransactionHistory,
   } = useWalletOperations();
   const { openModal } = useModalStore();
 
@@ -17,7 +17,10 @@ export default function WalletPage() {
   const walletBalance = walletData?.balance || 0;
 
   // Get transaction history
-  const { data: transactionData, isLoading: isLoadingTransactions } = getTransactionHistory({ page: 1, limit: 10 });
+  const { data: transactionData, isLoading: isLoadingTransactions } = getTransactionHistory({
+    page: 1,
+    limit: 10,
+  });
   const transactions = transactionData?.transactions || [];
 
   // Open recharge wallet modal
@@ -44,13 +47,25 @@ export default function WalletPage() {
   const formatTransactionStatus = (status: string) => {
     switch (status) {
       case 'COMPLETED':
-        return <span className="rounded-full bg-green-100 px-2 py-1 text-xs text-green-800">Completed</span>;
+        return (
+          <span className="rounded-full bg-green-100 px-2 py-1 text-xs text-green-800">
+            Completed
+          </span>
+        );
       case 'PENDING':
-        return <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs text-yellow-800">Pending</span>;
+        return (
+          <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs text-yellow-800">
+            Pending
+          </span>
+        );
       case 'FAILED':
-        return <span className="rounded-full bg-red-100 px-2 py-1 text-xs text-red-800">Failed</span>;
+        return (
+          <span className="rounded-full bg-red-100 px-2 py-1 text-xs text-red-800">Failed</span>
+        );
       case 'REFUNDED':
-        return <span className="rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800">Refunded</span>;
+        return (
+          <span className="rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800">Refunded</span>
+        );
       default:
         return <span>{status}</span>;
     }
@@ -75,11 +90,11 @@ export default function WalletPage() {
           <CardContent>
             {isLoadingBalance ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <Loader2 className="text-primary h-8 w-8 animate-spin" />
               </div>
             ) : (
               <div className="flex items-center">
-                <IndianRupee className="mr-2 h-8 w-8 text-primary" />
+                <IndianRupee className="text-primary mr-2 h-8 w-8" />
                 <span className="text-4xl font-bold">{walletBalance.toLocaleString('en-IN')}</span>
               </div>
             )}
@@ -127,7 +142,7 @@ export default function WalletPage() {
         <CardContent>
           {isLoadingTransactions ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <Loader2 className="text-primary h-8 w-8 animate-spin" />
             </div>
           ) : transactions.length === 0 ? (
             <div className="py-8 text-center text-gray-500">No transactions found</div>
@@ -151,7 +166,9 @@ export default function WalletPage() {
                         {format(new Date(transaction.created_at), 'dd MMM yyyy, HH:mm')}
                       </td>
                       <td className="px-4 py-3 text-sm font-medium">{transaction.code}</td>
-                      <td className="px-4 py-3 text-sm">{formatTransactionType(transaction.type)}</td>
+                      <td className="px-4 py-3 text-sm">
+                        {formatTransactionType(transaction.type)}
+                      </td>
                       <td className="px-4 py-3 text-sm">{transaction.description}</td>
                       <td className="px-4 py-3 text-right text-sm font-semibold">
                         <div className="flex items-center justify-end">
@@ -172,4 +189,4 @@ export default function WalletPage() {
       </Card>
     </div>
   );
-} 
+}

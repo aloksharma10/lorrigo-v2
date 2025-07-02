@@ -3,7 +3,13 @@ import { BaseVendor } from './base-vendor';
 import { ShiprocketVendor } from './shiprocket.vendor';
 import { DelhiveryVendorFactory, DelhiveryVendor } from './delhivery.vendor';
 import { SmartShipVendor } from './smart-ship.vendor';
-import { VendorServiceabilityResult, ShipmentTrackingData, TrackingEventData, NDRData, VendorNDRResult } from '@/types/vendor';
+import {
+  VendorServiceabilityResult,
+  ShipmentTrackingData,
+  TrackingEventData,
+  NDRData,
+  VendorNDRResult,
+} from '@/types/vendor';
 import { FastifyInstance } from 'fastify';
 import { Courier, Order, ShipmentStatus } from '@lorrigo/db';
 import { ShipmentBucketManager } from '@lorrigo/utils';
@@ -299,7 +305,7 @@ export class VendorService {
             // Different vendors have different parameter requirements
             // We need to adapt based on the vendor name
             let result;
-            
+
             if (vendorName.startsWith('DELHIVERY')) {
               // Delhivery vendors have extended the base interface with additional parameters
               // Use type assertion to call with the extended parameter list
@@ -665,7 +671,7 @@ export class VendorService {
 
       // Get tracking data from vendor
       const result = await vendor.trackShipment(trackingData);
-      
+
       if (!result.success || !result.trackingEvents || result.trackingEvents.length === 0) {
         return {
           success: false,
@@ -676,7 +682,7 @@ export class VendorService {
       }
 
       // Find the latest event with a bucket
-      const eventsWithBuckets = result.trackingEvents.filter(event => event.bucket !== undefined);
+      const eventsWithBuckets = result.trackingEvents.filter((event) => event.bucket !== undefined);
       if (eventsWithBuckets.length === 0) {
         return {
           success: true,
@@ -715,7 +721,8 @@ export class VendorService {
       console.error(`Error tracking shipment with vendor ${vendorName}:`, error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : `Failed to track shipment with ${vendorName}`,
+        message:
+          error instanceof Error ? error.message : `Failed to track shipment with ${vendorName}`,
         trackingEvents: [],
         data: null,
       };
@@ -813,25 +820,27 @@ export class VendorService {
         }
 
         // Get status from bucket
-        const newStatus = ShipmentBucketManager.getStatusFromBucket(trackingResult.latestBucket) as ShipmentStatus;
-        
+        const newStatus = ShipmentBucketManager.getStatusFromBucket(
+          trackingResult.latestBucket
+        ) as ShipmentStatus;
+
         // If status has changed, update it
         if (newStatus && newStatus !== shipment.status) {
           // Update shipment status in database
           await this.fastify.prisma.shipment.update({
             where: { id: shipment.id },
-            data: { 
+            data: {
               status: newStatus,
-              updated_at: new Date()
+              updated_at: new Date(),
             },
           });
 
           // Also update order status
           await this.fastify.prisma.order.update({
             where: { id: shipment.order.id },
-            data: { 
+            data: {
               status: newStatus,
-              updated_at: new Date()
+              updated_at: new Date(),
             },
           });
 
@@ -948,7 +957,8 @@ export class VendorService {
       console.error(`Error handling NDR action with vendor ${vendorName}:`, error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : `Failed to handle NDR action with ${vendorName}`,
+        message:
+          error instanceof Error ? error.message : `Failed to handle NDR action with ${vendorName}`,
         data: null,
       };
     }
@@ -1004,19 +1014,19 @@ export class VendorService {
           // Update NDR order status in database if successful
           if (ndrAction.shipmentId) {
             try {
-                             await this.fastify.prisma.nDROrder.updateMany({
-                 where: {
-                   shipment_id: ndrAction.shipmentId,
-                   action_taken: false,
-                 },
-                 data: {
-                   action_taken: true,
-                   action_type: ndrAction.ndrData.action,
-                   action_comment: ndrAction.ndrData.comment,
-                   action_date: new Date(),
-                   updated_at: new Date(),
-                 },
-               });
+              await this.fastify.prisma.nDROrder.updateMany({
+                where: {
+                  shipment_id: ndrAction.shipmentId,
+                  action_taken: false,
+                },
+                data: {
+                  action_taken: true,
+                  action_type: ndrAction.ndrData.action,
+                  action_comment: ndrAction.ndrData.comment,
+                  action_date: new Date(),
+                  updated_at: new Date(),
+                },
+              });
             } catch (dbError) {
               console.error('Error updating NDR order in database:', dbError);
             }
@@ -1025,7 +1035,10 @@ export class VendorService {
           failed++;
         }
       } catch (error) {
-        console.error(`Error processing NDR action for order ${ndrAction.ndrData.order_id}:`, error);
+        console.error(
+          `Error processing NDR action for order ${ndrAction.ndrData.order_id}:`,
+          error
+        );
         results.push({
           vendorName: ndrAction.vendorName,
           orderId: ndrAction.ndrData.order_id,

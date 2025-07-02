@@ -27,7 +27,10 @@ export class DelhiveryVendor extends BaseVendor {
   private weightCategory: '0.5' | '5' | '10';
   private bucketMappingService?: BucketMappingService;
 
-  constructor(weightCategory: '0.5' | '5' | '10' = '5', bucketMappingService?: BucketMappingService) {
+  constructor(
+    weightCategory: '0.5' | '5' | '10' = '5',
+    bucketMappingService?: BucketMappingService
+  ) {
     const vendorConfig = APP_CONFIG.VENDOR.DELHIVERY;
     let apiKey = '';
     let tokenCacheKey = '';
@@ -490,7 +493,7 @@ export class DelhiveryVendor extends BaseVendor {
       // Check cache for tracking data to avoid unnecessary API calls
       const cacheKey = `tracking:${this.name.toLowerCase()}:${trackingData.awb}`;
       const cachedData = await redis.get(cacheKey);
-      
+
       if (cachedData) {
         try {
           const parsedData = JSON.parse(cachedData);
@@ -527,7 +530,11 @@ export class DelhiveryVendor extends BaseVendor {
       const response = await this.makeRequest(endpoint, 'GET', null, apiConfig);
 
       // Check if response is valid
-      if (!response.data || !response.data.ShipmentData || response.data.ShipmentData.length === 0) {
+      if (
+        !response.data ||
+        !response.data.ShipmentData ||
+        response.data.ShipmentData.length === 0
+      ) {
         return {
           success: false,
           message: `No tracking data found for AWB ${trackingData.awb}`,
@@ -539,15 +546,15 @@ export class DelhiveryVendor extends BaseVendor {
       // Extract tracking data
       const shipmentData = response.data.ShipmentData[0];
       const scans = shipmentData.Scans || [];
-      
+
       // Process tracking events
       const trackingEvents: TrackingEventData[] = [];
-      
+
       // Map scans to tracking events
       if (Array.isArray(scans) && scans.length > 0) {
         for (const scan of scans) {
           if (!scan.ScanDetail || !scan.ScanDateTime) continue;
-          
+
           // Parse date string to Date object
           let timestamp: Date;
           try {
@@ -559,8 +566,18 @@ export class DelhiveryVendor extends BaseVendor {
               if (parts.length >= 6) {
                 // Map month abbreviation to month number
                 const months: Record<string, number> = {
-                  'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
-                  'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
+                  Jan: 0,
+                  Feb: 1,
+                  Mar: 2,
+                  Apr: 3,
+                  May: 4,
+                  Jun: 5,
+                  Jul: 6,
+                  Aug: 7,
+                  Sep: 8,
+                  Oct: 9,
+                  Nov: 10,
+                  Dec: 11,
                 };
                 const day = parseInt(parts[0]);
                 const month = months[parts[1]] || 0;
@@ -576,22 +593,26 @@ export class DelhiveryVendor extends BaseVendor {
           } catch (e) {
             timestamp = new Date();
           }
-          
+
           // Extract status and status code
           const status = scan.ScanDetail;
           const statusCode = scan.Scan;
-          
+
           // Determine if this is an RTO status
           const isRTO = this.isRTOStatus(status, statusCode);
-          
+
           // Determine if this is an NDR status
           const isNDR = ShipmentBucketManager.isNDRStatus(status, statusCode);
-          
+
           // Map to bucket using helper method
-          const bucket = this.bucketMappingService 
-            ? await this.bucketMappingService.detectBucket(status, statusCode, this.name.toUpperCase())
+          const bucket = this.bucketMappingService
+            ? await this.bucketMappingService.detectBucket(
+                status,
+                statusCode,
+                this.name.toUpperCase()
+              )
             : await this.mapStatusToBucket(status, statusCode);
-          
+
           trackingEvents.push({
             status,
             status_code: statusCode,
@@ -605,13 +626,17 @@ export class DelhiveryVendor extends BaseVendor {
           });
         }
       }
-      
+
       // Add current status if not already included in scans
-      if (shipmentData.Status && !trackingEvents.some(e => e.status === shipmentData.Status)) {
-        const currentStatusBucket = this.bucketMappingService 
-          ? await this.bucketMappingService.detectBucket(shipmentData.Status, '', this.name.toUpperCase())
+      if (shipmentData.Status && !trackingEvents.some((e) => e.status === shipmentData.Status)) {
+        const currentStatusBucket = this.bucketMappingService
+          ? await this.bucketMappingService.detectBucket(
+              shipmentData.Status,
+              '',
+              this.name.toUpperCase()
+            )
           : await this.mapStatusToBucket(shipmentData.Status);
-          
+
         trackingEvents.push({
           status: shipmentData.Status,
           status_code: shipmentData.Status.toUpperCase().replace(/\s+/g, '_'),
@@ -624,10 +649,10 @@ export class DelhiveryVendor extends BaseVendor {
           bucket: currentStatusBucket,
         });
       }
-      
+
       // Sort events by timestamp (oldest first)
       trackingEvents.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-      
+
       // If no events found, add a default event
       if (trackingEvents.length === 0) {
         trackingEvents.push({
@@ -642,16 +667,16 @@ export class DelhiveryVendor extends BaseVendor {
           bucket: ShipmentBucketManager.getBucketFromStatus('NEW'),
         });
       }
-      
+
       // Cache the result
       // Use a longer TTL for delivered/RTO shipments (24 hours) as they won't change
       // Use a shorter TTL for in-transit shipments (30 minutes)
-      const isDelivered = trackingEvents.some(event => this.isDeliveredStatus(event.status));
-      const isRTO = trackingEvents.some(event => event.isRTO);
+      const isDelivered = trackingEvents.some((event) => this.isDeliveredStatus(event.status));
+      const isRTO = trackingEvents.some((event) => event.isRTO);
       const cacheTTL = isDelivered || isRTO ? 86400 : 1800; // 24 hours or 30 minutes
-      
+
       await redis.set(
-        cacheKey, 
+        cacheKey,
         JSON.stringify({
           data: response.data,
           trackingEvents,
@@ -659,7 +684,7 @@ export class DelhiveryVendor extends BaseVendor {
         'EX',
         cacheTTL
       );
-      
+
       return {
         success: true,
         message: 'Tracking data retrieved successfully',
@@ -679,21 +704,21 @@ export class DelhiveryVendor extends BaseVendor {
 
   /**
    * Handle NDR action with Delhivery
-   * 
+   *
    * Important constraints and considerations:
    * 1. For RE-ATTEMPT:
    *    - Can only be applied if current NSL code is in: ["EOD-74", "EOD-15", "EOD-104", "EOD-43", "EOD-86", "EOD-11", "EOD-69", "EOD-6"]
    *    - Attempt count should be 1 or 2
    *    - Recommended to apply after 9 PM for best results
-   * 
+   *
    * 2. For PICKUP_RESCHEDULE (used for returns):
    *    - Can be applied if NSL code is in: ["EOD-777", "EOD-21"]
    *    - Shipment status will be marked as Cancelled (Non OTP Cancelled)
    *    - Attempt count should be 1 or 2
    *    - Apply after 9 PM to ensure dispatches are closed
-   * 
+   *
    * 3. The API is asynchronous and returns a UPL ID for status tracking
-   * 
+   *
    * @param ndrData NDR action data
    * @returns Promise resolving to NDR result
    */
@@ -744,12 +769,9 @@ export class DelhiveryVendor extends BaseVendor {
       };
 
       // Make API request to Delhivery NDR endpoint
-      const response = await this.makeRequest(
-        APIs.DELHIVERY.NDR_ACTION,
-        'POST',
-        requestBody,
-        { Authorization: token }
-      );
+      const response = await this.makeRequest(APIs.DELHIVERY.NDR_ACTION, 'POST', requestBody, {
+        Authorization: token,
+      });
 
       // Check if the response was successful
       if (!response.data) {
@@ -762,10 +784,11 @@ export class DelhiveryVendor extends BaseVendor {
 
       // Delhivery NDR API is asynchronous and returns a UPL ID for tracking
       const uplId = response.data.upl_id || response.data.data?.upl_id;
-      
+
       if (!uplId) {
         // Check for errors in the response
-        const errorMessage = response.data.error || response.data.message || 'Failed to process NDR action';
+        const errorMessage =
+          response.data.error || response.data.message || 'Failed to process NDR action';
         return {
           success: false,
           message: `Delhivery NDR API error: ${errorMessage}`,
@@ -803,7 +826,10 @@ export class DelhiveryVendor extends BaseVendor {
 
       return {
         success: false,
-        message: error.response?.data?.message || error.message || `Failed to process NDR action with Delhivery ${this.weightCategory}`,
+        message:
+          error.response?.data?.message ||
+          error.message ||
+          `Failed to process NDR action with Delhivery ${this.weightCategory}`,
         data: error.response?.data || null,
       };
     }
@@ -874,9 +900,9 @@ export class DelhiveryVendorFactory {
    */
   public static getAllVendors(bucketMappingService?: BucketMappingService): DelhiveryVendor[] {
     return [
-      new DelhiveryVendor('0.5', bucketMappingService), 
-      new DelhiveryVendor('5', bucketMappingService), 
-      new DelhiveryVendor('10', bucketMappingService)
+      new DelhiveryVendor('0.5', bucketMappingService),
+      new DelhiveryVendor('5', bucketMappingService),
+      new DelhiveryVendor('10', bucketMappingService),
     ];
   }
 
@@ -886,7 +912,10 @@ export class DelhiveryVendorFactory {
    * @param bucketMappingService Optional bucket mapping service
    * @returns Delhivery vendor instance
    */
-  public static getVendor(weightCategory: '0.5' | '5' | '10', bucketMappingService?: BucketMappingService): DelhiveryVendor {
+  public static getVendor(
+    weightCategory: '0.5' | '5' | '10',
+    bucketMappingService?: BucketMappingService
+  ): DelhiveryVendor {
     return new DelhiveryVendor(weightCategory, bucketMappingService);
   }
 }

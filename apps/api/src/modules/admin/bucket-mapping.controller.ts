@@ -109,18 +109,15 @@ export class BucketMappingController {
    * Remove bucket mapping (unmap a status)
    */
   public async removeMapping(
-    request: FastifyRequest<{ 
-      Params: { courier_name: string; status_code: string } 
+    request: FastifyRequest<{
+      Params: { courier_name: string; status_code: string };
     }>,
     reply: FastifyReply
   ) {
     try {
       const { courier_name, status_code } = request.params;
 
-      await this.bucketMappingService.removeBucketMapping(
-        courier_name.toUpperCase(),
-        status_code
-      );
+      await this.bucketMappingService.removeBucketMapping(courier_name.toUpperCase(), status_code);
 
       return reply.status(200).send({
         success: true,
@@ -139,10 +136,7 @@ export class BucketMappingController {
   /**
    * Flush all bucket cache
    */
-  public async flushCache(
-    request: FastifyRequest,
-    reply: FastifyReply
-  ) {
+  public async flushCache(request: FastifyRequest, reply: FastifyReply) {
     try {
       await this.bucketMappingService.flushAllCache();
 
@@ -194,10 +188,10 @@ export class BucketMappingController {
    * Bulk update bucket mappings
    */
   public async bulkUpdateMappings(
-    request: FastifyRequest<{ 
-      Body: { 
-        mappings: UpdateBucketMappingBody[] 
-      } 
+    request: FastifyRequest<{
+      Body: {
+        mappings: UpdateBucketMappingBody[];
+      };
     }>,
     reply: FastifyReply
   ) {
@@ -223,16 +217,16 @@ export class BucketMappingController {
           );
           results.push({ success: true, mapping: result });
         } catch (error) {
-          results.push({ 
-            success: false, 
+          results.push({
+            success: false,
             error: error instanceof Error ? error.message : 'Unknown error',
-            input: mapping 
+            input: mapping,
           });
         }
       }
 
-      const successCount = results.filter(r => r.success).length;
-      const failureCount = results.filter(r => !r.success).length;
+      const successCount = results.filter((r) => r.success).length;
+      const failureCount = results.filter((r) => !r.success).length;
 
       return reply.status(200).send({
         success: true,
@@ -319,10 +313,7 @@ export async function registerBucketMappingRoutes(fastify: FastifyInstance) {
   );
 
   // Flush all cache
-  fastify.post(
-    '/admin/bucket-mappings/flush-cache',
-    controller.flushCache.bind(controller)
-  );
+  fastify.post('/admin/bucket-mappings/flush-cache', controller.flushCache.bind(controller));
 
   // Get unmapped statuses
   fastify.get(
@@ -369,4 +360,4 @@ export async function registerBucketMappingRoutes(fastify: FastifyInstance) {
     },
     controller.bulkUpdateMappings.bind(controller)
   );
-} 
+}

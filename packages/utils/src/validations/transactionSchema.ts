@@ -122,4 +122,4 @@ export const TransactionSchemas = {
   RechargeWalletSchema,
   VerifyWalletRechargeSchema,
   GetTransactionHistorySchema,
-}; 
+};

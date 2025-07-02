@@ -47,7 +47,7 @@ export function ModalRegistry() {
       registerModal('recharge-wallet', RechargeWalletModal);
       registerModal('ndr-action', NDRActionModal);
       registerModal('bulk-orders-operations', BulkOrdersOperationsModal);
-      
+
       setRegistered(true);
       console.log('Modal components registered successfully');
     }

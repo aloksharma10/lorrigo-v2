@@ -95,7 +95,7 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
         .toUpperCase()
         .replace(/[^A-Z0-9]/g, '')
         .substring(0, 10);
-      setFormData(prev => ({ ...prev, code: generatedCode }));
+      setFormData((prev) => ({ ...prev, code: generatedCode }));
     }
   }, [formData.name, isEditMode]);
 
@@ -124,13 +124,14 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
         await createCourier.mutateAsync(formData);
         toast.success('Courier created successfully');
       }
-      
+
       onSuccess?.();
       onClose();
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || 
-                          error?.message || 
-                          `Failed to ${isEditMode ? 'update' : 'create'} courier`;
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        `Failed to ${isEditMode ? 'update' : 'create'} courier`;
       toast.error(errorMessage);
     }
   };
@@ -145,20 +146,17 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
 
     try {
       const createdChannel = await createChannel.mutateAsync(newChannelData);
-      
+
       // Refresh channels data
-      await Promise.all([
-        channelsQuery.refetch(),
-        activeChannelsQuery.refetch(),
-      ]);
+      await Promise.all([channelsQuery.refetch(), activeChannelsQuery.refetch()]);
 
       // Auto-select the newly created channel
-      setFormData(prev => ({ ...prev, channel_config_id: createdChannel.id }));
-      
+      setFormData((prev) => ({ ...prev, channel_config_id: createdChannel.id }));
+
       // Reset form and hide create channel section
       setNewChannelData({ name: '', nickname: '', is_active: true });
       setShowCreateChannel(false);
-      
+
       toast.success('Channel created successfully');
     } catch (error: any) {
       toast.error(error?.response?.data?.message || 'Failed to create channel');
@@ -173,7 +171,7 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
             {isEditMode ? 'Edit Courier' : 'Create New Courier'}
           </h2>
           {isEditMode && (
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-muted-foreground mt-1 text-sm">
               Update courier configuration and settings
             </p>
           )}
@@ -189,9 +187,9 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <h3 className="font-medium">Basic Information</h3>
-              <Info className="h-4 w-4 text-muted-foreground" />
+              <Info className="text-muted-foreground h-4 w-4" />
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="name">Courier Name *</Label>
@@ -223,7 +221,9 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
                 <Input
                   id="courier_code"
                   value={formData.courier_code}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, courier_code: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, courier_code: e.target.value }))
+                  }
                   required
                   disabled={isSubmitting}
                   placeholder="Internal courier identifier"
@@ -258,7 +258,7 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <h3 className="font-medium">Channel Configuration</h3>
-                <Info className="h-4 w-4 text-muted-foreground" />
+                <Info className="text-muted-foreground h-4 w-4" />
               </div>
               <Button
                 type="button"
@@ -273,26 +273,34 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
             </div>
 
             {showCreateChannel && (
-              <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
-                <h4 className="font-medium text-sm">Create New Channel</h4>
+              <div className="bg-muted/50 space-y-3 rounded-lg border p-4">
+                <h4 className="text-sm font-medium">Create New Channel</h4>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="channel_name" className="text-xs">Channel Name</Label>
+                    <Label htmlFor="channel_name" className="text-xs">
+                      Channel Name
+                    </Label>
                     <Input
                       id="channel_name"
                       value={newChannelData.name}
-                      onChange={(e) => setNewChannelData(prev => ({ ...prev, name: e.target.value }))}
+                      onChange={(e) =>
+                        setNewChannelData((prev) => ({ ...prev, name: e.target.value }))
+                      }
                       placeholder="e.g., E-commerce Platform"
                       disabled={isCreatingChannel}
                       className="h-8"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="channel_nickname" className="text-xs">Nickname</Label>
+                    <Label htmlFor="channel_nickname" className="text-xs">
+                      Nickname
+                    </Label>
                     <Input
                       id="channel_nickname"
                       value={newChannelData.nickname}
-                      onChange={(e) => setNewChannelData(prev => ({ ...prev, nickname: e.target.value }))}
+                      onChange={(e) =>
+                        setNewChannelData((prev) => ({ ...prev, nickname: e.target.value }))
+                      }
                       placeholder="e.g., ECOM"
                       disabled={isCreatingChannel}
                       className="h-8"
@@ -305,11 +313,13 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
                       id="channel_active"
                       checked={newChannelData.is_active}
                       onCheckedChange={(checked) =>
-                        setNewChannelData(prev => ({ ...prev, is_active: checked }))
+                        setNewChannelData((prev) => ({ ...prev, is_active: checked }))
                       }
                       disabled={isCreatingChannel}
                     />
-                    <Label htmlFor="channel_active" className="text-xs">Active</Label>
+                    <Label htmlFor="channel_active" className="text-xs">
+                      Active
+                    </Label>
                   </div>
                   <div className="flex gap-2">
                     <Button
@@ -353,10 +363,10 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
                 <SelectTrigger className="w-full">
                   <SelectValue
                     placeholder={
-                      isLoadingChannels 
-                        ? 'Loading channels...' 
-                        : channels.length === 0 
-                          ? 'No channels available' 
+                      isLoadingChannels
+                        ? 'Loading channels...'
+                        : channels.length === 0
+                          ? 'No channels available'
                           : 'Select a channel'
                     }
                   />
@@ -366,18 +376,21 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
                     <SelectItem key={channel.id} value={channel.id}>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{channel.name}</span>
-                        <Badge variant={channel.is_active ? 'default' : 'secondary'} className="text-xs">
+                        <Badge
+                          variant={channel.is_active ? 'default' : 'secondary'}
+                          className="text-xs"
+                        >
                           {channel.nickname}
                         </Badge>
                         {!channel.is_active && (
-                          <span className="text-xs text-muted-foreground">(Inactive)</span>
+                          <span className="text-muted-foreground text-xs">(Inactive)</span>
                         )}
                       </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              
+
               {channelsError && (
                 <Alert className="mt-2">
                   <AlertCircle className="h-4 w-4" />
@@ -386,7 +399,7 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
                   </AlertDescription>
                 </Alert>
               )}
-              
+
               {isLoadingChannels && (
                 <div className="text-muted-foreground mt-2 flex items-center text-sm">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -401,7 +414,7 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
           {/* Settings */}
           <div className="space-y-4">
             <h3 className="font-medium">Settings</h3>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-center space-x-2">
                 <Switch
@@ -433,7 +446,7 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
           {/* Pricing & Configuration */}
           <div className="space-y-4">
             <h3 className="font-medium">Pricing & Configuration</h3>
-            
+
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="cod_charge_hard">COD Charge (Fixed)</Label>
@@ -470,7 +483,9 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
                   id="pickup_time"
                   type="time"
                   value={formData.pickup_time}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, pickup_time: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, pickup_time: e.target.value }))
+                  }
                   disabled={isSubmitting}
                 />
               </div>
@@ -509,7 +524,9 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
                 <Label htmlFor="weight_unit">Weight Unit</Label>
                 <Select
                   value={formData.weight_unit}
-                  onValueChange={(value) => setFormData((prev) => ({ ...prev, weight_unit: value }))}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, weight_unit: value }))
+                  }
                   disabled={isSubmitting}
                 >
                   <SelectTrigger className="w-full">
@@ -535,9 +552,9 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
         <Button
           type="submit"
           disabled={
-            isSubmitting || 
-            !formData.name.trim() || 
-            !formData.code.trim() || 
+            isSubmitting ||
+            !formData.name.trim() ||
+            !formData.code.trim() ||
             !formData.courier_code.trim() ||
             !formData.channel_config_id
           }
@@ -548,8 +565,10 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               {isEditMode ? 'Updating...' : 'Creating...'}
             </>
+          ) : isEditMode ? (
+            'Update Courier'
           ) : (
-            isEditMode ? 'Update Courier' : 'Create Courier'
+            'Create Courier'
           )}
         </Button>
       </div>

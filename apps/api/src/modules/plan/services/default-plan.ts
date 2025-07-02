@@ -71,28 +71,28 @@ export async function ensureDefaultPlan(fastify: FastifyInstance) {
 
     if (existingDefaultPlan) {
       console.log('Default plan already exists:', existingDefaultPlan.id);
-      
+
       // Check if zone pricing exists for the default plan
       const hasZonePricing = existingDefaultPlan.plan_courier_pricings.some(
-        pricing => pricing.zone_pricing.length > 0
+        (pricing) => pricing.zone_pricing.length > 0
       );
-      
+
       if (!hasZonePricing) {
         console.log('Default plan exists but missing zone pricing, updating...');
-        
+
         // Add zone pricing to existing courier pricings
         for (const courierPricing of existingDefaultPlan.plan_courier_pricings) {
           await fastify.prisma.zonePricing.createMany({
-            data: defaultZonePricing.map(zone => ({
+            data: defaultZonePricing.map((zone) => ({
               ...zone,
               plan_courier_pricing_id: courierPricing.id,
             })),
           });
         }
-        
+
         console.log('Added zone pricing to existing default plan');
       }
-      
+
       return existingDefaultPlan;
     }
 
@@ -137,7 +137,7 @@ export async function ensureDefaultPlan(fastify: FastifyInstance) {
 
       // Create zone pricing for this courier
       await fastify.prisma.zonePricing.createMany({
-        data: defaultZonePricing.map(zone => ({
+        data: defaultZonePricing.map((zone) => ({
           ...zone,
           plan_courier_pricing_id: courierPricing.id,
         })),

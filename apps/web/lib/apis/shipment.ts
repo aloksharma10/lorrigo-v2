@@ -194,7 +194,10 @@ export const useShippingOperations = () => {
   };
 
   // Download bulk operation file (report or PDF)
-  const downloadBulkOperationFile = async (operationId: string, type: 'report' | 'file'): Promise<AxiosResponse<any>> => {
+  const downloadBulkOperationFile = async (
+    operationId: string,
+    type: 'report' | 'file'
+  ): Promise<AxiosResponse<any>> => {
     const response = await apiDownload.get(`/bulk-operations/${operationId}/download?type=${type}`);
     return response;
   };
@@ -216,20 +219,20 @@ export const useShippingOperations = () => {
       enabled: !!operationId && !!operationId.trim() && isTokenReady, // Added operationId.trim() check
       refetchInterval: (query) => {
         const result = query.state.data;
-  
+
         if (!result) return 2000;
-  
+
         const isDone =
           result.progress >= 100 ||
           result.data.status === 'COMPLETED' ||
           result.data.status === 'FAILED';
-  
-        console.log('Refetch interval check:', { 
-          progress: result.progress, 
-          status: result.data.status, 
-          isDone 
+
+        console.log('Refetch interval check:', {
+          progress: result.progress,
+          status: result.data.status,
+          isDone,
         });
-  
+
         return isDone ? false : 2000;
       },
       staleTime: 0,
@@ -302,15 +305,15 @@ export const useShippingOperations = () => {
       queryClient.invalidateQueries({ queryKey: ['bulk-operations'] });
     },
     onError: (error: any) => {
-      toast.error(`Failed to start bulk shipment cancellation: ${error.message || 'Unknown error'}`);
+      toast.error(
+        `Failed to start bulk shipment cancellation: ${error.message || 'Unknown error'}`
+      );
     },
   });
 
   // Download bulk labels
   const downloadBulkLabels = useMutation({
-    mutationFn: async (data: {
-      shipment_ids: string[];
-    }) => {
+    mutationFn: async (data: { shipment_ids: string[] }) => {
       const response = await api.post<any>('/bulk-operations/labels', data);
       return response.data as BulkOperationResponse;
     },
@@ -339,7 +342,9 @@ export const useShippingOperations = () => {
       queryClient.invalidateQueries({ queryKey: ['bulk-operations'] });
     },
     onError: (error: any) => {
-      toast.error(`Failed to start bulk pickup address update: ${error.message || 'Unknown error'}`);
+      toast.error(
+        `Failed to start bulk pickup address update: ${error.message || 'Unknown error'}`
+      );
     },
   });
 

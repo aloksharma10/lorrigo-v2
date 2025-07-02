@@ -12,7 +12,7 @@ export function formatTransactionAmount(amount: number, currency: string = 'INR'
     currency,
     minimumFractionDigits: 2,
   });
-  
+
   return formatter.format(amount);
 }
 
@@ -57,7 +57,7 @@ export function calculateGstComponents(amount: number, gstPercentage: number = 1
   const gstFactor = gstPercentage / 100;
   const baseAmount = amount / (1 + gstFactor);
   const totalGst = amount - baseAmount;
-  
+
   return {
     baseAmount: parseFloat(baseAmount.toFixed(2)),
     cgst: parseFloat((totalGst / 2).toFixed(2)),
@@ -82,10 +82,10 @@ export function canRefundTransaction(
   if (status !== TransactionStatus.COMPLETED) {
     return false;
   }
-  
+
   const daysSinceTransaction = Math.floor(
     (Date.now() - transactionDate.getTime()) / (1000 * 60 * 60 * 24)
   );
-  
+
   return daysSinceTransaction <= maxRefundDays;
-} 
+}

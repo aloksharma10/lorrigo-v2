@@ -139,7 +139,9 @@ export class PlanController {
       const pricing = await this.planService.getDefaultPlanCourierPricing(courierId);
 
       if (!pricing) {
-        return reply.code(404).send({ error: 'No pricing found for this courier in the default plan' });
+        return reply
+          .code(404)
+          .send({ error: 'No pricing found for this courier in the default plan' });
       }
 
       return reply.code(200).send({ pricing });

@@ -51,11 +51,11 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
   const { openBulkOperation } = useBulkOperations();
   const { downloadBulkLabels } = useShippingOperations();
   const csvUploadContext = useCSVUpload();
-  
+
   if (!csvUploadContext) {
     throw new Error('ShipmentsTable must be used within a CSVUploadProvider');
   }
-  
+
   const { showBulkOperationStatus } = csvUploadContext;
 
   // Fetch shipments with React Query
@@ -398,9 +398,9 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
       label: 'Generate Labels',
       action: async (selectedRows: Shipment[]) => {
         try {
-          const shipmentIds = selectedRows.map(row => row.id);
+          const shipmentIds = selectedRows.map((row) => row.id);
           const result = await downloadBulkLabels.mutateAsync({ shipment_ids: shipmentIds });
-          
+
           if (result.operation?.id) {
             // Show the bulk operation status modal
             showBulkOperationStatus(result.operation.id, false);

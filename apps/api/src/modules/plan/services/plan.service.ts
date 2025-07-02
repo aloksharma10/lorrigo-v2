@@ -88,7 +88,7 @@ export interface RateCalculationResult {
 }
 
 export class PlanService {
-  constructor(private fastify: FastifyInstance) { }
+  constructor(private fastify: FastifyInstance) {}
 
   async getAllPlans() {
     return this.fastify.prisma.plan.findMany({
@@ -233,7 +233,10 @@ export class PlanService {
 
   async updatePlan(id: string, data: UpdatePlanInput) {
     // Check if plan exists
-    const existingPlan = await this.fastify.prisma.plan.findUnique({ where: { id }, include: { users: true } });
+    const existingPlan = await this.fastify.prisma.plan.findUnique({
+      where: { id },
+      include: { users: true },
+    });
     if (!existingPlan) {
       return null;
     }
@@ -387,7 +390,7 @@ export class PlanService {
     }
 
     if (existingPlan.isDefault) {
-      throw new Error('Cannot delete default plan')
+      throw new Error('Cannot delete default plan');
     }
 
     // Check if users are assigned to this plan

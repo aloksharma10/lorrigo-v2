@@ -79,9 +79,7 @@ export default function EditPlanPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => window.location.reload()}>
-              Try Again
-            </Button>
+            <Button onClick={() => window.location.reload()}>Try Again</Button>
           </CardContent>
         </Card>
       </div>
@@ -95,4 +93,4 @@ export default function EditPlanPage() {
       <EnhancedCreatePlanForm planData={plan} isEditing={true} />
     </div>
   );
-} 
+}

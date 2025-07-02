@@ -68,7 +68,6 @@ export const useProductOperations = () => {
       queryKey: ['product', id],
       queryFn: () => api.get(`/products/${id}`),
       enabled: !!id && isTokenReady, // Only run if ID is provided
-
     });
 
   // Create product

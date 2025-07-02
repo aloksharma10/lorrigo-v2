@@ -10,7 +10,7 @@ import { BulkOrderJobType } from '@/modules/orders/queues/bulk-order-worker';
  * Controller for bulk operations API endpoints
  */
 export class BulkOperationsController {
-  constructor(private bulkOperationsService: BulkOperationsService) { }
+  constructor(private bulkOperationsService: BulkOperationsService) {}
 
   /**
    * Get all bulk operations with pagination and filters
@@ -39,7 +39,7 @@ export class BulkOperationsController {
         dateRange = [new Date(startDate), new Date(endDate)];
       }
 
-      const userId = request.userPayload!.i
+      const userId = request.userPayload!.i;
 
       const operations = await this.bulkOperationsService.getAllBulkOperations(
         userId,
@@ -71,9 +71,10 @@ export class BulkOperationsController {
 
       const operation = await this.bulkOperationsService.getBulkOperation(id, userId);
 
-      const progress = operation.total_count > 0 
-      ? Math.floor((operation.processed_count / operation.total_count) * 100)
-      : 0;
+      const progress =
+        operation.total_count > 0
+          ? Math.floor((operation.processed_count / operation.total_count) * 100)
+          : 0;
 
       return reply.code(200).send({
         success: true,
@@ -126,7 +127,7 @@ export class BulkOperationsController {
   async downloadFile(request: FastifyRequest, reply: FastifyReply) {
     try {
       const { id } = request.params as { id: string };
-      const { type } = request.query as { type: string }
+      const { type } = request.query as { type: string };
       const user_id = request.userPayload!.id;
 
       // Verify operation exists and belongs to user
@@ -208,16 +209,19 @@ export class BulkOperationsController {
         dateRange = [new Date(body.filters.dateRange[0]), new Date(body.filters.dateRange[1])];
       }
 
-      const result = await this.bulkOperationsService.createBulkShipments({
-        order_ids: body.order_ids || [],
-        courier_ids: body.courier_ids || [],
-        is_schedule_pickup: body.is_schedule_pickup || false,
-        pickup_date: body.pickup_date,
-        filters: {
-          status: body.filters?.status,
-          dateRange
-        }
-      }, userId);
+      const result = await this.bulkOperationsService.createBulkShipments(
+        {
+          order_ids: body.order_ids || [],
+          courier_ids: body.courier_ids || [],
+          is_schedule_pickup: body.is_schedule_pickup || false,
+          pickup_date: body.pickup_date,
+          filters: {
+            status: body.filters?.status,
+            dateRange,
+          },
+        },
+        userId
+      );
 
       return reply.code(202).send({
         success: true,
@@ -349,19 +353,19 @@ export class BulkOperationsController {
 
       // Parse multipart form data
       const data = await request.file();
-      
+
       if (!data) {
-        return reply.status(400).send({ 
-          status: 'error', 
-          message: 'No file uploaded' 
+        return reply.status(400).send({
+          status: 'error',
+          message: 'No file uploaded',
         });
       }
 
       // Validate file type
       if (!data.mimetype.includes('csv')) {
-        return reply.status(400).send({ 
-          status: 'error', 
-          message: 'Only CSV files are allowed' 
+        return reply.status(400).send({
+          status: 'error',
+          message: 'Only CSV files are allowed',
         });
       }
 
@@ -378,7 +382,8 @@ export class BulkOperationsController {
       // Save file
       const writeStream = fs.createWriteStream(filePath);
       await new Promise<void>((res, rej) => {
-        (data.file as any).pipe(writeStream)
+        (data.file as any)
+          .pipe(writeStream)
           .on('finish', () => res())
           .on('error', rej);
       });
@@ -404,7 +409,9 @@ export class BulkOperationsController {
       const mappingField = (data as any).fields?.mapping;
       if (mappingField) {
         try {
-          const raw = Buffer.isBuffer(mappingField.value) ? mappingField.value.toString() : mappingField.value;
+          const raw = Buffer.isBuffer(mappingField.value)
+            ? mappingField.value.toString()
+            : mappingField.value;
           headerMapping = JSON.parse(raw);
         } catch (err) {
           request.log.warn('Invalid mapping JSON provided, proceeding with empty mapping');
@@ -412,11 +419,11 @@ export class BulkOperationsController {
       }
 
       // Enqueue job for processing
-      const job = await addJob(
-        QueueNames.BULK_ORDER_UPLOAD, 
-        BulkOrderJobType.PROCESS_BULK_ORDERS, 
-        { 
-          filePath, 
+      const job = (await addJob(
+        QueueNames.BULK_ORDER_UPLOAD,
+        BulkOrderJobType.PROCESS_BULK_ORDERS,
+        {
+          filePath,
           originalFilename: data.filename,
           userId,
           userName,
@@ -427,7 +434,7 @@ export class BulkOperationsController {
           priority: 1,
           attempts: 3,
         }
-      ) as Job<unknown, unknown, string>;
+      )) as Job<unknown, unknown, string>;
 
       const jobIdStr = (job as any).id as string;
 
@@ -439,11 +446,11 @@ export class BulkOperationsController {
         message: 'CSV file queued for processing',
       };
     } catch (error) {
-      return reply.status(500).send({ 
-        status: 'error', 
+      return reply.status(500).send({
+        status: 'error',
         message: 'Failed to upload CSV',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
-} 
+}

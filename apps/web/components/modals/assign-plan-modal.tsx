@@ -200,7 +200,7 @@ export function AssignPlanModal({ planId, userId, onClose, onSuccess }: AssignPl
                           role="combobox"
                           aria-expanded={open}
                           className={cn(
-                            'w-full justify-between text-left flex',
+                            'flex w-full justify-between text-left',
                             !field.value && 'text-muted-foreground'
                           )}
                         >
@@ -249,8 +249,12 @@ export function AssignPlanModal({ planId, userId, onClose, onSuccess }: AssignPl
                                 />
                                 <div className="flex flex-col">
                                   <span className="font-medium">{user.name}</span>
-                                  <span className="text-muted-foreground text-xs">{user.email}</span>
-                                  <span className="text-muted-foreground text-xs">{user.phone}</span>
+                                  <span className="text-muted-foreground text-xs">
+                                    {user.email}
+                                  </span>
+                                  <span className="text-muted-foreground text-xs">
+                                    {user.phone}
+                                  </span>
                                 </div>
                               </CommandItem>
                             ))}

@@ -67,8 +67,8 @@ const registerPlugins = async () => {
     await server.register(multipart, {
       limits: {
         fileSize: 50 * 1024 * 1024, // 50MB max file size
-        files: 1 // Limit to single file upload
-      }
+        files: 1, // Limit to single file upload
+      },
     });
     await server.register(cors, {
       origin: APP_CONFIG.CORS.ORIGIN,

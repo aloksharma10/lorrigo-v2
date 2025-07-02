@@ -6,7 +6,10 @@ import { cn } from '@lorrigo/ui/lib/utils';
 
 function Table({ className, ...props }: React.ComponentProps<'table'>) {
   return (
-    <div data-slot="table-container" className="w-full overflow-x-auto lg:w-auto lg:overflow-x-visible relative">
+    <div
+      data-slot="table-container"
+      className="relative w-full overflow-x-auto lg:w-auto lg:overflow-x-visible"
+    >
       <table
         data-slot="table"
         className={cn('w-full caption-bottom text-sm', className)}
@@ -17,14 +20,16 @@ function Table({ className, ...props }: React.ComponentProps<'table'>) {
 }
 
 function TableHeader({ className, ...props }: React.ComponentProps<'thead'>) {
-  return <thead
-    data-slot="table-header"
-    className={cn(
-      "[&_tr]:border-b border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 dark:shadow-none dark:bg-transparent",
-      className
-    )}
-    {...props}
-  />;
+  return (
+    <thead
+      data-slot="table-header"
+      className={cn(
+        'sticky top-0 z-10 border-b border-gray-200 dark:border-gray-700 dark:bg-transparent dark:shadow-none [&_tr]:border-b',
+        className
+      )}
+      {...props}
+    />
+  );
 }
 
 function TableBody({ className, ...props }: React.ComponentProps<'tbody'>) {
@@ -65,7 +70,7 @@ function TableHead({ className, ...props }: React.ComponentProps<'th'>) {
     <th
       data-slot="table-head"
       className={cn(
-        'text-foreground h-12 shadow-sm whitespace-nowrap px-2 text-left align-middle font-medium [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
+        'text-foreground h-12 whitespace-nowrap px-2 text-left align-middle font-medium shadow-sm [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
         className
       )}
       {...props}

@@ -1,10 +1,7 @@
 ﻿'use client';
 
 import React, { useState, useEffect } from 'react';
-import {
-  Checkbox,
-  Button,
-} from '@lorrigo/ui/components';
+import { Checkbox, Button } from '@lorrigo/ui/components';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@lorrigo/ui/components';
 import {
   Form,
@@ -83,11 +80,11 @@ export function BulkOrdersOperationsModal({
 }: BulkOrdersOperationsModalProps) {
   const closeModal = useModalStore((state) => state.closeModal);
   const csvUploadContext = useCSVUpload();
-  
+
   if (!csvUploadContext) {
     throw new Error('BulkOrdersOperationsModal must be used within a CSVUploadProvider');
   }
-  
+
   const { showBulkOperationStatus } = csvUploadContext;
   const [activeTab, setActiveTab] = useState<BulkOperationType>(operationType);
   const [isLoading, setIsLoading] = useState(false);
@@ -95,7 +92,12 @@ export function BulkOrdersOperationsModal({
   const [selectedCouriers, setSelectedCouriers] = useState<CourierItem[]>([]);
   const [courierToAdd, setCourierToAdd] = useState<string>('');
 
-  const { createBulkShipments, scheduleBulkPickups, cancelBulkShipments, downloadBulkOperationFile } = useShippingOperations();
+  const {
+    createBulkShipments,
+    scheduleBulkPickups,
+    cancelBulkShipments,
+    downloadBulkOperationFile,
+  } = useShippingOperations();
   const { getCouriersQuery } = useCourierOperations();
   const availableCouriers = getCouriersQuery.data?.couriers || [];
 
@@ -349,10 +351,10 @@ export function BulkOrdersOperationsModal({
 
   return (
     <div className="flex flex-col px-6">
-      <div className="flex items-center justify-between py-4 border-b">
+      <div className="flex items-center justify-between border-b py-4">
         <div>
           <h2 className="text-xl font-semibold">{getOperationTitle(activeTab)}</h2>
-          <p className="text-sm text-muted-foreground">{getOperationDescription(activeTab)}</p>
+          <p className="text-muted-foreground text-sm">{getOperationDescription(activeTab)}</p>
         </div>
         <button onClick={handleClose} className="rounded-full p-1 hover:bg-neutral-100">
           <X className="h-5 w-5 text-neutral-500" />
@@ -368,7 +370,7 @@ export function BulkOrdersOperationsModal({
 
         <div className="mt-4">
           {selectedRows.length > 0 && (
-            <div className="mb-4 flex items-center justify-between rounded-md border border-blue-200 bg-blue-50 dark:bg-blue-950 dark:border-blue-800 p-3">
+            <div className="mb-4 flex items-center justify-between rounded-md border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950">
               <span>
                 {selectedRows.length} {selectedRows.length === 1 ? 'item' : 'items'} selected
               </span>
@@ -422,10 +424,14 @@ export function BulkOrdersOperationsModal({
                                   variant={'outline'}
                                   className={cn(
                                     'w-full pl-3 text-left font-normal',
-                                    !field.value && 'text-muted-foreground',
+                                    !field.value && 'text-muted-foreground'
                                   )}
                                 >
-                                  {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                                  {field.value ? (
+                                    format(field.value, 'PPP')
+                                  ) : (
+                                    <span>Pick a date</span>
+                                  )}
                                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                 </Button>
                               </FormControl>
@@ -458,10 +464,14 @@ export function BulkOrdersOperationsModal({
                                   variant={'outline'}
                                   className={cn(
                                     'w-full pl-3 text-left font-normal',
-                                    !field.value && 'text-muted-foreground',
+                                    !field.value && 'text-muted-foreground'
                                   )}
                                 >
-                                  {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                                  {field.value ? (
+                                    format(field.value, 'PPP')
+                                  ) : (
+                                    <span>Pick a date</span>
+                                  )}
                                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                 </Button>
                               </FormControl>
@@ -495,8 +505,8 @@ export function BulkOrdersOperationsModal({
                   <h3 className="mb-3 text-sm font-medium">Courier Priority</h3>
                   <div className="space-y-3">
                     <p className="text-muted-foreground text-sm">
-                      Select and arrange couriers in order of priority. The system will try to use the
-                      first courier, then fall back to others if needed.
+                      Select and arrange couriers in order of priority. The system will try to use
+                      the first courier, then fall back to others if needed.
                     </p>
 
                     {/* Courier selector */}
@@ -538,7 +548,7 @@ export function BulkOrdersOperationsModal({
                     {/* Courier priority list */}
                     <div className="mt-3">
                       {selectedCouriers.length === 0 ? (
-                        <div className="rounded-md border bg-gray-50 dark:bg-transparent py-6 text-center">
+                        <div className="rounded-md border bg-gray-50 py-6 text-center dark:bg-transparent">
                           <p className="text-muted-foreground text-sm">No couriers selected</p>
                           <p className="text-muted-foreground mt-1 text-xs">
                             Add couriers to set priority order
@@ -643,7 +653,7 @@ export function BulkOrdersOperationsModal({
                               variant={'outline'}
                               className={cn(
                                 'w-full pl-3 text-left font-normal',
-                                !field.value && 'text-muted-foreground',
+                                !field.value && 'text-muted-foreground'
                               )}
                             >
                               {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
@@ -704,7 +714,7 @@ export function BulkOrdersOperationsModal({
         </div>
       </Tabs>
 
-      <div className="flex items-center justify-end gap-2 py-4 border-t">
+      <div className="flex items-center justify-end gap-2 border-t py-4">
         <Button variant="outline" onClick={handleClose} disabled={isLoading}>
           Cancel
         </Button>

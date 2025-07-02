@@ -1,14 +1,7 @@
 'use client';
 import { useCallback, useMemo } from 'react';
-import {
-  Button,
-} from '@lorrigo/ui/components';
-import {
-  Plus,
-  Package,
-  Users,
-  RefreshCw,
-} from 'lucide-react';
+import { Button } from '@lorrigo/ui/components';
+import { Plus, Package, Users, RefreshCw } from 'lucide-react';
 import { useModal } from '@/modal/modal-provider';
 import PlansTable from '@/components/tables/plans-table';
 import { AssignPlanModal } from '@/components/modals/assign-plan-modal';
@@ -28,31 +21,31 @@ export default function ManagePlansPage() {
   const totalPlans = useMemo(() => plans.length, [plans]);
   const defaultPlansCount = useMemo(() => plans.filter((p: any) => p.isDefault).length, [plans]);
 
-  const assignedUsersCount = useMemo(() =>
-    plans.reduce((acc: number, plan: any) => acc + (plan.users?.length || 0), 0),
+  const assignedUsersCount = useMemo(
+    () => plans.reduce((acc: number, plan: any) => acc + (plan.users?.length || 0), 0),
     [plans]
   );
 
-
   // Memoized handlers to prevent recreating functions on each render
   const refreshAllData = useCallback(() => {
-    Promise.all([
-      plansQuery.refetch(),
-    ]);
+    Promise.all([plansQuery.refetch()]);
   }, [plansQuery]);
 
   const handleCreatePlan = useCallback(() => {
     router.push('/admin/plans/new', { scroll: false });
   }, [router]);
 
-  const handleAssignPlan = useCallback((planId?: string) => {
-    openModal('assign-plan', {
-      title: 'Assign Plan to User',
-      component: AssignPlanModal,
-      planId,
-      onClose: closeAllModals,
-    });
-  }, [openModal, closeAllModals]);
+  const handleAssignPlan = useCallback(
+    (planId?: string) => {
+      openModal('assign-plan', {
+        title: 'Assign Plan to User',
+        component: AssignPlanModal,
+        planId,
+        onClose: closeAllModals,
+      });
+    },
+    [openModal, closeAllModals]
+  );
 
   // Loading and error states
   const isLoading = plansQuery.isLoading || plansQuery.isFetching;
@@ -81,7 +74,9 @@ export default function ManagePlansPage() {
           <div className="space-y-4 text-center">
             <div className="text-lg font-semibold text-red-500">Error loading data</div>
             <p className="text-muted-foreground">{errorMessage}</p>
-            <Button onClick={refreshAllData} variant="outline">Try Again</Button>
+            <Button onClick={refreshAllData} variant="outline">
+              Try Again
+            </Button>
           </div>
         </div>
       </div>
@@ -99,7 +94,14 @@ export default function ManagePlansPage() {
           </p>
         </div>
         <div className="mt-2 flex items-center gap-2 overflow-x-auto lg:mt-0 lg:overflow-x-hidden">
-          <Button isLoading={isLoading} onClick={refreshAllData} variant="outline" size="sm" disabled={isLoading} icon={RefreshCw}>
+          <Button
+            isLoading={isLoading}
+            onClick={refreshAllData}
+            variant="outline"
+            size="sm"
+            disabled={isLoading}
+            icon={RefreshCw}
+          >
             Refresh
           </Button>
           <Button icon={Plus} onClick={handleCreatePlan} variant="outline">
@@ -126,7 +128,6 @@ export default function ManagePlansPage() {
 
       {/* Main Content */}
       <PlansTable onAssignPlan={handleAssignPlan} />
-
     </div>
   );
 }

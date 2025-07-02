@@ -24,10 +24,7 @@ export class BucketMappingService {
    * @param statusCode Status code from courier
    * @returns Bucket number or null if not found
    */
-  public async getBucketMapping(
-    courierName: string,
-    statusCode: string
-  ): Promise<number | null> {
+  public async getBucketMapping(courierName: string, statusCode: string): Promise<number | null> {
     try {
       const normalizedCourier = courierName.toUpperCase().trim();
       const normalizedStatus = statusCode.toUpperCase().trim();
@@ -163,7 +160,7 @@ export class BucketMappingService {
       if (keys.length > 0) {
         // Use pipeline for better performance
         const pipeline = redis.pipeline();
-        keys.forEach(key => pipeline.del(key));
+        keys.forEach((key) => pipeline.del(key));
         await pipeline.exec();
 
         console.log(`Invalidated ${keys.length} cached bucket mappings`);
@@ -189,7 +186,7 @@ export class BucketMappingService {
 
       if (keys.length > 0) {
         const pipeline = redis.pipeline();
-        keys.forEach(key => pipeline.del(key));
+        keys.forEach((key) => pipeline.del(key));
         await pipeline.exec();
 
         console.log(`Invalidated ${keys.length} cached mappings for ${courierName}`);
@@ -304,17 +301,17 @@ export class BucketMappingService {
   public async getUnmappedStatuses(
     courierName?: string,
     limit: number = 100
-  ): Promise<Array<{
-    courier: string;
-    status_code: string;
-    status_label: string | null;
-    count: number;
-    last_seen: Date;
-  }>> {
+  ): Promise<
+    Array<{
+      courier: string;
+      status_code: string;
+      status_label: string | null;
+      count: number;
+      last_seen: Date;
+    }>
+  > {
     try {
-      const where = courierName
-        ? { courier: courierName.toUpperCase().trim() }
-        : {};
+      const where = courierName ? { courier: courierName.toUpperCase().trim() } : {};
 
       return await prisma.unmappedCourierStatus.findMany({
         where,
@@ -325,10 +322,7 @@ export class BucketMappingService {
           count: true,
           last_seen: true,
         },
-        orderBy: [
-          { count: 'desc' },
-          { last_seen: 'desc' },
-        ],
+        orderBy: [{ count: 'desc' }, { last_seen: 'desc' }],
         take: limit,
       });
     } catch (error) {
@@ -377,7 +371,9 @@ export class BucketMappingService {
       // If we got a meaningful bucket from keyword detection, consider caching it
       // But don't auto-cache as admin should review and approve mappings
       if (fallbackBucket > 0) {
-        console.log(`Keyword detection found bucket ${fallbackBucket} for ${courierName}:${statusCode}`);
+        console.log(
+          `Keyword detection found bucket ${fallbackBucket} for ${courierName}:${statusCode}`
+        );
       }
 
       return fallbackBucket;
@@ -402,7 +398,7 @@ export class BucketMappingService {
       const keys = await redis.keys(`${this.CACHE_PREFIX}*`);
       const courierStats = new Map<string, number>();
 
-      keys.forEach(key => {
+      keys.forEach((key) => {
         const parts = key.replace(this.CACHE_PREFIX, '').split(':');
         if (parts.length >= 1 && parts[0]) {
           const courier = parts[0];
@@ -474,10 +470,7 @@ export class BucketMappingService {
 
       const mappings = await prisma.courierStatusMapping.findMany({
         where: whereClause,
-        orderBy: [
-          { courier_name: 'asc' },
-          { status_code: 'asc' },
-        ],
+        orderBy: [{ courier_name: 'asc' }, { status_code: 'asc' }],
       });
 
       return mappings;
@@ -516,4 +509,4 @@ export class BucketMappingService {
       throw error;
     }
   }
-} 
+}

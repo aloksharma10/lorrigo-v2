@@ -104,7 +104,8 @@ export class TransactionWorker {
                   result = await this.transactionService.createInvoiceTransaction(transaction);
                   break;
                 case TransactionEntityType.WALLET:
-                  result = await this.transactionService.createWalletRechargeTransaction(transaction);
+                  result =
+                    await this.transactionService.createWalletRechargeTransaction(transaction);
                   break;
                 default:
                   result = { success: false, error: 'Invalid entity type' };
@@ -198,4 +199,4 @@ export class TransactionWorker {
  */
 export function initTransactionWorker(fastify: FastifyInstance) {
   return new TransactionWorker(fastify);
-} 
+}

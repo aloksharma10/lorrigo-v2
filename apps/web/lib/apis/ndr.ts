@@ -170,7 +170,7 @@ export const useNDROperations = (queryParams: NDRQueryParams = {}) => {
     queryKey: ['ndr-orders', queryParams],
     queryFn: async () => {
       const params = new URLSearchParams();
-      
+
       Object.entries(queryParams).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
           params.append(key, String(value));
@@ -257,7 +257,7 @@ export const useBulkOperationStatus = (operationId?: string) => {
     queryKey: ['bulk-operation-status', operationId],
     queryFn: async () => {
       if (!operationId) throw new Error('Operation ID is required');
-      
+
       const response = await api.get<{
         success: boolean;
         data: BulkOperationStatus;
@@ -276,14 +276,15 @@ export const useBulkOperationStatus = (operationId?: string) => {
 export async function fetchNDROrders(params: NDRQueryParams): Promise<NDRApiResponse> {
   try {
     const queryParams = new URLSearchParams();
-    
+
     if (params.page !== undefined) queryParams.append('page', params.page.toString());
     if (params.limit) queryParams.append('limit', params.limit.toString());
     if (params.status) queryParams.append('status', params.status);
     if (params.awb) queryParams.append('awb', params.awb);
     if (params.startDate) queryParams.append('startDate', params.startDate);
     if (params.endDate) queryParams.append('endDate', params.endDate);
-    if (params.actionTaken !== undefined) queryParams.append('actionTaken', params.actionTaken.toString());
+    if (params.actionTaken !== undefined)
+      queryParams.append('actionTaken', params.actionTaken.toString());
     if (params.actionType) queryParams.append('actionType', params.actionType);
 
     const response = await api.get<NDRApiResponse>(`/ndr/orders?${queryParams.toString()}`);
@@ -331,4 +332,4 @@ export async function getBulkOperationStatusAPI(operationId: string) {
     console.error('Error getting bulk operation status:', error);
     throw error;
   }
-} 
+}

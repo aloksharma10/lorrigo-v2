@@ -1,19 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import {
-  Button,
-  Badge,
-  toast,
-} from '@lorrigo/ui/components';
-import {
-  Plus,
-  RefreshCw,
-  Edit,
-  Trash2,
-  Power,
-  PowerOff,
-} from 'lucide-react';
+import { Button, Badge, toast } from '@lorrigo/ui/components';
+import { Plus, RefreshCw, Edit, Trash2, Power, PowerOff } from 'lucide-react';
 import { useModal } from '@/modal/modal-provider';
 import { CreateChannelModal } from '@/components/modals/create-channel-modal';
 import { formatDate } from '@lorrigo/utils';
@@ -69,7 +58,11 @@ export default function ManageChannelsPage() {
   const { deleteChannel, toggleChannelStatus, getChannels } = useChannelOperations();
 
   // Fetch channels with React Query
-  const { data, isLoading, isError, error, refetch } = getChannels(pagination.pageIndex + 1, pagination.pageSize, globalFilter);
+  const { data, isLoading, isError, error, refetch } = getChannels(
+    pagination.pageIndex + 1,
+    pagination.pageSize,
+    globalFilter
+  );
 
   const channels = data?.channelConfigs || [];
   const totalCount = data?.total || 0;
@@ -202,18 +195,10 @@ export default function ManageChannelsPage() {
                 <Power className="h-4 w-4 text-green-500" />
               )}
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleEditChannel(channel)}
-            >
+            <Button variant="ghost" size="icon" onClick={() => handleEditChannel(channel)}>
               <Edit className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleDeleteChannel(channel.id)}
-            >
+            <Button variant="ghost" size="icon" onClick={() => handleDeleteChannel(channel.id)}>
               <Trash2 className="h-4 w-4 text-red-500" />
             </Button>
           </div>

@@ -8,7 +8,7 @@ import {
   formatPhoneNumber,
   formatShiprocketAddress,
   PickupAddress,
-  ShipmentBucketManager
+  ShipmentBucketManager,
 } from '@lorrigo/utils';
 import { BucketMappingService } from '../shipments/services/bucket-mapping.service';
 import {
@@ -531,7 +531,7 @@ export class ShiprocketVendor extends BaseVendor {
           message: 'Tracking data retrieved from cache',
           data: parsedData.data,
           trackingEvents: parsedData.trackingEvents,
-          cached: true
+          cached: true,
         };
       }
 
@@ -578,14 +578,14 @@ export class ShiprocketVendor extends BaseVendor {
         if (trackingInput.shipmentId && edd) {
           const eddUpdate = {
             id: trackingInput.shipmentId,
-            edd: edd.toISOString()
+            edd: edd.toISOString(),
           };
 
           await redis.rpush('shipment:edd:updates', JSON.stringify(eddUpdate));
         } else if (trackingInput.shipment?.id && edd) {
           const eddUpdate = {
             id: trackingInput.shipment.id,
-            edd: edd.toISOString()
+            edd: edd.toISOString(),
           };
 
           await redis.rpush('shipment:edd:updates', JSON.stringify(eddUpdate));
@@ -609,7 +609,11 @@ export class ShiprocketVendor extends BaseVendor {
         // Use optimized bucket detection with vendor-specific mappings
         const bucket = this.bucketMappingService
           ? await this.bucketMappingService.detectBucket(statusLabel, statusCode, 'SHIPROCKET')
-          : ShipmentBucketManager.detectBucketFromVendorStatus(statusLabel, statusCode, 'SHIPROCKET');
+          : ShipmentBucketManager.detectBucketFromVendorStatus(
+              statusLabel,
+              statusCode,
+              'SHIPROCKET'
+            );
 
         const status_code = ShipmentBucketManager.getStatusFromBucket(bucket);
         // If status code is not mapped, queue it for admin to map
@@ -617,14 +621,17 @@ export class ShiprocketVendor extends BaseVendor {
           const unmappedStatus = {
             courier_name: 'SHIPROCKET',
             status_code: statusCode,
-            status_label: statusLabel
+            status_label: statusLabel,
           };
 
           await redis.rpush('courier:unmapped:statuses', JSON.stringify(unmappedStatus));
         }
 
         // Determine if this is an RTO status
-        const isNDR = ShipmentBucketManager.isNDRStatus(statusLabel || activity.activity, statusCode);
+        const isNDR = ShipmentBucketManager.isNDRStatus(
+          statusLabel || activity.activity,
+          statusCode
+        );
         const isRTO = ShipmentBucketManager.isRTOStatus(activity.activity, statusCode);
 
         // Create tracking event
@@ -639,7 +646,7 @@ export class ShiprocketVendor extends BaseVendor {
           isNDR,
           bucket,
           vendor_name: 'SHIPROCKET',
-          raw_data: activity
+          raw_data: activity,
         };
 
         trackingEvents.push(trackingEvent);
@@ -649,11 +656,11 @@ export class ShiprocketVendor extends BaseVendor {
         if (shipmentId) {
           const eventData = {
             ...trackingEvent,
-            shipment_id: shipmentId
+            shipment_id: shipmentId,
           };
 
           await redis.rpush('tracking:events:queue', JSON.stringify(eventData));
-          
+
           // Queue NDR processing if this is a new NDR status
           if (isNDR && trackingInput.awb) {
             // We'll need to get the order ID from the shipment in the processor
@@ -663,18 +670,13 @@ export class ShiprocketVendor extends BaseVendor {
               awb: trackingInput.awb,
               vendorName: 'SHIPROCKET',
               orderId: '', // Will be fetched in the processor
-              timestamp: new Date().toISOString()
+              timestamp: new Date().toISOString(),
             };
-            
-            await addJob(
-              QueueNames.SHIPMENT_TRACKING,
-              JobType.PROCESS_NDR_DETAILS,
-              ndrJobData,
-              { 
-                priority: 2, // High priority for NDR processing
-                delay: 5000  // 5 second delay to ensure tracking event is processed first
-              }
-            );
+
+            await addJob(QueueNames.SHIPMENT_TRACKING, JobType.PROCESS_NDR_DETAILS, ndrJobData, {
+              priority: 2, // High priority for NDR processing
+              delay: 5000, // 5 second delay to ensure tracking event is processed first
+            });
           }
         }
       }
@@ -686,8 +688,8 @@ export class ShiprocketVendor extends BaseVendor {
       let latestBucket = 0;
       if (trackingEvents.length > 0) {
         // Sort events by timestamp (newest first)
-        const sortedEvents = [...trackingEvents].sort((a, b) =>
-          b.timestamp.getTime() - a.timestamp.getTime()
+        const sortedEvents = [...trackingEvents].sort(
+          (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
         );
 
         latestBucket = sortedEvents?.[0]?.bucket ?? 0;
@@ -698,7 +700,7 @@ export class ShiprocketVendor extends BaseVendor {
       if (shipmentId && latestBucket > 0) {
         const statusUpdate = {
           id: shipmentId,
-          status: ShipmentBucketManager.getStatusFromBucket(latestBucket)
+          status: ShipmentBucketManager.getStatusFromBucket(latestBucket),
         };
 
         await redis.rpush('shipment:status:updates', JSON.stringify(statusUpdate));
@@ -710,25 +712,34 @@ export class ShiprocketVendor extends BaseVendor {
         courier: 'SHIPROCKET',
         currentStatus,
         edd,
-        activities: trackingEvents.map(event => ({
+        activities: trackingEvents.map((event) => ({
           date: event.timestamp,
           status: event.status,
           location: event.location,
-          activity: event.activity
-        }))
+          activity: event.activity,
+        })),
       };
 
       // Cache the result - use adaptive TTL based on status
-      const isDelivered = trackingEvents.some(event => ShipmentBucketManager.isDeliveredStatus(event.status));
-      const isRTODelivered = trackingEvents.some(event => event.isRTO && ShipmentBucketManager.isDeliveredStatus(event.status));
+      const isDelivered = trackingEvents.some((event) =>
+        ShipmentBucketManager.isDeliveredStatus(event.status)
+      );
+      const isRTODelivered = trackingEvents.some(
+        (event) => event.isRTO && ShipmentBucketManager.isDeliveredStatus(event.status)
+      );
 
       // Use longer TTL for final statuses
-      const cacheTTL = (isDelivered || isRTODelivered) ? 86400 : 1800; // 24 hours or 30 minutes
+      const cacheTTL = isDelivered || isRTODelivered ? 86400 : 1800; // 24 hours or 30 minutes
 
-      await redis.set(cacheKey, JSON.stringify({
-        data: resultData,
-        trackingEvents
-      }), 'EX', cacheTTL);
+      await redis.set(
+        cacheKey,
+        JSON.stringify({
+          data: resultData,
+          trackingEvents,
+        }),
+        'EX',
+        cacheTTL
+      );
 
       return {
         success: true,
@@ -841,13 +852,13 @@ export class ShiprocketVendor extends BaseVendor {
           const date = new Date(ndrData.next_attempt_date);
           formattedDate = date.toLocaleDateString('en-GB', {
             day: '2-digit',
-            month: 'short'
+            month: 'short',
           });
         } catch (error) {
           console.error('Error formatting date for Shiprocket NDR:', error);
           formattedDate = new Date().toLocaleDateString('en-GB', {
             day: '2-digit',
-            month: 'short'
+            month: 'short',
           });
         }
       }
@@ -871,7 +882,7 @@ export class ShiprocketVendor extends BaseVendor {
       const orderReattemptPayload = {
         action: shiprocketAction,
         comment: ndrData.comment || 'NDR action requested',
-        deferred_date: formattedDate
+        deferred_date: formattedDate,
       };
 
       // Make API request to Shiprocket NDR endpoint
@@ -906,7 +917,6 @@ export class ShiprocketVendor extends BaseVendor {
       };
     }
   }
-
 }
 
 /**
@@ -914,7 +924,6 @@ export class ShiprocketVendor extends BaseVendor {
  * Handles token generation and hub registration with Shiprocket B2B API
  */
 export class ShiprocketB2BVendor extends BaseVendor {
-
   private clientId: string;
 
   constructor() {
@@ -1125,7 +1134,9 @@ export class ShiprocketB2BVendor extends BaseVendor {
       }
 
       // Sort history by timestamp (oldest first)
-      history.sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      history.sort(
+        (a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      );
 
       // Try to fetch status mappings from database
       let statusMappings: any[] = [];
@@ -1151,7 +1162,7 @@ export class ShiprocketB2BVendor extends BaseVendor {
 
         // Try to find bucket from status mappings
         let bucket: number | undefined;
-        const mapping = statusMappings.find(m => m.status_code === statusCode);
+        const mapping = statusMappings.find((m) => m.status_code === statusCode);
         if (mapping) {
           bucket = mapping.bucket;
         } else {
@@ -1179,7 +1190,7 @@ export class ShiprocketB2BVendor extends BaseVendor {
           isDelivered: isDelivered,
           bucket: bucket,
           vendor_name: 'SHIPROCKET_B2B',
-          raw_data: item
+          raw_data: item,
         };
       });
 
@@ -1219,7 +1230,8 @@ export class ShiprocketB2BVendor extends BaseVendor {
 
       return {
         success: false,
-        message: 'Shiprocket B2B NDR actions are not yet implemented. Please use regular Shiprocket or contact support.',
+        message:
+          'Shiprocket B2B NDR actions are not yet implemented. Please use regular Shiprocket or contact support.',
         data: {
           vendor: 'ShiprocketB2B',
           awb: ndrData.awb,
