@@ -8,6 +8,14 @@ const GetBillingByMonthSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).optional().default(20)
 });
 
+const ManualBillingSchema = z.object({
+  awbs: z.array(z.string()).optional(),
+  dateRange: z.object({
+    from: z.string().datetime(),
+    to: z.string().datetime()
+  }).optional()
+});
+
 export class BillingController {
   constructor(private billingService: BillingService) {}
 
@@ -63,6 +71,83 @@ export class BillingController {
       return reply.code(500).send({
         success: false,
         message: 'Failed to upload billing CSV',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Process manual billing for specific orders or date range (Admin only)
+   */
+  async processManualBilling(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const { userId } = request.params as { userId: string };
+      const body = request.body as any;
+      const adminUserId = request.userPayload!.id;
+
+      // Validate request body
+      const validatedData = ManualBillingSchema.parse(body);
+
+      if (!validatedData.awbs && !validatedData.dateRange) {
+        return reply.code(400).send({
+          success: false,
+          message: 'Either AWBs or date range must be provided'
+        });
+      }
+
+      const dateRange = validatedData.dateRange ? {
+        from: new Date(validatedData.dateRange.from),
+        to: new Date(validatedData.dateRange.to)
+      } : undefined;
+
+      const result = await this.billingService.processManualBilling(
+        userId,
+        validatedData.awbs,
+        dateRange,
+        adminUserId
+      );
+
+      return reply.code(200).send({
+        success: true,
+        data: result
+      });
+
+    } catch (error: any) {
+      request.log.error(`Error processing manual billing: ${error.message}`);
+      return reply.code(500).send({
+        success: false,
+        message: 'Failed to process manual billing',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Create automatic billing cycle for user (Admin only)
+   */
+  async createBillingCycle(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const { userId } = request.params as { userId: string };
+      const { cycleDays = 30 } = request.body as { cycleDays?: number };
+
+      const billingCycleId = await this.billingService.createAutomaticBillingCycle(
+        userId,
+        cycleDays
+      );
+
+      return reply.code(201).send({
+        success: true,
+        data: {
+          billingCycleId,
+          message: 'Billing cycle created successfully'
+        }
+      });
+
+    } catch (error: any) {
+      request.log.error(`Error creating billing cycle: ${error.message}`);
+      return reply.code(500).send({
+        success: false,
+        message: 'Failed to create billing cycle',
         error: error.message
       });
     }

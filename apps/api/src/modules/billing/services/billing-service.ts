@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { format } from 'date-fns';
-import { ShipmentStatus, PaymentMethod } from '@lorrigo/db';
+import { ShipmentStatus, PaymentMethod, BillingCycleType, WeightDisputeStatus, BillingStatus } from '@lorrigo/db';
 import { addJob, QueueNames } from '@/lib/queue';
 import { randomUUID } from 'crypto';
 
@@ -17,7 +17,17 @@ export interface BillingProcessingResult {
   totalRecords: number;
   processedCount: number;
   errorCount: number;
+  disputeCount: number;
   bulkOperationId?: string;
+}
+
+export interface WeightDisputeInfo {
+  orderId: string;
+  awb: string;
+  originalWeight: number;
+  chargedWeight: number;
+  weightDifference: number;
+  courierName: string;
 }
 
 export class BillingService {
@@ -74,6 +84,9 @@ export class BillingService {
         throw new Error('No valid billing data found in CSV');
       }
 
+      // Pre-process to detect potential weight disputes
+      const disputeInfo = await this.detectWeightDisputes(billingRows);
+
       // Create bulk operation record
       const bulkOperation = await this.fastify.prisma.bulkOperation.create({
         data: {
@@ -95,7 +108,8 @@ export class BillingService {
         {
           bulkOperationId: bulkOperation.id,
           billingRows,
-          userId
+          userId,
+          disputeInfo
         },
         {
           jobId: `billing-csv-${bulkOperation.id}`,
@@ -109,12 +123,217 @@ export class BillingService {
         totalRecords: billingRows.length,
         processedCount: 0,
         errorCount: 0,
+        disputeCount: 0,
         bulkOperationId: bulkOperation.id
       };
 
     } catch (error: any) {
       this.fastify.log.error(`Error uploading billing CSV: ${error.message}`);
       throw new Error(`Failed to upload billing CSV: ${error.message}`);
+    }
+  }
+
+  /**
+   * Detect potential weight disputes from CSV data
+   */
+  private async detectWeightDisputes(billingRows: BillingCSVRow[]): Promise<WeightDisputeInfo[]> {
+    const disputes: WeightDisputeInfo[] = [];
+    
+    for (const row of billingRows) {
+      try {
+        // Find shipment by AWB
+        const shipment = await this.fastify.prisma.shipment.findFirst({
+          where: { awb: row.awb },
+          include: {
+            order: {
+              include: {
+                package: true
+              }
+            },
+            courier: true
+          }
+        });
+
+        if (!shipment || !shipment.order) continue;
+
+        const originalWeight = shipment.order.package?.weight || 0;
+        const chargedWeight = row.weight;
+        const weightDifference = chargedWeight - originalWeight;
+
+        // If charged weight is higher than order weight, flag for dispute
+        if (weightDifference > 0.1) { // Allowing 0.1kg tolerance
+          disputes.push({
+            orderId: shipment.order.id,
+            awb: row.awb,
+            originalWeight,
+            chargedWeight,
+            weightDifference,
+            courierName: shipment.courier?.name || 'Unknown'
+          });
+        }
+      } catch (error) {
+        this.fastify.log.warn(`Error processing AWB ${row.awb} for dispute detection: ${error}`);
+      }
+    }
+
+    return disputes;
+  }
+
+  /**
+   * Process manual billing for specific AWBs or date range
+   */
+  async processManualBilling(
+    userId: string,
+    awbs?: string[],
+    dateRange?: { from: Date; to: Date },
+    adminUserId?: string
+  ): Promise<BillingProcessingResult> {
+    try {
+      let whereClause: any = {
+        user_id: userId
+      };
+
+      if (awbs && awbs.length > 0) {
+        whereClause.shipment = {
+          awb: { in: awbs }
+        };
+      }
+
+      if (dateRange) {
+        whereClause.created_at = {
+          gte: dateRange.from,
+          lte: dateRange.to
+        };
+      }
+
+      // Find orders that haven't been billed yet
+      const orders = await this.fastify.prisma.order.findMany({
+        where: {
+          ...whereClause,
+          billing: {
+            none: {} // Orders with no billing records
+          }
+        },
+        include: {
+          shipment: true,
+          package: true
+        }
+      });
+
+      let processedCount = 0;
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const order of orders) {
+        try {
+          if (order.shipment) {
+            const billingAmount = 0; // Placeholder - implement actual calculation
+            await this.createManualBillingRecord(
+              order,
+              order.package?.weight || 0,
+              billingAmount,
+              adminUserId
+            );
+            successCount++;
+          }
+        } catch (error) {
+          errorCount++;
+          this.fastify.log.error(`Error processing manual billing for order ${order.id}: ${error}`);
+        }
+        processedCount++;
+      }
+
+      return {
+        success: true,
+        message: 'Manual billing completed',
+        totalRecords: orders.length,
+        processedCount,
+        errorCount,
+        disputeCount: 0
+      };
+
+    } catch (error: any) {
+      this.fastify.log.error(`Error processing manual billing: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Create manual billing record
+   */
+  private async createManualBillingRecord(
+    order: any,
+    chargedWeight: number,
+    billingAmount: number,
+    adminUserId?: string
+  ): Promise<void> {
+    const billingCode = `BL-MAN-${Date.now()}-${randomUUID().slice(0, 8)}`;
+    const currentDate = new Date();
+    const billingMonth = format(currentDate, 'yyyy-MM');
+
+    await this.fastify.prisma.billing.create({
+      data: {
+        code: billingCode,
+        order_id: order.id,
+        billing_date: currentDate,
+        billing_month: billingMonth,
+        billing_amount: billingAmount,
+        charged_weight: chargedWeight,
+        original_weight: order.package?.weight || 0,
+        weight_difference: 0,
+        has_weight_dispute: false,
+        fw_excess_charge: 0,
+        rto_excess_charge: 0,
+        zone_change_charge: 0,
+        cod_charge: 0,
+        is_forward_applicable: true,
+        is_rto_applicable: true,
+        base_price: billingAmount,
+        base_weight: 0.5,
+        increment_price: 0,
+        order_weight: order.package?.weight || 0,
+        order_zone: order.shipment?.order_zone,
+        charged_zone: order.shipment?.order_zone,
+        courier_name: order.shipment?.courier?.name,
+        cycle_type: BillingCycleType.MANUAL,
+        is_manual_billing: true,
+        approved_by: adminUserId,
+        approved_at: currentDate,
+        applied_charges: JSON.stringify(['base_charge'])
+      }
+    });
+  }
+
+  /**
+   * Create automatic billing cycle for user
+   */
+  async createAutomaticBillingCycle(userId: string, cycleDays: number = 30): Promise<string> {
+    try {
+      const startDate = new Date();
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + cycleDays);
+
+      const nextCycleDate = new Date(endDate);
+      nextCycleDate.setDate(nextCycleDate.getDate() + cycleDays);
+
+      const billingCycle = await this.fastify.prisma.billingCycle.create({
+        data: {
+          code: `BC-${Date.now()}-${randomUUID().slice(0, 8)}`,
+          user_id: userId,
+          cycle_type: BillingCycleType.AUTOMATIC,
+          cycle_days: cycleDays,
+          cycle_start_date: startDate,
+          cycle_end_date: endDate,
+          next_cycle_date: nextCycleDate,
+          status: BillingStatus.PENDING,
+          is_active: true
+        }
+      });
+
+      return billingCycle.id;
+    } catch (error: any) {
+      this.fastify.log.error(`Error creating billing cycle: ${error.message}`);
+      throw error;
     }
   }
 
@@ -227,7 +446,8 @@ export class BillingService {
               shipment: true,
               customer: true,
               user: true,
-              hub: true
+              hub: true,
+              weight_dispute: true
             }
           }
         },
@@ -266,6 +486,9 @@ export class BillingService {
           billing_month: billing.billing_month,
           billing_amount: billing.billing_amount,
           charged_weight: billing.charged_weight,
+          original_weight: billing.original_weight,
+          weight_difference: billing.weight_difference,
+          has_weight_dispute: billing.has_weight_dispute,
           fw_excess_charge: billing.fw_excess_charge,
           rto_excess_charge: billing.rto_excess_charge,
           zone_change_charge: billing.zone_change_charge,
@@ -279,6 +502,8 @@ export class BillingService {
           order_zone: billing.order_zone,
           charged_zone: billing.charged_zone,
           courier_name: billing.courier_name,
+          cycle_type: billing.cycle_type,
+          is_manual_billing: billing.is_manual_billing,
           is_processed: billing.is_processed,
           payment_status: billing.payment_status,
           created_at: billing.created_at.toISOString(),
@@ -298,7 +523,8 @@ export class BillingService {
               courier: {
                 name: billing.courier_name || ''
               }
-            }
+            },
+            weight_dispute: billing.order.weight_dispute
           }
         };
       });

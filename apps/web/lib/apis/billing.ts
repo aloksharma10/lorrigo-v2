@@ -12,6 +12,9 @@ export interface BillingRecord {
   billing_month: string;
   billing_amount: number;
   charged_weight: number;
+  original_weight: number;
+  weight_difference: number;
+  has_weight_dispute: boolean;
   fw_excess_charge: number;
   rto_excess_charge: number;
   zone_change_charge: number;
@@ -25,6 +28,8 @@ export interface BillingRecord {
   order_zone: string | null;
   charged_zone: string | null;
   courier_name: string | null;
+  cycle_type: string | null;
+  is_manual_billing: boolean;
   is_processed: boolean;
   payment_status: string;
   created_at: string;
@@ -45,6 +50,14 @@ export interface BillingRecord {
         name: string;
       };
     };
+    weight_dispute?: {
+      id: string;
+      dispute_id: string;
+      status: string;
+      original_weight: number;
+      disputed_weight: number;
+      final_weight?: number;
+    } | null;
   };
 }
 

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Badge, Card, CardContent, CardHeader, CardTitle, Separator } from '@lorrigo/ui/components';
-import { Package, Weight, DollarSign, Truck, CreditCard, Clock, AlertTriangle, CheckCircle, Calculator } from 'lucide-react';
+import { Package, Weight, DollarSign, Truck, CreditCard, Clock, AlertTriangle, AlertCircle, CheckCircle, Calculator } from 'lucide-react';
 import { currencyFormatter, formatDateTimeSmart } from '@lorrigo/utils';
 import { CopyBtn } from '@/components/copy-btn';
 import type { BillingRecord } from '@/lib/apis/billing';
@@ -112,7 +112,10 @@ interface WeightDetailsCellProps {
 }
 
 export function WeightDetailsCell({ record }: WeightDetailsCellProps) {
-  const isWeightChanged = record.order_weight !== record.charged_weight;
+  const hasWeightDispute = record.has_weight_dispute;
+  const weightDifference = record.weight_difference || 0;
+  const originalWeight = record.original_weight || record.order_weight;
+  const isWeightChanged = originalWeight !== record.charged_weight;
   
   return (
     <div className="flex flex-col space-y-1">
@@ -121,21 +124,41 @@ export function WeightDetailsCell({ record }: WeightDetailsCellProps) {
         <span className="font-medium">
           Charged: {record.charged_weight}kg
         </span>
-        {isWeightChanged && (
+        {hasWeightDispute && (
+          <Badge className="bg-red-100 text-red-800 text-xs">
+            <AlertTriangle className="h-3 w-3 mr-1" />
+            Disputed
+          </Badge>
+        )}
+        {isWeightChanged && !hasWeightDispute && (
           <AlertTriangle className="h-3 w-3 text-orange-500" />
         )}
       </div>
+      
       <div className="text-sm text-muted-foreground">
-        Order Weight: {record.order_weight}kg
+        Original: {originalWeight}kg
       </div>
+      
       <div className="text-xs text-muted-foreground">
         Base Weight: {record.base_weight}kg
       </div>
-      {isWeightChanged && (
-        <div className="text-xs text-orange-600">
-          Weight difference: +{(record.charged_weight - record.order_weight).toFixed(2)}kg
+      
+      {weightDifference > 0 && (
+        <div className={`text-xs ${hasWeightDispute ? 'text-red-600' : 'text-orange-600'}`}>
+          Weight difference: +{weightDifference.toFixed(2)}kg
         </div>
       )}
+      
+      {record.order.weight_dispute && (
+        <div className="text-xs text-red-600 flex items-center gap-1">
+          <AlertCircle className="h-3 w-3" />
+          <span>Under review</span>
+        </div>
+      )}
+      
+      <div className="text-xs text-muted-foreground">
+        Zone: {record.order_zone} → {record.charged_zone || record.order_zone}
+      </div>
     </div>
   );
 }

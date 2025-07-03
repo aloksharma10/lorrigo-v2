@@ -51,6 +51,12 @@ enum PaymentMethod {
   UPI
 }
 
+enum PaymentMode {
+  PREPAID
+  POSTPAID
+  COMBINED
+}
+
 enum TransactionStatus {
   PENDING
   COMPLETED
@@ -71,6 +77,13 @@ enum DisputeStatus {
   REJECTED
 }
 
+enum WeightDisputeStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  RESOLVED
+}
+
 enum NotificationType {
   EMAIL
   WHATSAPP
@@ -82,14 +95,28 @@ enum RemittanceStatus {
   PROCESSING
   COMPLETED
   FAILED
+  ON_HOLD
 }
 
 enum RemittanceCycle {
   DAILY
   WEEKLY
-  BIWEEKLY
+  FORTNIGHTLY
   MONTHLY
   CUSTOM
+}
+
+enum BillingCycleType {
+  AUTOMATIC
+  MANUAL
+  CUSTOM
+}
+
+enum BillingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }
 
 enum DeliveryType {
@@ -148,8 +175,10 @@ model User {
   kyc_details           KycDetails?
   bank_details          BankDetails?
   wallet                UserWallet?
+  user_profile          UserProfile?
   invoices              Invoice[]                   @relation("UserInvoices")
   remittances           Remittance[]                @relation("UserRemittances")
+  remittance_transactions RemittanceTransaction[]   @relation("UserRemittanceTransactions")
   shipment_transactions ShipmentTransaction[]       @relation("UserShipmentTransactions")
   invoice_transactions  InvoiceTransaction[]        @relation("UserInvoiceTransactions")
   wallet_transactions   WalletRechargeTransaction[] @relation("UserWalletTransactions")
@@ -157,6 +186,8 @@ model User {
   shipments             Shipment[]                  @relation("UserShipments")
   hubs                  Hub[]                       @relation("UserHubs")
   disputes              Dispute[]                   @relation("UserDisputes")
+  weight_disputes       WeightDispute[]             @relation("UserWeightDisputes")
+  billing_cycles        BillingCycle[]              @relation("UserBillingCycles")
   api_requests          ApiRequest[]
   config                SellerConfig?
   address               Address?
@@ -428,6 +459,7 @@ model Order {
   invoice    Invoice?    @relation("OrderInvoice")
   shipment   Shipment?   @relation("OrderShipment")
   dispute    Dispute?    @relation("OrderDispute")
+  weight_dispute WeightDispute? @relation("OrderWeightDispute")
   remittance Remittance? @relation("OrderRemittances")
   billing    Billing[]
   ndr        NDROrder?   @relation("OrderNDR")
@@ -776,7 +808,13 @@ model Billing {
   billing_month  String   @db.VarChar(7) // Format: YYYY-MM
   billing_amount Float
 
+  // Weight and Charges
   charged_weight        Float
+  original_weight       Float // Order's original weight
+  weight_difference     Float @default(0) // charged_weight - original_weight
+  has_weight_dispute    Boolean @default(false)
+  
+  // Charge Breakdown
   fw_excess_charge      Float       @default(0)
   rto_excess_charge     Float       @default(0)
   zone_change_charge    Float       @default(0)
@@ -794,9 +832,25 @@ model Billing {
   charged_zone        String?
   courier_name        String?
   
+  // Billing Cycle Information
+  billing_cycle_id    String?
+  billing_cycle       BillingCycle? @relation(fields: [billing_cycle_id], references: [id])
+  cycle_type          BillingCycleType @default(AUTOMATIC)
+  is_manual_billing   Boolean @default(false)
+  
   // Processing status
   is_processed        Boolean @default(false)
   payment_status      String  @default("NOT_PAID") @db.VarChar(20) // NOT_PAID, PAID, DISPUTED
+  
+  // Duplicate Prevention
+  is_duplicate_charge Boolean @default(false)
+  applied_charges     Json?   // JSON array of charge types already applied
+  previous_billing_id String? // Reference to previous billing if rebilled
+  
+  // Admin Control
+  admin_notes         String? @db.Text
+  approved_by         String? // Admin user ID who approved manual billing
+  approved_at         DateTime?
   
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -807,6 +861,9 @@ model Billing {
   @@index([billing_month, order_id])
   @@index([order_id, billing_date])
   @@index([billing_month])
+  @@index([billing_cycle_id])
+  @@index([has_weight_dispute])
+  @@index([cycle_type])
 }
 
 // Dispute Model
@@ -1215,4 +1272,172 @@ model NDRHistory {
   updated_at DateTime @updatedAt
 
   @@index([ndr_id])
+}
+
+// UserProfile Model - Enhanced user settings for billing and remittance
+model UserProfile {
+  id              String          @id @default(cuid())
+  user_id         String          @unique
+  user            User            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  
+  // Company Details
+  company         String?         @db.VarChar(255)
+  company_name    String?         @db.VarChar(255)
+  logo_url        String?         @db.VarChar(500)
+  
+  // Payment Configuration
+  payment_mode    PaymentMode     @default(PREPAID)
+  
+  // Wallet Configuration
+  wallet_balance            Float @default(0)
+  wallet_hold_amount        Float @default(0)
+  wallet_usable_amount      Float @default(0)
+  
+  // Remittance Configuration
+  remittance_cycle          RemittanceCycle @default(WEEKLY)
+  remittance_min_amount     Float           @default(0)
+  cod_remittance_pending    Float           @default(0)
+  remittance_days_of_week   Int[]           @default([5]) // Default to Friday
+  remittance_days_after_delivery Int        @default(7)   // D+7 days
+  early_remittance_charge   Float           @default(0)   // Percentage charge
+  
+  // Courier Access
+  courier_access    String[] @default([]) // Courier IDs
+  
+  // Widget Settings
+  widget_settings   Json?    // Flexible JSON for widget configuration
+  
+  // NDR Boost Configuration
+  ndr_boost         Json?    // Flexible JSON for NDR boost settings
+  
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([user_id])
+  @@index([payment_mode])
+  @@index([remittance_cycle])
+}
+
+// WeightDispute Model - Manage weight disputes
+model WeightDispute {
+  id               String              @id @default(cuid())
+  dispute_id       String              @unique // Custom dispute ID
+  order_id         String              @unique // One-to-one relation with Order
+  order            Order               @relation("OrderWeightDispute", fields: [order_id], references: [id], onDelete: Cascade)
+  user_id          String
+  user             User                @relation("UserWeightDisputes", fields: [user_id], references: [id], onDelete: Cascade)
+  
+  // Weight Information
+  original_weight  Float
+  disputed_weight  Float
+  final_weight     Float?
+  
+  // Dispute Details
+  status           WeightDisputeStatus @default(PENDING)
+  courier_name     String              @db.VarChar(100)
+  original_charges Float
+  revised_charges  Float?
+  
+  // Evidence and Resolution
+  evidence_urls    String[]            @default([])
+  courier_response String?             @db.Text
+  resolution       String?             @db.Text
+  resolution_date  DateTime?
+  resolved_by      String?             // Admin user ID who resolved
+  
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([order_id])
+  @@index([user_id])
+  @@index([dispute_id])
+  @@index([status])
+  @@index([created_at])
+}
+
+// BillingCycle Model - Manage billing cycles for users
+model BillingCycle {
+  id                String            @id @default(cuid())
+  code              String            @unique // Custom ID
+  user_id           String
+  user              User              @relation("UserBillingCycles", fields: [user_id], references: [id], onDelete: Cascade)
+  
+  // Cycle Configuration
+  cycle_type        BillingCycleType  @default(AUTOMATIC)
+  cycle_days        Int               @default(30) // Number of days in cycle
+  cycle_start_date  DateTime
+  cycle_end_date    DateTime
+  next_cycle_date   DateTime?
+  
+  // Status
+  status            BillingStatus     @default(PENDING)
+  is_active         Boolean           @default(true)
+  
+  // Processing Information
+  total_orders      Int               @default(0)
+  total_amount      Float             @default(0)
+  processed_orders  Int               @default(0)
+  failed_orders     Int               @default(0)
+  
+  // Relations
+  billings          Billing[]         // Related billing records
+  
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([user_id])
+  @@index([cycle_type])
+  @@index([status])
+  @@index([cycle_start_date, cycle_end_date])
+  @@index([next_cycle_date])
+}
+
+// RemittanceTransaction Model - Enhanced remittance transactions
+model RemittanceTransaction {
+  id                        String           @id @default(cuid())
+  transaction_id            String           @unique // Custom transaction ID
+  user_id                   String
+  user                      User             @relation("UserRemittanceTransactions", fields: [user_id], references: [id], onDelete: Cascade)
+  
+  // Amount Details
+  amount                    Float            // Original amount before adjustments
+  amount_before_adjustment  Float?           @default(0)
+  wallet_transfer_amount    Float?           @default(0)
+  wallet_balance_before     Float?           @default(0)
+  wallet_balance_after      Float?           @default(0)
+  early_remittance_charge   Float            @default(0) // Percentage
+  early_remittance_charge_amount Float       @default(0) // Actual amount
+  final_payout_amount       Float?           @default(0)
+  
+  // Orders Information
+  orders_count              Int
+  orders                    Json             // Array of order details
+  
+  // Status and Processing
+  status                    RemittanceStatus @default(PENDING)
+  hold_reason               String?          @db.Text
+  processed_at              DateTime?
+  completed_at              DateTime?
+  failed_at                 DateTime?
+  
+  // Processing Details
+  processing_details        Json?            // UTR, bank details, etc.
+  
+  // Cycle Information
+  cycle_start_date          DateTime
+  cycle_end_date            DateTime
+  
+  // Audit Trail
+  created_by                String           // Admin user ID
+  updated_by                String?          // Last updated by
+  notes                     String?          @db.Text
+  
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([user_id])
+  @@index([transaction_id])
+  @@index([status])
+  @@index([cycle_start_date, cycle_end_date])
+  @@index([created_at])
 }
