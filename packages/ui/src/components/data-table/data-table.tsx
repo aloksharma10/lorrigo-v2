@@ -285,7 +285,7 @@ export function DataTable<TData, TValue>({
         )}
 
         <Card className="rounded-sm border-0 p-0">
-          <CardContent className="rounded-sm border-0 p-1">
+          <CardContent className="rounded-sm border-0 p-1 w-full overflow-x-auto">
             <Table className={className}>
               <TableHeader className="border-b">
                 {table.getHeaderGroups().map((headerGroup) => (

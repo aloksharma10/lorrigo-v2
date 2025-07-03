@@ -13,6 +13,7 @@ export enum QueueNames {
   REMITTANCE_PROCESSING = 'remittance-processing',
   NDR_PROCESSING = 'ndr-processing',
   CSV_PROCESSING = 'csv-processing',
+  BILLING_CSV_PROCESSING = 'billing-csv-processing',
 }
 
 // Define job types
@@ -106,6 +107,15 @@ export const queues = {
       // CSV processing can take longer and need more retries
       attempts: 5,
       priority: 2,
+    },
+  }),
+  [QueueNames.BILLING_CSV_PROCESSING]: new Queue(QueueNames.BILLING_CSV_PROCESSING, {
+    ...connectionOptions,
+    defaultJobOptions: {
+      ...queueConfig.defaultJobOptions,
+      // Billing CSV processing needs high priority and retries
+      attempts: 5,
+      priority: 1,
     },
   }),
 };

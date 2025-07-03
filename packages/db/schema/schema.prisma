@@ -490,7 +490,7 @@ model Shipment {
   code   String         @unique // Custom ID - Format: SH-YYMM-XXXXX
   awb    String?        @unique @db.VarChar(50)
   status ShipmentStatus @default(NEW)
-  bucket Int            @default(1)
+  bucket Int            @default(0)
 
   shipping_charge Float?     @default(0)
   fw_charge       Float?     @default(0)
@@ -773,24 +773,40 @@ model Billing {
   order    Order  @relation(fields: [order_id], references: [id], onDelete: Cascade)
 
   billing_date   DateTime
+  billing_month  String   @db.VarChar(7) // Format: YYYY-MM
   billing_amount Float
 
   charged_weight        Float
-  fw_excess_charge      Float
-  rto_excess_charge     Float
-  zone_change_charge    Float
+  fw_excess_charge      Float       @default(0)
+  rto_excess_charge     Float       @default(0)
+  zone_change_charge    Float       @default(0)
+  cod_charge            Float       @default(0)
   is_forward_applicable Boolean
   is_rto_applicable     Boolean
 
-  base_price  Boolean
-  base_weight Boolean
-
+  base_price          Float
+  base_weight         Float
+  increment_price     Float @default(0)
+  
+  // Original order details for comparison
+  order_weight        Float
+  order_zone          String?
+  charged_zone        String?
+  courier_name        String?
+  
+  // Processing status
+  is_processed        Boolean @default(false)
+  payment_status      String  @default("NOT_PAID") @db.VarChar(20) // NOT_PAID, PAID, DISPUTED
+  
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
   dispute Dispute[]
 
   @@unique([code, order_id])
+  @@index([billing_month, order_id])
+  @@index([order_id, billing_date])
+  @@index([billing_month])
 }
 
 // Dispute Model

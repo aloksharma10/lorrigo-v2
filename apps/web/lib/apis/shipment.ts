@@ -227,12 +227,6 @@ export const useShippingOperations = () => {
           result.data.status === 'COMPLETED' ||
           result.data.status === 'FAILED';
 
-        console.log('Refetch interval check:', {
-          progress: result.progress,
-          status: result.data.status,
-          isDone,
-        });
-
         return isDone ? false : 2000;
       },
       staleTime: 0,

@@ -61,3 +61,11 @@ export function getFinancialYearStartDate(financialYear: string): Date {
   const [startYear] = financialYear.split('-').map(Number);
   return new Date(`${startYear}-04-01T00:00:00.000Z`);
 }
+
+// Simple billing ID generator for CSV processing
+export function generateBillingId(date = new Date()) {
+  const year = date.getFullYear().toString().slice(-2);
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const randomNumber = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
+  return `BL-${year}${month}-${randomNumber}`;
+}

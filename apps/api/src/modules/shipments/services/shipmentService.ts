@@ -394,6 +394,7 @@ export class ShipmentService {
                 where: { order_id: data.order_id },
                 data: {
                   awb,
+                  bucket: ShipmentBucketManager.getBucketFromStatus(ShipmentStatus.COURIER_ASSIGNED),
                   sr_shipment_id: vendorResult.data?.sr_shipment_id?.toString() || '',
                   status: isSchedulePickup
                     ? ShipmentStatus.PICKUP_SCHEDULED
