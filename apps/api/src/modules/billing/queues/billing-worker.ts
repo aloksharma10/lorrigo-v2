@@ -5,6 +5,7 @@ import { redis } from '@/lib/redis';
 import { APP_CONFIG } from '@/config/app';
 import { BillingCSVRow } from '../services/billing-service';
 import { format } from 'date-fns';
+import { calculatePrice, PriceCalculationParams, CourierInfo, CourierPricing, PincodeDetails } from '@/utils/calculate-order-price';
 
 // Generate billing ID function
 function generateBillingId(date = new Date()) {
@@ -119,6 +120,7 @@ async function processBillingCSV(
   failedCount: number;
   duration: number;
 }> {
+  console.log(job.data);
   const startTime = Date.now();
   const { bulkOperationId, billingRows, userId } = job.data;
 
@@ -153,7 +155,13 @@ async function processBillingCSV(
         include: {
           shipment: {
             include: {
-              courier: true
+              courier: true,
+              tracking_events: {  
+                orderBy: {
+                  created_at: 'desc'
+                },
+                take: 1
+              }
             }
           },
           user: true,
@@ -203,50 +211,109 @@ async function processBillingCSV(
             continue;
           }
 
-          // Calculate billing charges based on weight difference and shipment details
-          const actualWeight = row.weight;
-          const orderWeight = order.shipment.weight || 0;
-          const chargedWeight = Math.max(actualWeight, orderWeight);
-          
-          // Calculate zone (simplified logic - in reality this would be more complex)
-          const hubPincode = order.hub?.address?.pincode;
-          const customerPincode = order.customer?.address?.pincode;
-          const orderZone = calculateZone(hubPincode, customerPincode);
-          const chargedZone = orderZone; // For now, assume no zone changes
-          
-          // Calculate charges (simplified pricing logic)
-          const basePricing = await calculateBasePricing(order, chargedWeight, orderZone);
-          const excessCharges = calculateExcessCharges(orderWeight, actualWeight, basePricing.baseRate);
-          const codCharges = order.payment_mode === 'COD' ? order.total_amount * 0.02 : 0; // 2% COD charges
-          const zoneChangeCharges = orderZone !== chargedZone ? 10 : 0; // Fixed zone change fee
-          
-          const totalBillingAmount = basePricing.totalAmount + excessCharges.fw_excess + excessCharges.rto_excess + codCharges + zoneChangeCharges;
+          // Fetch ShipmentPricing for this shipment
+          const shipmentPricing = await fastify.prisma.shipmentPricing.findUnique({
+            where: { shipment_id: order.shipment.id },
+          });
 
-          // Create billing record
+          if (!shipmentPricing) {
+            fastify.log.warn(`ShipmentPricing not found for shipment_id: ${order.shipment.id}`);
+            failedCount++;
+            continue;
+          }
+
+          // Prepare calculation params
+          const params: PriceCalculationParams = {
+            weight: row.weight, // or chargedWeight if you want to use max(row.weight, order.shipment.weight)
+            weightUnit: 'kg', // Adjust if you use grams
+            boxLength: order.shipment.length || 1,
+            boxWidth: order.shipment.width || 1,
+            boxHeight: order.shipment.height || 1,
+            sizeUnit: 'cm', // Adjust if you use inches
+            paymentType: order.payment_mode === 'COD' ? 1 : 0,
+            collectableAmount: order.total_amount || 0,
+            pickupPincode: order.hub?.address?.pincode || '',
+            deliveryPincode: order.customer?.address?.pincode || '',
+            isReversedOrder: false, // Set as needed
+          };
+
+          // Prepare courier info
+          const courier: CourierInfo = {
+            id: order.shipment.courier?.id || 'unknown',
+            name: order.shipment.courier?.name || 'Unknown',
+            courier_code: order.shipment.courier?.code || 'unknown',
+            is_active: true,
+            is_reversed_courier: false, // Set as needed
+            weight_slab: shipmentPricing.weight_slab || 0.5,
+          };
+
+          // Prepare courier pricing
+          const courierPricing: CourierPricing = {
+            weight_slab: shipmentPricing.weight_slab || 0.5,
+            increment_weight: shipmentPricing.increment_weight || 0.5,
+            cod_charge_hard: shipmentPricing.cod_charge_hard || 0,
+            cod_charge_percent: shipmentPricing.cod_charge_percent || 0,
+            is_cod_applicable: shipmentPricing.is_cod_applicable ?? true,
+            is_rto_applicable: shipmentPricing.is_rto_applicable ?? true,
+            is_fw_applicable: shipmentPricing.is_fw_applicable ?? true,
+            is_cod_reversal_applicable: false, // Set as needed
+            zone_pricing: [
+              {
+                zone: shipmentPricing.zone,
+                base_price: shipmentPricing.base_price,
+                increment_price: shipmentPricing.increment_price,
+                rto_base_price: shipmentPricing.rto_base_price || 0,
+                rto_increment_price: shipmentPricing.rto_increment_price || 0,
+                is_rto_same_as_fw: shipmentPricing.is_rto_same_as_fw ?? true,
+              },
+            ],
+          };
+
+          // Prepare pincode details
+          const pickupDetails: PincodeDetails = {
+            city: order.hub?.address?.city || '',
+            state: order.hub?.address?.state || '',
+          };
+          const deliveryDetails: PincodeDetails = {
+            city: order.customer?.address?.city || '',
+            state: order.customer?.address?.state || '',
+          };
+
+          // Calculate price using the new utility
+          const result = calculatePrice(params, courier, courierPricing, pickupDetails, deliveryDetails);
+
+          if (!result) {
+            fastify.log.warn(`Price calculation failed for AWB: ${row.awb}`);
+            failedCount++;
+            continue;
+          }
+
+          // Create billing record using result
           await fastify.prisma.billing.create({
             data: {
               code: generateBillingId(),
               order_id: order.id,
               billing_date: currentDate,
               billing_month: billingMonth,
-              billing_amount: Math.round(totalBillingAmount * 100) / 100, // Round to 2 decimal places
-              charged_weight: chargedWeight,
-              fw_excess_charge: excessCharges.fw_excess,
-              rto_excess_charge: excessCharges.rto_excess,
-              zone_change_charge: zoneChangeCharges,
-              cod_charge: codCharges,
-              is_forward_applicable: true,
-              is_rto_applicable: false,
-              base_price: basePricing.totalAmount,
-              base_weight: 0.5, // 500g standard
-              increment_price: basePricing.additionalRate,
-              order_weight: orderWeight,
-              order_zone: orderZone,
-              charged_zone: chargedZone,
+              billing_amount: Math.round(result.total_price * 100) / 100, // Round to 2 decimals
+              charged_weight: result.final_weight,
+              fw_excess_charge: 0, // If you want to use result.breakdown for excess, update here
+              rto_excess_charge: 0,
+              zone_change_charge: 0,
+              cod_charge: result.cod_charges,
+              is_forward_applicable: shipmentPricing.is_fw_applicable,
+              is_rto_applicable: shipmentPricing.is_rto_applicable,
+              original_weight: order.shipment.weight || 0,
+              base_price: result.base_price,
+              base_weight: shipmentPricing.weight_slab || 0.5,
+              increment_price: result.pricing.zone_pricing[0]?.increment_price || 0,
+              order_weight: order.shipment.weight || 0,
+              order_zone: result.zone,
+              charged_zone: result.zone,
               courier_name: order.shipment?.courier?.name || 'Unknown',
               is_processed: true,
-              payment_status: 'NOT_PAID'
-            }
+              payment_status: 'NOT_PAID',
+            },
           });
 
           successCount++;

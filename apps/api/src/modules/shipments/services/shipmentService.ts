@@ -60,11 +60,11 @@ export class ShipmentService {
     this.vendorService = new VendorService(fastify);
     this.transactionService = new TransactionService(fastify);
 
-    // this.fastify.redis.flushall().then(() => {
-    //   this.fastify.log.info('Redis flushed successfully');
-    // }).catch((error) => {
-    //   this.fastify.log.error('Failed to flush Redis:', error);
-    // });
+    this.fastify.redis.flushall().then(() => {
+      this.fastify.log.info('Redis flushed successfully');
+    }).catch((error) => {
+      this.fastify.log.error('Failed to flush Redis:', error);
+    });
   }
 
   /**
@@ -1818,7 +1818,7 @@ export class ShipmentService {
       // Check for RTO status in events
       const hasRtoEvent = events.some((event: any) => event.isRTO);
       if (hasRtoEvent && !newStatus.includes('RTO')) {
-        newStatus = ShipmentStatus.RTO;
+        newStatus = ShipmentStatus.RTO_INITIATED;
         statusUpdated = true;
       }
 
@@ -2115,7 +2115,7 @@ export class ShipmentService {
             await this.fastify.prisma.shipment.update({
               where: { id: ndr.shipment_id! },
               data: {
-                status: ShipmentStatus.RTO,
+                status: ShipmentStatus.RTO_INITIATED,
                 updated_at: new Date(),
               },
             });

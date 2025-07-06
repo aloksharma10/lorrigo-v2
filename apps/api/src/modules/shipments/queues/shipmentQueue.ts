@@ -37,6 +37,7 @@ export enum JobType {
   PROCESS_UNMAPPED_STATUSES = 'process-unmapped-statuses',
   PROCESS_EDD_UPDATES = 'process-edd-updates',
   PROCESS_NDR_DETAILS = 'process-ndr-details',
+  PROCESS_BULK_TRACKING_EVENTS = 'process-bulk-tracking-events',
 }
 
 /**
@@ -237,6 +238,9 @@ export function initShipmentQueue(fastify: FastifyInstance, shipmentService: Shi
               vendorName,
               ndrOrderId
             );
+
+          case JobType.PROCESS_BULK_TRACKING_EVENTS:
+            return await TrackingProcessor.processBulkTrackingEvents(fastify);
 
           default:
             throw new Error(`Unknown tracking job type: ${job.name}`);

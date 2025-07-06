@@ -324,7 +324,7 @@ export function RechargeWalletModal({ onClose, onSuccess }: RechargeWalletModalP
   };
 
   return (
-    <Card className="mx-auto flex w-full max-w-md flex-col">
+    <Card className="mx-auto flex w-full flex-col">
       <CardHeader className="flex-shrink-0 border-b">
         <div className="flex items-center justify-between">
           <div>

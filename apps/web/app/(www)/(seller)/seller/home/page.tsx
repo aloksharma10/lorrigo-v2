@@ -31,6 +31,7 @@ const sampleItems = [
     percentage: '12.5%',
     description: 'Trending up this month',
     icon: IconTruckReturn,
+    className: "bg-rose-300",
   },
   {
     title: 'Order Delayed for Delivery',

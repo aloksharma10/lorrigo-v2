@@ -2,6 +2,7 @@ import { Card, CardHeader, CardTitle } from '@lorrigo/ui/components/card';
 import { CardItems } from '@/components/card-items';
 import { IconProps } from '@tabler/icons-react';
 import { FC, ComponentType } from 'react';
+import { cn } from '@lorrigo/ui/lib/utils';
 
 export interface CardItemData {
   title: string;
@@ -9,6 +10,7 @@ export interface CardItemData {
   percentage?: string;
   description: string;
   icon: ComponentType<IconProps>;
+  className?: string;
 }
 
 export interface SectionCardsProps {
@@ -25,7 +27,7 @@ export const SectionCards: FC<SectionCardsProps> = ({
   gridClassName = '',
 }) => {
   return (
-    <Card className={`p-4 ${className}`}>
+    <Card className={cn("p-4", className)}>
       <CardHeader>
         <CardTitle className="scroll-m-20 text-lg font-semibold tracking-tight md:text-xl">
           {title}
@@ -36,6 +38,7 @@ export const SectionCards: FC<SectionCardsProps> = ({
       >
         {items.map((item, index) => (
           <CardItems
+            className={item.className}
             key={index}
             title={item.title}
             value={item.value}

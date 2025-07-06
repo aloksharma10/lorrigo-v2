@@ -4,6 +4,7 @@ import { Badge } from '@lorrigo/ui/components';
 import ActionTooltip from './action-tooltip';
 import { ComponentType, ForwardRefExoticComponent, RefAttributes } from 'react';
 import { LucideProps } from 'lucide-react';
+import { cn } from '@lorrigo/ui/lib/utils';
 
 interface CardItemsProps {
   title: string;
@@ -13,11 +14,12 @@ interface CardItemsProps {
   icon:
     | ComponentType<IconProps>
     | ForwardRefExoticComponent<Omit<LucideProps, 'ref'> & RefAttributes<SVGSVGElement>>;
+  className?: string;
 }
 
-export function CardItems({ title, value, percentage, description, icon: Icon }: CardItemsProps) {
+export function CardItems({ title, value, percentage, description, icon: Icon, className }: CardItemsProps) {
   return (
-    <Card className="@container/card">
+    <Card className={cn("@container/card", className)}>
       <CardHeader>
         <div className="flex items-center gap-2">
           <div>

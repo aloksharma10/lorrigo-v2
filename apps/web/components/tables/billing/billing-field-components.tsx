@@ -84,9 +84,9 @@ export function ShipmentDetailsCell({ record }: ShipmentDetailsCellProps) {
   return (
     <div className="flex flex-col space-y-1">
       <div className="text-sm font-medium">
-        AWB: <CopyBtn 
-          label={record.order.shipment.awb} 
-          tooltipText="Copy AWB" 
+        AWB: <CopyBtn
+          label={record.order.shipment.awb}
+          tooltipText="Copy AWB"
           text={record.order.shipment.awb}
           className="text-blue-600"
         />
@@ -116,7 +116,7 @@ export function WeightDetailsCell({ record }: WeightDetailsCellProps) {
   const weightDifference = record.weight_difference || 0;
   const originalWeight = record.original_weight || record.order_weight;
   const isWeightChanged = originalWeight !== record.charged_weight;
-  
+
   return (
     <div className="flex flex-col space-y-1">
       <div className="flex items-center gap-1">
@@ -134,28 +134,28 @@ export function WeightDetailsCell({ record }: WeightDetailsCellProps) {
           <AlertTriangle className="h-3 w-3 text-orange-500" />
         )}
       </div>
-      
+
       <div className="text-sm text-muted-foreground">
         Original: {originalWeight}kg
       </div>
-      
+
       <div className="text-xs text-muted-foreground">
         Base Weight: {record.base_weight}kg
       </div>
-      
+
       {weightDifference > 0 && (
         <div className={`text-xs ${hasWeightDispute ? 'text-red-600' : 'text-orange-600'}`}>
           Weight difference: +{weightDifference.toFixed(2)}kg
         </div>
       )}
-      
+
       {record.order.weight_dispute && (
         <div className="text-xs text-red-600 flex items-center gap-1">
           <AlertCircle className="h-3 w-3" />
           <span>Under review</span>
         </div>
       )}
-      
+
       <div className="text-xs text-muted-foreground">
         Zone: {record.order_zone} → {record.charged_zone || record.order_zone}
       </div>
@@ -170,20 +170,14 @@ interface BasePricingCellProps {
 export function BasePricingCell({ record }: BasePricingCellProps) {
   return (
     <div className="text-right space-y-1">
-      <div className="font-bold text-lg">
-        {currencyFormatter(record.base_price)}
-      </div>
-      <div className="text-xs text-muted-foreground">
-        Base ({record.base_weight}kg)
+      <div className="text-sm text-muted-foreground">
+        Base  {currencyFormatter(record.base_price)}
       </div>
       {record.increment_price > 0 && (
-        <div className="text-sm text-orange-600">
-          +{currencyFormatter(record.increment_price)}
+        <div className="text-sm text-muted-foreground">
+          Increment: +{currencyFormatter(record.increment_price)}
         </div>
       )}
-      <div className="text-xs text-muted-foreground">
-        Rate: {currencyFormatter(record.base_price / record.base_weight)}/kg
-      </div>
     </div>
   );
 }
@@ -217,7 +211,7 @@ export function AdditionalChargesCell({ record }: AdditionalChargesCellProps) {
         +{currencyFormatter(totalExtra)}
       </div>
       <div className="space-y-0.5">
-        {charges.map((charge, index) => 
+        {charges.map((charge, index) =>
           charge.amount > 0 && (
             <div key={index} className="text-xs text-muted-foreground">
               {charge.label}: +{currencyFormatter(charge.amount)}
@@ -237,10 +231,10 @@ interface TotalAmountCellProps {
 }
 
 export function TotalAmountCell({ record }: TotalAmountCellProps) {
-  const extraCharges = record.fw_excess_charge + record.rto_excess_charge + 
-                      record.zone_change_charge + record.cod_charge;
+  const extraCharges = record.fw_excess_charge + record.rto_excess_charge +
+    record.zone_change_charge + record.cod_charge;
   const baseTotal = record.base_price + record.increment_price;
-  
+
   return (
     <div className="text-right space-y-1">
       <div className="font-bold text-xl text-primary">
@@ -324,13 +318,13 @@ interface BillingSummaryCardProps {
   };
 }
 
-export function BillingSummaryCard({ 
-  title, 
-  value, 
-  description, 
-  icon: Icon, 
+export function BillingSummaryCard({
+  title,
+  value,
+  description,
+  icon: Icon,
   textColor,
-  trend 
+  trend
 }: BillingSummaryCardProps) {
   return (
     <Card>
@@ -363,11 +357,11 @@ interface DetailedBillingCardProps {
   onViewShipment?: () => void;
 }
 
-export function DetailedBillingCard({ 
-  record, 
+export function DetailedBillingCard({
+  record,
   showActions = false,
   onViewOrder,
-  onViewShipment 
+  onViewShipment
 }: DetailedBillingCardProps) {
   return (
     <Card className="w-full">
@@ -386,7 +380,7 @@ export function DetailedBillingCard({
             </h4>
             <OrderDetailsCell record={record} />
           </div>
-          
+
           <div>
             <h4 className="font-medium mb-2 flex items-center gap-2">
               <Truck className="h-4 w-4" />
@@ -406,7 +400,7 @@ export function DetailedBillingCard({
             </h4>
             <WeightDetailsCell record={record} />
           </div>
-          
+
           <div>
             <h4 className="font-medium mb-2 flex items-center gap-2">
               <Calculator className="h-4 w-4" />
@@ -414,7 +408,7 @@ export function DetailedBillingCard({
             </h4>
             <BasePricingCell record={record} />
           </div>
-          
+
           <div>
             <h4 className="font-medium mb-2 flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
@@ -431,11 +425,11 @@ export function DetailedBillingCard({
             <h4 className="font-medium mb-1">Total Billing Amount</h4>
             <TotalAmountCell record={record} />
           </div>
-          
+
           {showActions && (
             <div className="space-x-2">
               {onViewOrder && (
-                <button 
+                <button
                   onClick={onViewOrder}
                   className="text-blue-600 hover:underline text-sm"
                 >
@@ -443,7 +437,7 @@ export function DetailedBillingCard({
                 </button>
               )}
               {onViewShipment && (
-                <button 
+                <button
                   onClick={onViewShipment}
                   className="text-blue-600 hover:underline text-sm"
                 >

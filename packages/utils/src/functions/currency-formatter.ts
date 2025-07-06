@@ -2,6 +2,6 @@ export const currencyFormatter = (value: number, options?: Intl.NumberFormatOpti
   Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 2,
     ...options,
   }).format(value);

@@ -33,7 +33,6 @@ export function DrawerRegistry() {
       // Register other drawer components as needed
 
       setRegistered(true);
-      console.log('Drawer components registered successfully');
     }
   }, [isRegistered, registerDrawer, setRegistered]);
 
