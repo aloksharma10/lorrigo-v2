@@ -8,6 +8,7 @@ import pLimit from 'p-limit';
 import { TrackingEventData } from '@/types/vendor';
 import { JobType } from '../queues/shipmentQueue';
 import { TransactionService, TransactionType, TransactionEntityType } from '@/modules/transactions/services/transaction-service';
+import { ChargeProcessingService } from '../services/charge-processing.service';
 
 /**
  * Tracking processor configuration
@@ -1272,8 +1273,6 @@ export class TrackingProcessor {
           bucket: {
             in: [ShipmentBucket.RTO_INITIATED, ShipmentBucket.RTO_IN_TRANSIT],
           },
-          // Add a custom field to track if RTO has been processed
-          // For now, we'll process all RTO shipments in each batch
         },
         include: {
           order: {
@@ -1298,57 +1297,29 @@ export class TrackingProcessor {
 
       let processed = 0;
       const concurrency = pLimit(5); // Process 5 RTO shipments concurrently
-      const transactionService = new TransactionService(fastify);
+      const chargeProcessingService = new ChargeProcessingService(fastify);
 
       const processingPromises = rtoShipments.map((shipment: any) =>
         concurrency(async () => {
           try {
-            // Check if RTO charge already processed (idempotency, e.g., by checking a flag or transaction)
-            const existingTx = await fastify.prisma.shipmentTransaction.findFirst({
-              where: {
-                shipment_id: shipment.id,
-                type: TransactionType.DEBIT,
-                description: { contains: 'RTO charge' },
-              },
-            });
-            if (existingTx) {
-              fastify.log.info(`RTO charge already processed for shipment ${shipment.id}`);
-              return;
+            // Process all applicable charges for this shipment
+            const chargeResults = await chargeProcessingService.processShipmentCharges(shipment);
+            // Log results
+            const successfulCharges = chargeResults.filter(r => r.success);
+            const failedCharges = chargeResults.filter(r => !r.success);
+            if (successfulCharges.length > 0) {
+              fastify.log.info(`Processed ${successfulCharges.length} charges for shipment ${shipment.id}: ${successfulCharges.map(c => c.chargeType).join(', ')}`);
             }
-
-            // Calculate RTO charge (fallback to 0 if not found)
-            const rtoCharge = shipment.pricing?.rto_charge || shipment.rto_charge || 0;
-            if (!rtoCharge || rtoCharge <= 0) {
-              fastify.log.warn(`No RTO charge found for shipment ${shipment.id}, skipping wallet deduction.`);
-              return;
+            if (failedCharges.length > 0) {
+              fastify.log.error(`Failed to process ${failedCharges.length} charges for shipment ${shipment.id}: ${failedCharges.map(c => c.chargeType).join(', ')}`);
             }
-
-            // Deduct wallet for RTO charge
-            const txResult = await transactionService.createTransaction(
-              TransactionEntityType.SHIPMENT,
-              {
-                amount: rtoCharge,
-                type: TransactionType.DEBIT,
-                description: `RTO charge for shipment ${shipment.id}`,
-                userId: shipment.order.user_id,
-                shipmentId: shipment.id,
-                awb: shipment.awb,
-                status: 'COMPLETED',
-                currency: 'INR',
-              }
-            );
-            if (!txResult.success) {
-              fastify.log.error(`Failed to deduct wallet for RTO charge on shipment ${shipment.id}: ${txResult.error}`);
-              return;
+            // Count as processed if at least one charge was processed
+            if (successfulCharges.length > 0) {
+              processed++;
             }
-
-            // Optionally, mark shipment as RTO charge processed (e.g., update a flag)
-            // await fastify.prisma.shipment.update({ where: { id: shipment.id }, data: { rto_charge_processed: true } });
-
-            processed++;
           } catch (error) {
             fastify.log.error(
-              `Failed to process RTO charges for shipment ${shipment.id}: ${error}`
+              `Failed to process charges for shipment ${shipment.id}: ${error}`
             );
           }
         })
@@ -1356,7 +1327,7 @@ export class TrackingProcessor {
 
       await Promise.all(processingPromises);
 
-      fastify.log.info(`Successfully processed ${processed} RTO shipments (wallet deduction)`);
+      fastify.log.info(`Successfully processed ${processed} RTO shipments with charge deductions`);
       return processed;
     } catch (error) {
       fastify.log.error(`Error processing RTO shipments: ${error}`);

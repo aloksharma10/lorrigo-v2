@@ -8,6 +8,15 @@ generator client {
   previewFeatures = ["fullTextSearchPostgres"]
 }
 
+enum ChargeType {
+  FORWARD_CHARGE
+  COD_CHARGE
+  RTO_CHARGE
+  FORWARD_EXCESS_WEIGHT
+  RTO_EXCESS_WEIGHT
+  COD_REVERSAL
+}
+
 // Consolidated Enums
 enum Role {
   ADMIN
@@ -538,6 +547,13 @@ model Shipment {
   is_reshipped    Boolean    @default(false)
   sr_shipment_id  String?    @db.VarChar(50)
 
+  forward_charge_processed      Boolean @default(false)
+  cod_charge_processed          Boolean @default(false)
+  rto_charge_processed          Boolean @default(false)
+  forward_excess_weight_processed Boolean @default(false)
+  rto_excess_weight_processed   Boolean @default(false)
+  cod_reversal_processed        Boolean @default(false)
+
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
@@ -682,12 +698,15 @@ model ShipmentTransaction {
   payment_id String?
   payment    Payment? @relation(fields: [payment_id], references: [id])
 
+  charge_type ChargeType @default(FORWARD_CHARGE)
+
   @@index([wallet_id, user_id, status, created_at])
   @@index([merchant_transaction_id])
   @@index([awb])
   @@index([sr_shipment_id])
   @@index([code])
   @@index([created_at(sort: Desc)])
+  @@unique([shipment_id, charge_type], name: "unique_charge_type_per_shipment")
 }
 
 // InvoiceTransaction Model

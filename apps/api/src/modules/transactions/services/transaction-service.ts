@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { PrismaClient, TransactionStatus } from '@lorrigo/db';
+import { PrismaClient, TransactionStatus, ChargeType } from '@lorrigo/db';
 import { generateId, getFinancialYear } from '@lorrigo/utils';
 import { Queue } from 'bullmq';
 import { addJob, QueueNames } from '@/lib/queue';
@@ -33,6 +33,7 @@ interface ShipmentTransactionData extends BaseTransactionData {
   awb?: string;
   srShipmentId?: string;
   paymentId?: string;
+  charge_type?: ChargeType;
 }
 
 interface InvoiceTransactionData extends BaseTransactionData {
@@ -128,6 +129,7 @@ export class TransactionService {
           user_id: data.userId,
           shipment_id: data.shipmentId,
           payment_id: data.paymentId,
+          ...(data.charge_type ? { charge_type: data.charge_type } : {}),
         },
       });
 
