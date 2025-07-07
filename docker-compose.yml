@@ -97,28 +97,6 @@ services:
     networks:
       - lorrigo-network
 
-  # Worker Service for background jobs
-  workers:
-    image: ${DOCKER_HUB_USERNAME:-aloksharma10969}/lorrigo-workers:latest
-    container_name: lorrigo-workers
-    restart: always
-    depends_on:
-      - redis
-      - postgres
-    environment:
-      - DATABASE_URL=postgresql://lorrigo:lorrigo@postgres:5432/lorrigo?schema=public
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - NODE_ENV=development
-      - QUEUE_CONCURRENCY=3
-    volumes:
-      - ./apps/workers:/app/apps/workers
-      - ./packages:/app/packages
-      - /app/node_modules
-      - /app/apps/workers/node_modules
-    networks:
-      - lorrigo-network
-
 networks:
   lorrigo-network:
     driver: bridge

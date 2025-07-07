@@ -119,7 +119,7 @@ enum RemittanceCycle {
 enum BillingCycleType {
   AUTOMATIC
   MANUAL
-  CUSTOM
+  CUSTOM_CYCLE
 }
 
 enum BillingStatus {
@@ -195,7 +195,6 @@ model User {
   orders                  Order[]                     @relation("UserOrders")
   shipments               Shipment[]                  @relation("UserShipments")
   hubs                    Hub[]                       @relation("UserHubs")
-  disputes                Dispute[]                   @relation("UserDisputes")
   weight_disputes         WeightDispute[]             @relation("UserWeightDisputes")
   billing_cycles          BillingCycle[]              @relation("UserBillingCycles")
   api_requests            ApiRequest[]
@@ -468,7 +467,6 @@ model Order {
   payments       Payment[]
   invoice        Invoice?       @relation("OrderInvoice")
   shipment       Shipment?      @relation("OrderShipment")
-  dispute        Dispute?       @relation("OrderDispute")
   weight_dispute WeightDispute? @relation("OrderWeightDispute")
   remittance     Remittance?    @relation("OrderRemittances")
   billing        Billing[]
@@ -875,7 +873,6 @@ model Billing {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  dispute Dispute[]
 
   @@unique([code, order_id])
   @@index([billing_month, order_id])
@@ -884,43 +881,6 @@ model Billing {
   @@index([billing_cycle_id])
   @@index([has_weight_dispute])
   @@index([cycle_type])
-}
-
-// Dispute Model
-model Dispute {
-  id          String        @id @default(cuid())
-  code        String        @unique // Custom ID - Format: DS-YYMM-XXXXX
-  reason      String        @db.VarChar(255)
-  description String        @db.Text
-  status      DisputeStatus @default(OPENED)
-
-  image            String?
-  accepted         Boolean @default(false)
-  stage            String?
-  order_box_height Float?
-  order_box_width  Float?
-  order_box_length Float?
-  order_size_unit  String?
-
-  applicable_weight  Float? // 0.5 
-  courier_weight     Float? // 1.5 
-  excess_weight      Float? // 1 
-  dispute_weight     Float? // 1.5 
-  final_total_weight Float? // 1
-
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-
-  billing_id String
-  billing    Billing @relation(fields: [billing_id], references: [id])
-
-  user_id  String
-  user     User   @relation("UserDisputes", fields: [user_id], references: [id], onDelete: Cascade)
-  order_id String @unique
-  order    Order  @relation("OrderDispute", fields: [order_id], references: [id], onDelete: Cascade)
-
-  @@unique([code, order_id])
-  @@index([user_id, order_id, status])
 }
 
 // Remittance Model
@@ -1339,6 +1299,11 @@ model WeightDispute {
   order      Order  @relation("OrderWeightDispute", fields: [order_id], references: [id], onDelete: Cascade)
   user_id    String
   user       User   @relation("UserWeightDisputes", fields: [user_id], references: [id], onDelete: Cascade)
+
+  charged_order_box_height Float?
+  charged_order_box_width  Float?
+  charged_order_box_length Float?
+  charged_order_size_unit  String?
 
   // Weight Information
   original_weight Float
