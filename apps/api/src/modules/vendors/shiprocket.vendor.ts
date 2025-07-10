@@ -195,7 +195,7 @@ export class ShiprocketVendor extends BaseVendor {
         Authorization: token,
       };
 
-      const pincodeConfig = await getPincodeDetails(Number(hubData.pincode));
+      const pincodeConfig = await getPincodeDetails(hubData.pincode);
       if (!pincodeConfig) {
         return {
           success: false,
@@ -988,7 +988,7 @@ export class ShiprocketB2BVendor extends BaseVendor {
         Authorization: token,
       };
 
-      const pincodeConfig = await getPincodeDetails(Number(hubData.pincode));
+      const pincodeConfig = await getPincodeDetails(hubData.pincode);
       if (!pincodeConfig) {
         return {
           success: false,

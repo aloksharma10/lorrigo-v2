@@ -80,17 +80,17 @@ export class ShipmentService {
       return { error: 'Order not found' };
     }
 
-    if (order.status === ShipmentStatus.CANCELLED_ORDER) {
+    if (order.shipment?.status === ShipmentStatus.CANCELLED_ORDER) {
       return { rates: [], order, message: 'Order is cancelled' };
     }
 
-    if (order.status === ShipmentStatus.COURIER_ASSIGNED) {
+    if (order.shipment?.status === ShipmentStatus.COURIER_ASSIGNED) {
       return { rates: [], order, message: 'Order already has a courier assigned' };
     }
 
     // Build comprehensive cache key including all rate-affecting parameters
     const dimensionsStr = `${order?.package?.length || 0}x${order?.package?.breadth || 0}x${order?.package?.height || 0}x${order?.package?.dead_weight || 0}`;
-    const ratesKey = `rates-${userId}-${order?.is_reverse_order ? 'reverse' : 'forward'}-${order?.hub?.address?.pincode}-${order?.customer?.address?.pincode}-${order?.applicable_weight}-${dimensionsStr}-${order?.payment_mode}-${order.amount_to_collect}`;
+    const ratesKey = `rates-${userId}-${order?.is_reverse_order ? 'reverse' : 'forward'}-${order?.hub?.address?.pincode}-${order?.customer?.address?.pincode}-${order?.applicable_weight}-${dimensionsStr}-${order?.payment_method}-${order.amount_to_collect}`;
 
     // Try to get rates from cache first
     const cachedRates = await this.fastify.redis.get(ratesKey);
@@ -111,7 +111,7 @@ export class ShipmentService {
       boxWidth: order?.package?.breadth || 0,
       boxHeight: order?.package?.height || 0,
       sizeUnit: 'cm',
-      paymentType: order?.payment_mode === 'COD' ? 1 : 0,
+              paymentType: order?.payment_method === 'COD' ? 1 : 0,
       collectableAmount: order?.amount_to_collect || 0,
       pickupPincode: order?.hub?.address?.pincode || '',
       deliveryPincode: order?.customer?.address?.pincode || '',
@@ -294,7 +294,7 @@ export class ShipmentService {
 
     // Get rates from cache
     const dimensionsStr = `${order?.package?.length || 0}x${order?.package?.breadth || 0}x${order?.package?.height || 0}x${order?.package?.dead_weight || 0}`;
-    const ratesKey = `rates-${userId}-${order?.is_reverse_order ? 'reverse' : 'forward'}-${order?.hub?.address?.pincode}-${order?.customer?.address?.pincode}-${order?.applicable_weight}-${dimensionsStr}-${order?.payment_mode}-${order.amount_to_collect}`;
+    const ratesKey = `rates-${userId}-${order?.is_reverse_order ? 'reverse' : 'forward'}-${order?.hub?.address?.pincode}-${order?.customer?.address?.pincode}-${order?.applicable_weight}-${dimensionsStr}-${order?.payment_method}-${order.amount_to_collect}`;
     const cachedRatesString = await this.fastify.redis.get(ratesKey);
 
     if (!cachedRatesString) {
@@ -388,7 +388,7 @@ export class ShipmentService {
         .$transaction(
           async (prisma) => {
             // Step 2: Perform database operations in parallel to save time
-            const [shipment, orderUpdate] = await Promise.all([
+            const [shipment] = await Promise.all([
               // Create shipment record
               prisma.shipment.update({
                 where: { order_id: data.order_id },
@@ -429,14 +429,14 @@ export class ShipmentService {
               }),
 
               // Update order status
-              prisma.order.update({
-                where: { id: data.order_id },
-                data: {
-                  status: isSchedulePickup
-                    ? ShipmentStatus.PICKUP_SCHEDULED
-                    : ShipmentStatus.COURIER_ASSIGNED,
-                },
-              }),
+              // prisma.order.update({
+              //   where: { id: data.order_id },
+              //   data: {
+              //     status: isSchedulePickup
+              //       ? ShipmentStatus.PICKUP_SCHEDULED
+              //       : ShipmentStatus.COURIER_ASSIGNED,
+              //   },
+              // }),
 
               // Deduct amount from wallet
               // prisma.userWallet.update({
@@ -557,7 +557,7 @@ export class ShipmentService {
         order: {
           select: {
             order_number: true,
-            status: true,
+            // status: true,
             customer: {
               select: {
                 name: true,
@@ -570,7 +570,6 @@ export class ShipmentService {
         courier: {
           select: {
             name: true,
-            code: true,
           },
         },
       },
@@ -831,7 +830,7 @@ export class ShipmentService {
 
             const refundAmount =
               (shipment.fw_charge || 0) +
-              (shipment.order.payment_mode === 'COD' ? shipment.cod_charge || 0 : 0);
+              (shipment.order.payment_method === 'COD' ? shipment.cod_charge || 0 : 0);
             const refundDescription = `Full refund for cancelled shipment: ${shipment.awb || 'No AWB'}`;
 
             // else if (shipment.status === ShipmentStatus.IN_TRANSIT) {
@@ -881,7 +880,7 @@ export class ShipmentService {
             // Update order status
             await prisma.order.update({
               where: { id: shipment.order_id },
-              data: { status: shipmentStatus },
+              data: { shipment: { update: { status: shipmentStatus } } },
             });
 
             return {
@@ -1857,7 +1856,7 @@ export class ShipmentService {
         updated: false,
         status_code: shipment.status as ShipmentStatus,
         newStatus: shipment.status,
-        newBucket: shipment.bucket,
+        newBucket: shipment.bucket || undefined,
         events,
       };
     } catch (error) {

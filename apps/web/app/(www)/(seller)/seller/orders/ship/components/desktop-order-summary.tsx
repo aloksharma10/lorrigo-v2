@@ -102,7 +102,7 @@ export const DesktopOrderDetails = ({
             </div>
 
             {/* Amount to collect */}
-            {order.amount_to_collect > 0 && order.payment_mode === 'COD' && (
+            {order.amount_to_collect > 0 && order.payment_method === 'COD' && (
               <>
                 <div className="flex items-center justify-between">
                   <div className="text-muted-foreground flex items-center gap-2 text-sm">
@@ -120,8 +120,8 @@ export const DesktopOrderDetails = ({
             {/* Payment Mode */}
             <div className="flex items-center justify-between">
               <div className="text-muted-foreground text-sm">Payment Mode</div>
-              <Badge variant={order.payment_mode === 'COD' ? 'destructive' : 'default'}>
-                {order.payment_mode}
+                        <Badge variant={order.payment_method === 'COD' ? 'destructive' : 'default'}>
+            {order.payment_method}
               </Badge>
             </div>
 

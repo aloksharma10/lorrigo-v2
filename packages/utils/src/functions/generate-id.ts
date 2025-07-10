@@ -26,28 +26,29 @@ export function generateId({
   baseNumber = 1,
   suffixLength = 7,
 }: GenerateIdOptions): GeneratedIdResult {
-  // Get current financial year
   const today = new Date();
-  const financialYear = getFinancialYear(today);
 
-  // Determine if it's a new financial year
+  const istDate = getISTDate(today);
+
+  const financialYear = getFinancialYear(istDate);
+
   const isNewFY = financialYear !== lastUsedFinancialYear;
   const sequenceNumber = isNewFY ? baseNumber : lastSequenceNumber + 1;
 
-  // Generate entity initials
   const initials = entityName
     .split(' ')
     .map((word) => word[0]?.toUpperCase())
     .join('');
 
-  // Format sequence number with specified length
   const suffix = String(sequenceNumber).padStart(suffixLength, '0');
 
-  // Generate table-specific prefix if not provided
   const effectivePrefix = prefix || tableName.slice(0, 2).toUpperCase();
 
+  // Generate IST-based 3-letter timestamp
+  const timeCode = generate3LetterTimestamp(istDate);
+
   // Construct final ID
-  const id = `${effectivePrefix}${financialYear}${initials}${suffix}`;
+  const id = `${effectivePrefix}${financialYear}${initials}${suffix}${timeCode}`;
 
   return {
     id,
@@ -56,6 +57,22 @@ export function generateId({
     sequenceNumber,
   };
 }
+
+function getISTDate(date: Date): Date {
+  const IST_OFFSET = 5.5 * 60 * 60 * 1000; // in milliseconds
+  return new Date(date.getTime() + IST_OFFSET);
+}
+
+function generate3LetterTimestamp(date: Date): string {
+  const h = date.getHours();
+  const m = date.getMinutes();
+  const s = date.getSeconds();
+
+  const compact = `${h.toString(36)}${m.toString(36)}${s.toString(36)}`.toUpperCase();
+
+  return compact.padEnd(3, 'X').slice(0, 3);
+}
+
 
 export function getFinancialYearStartDate(financialYear: string): Date {
   const [startYear] = financialYear.split('-').map(Number);

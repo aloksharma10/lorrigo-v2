@@ -13,12 +13,14 @@ export default async function auth(fastify: FastifyInstance) {
       summary: 'Register a new user',
       body: {
         type: 'object',
-        required: ['email', 'password', 'name', 'business_name'],
+        required: ['email', 'password', 'name'],
         properties: {
           email: { type: 'string', format: 'email' },
           password: { type: 'string', minLength: 6 },
           name: { type: 'string', minLength: 2 },
           business_name: { type: 'string', minLength: 2 },
+          company: { type: 'string' },
+          gst_no: { type: 'string' },
           phone: { type: 'string', minLength: 10, maxLength: 10 },
           gstin: { type: 'string', nullable: true },
         },

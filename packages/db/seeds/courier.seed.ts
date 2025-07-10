@@ -29,27 +29,24 @@ async function main() {
   }
 
   // Simulate plan ID (you should fetch your actual plan ID)
-  const planId = 'cmcn8gpd00000h0q8ufzq90t2'; // Replace with your actual Plan ID
+  const planId = 'cmcvsabp40000ogub62ixbqzu'; // Replace with your actual Plan ID
 
   for (const courier of courierData) {
     const channelId = channelMap.get(getChannelNameById(courier.vendor_channel_id.$oid.trim()));
     if (!channelId) continue;
-
-    const code = `CR-${new Date().getFullYear().toString().slice(2)}${(new Date().getMonth() + 1)
-      .toString()
-      .padStart(2, '0')}-${String(Math.abs(courier.carrierID)).padStart(5, '0')}`;
+    console.log(courier.name, channelId, courier.isReversedCourier, courier.carrierID);
 
     const dbCourier = await prisma.courier.upsert({
       where: {
-        code_name_weight_slab: {
-          code,
+        name_channel_config_id_is_reversed_courier_courier_code: {
           name: courier.name,
-          weight_slab: courier.weightSlab,
+          channel_config_id: channelId,
+          is_reversed_courier: courier.isReversedCourier,
+          courier_code: courier.carrierID.toString(),
         },
       },
       update: {},
       create: {
-        code,
         name: courier.name,
         courier_code: courier.carrierID.toString(),
         cod_charge_hard: courier.codCharge?.hard ?? 40,
@@ -64,6 +61,8 @@ async function main() {
         channel_config_id: channelId,
       },
     });
+
+    console.log('dbCourier', dbCourier.name, dbCourier.id, dbCourier.channel_config_id);
 
     // Create PlanCourierPricing
     const planCourierPricing = await prisma.planCourierPricing.upsert({
@@ -133,12 +132,12 @@ async function main() {
 // Maps channel OIDs to names in env file
 function getChannelNameById(oid: string): string | undefined {
   const mapping: Record<string, string> = {
-    '6627acadabe95523ee592372': 'SHIPROCKET',
-    '6628abf579087bcaf24ef3da': 'SMARTSHIP',
+    // '6627acadabe95523ee592372': 'SHIPROCKET',
+    // '6628abf579087bcaf24ef3da': 'SMARTSHIP',
     '66595e59ea09cc12380f0b85': 'DELHIVERY',
     '66695e2bc475271f3f11df4b': 'DELHIVERY_0.5',
     '66695e40c475271f3f11df4c': 'DELHIVERY_10',
-    '66a34cbc3d165482f1409477': 'MARUTI',
+    // '66a34cbc3d165482f1409477': 'MARUTI',
   };
   return mapping[oid];
 }

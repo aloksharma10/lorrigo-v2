@@ -19,7 +19,7 @@ async function seedPincodes() {
   const existingPincodes = await prisma.pincode.findMany({
     where: {
       pincode: {
-        in: uniqueData.map((item) => item.Pincode),
+        in: uniqueData.map((item) => item.Pincode.toString()),
       },
     },
     select: {
@@ -30,13 +30,13 @@ async function seedPincodes() {
   const existingPincodeSet = new Set(existingPincodes.map((p) => p.pincode));
 
   // Step 3: Filter out pincodes that already exist
-  const newEntries = uniqueData.filter((item) => !existingPincodeSet.has(item.Pincode));
+  const newEntries = uniqueData.filter((item) => !existingPincodeSet.has(item.Pincode.toString()));
 
   // Step 4: Bulk insert new entries using createMany
   if (newEntries.length > 0) {
     await prisma.pincode.createMany({
       data: newEntries.map((item) => ({
-        pincode: item.Pincode,
+        pincode: item.Pincode.toString(),
         city: item.City,
         state: item.StateName,
         district: item.District,

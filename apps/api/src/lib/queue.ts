@@ -14,6 +14,9 @@ export enum QueueNames {
   NDR_PROCESSING = 'ndr-processing',
   CSV_PROCESSING = 'csv-processing',
   BILLING_CSV_PROCESSING = 'billing-csv-processing',
+  DISPUTE_NOTIFICATIONS = 'dispute-notifications',
+  DISPUTE_RESOLUTION = 'dispute-resolution',
+  BILLING_AUTOMATION = 'billing-automation',
 }
 
 // Define job types
@@ -116,6 +119,33 @@ export const queues = {
       // Billing CSV processing needs high priority and retries
       attempts: 5,
       priority: 1,
+    },
+  }),
+  [QueueNames.DISPUTE_NOTIFICATIONS]: new Queue(QueueNames.DISPUTE_NOTIFICATIONS, {
+    ...connectionOptions,
+    defaultJobOptions: {
+      ...queueConfig.defaultJobOptions,
+      // Dispute notifications should be processed with high priority
+      priority: 1,
+      attempts: 3,
+    },
+  }),
+  [QueueNames.DISPUTE_RESOLUTION]: new Queue(QueueNames.DISPUTE_RESOLUTION, {
+    ...connectionOptions,
+    defaultJobOptions: {
+      ...queueConfig.defaultJobOptions,
+      // Dispute resolution needs careful handling
+      priority: 2,
+      attempts: 3,
+    },
+  }),
+  [QueueNames.BILLING_AUTOMATION]: new Queue(QueueNames.BILLING_AUTOMATION, {
+    ...connectionOptions,
+    defaultJobOptions: {
+      ...queueConfig.defaultJobOptions,
+      // Billing automation is critical
+      priority: 1,
+      attempts: 5,
     },
   }),
 };

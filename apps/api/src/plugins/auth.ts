@@ -117,7 +117,6 @@ const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (fastify, _optio
           email: true,
           role: true,
           is_active: true,
-          permissions: true,
           plan: {
             include: {
               plan_courier_pricings: {
@@ -142,7 +141,6 @@ const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (fastify, _optio
         name: user.name,
         email: user.email,
         role: user.role,
-        permissions: user.permissions as object,
         plan: user.plan,
       };
     } catch (err) {

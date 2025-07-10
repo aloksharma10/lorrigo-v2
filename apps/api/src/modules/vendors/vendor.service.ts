@@ -238,7 +238,6 @@ export class VendorService {
                     select: {
                       id: true,
                       name: true,
-                      code: true,
                       courier_code: true,
                       is_active: true,
                       weight_unit: true,
@@ -289,7 +288,7 @@ export class VendorService {
           couriersByVendor[vendorName] = [];
         }
         couriersByVendor[vendorName].push({
-          courierId: courier.courier_code || courier.code,
+          courierId: courier.courier_code || '',
           courier,
         });
       });
@@ -345,7 +344,7 @@ export class VendorService {
                     (c) => c.courierId === sc.id || c.courier.code === sc.code
                   );
                   // Find pricing for this courier
-                  const pricing = user.plan?.plan_courier_pricings.find(
+                  const pricing = user?.plan?.plan_courier_pricings?.find(
                     (p) => p.courier_id === courierInfo?.courier.id
                   );
 
@@ -487,8 +486,13 @@ export class VendorService {
       const userDetails = await this.fastify.prisma.user.findUnique({
         where: { id: order.user_id },
         select: {
-          business_name: true,
-          gstin: true,
+          profile: {
+            select: {
+              // business_name: true,
+              gst_no: true,
+              company: true,
+            },
+          },
         },
       });
 
@@ -497,7 +501,7 @@ export class VendorService {
         order,
         hub,
         orderItems,
-        paymentMethod: order.payment_mode,
+        paymentMethod: order.payment_method,
         dimensions: {
           length: packageDetails.length,
           width: packageDetails.breadth,
@@ -505,7 +509,8 @@ export class VendorService {
           weight: packageDetails.dead_weight,
         },
         courier,
-        seller_gst: userDetails?.gstin || '',
+        seller_gst: userDetails?.profile?.gst_no || '',
+        seller_company: userDetails?.profile?.company || '',
         isSchedulePickup,
       };
 
@@ -836,13 +841,13 @@ export class VendorService {
           });
 
           // Also update order status
-          await this.fastify.prisma.order.update({
-            where: { id: shipment.order.id },
-            data: {
-              status: newStatus,
-              updated_at: new Date(),
-            },
-          });
+          // await this.fastify.prisma.order.update({
+          //   where: { id: shipment.order.id },
+          //   data: {
+          //     status: newStatus,
+          //     updated_at: new Date(),
+          //   },
+          // });
 
           // Create tracking event
           if (trackingResult.trackingEvents && trackingResult.trackingEvents.length > 0) {

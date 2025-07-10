@@ -444,6 +444,7 @@ export function calculatePrice(
 
     // Calculate base total (before RTO)
     const baseTotal = basePrice + weightCharges + codCharges;
+    const fw_charge = courierPricing.is_fw_applicable ? basePrice + weightCharges : 0;
 
     // Calculate RTO charges
     const rtoCharges = calculateRTOCharges(
@@ -467,7 +468,7 @@ export function calculatePrice(
       weight_charges: weightCharges,
       cod_charges: codCharges,
       rto_charges: rtoCharges,
-      fw_charges: courierPricing.is_fw_applicable ? baseTotal : 0,
+      fw_charges: fw_charge,
       total_price: totalPrice,
       final_weight: chargeableWeight,
       volumetric_weight: volumetricWeight,

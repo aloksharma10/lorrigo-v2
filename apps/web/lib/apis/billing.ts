@@ -214,11 +214,15 @@ export const uploadBillingCSVAPI = async (file: File): Promise<BillingUploadResu
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await api.post<{ success: boolean; data: BillingUploadResult }>('/billing/upload-csv', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
+  const response = await api.post<{ success: boolean; data: BillingUploadResult }>(
+    '/billing/upload-csv',
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }
+  );
 
   return response.data;
 };
@@ -239,12 +243,13 @@ export const processManualBillingAPI = async (
 // Create billing cycle (Admin only)
 export const createBillingCycleAPI = async (
   userId: string,
+  cycleType: string,
   cycleDays: number = 30
 ): Promise<{ billingCycleId: string; message: string }> => {
-  const response = await api.post<{ success: boolean; data: { billingCycleId: string; message: string } }>(
-    `/billing/cycle/${userId}`,
-    { cycleDays }
-  );
+  const response = await api.post<{
+    success: boolean;
+    data: { billingCycleId: string; message: string };
+  }>(`/billing/cycle/${userId}`, { cycleDays, cycleType });
 
   return response.data;
 };
@@ -261,7 +266,9 @@ export const getBillingSummaryByMonthAPI = async (
     limit: pageSize.toString(),
   });
 
-  const response = await api.get<{ success: boolean; data: BillingSummary }>(`/billing/summary/${month}?${queryParams}`);
+  const response = await api.get<{ success: boolean; data: BillingSummary }>(
+    `/billing/summary/${month}?${queryParams}`
+  );
   return response.data;
 };
 
@@ -286,7 +293,9 @@ export const getUserBillingByMonthAPI = async (
     queryParams.append('sort', JSON.stringify(sort));
   }
 
-  const response = await api.get<{ success: boolean; data: UserBillingData }>(`/billing/user/${userId}/${month}?${queryParams}`);
+  const response = await api.get<{ success: boolean; data: UserBillingData }>(
+    `/billing/user/${userId}/${month}?${queryParams}`
+  );
   return response.data;
 };
 
@@ -310,7 +319,9 @@ export const getCurrentUserBillingAPI = async (
     queryParams.append('sort', JSON.stringify(sort));
   }
 
-  const response = await api.get<{ success: boolean; data: UserBillingData }>(`/billing/my/${month}?${queryParams}`);
+  const response = await api.get<{ success: boolean; data: UserBillingData }>(
+    `/billing/my/${month}?${queryParams}`
+  );
   return response.data;
 };
 
@@ -322,12 +333,16 @@ export const getAvailableBillingMonthsAPI = async (): Promise<string[]> => {
 
 // Get bulk operation status
 export const getBulkOperationStatusAPI = async (operationId: string): Promise<BulkOperation> => {
-  const response = await api.get<{ success: boolean; data: BulkOperation }>(`/billing/operation/${operationId}`);
+  const response = await api.get<{ success: boolean; data: BulkOperation }>(
+    `/billing/operation/${operationId}`
+  );
   return response.data;
 };
 
 // Weight dispute APIs
-export const getWeightDisputesAPI = async (params: BillingParams = {}): Promise<{
+export const getWeightDisputesAPI = async (
+  params: BillingParams = {}
+): Promise<{
   disputes: WeightDispute[];
   pagination: { page: number; pageSize: number; total: number; pageCount: number };
 }> => {
@@ -346,7 +361,9 @@ export const getWeightDisputesAPI = async (params: BillingParams = {}): Promise<
     queryParams.append('sort', JSON.stringify(sort));
   }
 
-  const response = await api.get<{ success: boolean; data: any }>(`/weight-disputes?${queryParams}`);
+  const response = await api.get<{ success: boolean; data: any }>(
+    `/weight-disputes?${queryParams}`
+  );
   return response.data;
 };
 
@@ -359,14 +376,19 @@ export const resolveWeightDisputeAPI = async (
     revised_charges?: number;
   }
 ): Promise<WeightDispute> => {
-  const response = await api.put<{ success: boolean; data: WeightDispute }>(`/weight-disputes/${disputeId}/resolve`, resolution);
+  const response = await api.put<{ success: boolean; data: WeightDispute }>(
+    `/weight-disputes/${disputeId}/resolve`,
+    resolution
+  );
   return response.data;
 };
 
 // Billing cycle APIs
 export const getBillingCyclesAPI = async (userId?: string): Promise<BillingCycle[]> => {
   const queryParams = userId ? `?userId=${userId}` : '';
-  const response = await api.get<{ success: boolean; data: BillingCycle[] }>(`/billing-cycles${queryParams}`);
+  const response = await api.get<{ success: boolean; data: BillingCycle[] }>(
+    `/billing-cycles${queryParams}`
+  );
   return response.data;
 };
 
@@ -374,7 +396,10 @@ export const updateBillingCycleAPI = async (
   cycleId: string,
   updates: Partial<BillingCycle>
 ): Promise<BillingCycle> => {
-  const response = await api.put<{ success: boolean; data: BillingCycle }>(`/billing-cycles/${cycleId}`, updates);
+  const response = await api.put<{ success: boolean; data: BillingCycle }>(
+    `/billing-cycles/${cycleId}`,
+    updates
+  );
   return response.data;
 };
 
@@ -398,7 +423,7 @@ export const useBillingOperations = () => {
 
   // Process manual billing mutation
   const processManualBilling = useMutation({
-    mutationFn: ({ userId, params }: { userId: string; params: ManualBillingParams }) => 
+    mutationFn: ({ userId, params }: { userId: string; params: ManualBillingParams }) =>
       processManualBillingAPI(userId, params),
     onSuccess: (data) => {
       toast.success(`Manual billing processed: ${data.processedCount} records`);
@@ -411,14 +436,34 @@ export const useBillingOperations = () => {
 
   // Create billing cycle mutation
   const createBillingCycle = useMutation({
-    mutationFn: ({ userId, cycleDays }: { userId: string; cycleDays: number }) =>
-      createBillingCycleAPI(userId, cycleDays),
+    mutationFn: ({
+      userId,
+      cycleType,
+      cycleDays,
+    }: {
+      userId: string;
+      cycleType: string;
+      cycleDays: number;
+    }) => createBillingCycleAPI(userId, cycleType, cycleDays),
     onSuccess: (data) => {
       toast.success(data.message);
       queryClient.invalidateQueries({ queryKey: ['billing-cycles'] });
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to create billing cycle');
+    },
+  });
+
+  // Update billing cycle mutation
+  const updateBillingCycle = useMutation({
+    mutationFn: ({ cycleId, updates }: { cycleId: string; updates: Partial<BillingCycle> }) =>
+      updateBillingCycleAPI(cycleId, updates),
+    onSuccess: (data) => {
+      toast.success('Billing cycle updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['billing-cycles'] });
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to update billing cycle');
     },
   });
 
@@ -447,11 +492,7 @@ export const useBillingOperations = () => {
     });
 
   // Get user billing by month query
-  const getUserBillingByMonthQuery = (
-    userId: string,
-    month: string,
-    params: BillingParams = {}
-  ) =>
+  const getUserBillingByMonthQuery = (userId: string, month: string, params: BillingParams = {}) =>
     useQuery({
       queryKey: ['billing', 'user', userId, month, params],
       queryFn: () => getUserBillingByMonthAPI(userId, month, params),
@@ -515,8 +556,9 @@ export const useBillingOperations = () => {
     uploadBillingCSV,
     processManualBilling,
     createBillingCycle,
+    updateBillingCycle,
     resolveWeightDispute,
-    
+
     // Queries
     getBillingSummaryByMonthQuery,
     getUserBillingByMonthQuery,

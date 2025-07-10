@@ -10,6 +10,7 @@ import {
   getFinancialYearStartDate,
   PickupAddress,
 } from '@lorrigo/utils';
+import { AddressType } from '@lorrigo/db';
 
 /**
  * Service for hub-related operations
@@ -35,7 +36,7 @@ export class PickupService {
         rtoState,
         rtoPincode,
       } = pickupData;
-      const pincode = Number(pickupData.pincode);
+      const pincode = pickupData.pincode;
       const phone = pickupData.phone;
 
       // Parallel: Check hub & get pincode
@@ -139,6 +140,7 @@ export class PickupService {
                 city,
                 state,
                 pincode: pincode.toString(),
+                type: AddressType.HUB_ADDRESS,
               },
             });
 
@@ -150,6 +152,7 @@ export class PickupService {
                   city: rtoCity,
                   state: rtoState,
                   pincode: rtoPincode,
+                  type: AddressType.HUB_RTO,
                 },
               });
             }
@@ -157,12 +160,12 @@ export class PickupService {
             return await tx.hub.create({
               data: {
                 code: lorrigoPickupId,
-                hub_config: {
-                  create: {
-                    smart_ship_hub_code_surface: smartShipResult.data?.surfaceHubId?.toString(),
-                    smart_ship_hub_code_express: smartShipResult.data?.expressHubId?.toString(),
-                    smart_ship_hub_code_heavy: smartShipResult.data?.heavyHubId?.toString(),
-                  },
+                smart_ship_codes:{
+                  create:{
+                    surface: smartShipResult.data?.surfaceHubId?.toString(),
+                    express: smartShipResult.data?.expressHubId?.toString(),
+                    heavy: smartShipResult.data?.heavyHubId?.toString(),
+                  }
                 },
                 user: {
                   connect: {

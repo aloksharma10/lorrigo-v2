@@ -8,9 +8,9 @@ export interface PincodeDetails {
   pincode: string;
 }
 
-export async function getPincodeDetails(pincode: number): Promise<PincodeDetails | null> {
+export async function getPincodeDetails(pincode: string): Promise<PincodeDetails | null> {
   // Validate pincode
-  if (!pincode || isNaN(pincode) || pincode < 100000 || pincode > 999999) {
+  if (!pincode || pincode.length !== 6) {
     return null;
   }
 
@@ -21,7 +21,7 @@ export async function getPincodeDetails(pincode: number): Promise<PincodeDetails
 
     // If not in cache, fetch from database
     const details = await prisma.pincode.findUnique({
-      where: { pincode: pincode },
+      where: { pincode: pincode.toString() },
     });
 
     if (details) {

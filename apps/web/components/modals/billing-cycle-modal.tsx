@@ -1,7 +1,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { RotateCcw, Calendar, Settings, AlertTriangle, Users, Clock, CheckCircle } from 'lucide-react';
+import {
+  RotateCcw,
+  Calendar,
+  Settings,
+  AlertTriangle,
+  Users,
+  Clock,
+  CheckCircle,
+} from 'lucide-react';
 import {
   Modal,
   Button,
@@ -35,20 +43,27 @@ interface BillingCycleModalProps {
   onCycleCreated?: () => void;
 }
 
-export function BillingCycleModal({ 
-  isOpen, 
-  onClose, 
-  userId: preselectedUserId, 
+export function BillingCycleModal({
+  isOpen,
+  onClose,
+  // userId: preselectedUserId,
+  // userName: preselectedUserName,
+
+  userId: preselectedUserId,
   userName: preselectedUserName,
-  onCycleCreated 
+
+  onCycleCreated,
 }: BillingCycleModalProps) {
-  const [selectedUserId, setSelectedUserId] = useState(preselectedUserId || '');
-  const [selectedUserName, setSelectedUserName] = useState(preselectedUserName || '');
+  const [selectedUserId, setSelectedUserId] = useState(
+    preselectedUserId || 'cmcn8zp3s0000h05kwr5fxcj7'
+  );
+  const [selectedUserName, setSelectedUserName] = useState(preselectedUserName || 'Alok');
+  const [cycleType, setCycleType] = useState<string>('MONTHLY');
   const [cycleDays, setCycleDays] = useState(30);
   const [confirmCreation, setConfirmCreation] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { createBillingCycle, getBillingCyclesQuery } = useBillingOperations();
+  const { createBillingCycle, getBillingCyclesQuery, updateBillingCycle } = useBillingOperations();
 
   // Fetch existing cycles for the user
   const { data: existingCycles, isLoading: cyclesLoading } = getBillingCyclesQuery(selectedUserId);
@@ -58,10 +73,19 @@ export function BillingCycleModal({
     if (isOpen) {
       setSelectedUserId(preselectedUserId || '');
       setSelectedUserName(preselectedUserName || '');
+      setCycleType('MONTHLY');
       setCycleDays(30);
       setConfirmCreation(false);
     }
   }, [isOpen, preselectedUserId, preselectedUserName]);
+
+  // adjust days when type changes
+  useEffect(() => {
+    const map: Record<string, number> = { DAILY: 1, WEEKLY: 7, FORTNIGHTLY: 15, MONTHLY: 30 };
+    if (cycleType !== 'CUSTOM') {
+      setCycleDays(map[cycleType] || 30);
+    }
+  }, [cycleType]);
 
   const validateForm = (): string | null => {
     if (!selectedUserId) {
@@ -91,6 +115,7 @@ export function BillingCycleModal({
     try {
       const result = await createBillingCycle.mutateAsync({
         userId: selectedUserId,
+        cycleType,
         cycleDays,
       });
 
@@ -134,11 +159,11 @@ export function BillingCycleModal({
     }
   };
 
-  const activeCycles = existingCycles?.filter(cycle => cycle.is_active) || [];
+  const activeCycles = existingCycles?.filter((cycle) => cycle.is_active) || [];
   const hasActiveCycle = activeCycles.length > 0;
 
   return (
-    <Modal showModal={isOpen} setShowModal={onClose} className="max-w-4xl">
+    <Modal className="max-w-4xl">
       <div className="flex h-[80vh] flex-col">
         {/* Header */}
         <div className="border-b p-6">
@@ -146,7 +171,7 @@ export function BillingCycleModal({
             <RotateCcw className="h-6 w-6 text-blue-600" />
             <div>
               <h2 className="text-xl font-semibold">Billing Cycle Management</h2>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 Create and manage automated billing cycles for users
               </p>
             </div>
@@ -160,7 +185,7 @@ export function BillingCycleModal({
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-base">
                     <Calendar className="h-4 w-4" />
                     Create New Billing Cycle
                   </CardTitle>
@@ -168,10 +193,10 @@ export function BillingCycleModal({
                 <CardContent className="space-y-4">
                   {/* User Selection */}
                   {preselectedUserId ? (
-                    <div className="flex items-center justify-between p-3 border rounded bg-blue-50">
+                    <div className="flex items-center justify-between rounded border bg-blue-50 p-3">
                       <div>
                         <p className="font-medium">{selectedUserName}</p>
-                        <p className="text-sm text-muted-foreground">User ID: {selectedUserId}</p>
+                        <p className="text-muted-foreground text-sm">User ID: {selectedUserId}</p>
                       </div>
                       <Badge variant="secondary">Pre-selected</Badge>
                     </div>
@@ -193,22 +218,34 @@ export function BillingCycleModal({
                     </div>
                   )}
 
-                  <div>
-                    <Label htmlFor="cycle-days">Billing Cycle (Days)</Label>
-                    <Select value={cycleDays.toString()} onValueChange={(value) => setCycleDays(parseInt(value))}>
+                  <div className="grid gap-2">
+                    <Label>Cycle Type</Label>
+                    <Select value={cycleType} onValueChange={setCycleType}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select cycle duration" />
+                        <SelectValue placeholder="Select cycle type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="7">Weekly (7 days)</SelectItem>
-                        <SelectItem value="15">Bi-weekly (15 days)</SelectItem>
-                        <SelectItem value="30">Monthly (30 days)</SelectItem>
-                        <SelectItem value="60">Bi-monthly (60 days)</SelectItem>
-                        <SelectItem value="90">Quarterly (90 days)</SelectItem>
+                        <SelectItem value="DAILY">Daily</SelectItem>
+                        <SelectItem value="WEEKLY">Weekly</SelectItem>
+                        <SelectItem value="FORTNIGHTLY">Fortnightly</SelectItem>
+                        <SelectItem value="MONTHLY">Monthly</SelectItem>
+                        <SelectItem value="CUSTOM">Custom</SelectItem>
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Billing will be processed automatically every {cycleDays} days
+                    {cycleType === 'CUSTOM' && (
+                      <div className="mt-2">
+                        <Label htmlFor="cycle-days">Custom Cycle Days</Label>
+                        <Input
+                          type="number"
+                          id="cycle-days"
+                          value={cycleDays}
+                          onChange={(e) => setCycleDays(parseInt(e.target.value))}
+                          min={1}
+                        />
+                      </div>
+                    )}
+                    <p className="text-muted-foreground mt-1 text-xs">
+                      Cycle will run every {cycleDays} day(s)
                     </p>
                   </div>
 
@@ -216,7 +253,7 @@ export function BillingCycleModal({
                     <Checkbox
                       id="confirm-creation"
                       checked={confirmCreation}
-                      onCheckedChange={setConfirmCreation}
+                      onCheckedChange={(val) => setConfirmCreation(!!val)}
                     />
                     <div className="grid gap-1.5 leading-none">
                       <Label
@@ -225,8 +262,9 @@ export function BillingCycleModal({
                       >
                         Create Automatic Billing Cycle
                       </Label>
-                      <p className="text-xs text-muted-foreground">
-                        This will create an automated billing cycle that processes billing every {cycleDays} days
+                      <p className="text-muted-foreground text-xs">
+                        This will create an automated billing cycle that processes billing every{' '}
+                        {cycleDays} days
                       </p>
                     </div>
                   </div>
@@ -235,7 +273,7 @@ export function BillingCycleModal({
                     <Alert>
                       <AlertTriangle className="h-4 w-4" />
                       <AlertDescription>
-                        This user already has {activeCycles.length} active billing cycle(s). 
+                        This user already has {activeCycles.length} active billing cycle(s).
                         Creating a new cycle will run alongside existing ones.
                       </AlertDescription>
                     </Alert>
@@ -268,7 +306,7 @@ export function BillingCycleModal({
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-base">
                     <RotateCcw className="h-4 w-4" />
                     Existing Billing Cycles
                     {selectedUserId && (
@@ -280,93 +318,107 @@ export function BillingCycleModal({
                 </CardHeader>
                 <CardContent>
                   {cyclesLoading ? (
-                    <div className="text-center py-8">
-                      <RotateCcw className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground mt-2">Loading cycles...</p>
+                    <div className="py-8 text-center">
+                      <RotateCcw className="text-muted-foreground mx-auto h-8 w-8 animate-spin" />
+                      <p className="text-muted-foreground mt-2 text-sm">Loading cycles...</p>
                     </div>
                   ) : !selectedUserId ? (
-                    <div className="text-center py-8">
-                      <Users className="h-8 w-8 mx-auto text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground mt-2">
+                    <div className="py-8 text-center">
+                      <Users className="text-muted-foreground mx-auto h-8 w-8" />
+                      <p className="text-muted-foreground mt-2 text-sm">
                         Select a user to view their billing cycles
                       </p>
                     </div>
                   ) : existingCycles && existingCycles.length > 0 ? (
                     <div className="space-y-3">
                       {existingCycles.map((cycle) => (
-                        <div key={cycle.id} className="p-3 border rounded-lg space-y-2">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <p className="font-medium text-sm">{cycle.code}</p>
-                                <Badge className={`${getStatusColor(cycle.status)} flex items-center gap-1`}>
-                                  {getStatusIcon(cycle.status)}
-                                  {cycle.status}
-                                </Badge>
+                        <Card key={cycle.id} className="group relative border">
+                          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                              {getStatusIcon(cycle.status)}
+                              Cycle {cycle.code.slice(-6)}
+                            </CardTitle>
+                            <Badge className={`border ${getStatusColor(cycle.status)}`}>
+                              {cycle.status}
+                            </Badge>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-2 gap-4 text-xs">
+                              <div>
+                                <span className="text-muted-foreground">Created:</span>
+                                <p className="font-medium">
+                                  {new Date(cycle.created_at).toLocaleDateString()}
+                                </p>
                               </div>
-                              <p className="text-xs text-muted-foreground">
-                                {cycle.cycle_type} • Every {cycle.cycle_days} days
-                              </p>
+                              <div>
+                                <span className="text-muted-foreground">Next Cycle:</span>
+                                <p className="font-medium">
+                                  {cycle.next_cycle_date
+                                    ? new Date(cycle.next_cycle_date).toLocaleDateString()
+                                    : 'Not scheduled'}
+                                </p>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Total Orders:</span>
+                                <p className="font-medium">{cycle.total_orders}</p>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Total Amount:</span>
+                                <p className="font-medium">
+                                  {currencyFormatter(cycle.total_amount)}
+                                </p>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Processed:</span>
+                                <p className="font-medium text-green-600">
+                                  {cycle.processed_orders}
+                                </p>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Failed:</span>
+                                <p className="font-medium text-red-600">{cycle.failed_orders}</p>
+                              </div>
                             </div>
-                            {cycle.is_active && (
-                              <Badge variant="outline" className="text-green-600 border-green-200">
-                                Active
-                              </Badge>
-                            )}
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-4 text-xs">
-                            <div>
-                              <span className="text-muted-foreground">Created:</span>
-                              <p className="font-medium">
-                                {new Date(cycle.created_at).toLocaleDateString()}
-                              </p>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">Next Cycle:</span>
-                              <p className="font-medium">
-                                {cycle.next_cycle_date 
-                                  ? new Date(cycle.next_cycle_date).toLocaleDateString()
-                                  : 'Not scheduled'
+                          </CardContent>
+                          <div className="absolute right-2 top-2 hidden gap-2 group-hover:flex">
+                            <Button
+                              size="sm"
+                              variant={cycle.is_active ? 'secondary' : 'default'}
+                              onClick={async () => {
+                                await updateBillingCycle.mutateAsync({
+                                  cycleId: cycle.id,
+                                  updates: { is_active: !cycle.is_active },
+                                });
+                              }}
+                            >
+                              {cycle.is_active ? 'Deactivate' : 'Activate'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={async () => {
+                                const nextDate = prompt(
+                                  'Enter next cycle date (YYYY-MM-DD)',
+                                  cycle.next_cycle_date?.slice(0, 10) || ''
+                                );
+                                if (nextDate) {
+                                  await updateBillingCycle.mutateAsync({
+                                    cycleId: cycle.id,
+                                    updates: { next_cycle_date: nextDate },
+                                  });
                                 }
-                              </p>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">Total Orders:</span>
-                              <p className="font-medium">{cycle.total_orders}</p>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">Total Amount:</span>
-                              <p className="font-medium">{currencyFormatter(cycle.total_amount)}</p>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">Processed:</span>
-                              <p className="font-medium text-green-600">{cycle.processed_orders}</p>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">Failed:</span>
-                              <p className="font-medium text-red-600">{cycle.failed_orders}</p>
-                            </div>
+                              }}
+                            >
+                              Set Next Date
+                            </Button>
                           </div>
-
-                          <Separator />
-
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div>
-                              <span className="text-muted-foreground">Period:</span>
-                              <p className="font-medium">
-                                {new Date(cycle.cycle_start_date).toLocaleDateString()} - {' '}
-                                {new Date(cycle.cycle_end_date).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                        </Card>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8">
-                      <Calendar className="h-8 w-8 mx-auto text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground mt-2">
+                    <div className="py-8 text-center">
+                      <Calendar className="text-muted-foreground mx-auto h-8 w-8" />
+                      <p className="text-muted-foreground mt-2 text-sm">
                         No billing cycles found for this user
                       </p>
                     </div>
@@ -388,4 +440,4 @@ export function BillingCycleModal({
       </div>
     </Modal>
   );
-} 
+}

@@ -7,9 +7,12 @@ interface RegisterData {
   email: string;
   password: string;
   name: string;
-  business_name: string;
   phone: string;
-  gstin?: string;
+  // Optional business details for UserProfile
+  business_name?: string;
+  business_type: string;
+  company?: string;
+  gst_no?: string;
 }
 
 interface AuthResponse {
@@ -57,58 +60,69 @@ export class AuthService {
       lastSequenceNumber: lastUserSequenceNumber,
     }).id;
 
-    // Create user in database
-    const user = await this.prisma.user.create({
-      data: {
-        code,
-        email: data.email,
-        password: data.password,
-        name: data.name,
-        business_name: data.business_name,
-        phone: data.phone,
-        gstin: data.gstin,
-        role: 'SELLER', // Default role for new registrations
-      },
-    });
+     const result = await this.prisma.$transaction(async (tx) => {
+       const user = await tx.user.create({
+         data: {
+           code,
+           email: data.email,
+           password: data.password,
+           name: data.name,
+           phone: data.phone,
+           role: 'SELLER', // Default role for new registrations
+         },
+       });
 
-    const lastWalletSequenceNumber = await this.prisma.userWallet.count({
-      where: {
-        created_at: {
-          gte: new Date(new Date().getFullYear(), 0, 1),
-          lte: new Date(new Date().getFullYear(), 11, 31),
-        },
-      },
-    });
+       const lastWalletSequenceNumber = await tx.userWallet.count({
+         where: {
+           created_at: {
+             gte: new Date(new Date().getFullYear(), 0, 1),
+             lte: new Date(new Date().getFullYear(), 11, 31),
+           },
+         },
+       });
 
-    // Create wallet for user
-    await this.prisma.userWallet.create({
-      data: {
-        code: generateId({
-          tableName: 'wallet',
-          entityName: user.name,
-          lastUsedFinancialYear: getFinancialYear(new Date()),
-          lastSequenceNumber: lastWalletSequenceNumber,
-        }).id,
-        balance: 0,
-        user_id: user.id,
-      },
-    });
+       await tx.userWallet.create({
+         data: {
+           code: generateId({
+             tableName: 'wallet',
+             entityName: user.name,
+             lastUsedFinancialYear: getFinancialYear(new Date()),
+             lastSequenceNumber: lastWalletSequenceNumber,
+           }).id,
+           balance: 0,
+           hold_amount: 0,
+           usable_amount: 0,
+           user_id: user.id,
+         },
+       });
 
-    // Generate JWT token
-    // const token = this.fastify.jwt.sign({
-    //   id: user.id,
-    //   email: user.email,
-    //   role: user.role,
-    // });
+       // Create user profile if business details provided
+       if (data.business_name || data.company || data.gst_no) {
+         await tx.userProfile.create({
+           data: {
+             user_id: user.id,
+             company: data.company || data.business_name,
+             gst_no: data.gst_no,
+             notification_settings: { 
+              whatsapp: true,
+              email: true,
+              sms: true,
+              push: true,
+             }
+           },
+         });
+       }
+
+       return user;
+     });
 
     return {
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
+        id: result.id,
+        email: result.email,
+        name: result.name,
+        role: result.role,
       },
-      // token,
     };
   }
 
@@ -138,15 +152,6 @@ export class AuthService {
     if (!isPasswordValid) {
       return { error: 'Invalid email or password' };
     }
-
-    const lastSequenceNumber = await this.prisma.apiRequest.count({
-      where: {
-        timestamp: {
-          gte: new Date(new Date().getFullYear(), 0, 1),
-          lte: new Date(new Date().getFullYear(), 11, 31),
-        },
-      },
-    });
 
     // Create API request log
     await this.prisma.apiRequest.create({
@@ -184,9 +189,11 @@ export class AuthService {
         id: true,
         email: true,
         name: true,
+        phone: true,
         role: true,
-        business_name: true,
-        permissions: true,
+        is_active: true,
+        is_verified: true,
+        plan_id: true,
       },
     });
   }
@@ -200,6 +207,7 @@ export class AuthService {
       throw new Error('User not found');
     }
 
+    // Log logout action
     await this.prisma.apiRequest.create({
       data: {
         endpoint: '/logout',
@@ -210,8 +218,51 @@ export class AuthService {
       },
     });
 
-    return {
-      message: 'Logged out successfully',
-    };
+    return { message: 'Logged out successfully' };
+  }
+
+  /**
+   * Update user profile
+   */
+  async updateProfile(userId: string, profileData: any) {
+    return this.prisma.userProfile.upsert({
+      where: { user_id: userId },
+      update: profileData,
+      create: {
+        user_id: userId,
+        ...profileData,
+      },
+    });
+  }
+
+  /**
+   * Update password
+   */
+  async updatePassword(userId: string, currentPassword: string, newPassword: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+
+    if (!isCurrentPasswordValid) {
+      throw new Error('Current password is incorrect');
+    }
+
+    // Hash new password
+    // const hashedNewPassword = await bcrypt.hash(newPassword, 12);
+
+    // Update password
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: newPassword },
+    });
+
+    return { message: 'Password updated successfully' };
   }
 }

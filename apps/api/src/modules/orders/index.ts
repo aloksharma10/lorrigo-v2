@@ -324,99 +324,98 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
     handler: (request, reply) => orderController.getOrderStats(request, reply),
   });
 
-  // Below routes are not required
   // Update an order
-  // fastify.patch('/:id', {
-  //   schema: {
-  //     tags: ['Orders'],
-  //     summary: 'Update an order',
-  //     security: [{ bearerAuth: [] }],
-  //     params: {
-  //       type: 'object',
-  //       required: ['id'],
-  //       properties: {
-  //         id: { type: 'string' },
-  //       },
-  //     },
-  //     body: {
-  //       type: 'object',
-  //       required: [
-  //         'pickupAddressId',
-  //         'paymentMethod',
-  //         'deliveryDetails',
-  //         'sellerDetails',
-  //         'packageDetails',
-  //         'productDetails',
-  //       ],
-  //       properties: {
-  //         pickupAddressId: { type: 'string' },
-  //         paymentMethod: { type: 'object' },
-  //         deliveryDetails: { type: 'object' },
-  //         sellerDetails: { type: 'object' },
-  //         packageDetails: { type: 'object' },
-  //         productDetails: { type: 'object' },
-  //       },
-  //     },
-  //   },
-  //   handler: (request: FastifyRequest<{ Params: { id: string } }>, reply) =>
-  //     orderController.updateOrder(request, reply),
-  // });
+  fastify.patch('/:id', {
+    schema: {
+      tags: ['Orders'],
+      summary: 'Update an order',
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: 'string' },
+        },
+      },
+      body: {
+        type: 'object',
+        required: [
+          'pickupAddressId',
+          'paymentMethod',
+          'deliveryDetails',
+          'sellerDetails',
+          'packageDetails',
+          'productDetails',
+        ],
+        properties: {
+          pickupAddressId: { type: 'string' },
+          paymentMethod: { type: 'object' },
+          deliveryDetails: { type: 'object' },
+          sellerDetails: { type: 'object' },
+          packageDetails: { type: 'object' },
+          productDetails: { type: 'object' },
+        },
+      },
+    },
+    handler: (request: FastifyRequest<{ Params: { id: string } }>, reply) =>
+      orderController.updateOrder(request, reply),
+  });
 
-  // // Update an order status
-  // fastify.patch('/:id/status', {
-  //   schema: {
-  //     tags: ['Orders'],
-  //     summary: 'Update order status',
-  //     security: [{ bearerAuth: [] }],
-  //     params: {
-  //       type: 'object',
-  //       required: ['id'],
-  //       properties: {
-  //         id: { type: 'string' },
-  //       },
-  //     },
-  //     body: {
-  //       type: 'object',
-  //       required: ['status'],
-  //       properties: {
-  //         status: {
-  //           type: 'string',
-  //           enum: [
-  //             'NEW',
-  //             'COURIER_ASSIGNED',
-  //             'PICKUP_SCHEDULED',
-  //             'OUT_FOR_PICKUP',
-  //             'IN_TRANSIT',
-  //             'OUT_FOR_DELIVERY',
-  //             'DELIVERED',
-  //             'NDR',
-  //             'RETURNED',
-  //             'EXCEPTION',
-  //             'CANCELLED_SHIPMENT',
-  //             'CANCELLED_ORDER',
-  //           ],
-  //         },
-  //         notes: { type: 'string' },
-  //       },
-  //     },
-  //     response: {
-  //       200: {
-  //         type: 'object',
-  //         properties: {
-  //           id: { type: 'string' },
-  //           orderNumber: { type: 'string' },
-  //           status: { type: 'string' },
-  //           updatedAt: { type: 'string', format: 'date-time' },
-  //         },
-  //       },
-  //     },
-  //   },
-  //   handler: async (
-  //     request: FastifyRequest<{
-  //       Params: { id: string };
-  //       Body: { status: string; notes?: string };
-  //     }>,
-  //     reply
-  //   ) => orderController.updateOrderStatus(request, reply),
-  // });
+  // Update an order status
+  fastify.patch('/:id/status', {
+    schema: {
+      tags: ['Orders'],
+      summary: 'Update order status',
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: 'string' },
+        },
+      },
+      body: {
+        type: 'object',
+        required: ['status'],
+        properties: {
+          status: {
+            type: 'string',
+            enum: [
+              'NEW',
+              'COURIER_ASSIGNED',
+              'PICKUP_SCHEDULED',
+              'OUT_FOR_PICKUP',
+              'IN_TRANSIT',
+              'OUT_FOR_DELIVERY',
+              'DELIVERED',
+              'NDR',
+              'RETURNED',
+              'EXCEPTION',
+              'CANCELLED_SHIPMENT',
+              'CANCELLED_ORDER',
+            ],
+          },
+          notes: { type: 'string' },
+        },
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            orderNumber: { type: 'string' },
+            status: { type: 'string' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
+      },
+    },
+    handler: async (
+      request: FastifyRequest<{
+        Params: { id: string };
+        Body: { status: string; notes?: string };
+      }>,
+      reply
+    ) => orderController.updateOrderStatus(request, reply),
+  });
 }

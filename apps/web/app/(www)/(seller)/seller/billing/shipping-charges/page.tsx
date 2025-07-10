@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { RefreshCw, Calendar, Calculator, Package, AlertCircle } from 'lucide-react';
-import { 
-  Badge, 
-  Button, 
+import {
+  Badge,
+  Button,
   Accordion,
   AccordionContent,
   AccordionItem,
@@ -29,14 +29,15 @@ export default function SellerBillingShippingChargesPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>('');
 
   // Use the new billing operations hook
-  const {
-    getAvailableBillingMonthsQuery,
-    getCurrentUserBillingQuery
-  } = useBillingOperations();
+  const { getAvailableBillingMonthsQuery, getCurrentUserBillingQuery } = useBillingOperations();
 
   // API hooks using the new pattern
   const { data: availableMonths, isLoading: monthsLoading } = getAvailableBillingMonthsQuery();
-  const { data: billingData, isLoading: billingLoading, refetch } = getCurrentUserBillingQuery(selectedMonth);
+  const {
+    data: billingData,
+    isLoading: billingLoading,
+    refetch,
+  } = getCurrentUserBillingQuery(selectedMonth);
 
   // Set default month if not selected
   useEffect(() => {
@@ -49,10 +50,32 @@ export default function SellerBillingShippingChargesPage() {
   const summaryCards = useMemo(() => {
     if (!billingData) {
       return [
-        { title: 'Total Orders', value: 0, icon: Package, description: 'Billing records for the month' },
-        { title: 'Total Billing Amount', value: '₹0', icon: Calculator, description: 'Total charges for the month' },
-        { title: 'Pending Payment', value: '₹0', icon: AlertCircle, description: 'Amount pending payment', textColor: 'text-orange-600' },
-        { title: 'Paid Amount', value: '₹0', icon: Calculator, description: 'Amount already paid', textColor: 'text-green-600' },
+        {
+          title: 'Total Orders',
+          value: 0,
+          icon: Package,
+          description: 'Billing records for the month',
+        },
+        {
+          title: 'Total Billing Amount',
+          value: '₹0',
+          icon: Calculator,
+          description: 'Total charges for the month',
+        },
+        {
+          title: 'Pending Payment',
+          value: '₹0',
+          icon: AlertCircle,
+          description: 'Amount pending payment',
+          textColor: 'text-orange-600',
+        },
+        {
+          title: 'Paid Amount',
+          value: '₹0',
+          icon: Calculator,
+          description: 'Amount already paid',
+          textColor: 'text-green-600',
+        },
       ];
     }
 
@@ -92,9 +115,7 @@ export default function SellerBillingShippingChargesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Shipping Charges</h1>
-          <p className="text-muted-foreground">
-            View your billing charges and payment status
-          </p>
+          <p className="text-muted-foreground">View your billing charges and payment status</p>
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="px-3 py-1">
@@ -126,7 +147,7 @@ export default function SellerBillingShippingChargesPage() {
               </SelectContent>
             </Select>
           </div>
-          
+
           <Button variant="outline" size="sm" className="gap-2" onClick={() => refetch()}>
             <RefreshCw className="h-4 w-4" />
             Refresh
@@ -157,13 +178,11 @@ export default function SellerBillingShippingChargesPage() {
             <Card key={index}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
-                <card.icon className="h-4 w-4 text-muted-foreground" />
+                <card.icon className="text-muted-foreground h-4 w-4" />
               </CardHeader>
               <CardContent>
-                <div className={`text-2xl font-bold ${card.textColor || ''}`}>
-                  {card.value}
-                </div>
-                <p className="text-xs text-muted-foreground">{card.description}</p>
+                <div className={`text-2xl font-bold ${card.textColor || ''}`}>{card.value}</div>
+                <p className="text-muted-foreground text-xs">{card.description}</p>
               </CardContent>
             </Card>
           ))}
@@ -175,12 +194,14 @@ export default function SellerBillingShippingChargesPage() {
         <Accordion type="single" defaultValue="billing-details" className="w-full">
           <AccordionItem value="billing-details">
             <AccordionTrigger className="text-lg font-semibold">
-              Billing Details for {new Date(selectedMonth + '-01').toLocaleDateString('en-US', {
+              Billing Details for{' '}
+              {new Date(selectedMonth + '-01').toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'long',
-              })}
+              })}{' '}
+              ({new Date(selectedMonth + '-01').toLocaleDateString('en-US', { weekday: 'long' })})
               {billingData && (
-                <span className="text-sm font-normal text-muted-foreground ml-2">
+                <span className="text-muted-foreground ml-2 text-sm font-normal">
                   ({billingData.summary?.total_orders || 0} orders)
                 </span>
               )}

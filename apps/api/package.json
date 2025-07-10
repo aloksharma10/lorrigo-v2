@@ -5,6 +5,7 @@
     "dev": "tsx src/index.ts",
     "d": "nodemon --watch src --ext ts --exec tsx src/index.ts",
     "build": "tsup",
+    "kill": "kill -9 $(lsof -ti:8000)",
     "test": "vitest run",
     "start": "node dist/index.js"
   },

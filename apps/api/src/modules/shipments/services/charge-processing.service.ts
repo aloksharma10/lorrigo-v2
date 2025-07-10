@@ -44,7 +44,7 @@ export class ChargeProcessingService {
     return !shipment.forward_charge_processed && shipment.fw_charge && shipment.fw_charge > 0;
   }
   private shouldProcessCodCharge(shipment: any): boolean {
-    return !shipment.cod_charge_processed && shipment.cod_charge && shipment.cod_charge > 0 && shipment.order?.payment_mode === 'COD';
+    return !shipment.cod_charge_processed && shipment.cod_charge && shipment.cod_charge > 0 && shipment.order?.payment_method === 'COD';
   }
   private shouldProcessRtoCharge(shipment: any): boolean {
     return !shipment.rto_charge_processed && shipment.rto_charge && shipment.rto_charge > 0 && (shipment.status === ShipmentStatus.RTO_INITIATED || shipment.status === ShipmentStatus.RTO_IN_TRANSIT);
@@ -56,7 +56,7 @@ export class ChargeProcessingService {
     return !shipment.rto_excess_weight_processed && shipment.rto_excess_weight_charge && shipment.rto_excess_weight_charge > 0 && (shipment.status === ShipmentStatus.RTO_INITIATED || shipment.status === ShipmentStatus.RTO_IN_TRANSIT);
   }
   private shouldProcessCodReversal(shipment: any): boolean {
-    return !shipment.cod_reversal_processed && shipment.cod_charge && shipment.cod_charge > 0 && shipment.order?.payment_mode === 'COD' && (shipment.status === ShipmentStatus.RTO_INITIATED || shipment.status === ShipmentStatus.RTO_IN_TRANSIT);
+    return !shipment.cod_reversal_processed && shipment.cod_charge && shipment.cod_charge > 0 && shipment.order?.payment_method === 'COD' && (shipment.status === ShipmentStatus.RTO_INITIATED || shipment.status === ShipmentStatus.RTO_IN_TRANSIT);
   }
 
   private async processForwardCharge(shipment: any): Promise<ChargeProcessingResult> {
@@ -81,7 +81,6 @@ export class ChargeProcessingService {
         charge_type: PrismaChargeType.FORWARD_CHARGE,
       });
       if (txResult.success) {
-        await this.fastify.prisma.shipment.update({ where: { id: shipment.id }, data: { forward_charge_processed: true } });
         return { success: true, chargeType: ChargeType.FORWARD_CHARGE, amount, message: 'Forward charge processed successfully' };
       } else {
         return { success: false, chargeType: ChargeType.FORWARD_CHARGE, amount, message: 'Failed to process forward charge', error: txResult.error };
@@ -112,7 +111,6 @@ export class ChargeProcessingService {
         charge_type: PrismaChargeType.COD_CHARGE,
       });
       if (txResult.success) {
-        await this.fastify.prisma.shipment.update({ where: { id: shipment.id }, data: { cod_charge_processed: true } });
         return { success: true, chargeType: ChargeType.COD_CHARGE, amount, message: 'COD charge processed successfully' };
       } else {
         return { success: false, chargeType: ChargeType.COD_CHARGE, amount, message: 'Failed to process COD charge', error: txResult.error };
@@ -143,7 +141,6 @@ export class ChargeProcessingService {
         charge_type: PrismaChargeType.RTO_CHARGE,
       });
       if (txResult.success) {
-        await this.fastify.prisma.shipment.update({ where: { id: shipment.id }, data: { rto_charge_processed: true } });
         return { success: true, chargeType: ChargeType.RTO_CHARGE, amount, message: 'RTO charge processed successfully' };
       } else {
         return { success: false, chargeType: ChargeType.RTO_CHARGE, amount, message: 'Failed to process RTO charge', error: txResult.error };
@@ -174,7 +171,6 @@ export class ChargeProcessingService {
         charge_type: PrismaChargeType.FORWARD_EXCESS_WEIGHT,
       });
       if (txResult.success) {
-        await this.fastify.prisma.shipment.update({ where: { id: shipment.id }, data: { forward_excess_weight_processed: true } });
         return { success: true, chargeType: ChargeType.FORWARD_EXCESS_WEIGHT, amount, message: 'Forward excess weight charge processed successfully' };
       } else {
         return { success: false, chargeType: ChargeType.FORWARD_EXCESS_WEIGHT, amount, message: 'Failed to process forward excess weight charge', error: txResult.error };
@@ -205,7 +201,6 @@ export class ChargeProcessingService {
         charge_type: PrismaChargeType.RTO_EXCESS_WEIGHT,
       });
       if (txResult.success) {
-        await this.fastify.prisma.shipment.update({ where: { id: shipment.id }, data: { rto_excess_weight_processed: true } });
         return { success: true, chargeType: ChargeType.RTO_EXCESS_WEIGHT, amount, message: 'RTO excess weight charge processed successfully' };
       } else {
         return { success: false, chargeType: ChargeType.RTO_EXCESS_WEIGHT, amount, message: 'Failed to process RTO excess weight charge', error: txResult.error };
@@ -236,7 +231,6 @@ export class ChargeProcessingService {
         charge_type: PrismaChargeType.COD_REVERSAL,
       });
       if (txResult.success) {
-        await this.fastify.prisma.shipment.update({ where: { id: shipment.id }, data: { cod_reversal_processed: true } });
         return { success: true, chargeType: ChargeType.COD_REVERSAL, amount, message: 'COD reversal processed successfully' };
       } else {
         return { success: false, chargeType: ChargeType.COD_REVERSAL, amount, message: 'Failed to process COD reversal', error: txResult.error };

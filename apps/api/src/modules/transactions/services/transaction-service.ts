@@ -32,18 +32,18 @@ interface ShipmentTransactionData extends BaseTransactionData {
   shipmentId: string;
   awb?: string;
   srShipmentId?: string;
-  paymentId?: string;
+  transactionId?: string;
   charge_type?: ChargeType;
 }
 
 interface InvoiceTransactionData extends BaseTransactionData {
   invoiceId: string;
   invoiceNumber?: string;
-  paymentId?: string;
+  transactionId?: string;
 }
 
 interface WalletRechargeTransactionData extends BaseTransactionData {
-  paymentId?: string;
+  transactionId?: string;
   gatewayReference?: string;
 }
 
@@ -128,7 +128,7 @@ export class TransactionService {
           wallet_id: walletResult.walletId!,
           user_id: data.userId,
           shipment_id: data.shipmentId,
-          payment_id: data.paymentId,
+          transaction_id: data.transactionId,
           ...(data.charge_type ? { charge_type: data.charge_type } : {}),
         },
       });
@@ -199,7 +199,7 @@ export class TransactionService {
           wallet_id: walletResult.walletId!,
           user_id: data.userId,
           invoice_id: data.invoiceId,
-          payment_id: data.paymentId,
+          transaction_id: data.transactionId,
         },
       });
 
@@ -253,7 +253,7 @@ export class TransactionService {
           currency: data.currency || 'INR',
           wallet_id: walletResult.walletId!,
           user_id: data.userId,
-          payment_id: data.paymentId,
+          transaction_id: data.transactionId,
         },
       });
 
@@ -344,11 +344,11 @@ export class TransactionService {
       // Check if balance would go negative
       if (newBalance < 0) {
         // Check if user has permission for negative balance
-        const userConfig = await prisma.sellerConfig.findUnique({
-          where: { user_id: data.userId },
+        const userProfile = await this.prisma.userProfile.findUnique({
+          where: { user_id: wallet.user_id },
         });
 
-        const maxNegativeBalance = userConfig?.max_negative_balance || 0;
+        const maxNegativeBalance = userProfile?.max_negative_balance || 0;
 
         if (newBalance < -maxNegativeBalance) {
           return {
@@ -384,7 +384,8 @@ export class TransactionService {
                 wallet_id: wallet.id,
                 user_id: data.userId,
                 shipment_id: shipmentData.shipmentId,
-                payment_id: shipmentData.paymentId,
+                transaction_id: shipmentData.transactionId,
+                ...(shipmentData.charge_type ? { charge_type: shipmentData.charge_type } : {}),
               },
             });
           }
@@ -405,7 +406,7 @@ export class TransactionService {
                 wallet_id: wallet.id,
                 user_id: data.userId,
                 invoice_id: invoiceData.invoiceId,
-                payment_id: invoiceData.paymentId,
+                transaction_id: invoiceData.transactionId,
               },
             });
           }
@@ -424,7 +425,7 @@ export class TransactionService {
                 currency: data.currency || 'INR',
                 wallet_id: wallet.id,
                 user_id: data.userId,
-                payment_id: walletData.paymentId,
+                transaction_id: walletData.transactionId,
               },
             });
           }
@@ -923,11 +924,11 @@ export class TransactionService {
       // Check if balance would go negative
       if (newBalance < 0) {
         // Check if user has permission for negative balance
-        const userConfig = await this.prisma.sellerConfig.findUnique({
+        const userProfile = await this.prisma.userProfile.findUnique({
           where: { user_id: wallet.user_id },
         });
 
-        const maxNegativeBalance = userConfig?.max_negative_balance || 0;
+        const maxNegativeBalance = userProfile?.max_negative_balance || 0;
 
         if (newBalance < -maxNegativeBalance) {
           return {

@@ -1,6 +1,6 @@
 import { calculateVolumetricWeight } from '@/utils/calculate-order-price';
 import { getPincodeDetails, PincodeDetails } from '@/utils/pincode';
-import { Prisma, ShipmentStatus } from '@lorrigo/db';
+import { AddressType, Prisma, ShipmentStatus } from '@lorrigo/db';
 import { Channel, PaymentMethod } from '@lorrigo/db';
 import {
   generateId,
@@ -15,12 +15,13 @@ import {
 import { FastifyInstance } from 'fastify';
 import { addJob, QueueNames } from '@/lib/queue';
 import { BulkOrderJobType } from '../queues/bulk-order-worker';
+import { appCache } from '@/lib/cache';
 
 /**
  * Order Service handles business logic related to orders
  */
 export class OrderService {
-  constructor(private fastify: FastifyInstance) { }
+  constructor(private fastify: FastifyInstance) {}
 
   /**
    * Get all orders with pagination and filters
@@ -227,7 +228,7 @@ export class OrderService {
       status:
         order.shipment?.bucket !== null && order.shipment?.bucket !== undefined
           ? ShipmentBucketManager.getBucketStatus(order.shipment.bucket)
-          : order.shipment?.tracking_events?.[0]?.status || order.status,
+          : order.shipment?.tracking_events?.[0]?.status || 'NEW',
       bucket: order.shipment?.bucket ?? ShipmentBucket.AWAITING,
       courier: order.shipment?.courier?.name || '',
       courierNickname: order.shipment?.courier?.channel_config?.nickname || '',
@@ -283,7 +284,7 @@ export class OrderService {
       trackingEvents: order.shipment?.tracking_events || [],
       totalAmount: order.total_amount,
       customer_id: order.customer_id,
-      paymentType: order.payment_mode,
+      paymentType: order.payment_method,
       amountToCollect: order.amount_to_collect,
       pickupDate: order.shipment?.pickup_date,
       edd: order.shipment?.edd || '',
@@ -322,15 +323,7 @@ export class OrderService {
             phone: true,
             code: true,
             contact_person_name: true,
-            hub_config: {
-              select: {
-                smart_ship_hub_code_express: true,
-                smart_ship_hub_code_surface: true,
-                smart_ship_hub_code_heavy: true,
-                is_cod_enabled: true,
-                is_prepaid_enabled: true,
-              },
-            },
+            smart_ship_codes: true,
             address: {
               select: {
                 pincode: true,
@@ -380,14 +373,10 @@ export class OrderService {
             },
           },
         },
-        payments: true,
       },
     });
   }
 
-  /**
-   * Create a new order
-   */
   async createOrder(data: OrderFormValues, userId: string, userName: string) {
     const MAX_RETRIES = 2;
     let attempt = 0;
@@ -396,12 +385,12 @@ export class OrderService {
     const orderNumber = data.orderId;
     const financialYear = getFinancialYear(new Date());
     const volumetricWeight = calculateVolumetricWeight(
-      Number(data?.packageDetails?.length),
-      Number(data?.packageDetails?.breadth),
-      Number(data?.packageDetails?.height),
+      Number(data.packageDetails.length || 0),
+      Number(data.packageDetails.breadth || 0),
+      Number(data.packageDetails.height || 0),
       'cm'
     );
-    const deadWeight = Number(data.packageDetails.deadWeight);
+    const deadWeight = Number(data.packageDetails.deadWeight || 0);
     const applicableWeight = Math.max(deadWeight, volumetricWeight);
 
     // Cache for pincode results to avoid redundant external API calls
@@ -412,35 +401,57 @@ export class OrderService {
         return await this.fastify.prisma.$transaction(
           async (tx) => {
             // OPTIMIZATION 1: Batch validation queries
-            const [existingOrder, orderCount, shipmentCount, existingCustomer] = await Promise.all([
-              // Check order number uniqueness
-              tx.order.findUnique({
-                where: { order_number_user_id: { order_number: orderNumber, user_id: userId } },
-                select: { id: true },
-              }),
-              // Get order count for sequence
-              tx.order.count({
-                where: {
-                  user_id: userId,
-                  created_at: { gte: new Date(new Date().getFullYear(), 0, 1) },
-                },
-              }),
-              // Get shipment count for sequence
-              tx.shipment.count({
-                where: {
-                  user_id: userId,
-                  created_at: { gte: new Date(new Date().getFullYear(), 0, 1) },
-                },
-              }),
-              // Check existing customer with single address
-              tx.customer.findUnique({
-                where: { phone: data.deliveryDetails.mobileNumber },
-                select: { id: true, address: { select: { id: true, address: true, city: true, state: true, pincode: true } } },
-              }),
-            ]);
+            const [existingOrder, orderCount, shipmentCount, existingCustomer, hub] =
+              await Promise.all([
+                // Check order number uniqueness
+                tx.order.findUnique({
+                  where: { order_number_user_id: { order_number: orderNumber, user_id: userId } },
+                  select: { id: true },
+                }),
+                // Get order count for sequence
+                tx.order.count({
+                  where: {
+                    user_id: userId,
+                    created_at: { gte: new Date(new Date().getFullYear(), 0, 1) },
+                  },
+                }),
+                // Get shipment count for sequence
+                tx.shipment.count({
+                  where: {
+                    user_id: userId,
+                    created_at: { gte: new Date(new Date().getFullYear(), 0, 1) },
+                  },
+                }),
+                // Check existing customer with single address
+                tx.customer.findUnique({
+                  where: { phone: data.deliveryDetails.mobileNumber },
+                  select: {
+                    id: true,
+                    address: {
+                      select: {
+                        id: true,
+                        address: true,
+                        address_2: true,
+                        city: true,
+                        state: true,
+                        pincode: true,
+                      },
+                    },
+                  },
+                }),
+                // Get hub for seller
+                tx.hub.findFirst({
+                  where: { user_id: userId, is_active: true },
+                  include: { address: true },
+                }),
+              ]);
 
             if (existingOrder) {
               throw new Error('Order Id already exists. Please try with another Order Id.');
+            }
+
+            if (!hub) {
+              throw new Error('No active hub found for seller');
             }
 
             // OPTIMIZATION 2: Generate IDs early
@@ -459,21 +470,27 @@ export class OrderService {
             }).id;
 
             // OPTIMIZATION 3: Parallelize external API calls and DB operations
-            const [sellerPincode, customerPincode, packageRecord, sellerDetails] = await Promise.all([
+            const [
+              sellerPincode,
+              customerPincode,
+              packageRecord,
+              sellerDetails,
+              orderChannelConfig,
+            ] = await Promise.all([
               // Fetch or use cached seller pincode
               (async () => {
-                const pin = data.sellerDetails.pincode || '000000';
+                const pin = data.sellerDetails?.pincode || hub.address.pincode || '000000';
                 if (pincodeCache.has(pin)) return pincodeCache.get(pin)!;
-                const result = await getPincodeDetails(Number(pin));
+                const result = await getPincodeDetails(pin);
                 pincodeCache.set(pin, result);
                 return result;
               })(),
               // Fetch or use cached customer pincode
               (async () => {
-                const pin = data.deliveryDetails.pincode
+                const pin = data.deliveryDetails.pincode;
                 if (!pin) throw new Error('Customer pincode is required');
                 if (pincodeCache.has(pin)) return pincodeCache.get(pin)!;
-                const result = await getPincodeDetails(Number(pin));
+                const result = await getPincodeDetails(pin);
                 pincodeCache.set(pin, result);
                 return result;
               })(),
@@ -483,41 +500,65 @@ export class OrderService {
                   weight: deadWeight,
                   dead_weight: deadWeight,
                   volumetric_weight: volumetricWeight,
-                  length: Number(data.packageDetails.length),
-                  breadth: Number(data.packageDetails.breadth),
-                  height: Number(data.packageDetails.height),
+                  length: Number(data.packageDetails.length || 0),
+                  breadth: Number(data.packageDetails.breadth || 0),
+                  height: Number(data.packageDetails.height || 0),
                 },
                 select: { id: true },
               }),
               // Create seller details
               tx.orderSellerDetails.create({
                 data: {
-                  seller_name: data.sellerDetails.name,
-                  gst_no: data.sellerDetails.gstNo,
-                  contact_number: data.sellerDetails.contactNumber,
+                  seller_name: data.sellerDetails?.name || userName,
+                  gst_no: data.sellerDetails?.gstNo,
+                  contact_number: data.sellerDetails?.contactNumber,
                   address: {
                     create: {
-                      name: data.sellerDetails.name,
-                      address: data.sellerDetails.address || '',
-                      city: '',
-                      state: '',
-                      pincode: '',
+                      type: AddressType.CUSTOMER,
+                      name: data.sellerDetails?.name || userName,
+                      address: data.sellerDetails?.address || hub.address.address,
+                      address_2: data.sellerDetails?.address || hub.address.address_2,
+                      city: hub.address.city,
+                      state: hub.address.state,
+                      pincode: hub.address.pincode,
+                      phone: data.sellerDetails?.contactNumber || hub.phone,
+                      country: 'India',
                     },
                   },
                 },
                 select: { id: true, address_id: true },
               }),
+              // Create order channel config
+              tx.orderChannelConfig.create({
+                data: {
+                  channel: (data.orderChannel?.toUpperCase() as Channel) || 'CUSTOM',
+                  // channel_order_id: data.channel?.orderId || orderNumber, // TODO: Add channel order id ( Only for Shopify )
+                },
+                select: { id: true },
+              }),
             ]);
 
-            // OPTIMIZATION 4: Simplified customer and address handling (one address per customer)
+            // Update seller address with pincode data
+            await tx.address.update({
+              where: { id: sellerDetails.address_id || '' },
+              data: {
+                city: sellerPincode?.city || hub.address.city,
+                state: sellerPincode?.state || hub.address.state,
+                pincode: sellerPincode?.pincode || hub.address.pincode,
+              },
+            });
+
+            // OPTIMIZATION 4: Simplified customer and address handling
             const newAddressData = {
+              type: AddressType.CUSTOMER,
               name: data.deliveryDetails.fullName,
-              address: data.deliveryDetails.billingIsSameAsDelivery
-                ? data.deliveryDetails.completeAddress
-                : data.deliveryDetails.billingCompleteAddress || '',
-              city: customerPincode?.city || '',
-              state: customerPincode?.state || '',
-              pincode: customerPincode?.pincode || '',
+              address: data.deliveryDetails.completeAddress,
+              address_2: data.deliveryDetails.landmark || '',
+              city: customerPincode?.city || data.deliveryDetails.city,
+              state: customerPincode?.state || data.deliveryDetails.state,
+              pincode: customerPincode?.pincode || data.deliveryDetails.pincode,
+              phone: data.deliveryDetails.mobileNumber,
+              country: 'India',
             };
 
             const customer = await (async () => {
@@ -525,7 +566,10 @@ export class OrderService {
                 // Update customer details
                 const updatedCustomer = await tx.customer.update({
                   where: { id: existingCustomer.id },
-                  data: { name: data.deliveryDetails.fullName, email: data.deliveryDetails.email },
+                  data: {
+                    name: data.deliveryDetails.fullName,
+                    email: data.deliveryDetails.email || null,
+                  },
                   select: { id: true },
                 });
 
@@ -534,6 +578,7 @@ export class OrderService {
                   const existingAddress = existingCustomer.address;
                   if (
                     existingAddress.address !== newAddressData.address ||
+                    existingAddress.address_2 !== newAddressData.address_2 ||
                     existingAddress.city !== newAddressData.city ||
                     existingAddress.state !== newAddressData.state ||
                     existingAddress.pincode !== newAddressData.pincode
@@ -556,7 +601,7 @@ export class OrderService {
                 return await tx.customer.create({
                   data: {
                     name: data.deliveryDetails.fullName,
-                    email: data.deliveryDetails.email,
+                    email: data.deliveryDetails.email || null,
                     phone: data.deliveryDetails.mobileNumber,
                     address: { create: newAddressData },
                   },
@@ -565,86 +610,98 @@ export class OrderService {
               }
             })();
 
-            // Update seller address with pincode data
-            const updatedSellerDetails = await tx.address.update({
-              where: { id: sellerDetails.address_id || '' },
-              data: {
-                city: sellerPincode?.city || '',
-                state: sellerPincode?.state || '',
-                pincode: sellerPincode?.pincode || '',
-              },
-              select: { id: true },
-            });
+            // Calculate COD amount
+            const codAmount =
+              data.paymentMethod.paymentMethod === 'cod' ? data.productDetails.taxableValue : 0;
 
-            // OPTIMIZATION 5: Create order channel config
-            const orderChannelConfig = await tx.orderChannelConfig.create({
-              data: {
-                channel: (data.orderChannel?.toUpperCase() as Channel) || 'CUSTOM',
-                channel_order_id: orderNumber,
-              },
-              select: { id: true },
-            });
-
-            // OPTIMIZATION 6: Create order
+            // OPTIMIZATION 5: Create order
             const order = await tx.order.create({
               data: {
                 code: orderCode,
                 order_number: orderNumber,
-                type: 'B2C',
-                status: 'NEW',
+                type: data.orderType === 'domestic' ? 'B2C' : 'B2B',
+                payment_method:
+                  (data.paymentMethod.paymentMethod?.toUpperCase() as PaymentMethod) || 'COD',
+                order_channel_config_id: orderChannelConfig.id,
+                total_amount: data.productDetails.taxableValue,
+                amount_to_collect: codAmount,
+                applicable_weight: applicableWeight,
+                order_reference_id: data.orderId,
+                ewaybill: data.ewaybill,
+                order_invoice_date: data.order_invoice_date
+                  ? new Date(data.order_invoice_date)
+                  : undefined,
+                order_invoice_number: data.order_invoice_number,
+                // freight_type: data.orderDetails.freight || 0,
+                // pickup_type: data.orderDetails.pickup || 0,
+                // insurance_type: data.orderDetails.insurance || 0,
+                user_id: userId,
+                customer_id: customer.id,
+                hub_id: hub.id,
+                seller_details_id: sellerDetails.id,
+                package_id: packageRecord.id,
                 shipment: {
                   create: {
                     code: shipmentCode,
                     user_id: userId,
+                    status: ShipmentStatus.NEW,
                     bucket: ShipmentBucketManager.getBucketFromStatus(ShipmentStatus.NEW),
                     tracking_events: {
-                      create: [{ description: 'Order Created', status: 'NEW', timestamp: new Date() }],
+                      create: [
+                        { description: 'Order Created', status: 'NEW', timestamp: new Date() },
+                      ],
                     },
                   },
                 },
-                payment_mode: (data.paymentMethod.paymentMethod?.toUpperCase() as PaymentMethod) || 'COD',
-                order_channel_config_id: orderChannelConfig.id,
-                total_amount: data.productDetails.taxableValue,
-                amount_to_collect: data.amountToCollect,
-                applicable_weight: applicableWeight,
-                ewaybill: data.ewaybill,
-                user_id: userId,
-                customer_id: customer.id,
-                package_id: packageRecord.id,
-                seller_details_id: sellerDetails.id,
-                hub_id: data.pickupAddressId,
-                order_invoice_number: data.order_invoice_number,
-                order_invoice_date: data.order_invoice_date,
               },
-              select: { id: true, code: true, order_number: true, status: true, created_at: true },
+              include: {
+                customer: true,
+                hub: { include: { address: true } },
+                package: true,
+                seller_details: { include: { address: true } },
+              },
             });
 
-            // OPTIMIZATION 7: Create order items in batch
-            const orderItems = data.productDetails.products.map((item, idx) => ({
-              code: `${orderCode}-${generateId({
-                tableName: 'order_item',
-                entityName: item.name,
-                lastUsedFinancialYear: financialYear,
-                lastSequenceNumber: idx,
-              }).id}`,
-              name: item.name,
-              sku: item.sku,
-              units: item.quantity,
-              selling_price: item.price,
-              tax: item.taxRate,
-              hsn: item.hsnCode,
-              order_id: order.id,
-            }));
+            // OPTIMIZATION 6: Create order items in batch
+            const orderItems =
+              data.productDetails.products?.map((item, idx) => ({
+                code: `${orderCode}-${
+                  generateId({
+                    tableName: 'orderItem',
+                    entityName: item.name || 'Item',
+                    lastUsedFinancialYear: financialYear,
+                    lastSequenceNumber: idx,
+                  }).id
+                }`,
+                name: item.name,
+                sku: item.sku,
+                units: item.quantity || 1,
+                selling_price: item.price || 0,
+                // discount: item.discount || 0,
+                tax: item.taxRate || 0,
+                hsn: item.hsnCode,
+                order_id: order.id,
+                length: Number(data.packageDetails.length || 0),
+                breadth: Number(data.packageDetails.breadth || 0),
+                height: Number(data.packageDetails.height || 0),
+                weight: Number(data.packageDetails.deadWeight || 0),
+              })) || [];
 
-            await tx.orderItem.createMany({
-              data: orderItems,
-              skipDuplicates: true,
-            });
+            if (orderItems.length > 0) {
+              await tx.orderItem.createMany({
+                data: orderItems,
+                skipDuplicates: true,
+              });
+            }
+
+            // Invalidate relevant caches
+            await appCache.invalidateUserCache(userId);
+            await appCache.invalidateDashboardMetrics(userId);
 
             return order;
           },
           {
-            // OPTIMIZATION 8: Configure transaction settings
+            // OPTIMIZATION 7: Configure transaction settings
             maxWait: 5000,
             timeout: 10000,
             isolationLevel: 'ReadCommitted',
@@ -751,13 +808,11 @@ export class OrderService {
 
           // Step 3: Batch external API calls and lookups
           const [sellerPincode, customerPincode] = await Promise.all([
-            getPincodeDetails(Number(data.sellerDetails.pincode || '000000')),
+            getPincodeDetails(data.sellerDetails.pincode || '000000'),
             getPincodeDetails(
-              Number(
-                data.deliveryDetails.billingIsSameAsDelivery
-                  ? data.deliveryDetails.pincode
-                  : data.deliveryDetails.billingPincode
-              )
+              data.deliveryDetails.billingIsSameAsDelivery || false
+                ? data.deliveryDetails.pincode || '000000'
+                : data.deliveryDetails.billingPincode || '000000'
             ),
           ]);
 
@@ -795,6 +850,7 @@ export class OrderService {
             // Create new customer address if it doesn't exist
             await tx.address.create({
               data: {
+                type: AddressType.CUSTOMER,
                 name: data.deliveryDetails.fullName,
                 address: data.deliveryDetails.completeAddress,
                 address_2: data.deliveryDetails.landmark || undefined,
@@ -821,6 +877,7 @@ export class OrderService {
             await tx.address.upsert({
               where: { id: sellerDetails.address_id || '' },
               create: {
+                type: AddressType.SELLER,
                 name: data.sellerDetails.name,
                 address: data.sellerDetails.address || '',
                 city: sellerPincode?.city || data.sellerDetails.city || '',
@@ -884,7 +941,7 @@ export class OrderService {
           const orderUpdates = await tx.order.update({
             where: { id: existingOrder.id },
             data: {
-              payment_mode:
+              payment_method:
                 (data.paymentMethod.paymentMethod?.toUpperCase() as PaymentMethod) || 'COD',
               total_amount: data.productDetails.taxableValue,
               amount_to_collect: data.amountToCollect,
@@ -902,7 +959,6 @@ export class OrderService {
               id: true,
               code: true,
               order_number: true,
-              status: true,
               created_at: true,
             },
           });
@@ -992,18 +1048,19 @@ export class OrderService {
       );
     }
   }
+  
 
   /**
    * Update an order status
    */
-  async updateOrderStatus(id: string, update_data: UpdateOrderFormValues) {
-    return this.fastify.prisma.order.update({
-      where: { id },
-      data: {
-        status: update_data.status as ShipmentStatus,
-      },
-    });
-  }
+  // async updateOrderStatus(id: string, update_data: UpdateOrderFormValues) {
+  //   return this.fastify.prisma.order.update({
+  //     where: { id },
+  //     data: {
+  //       status: update_data.status as ShipmentStatus,
+  //     },
+  //   });
+  // }
 
   /**
    * Get order statistics
@@ -1052,7 +1109,7 @@ export class OrderService {
 
     // Get count of orders by status
     const status_counts_promise = this.fastify.prisma.order.groupBy({
-      by: ['status'],
+      by: ['payment_method'], // TODO: Change to status
       where: {
         user_id: user_id,
         created_at: {
@@ -1073,9 +1130,9 @@ export class OrderService {
 
     // Format status counts
     const status_counts: Record<string, number> = {};
-    status_counts_result.forEach((item) => {
-      status_counts[item.status] = item._count.id || 0;
-    });
+    // status_counts_result.forEach((item) => {
+    //   status_counts[item.status as string] = item._count?.id || 0;
+    // });
 
     return {
       total_orders,

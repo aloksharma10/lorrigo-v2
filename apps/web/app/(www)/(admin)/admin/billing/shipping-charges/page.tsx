@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { RefreshCw, Upload } from 'lucide-react';
-import { 
-  Badge, 
-  Button, 
+import { RefreshCw, Upload, Calendar } from 'lucide-react';
+import {
+  Badge,
+  Button,
   Accordion,
   AccordionContent,
   AccordionItem,
@@ -22,11 +22,17 @@ import {
   CardTitle,
 } from '@lorrigo/ui/components';
 import { useBillingOperations } from '@/lib/apis/billing';
-import { CSVUploadModal, type CSVField, type HeaderMapping, type CSVUploadResult } from '@/components/modals/csv-upload-modal';
+import {
+  CSVUploadModal,
+  type CSVField,
+  type HeaderMapping,
+  type CSVUploadResult,
+} from '@/components/modals/csv-upload-modal';
 import { AdminBillingSummaryTable } from '@/components/tables/billing/admin-billing-summary-table';
 import { AdminBillingDetailTable } from '@/components/tables/billing/admin-billing-detail-table';
 import { Calculator, Users, TrendingUp, DollarSign } from 'lucide-react';
 import { currencyFormatter } from '@lorrigo/utils';
+import { useModalStore } from '@/modal/modal-store';
 
 export default function AdminBillingShippingChargesPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>('');
@@ -35,15 +41,16 @@ export default function AdminBillingShippingChargesPage() {
   const [expandedSection, setExpandedSection] = useState<string>('summary');
 
   // Use the new billing operations hook
-  const {
-    getAvailableBillingMonthsQuery,
-    getBillingSummaryByMonthQuery,
-    uploadBillingCSV
-  } = useBillingOperations();
+  const { getAvailableBillingMonthsQuery, getBillingSummaryByMonthQuery, uploadBillingCSV } =
+    useBillingOperations();
 
   // API hooks using the new pattern
   const { data: availableMonths, isLoading: monthsLoading } = getAvailableBillingMonthsQuery();
-  const { data: billingSummary, isLoading: summaryLoading, refetch } = getBillingSummaryByMonthQuery(selectedMonth);
+  const {
+    data: billingSummary,
+    isLoading: summaryLoading,
+    refetch,
+  } = getBillingSummaryByMonthQuery(selectedMonth);
 
   // Set default month if not selected
   if (!selectedMonth && availableMonths && availableMonths.length > 0) {
@@ -78,13 +85,13 @@ export default function AdminBillingShippingChargesPage() {
   const handleCSVUpload = async (file: File, mapping: HeaderMapping): Promise<CSVUploadResult> => {
     try {
       const result = await uploadBillingCSV.mutateAsync(file);
-      
+
       if (result.success) {
         // Refresh the billing summary after successful upload
         setTimeout(() => {
           refetch();
         }, 2000);
-        
+
         return {
           success: true,
           processedRows: result.totalRecords,
@@ -115,6 +122,8 @@ export default function AdminBillingShippingChargesPage() {
     setExpandedSection('user-details');
   };
 
+  const { openModal } = useModalStore();
+
   // Summary cards
   const summaryCards = [
     {
@@ -137,7 +146,7 @@ export default function AdminBillingShippingChargesPage() {
     },
     {
       title: 'Average per User',
-      value: billingSummary?.users?.length 
+      value: billingSummary?.users?.length
         ? currencyFormatter((billingSummary.total_amount || 0) / billingSummary.users.length)
         : currencyFormatter(0),
       icon: TrendingUp,
@@ -185,7 +194,7 @@ export default function AdminBillingShippingChargesPage() {
               </SelectContent>
             </Select>
           </div>
-          
+
           <Button variant="outline" size="sm" className="gap-2" onClick={() => refetch()}>
             <RefreshCw className="h-4 w-4" />
             Refresh
@@ -203,6 +212,14 @@ export default function AdminBillingShippingChargesPage() {
             preferenceKey="billing"
             enableMappingPreferences={true}
           />
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={() => openModal('billing-cycle', {})}
+          >
+            <Calendar className="h-4 w-4" /> Manage Billing Cycles
+          </Button>
         </div>
       </div>
 
@@ -229,11 +246,11 @@ export default function AdminBillingShippingChargesPage() {
             <Card key={index}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
-                <card.icon className="h-4 w-4 text-muted-foreground" />
+                <card.icon className="text-muted-foreground h-4 w-4" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{card.value}</div>
-                <p className="text-xs text-muted-foreground">{card.description}</p>
+                <p className="text-muted-foreground text-xs">{card.description}</p>
               </CardContent>
             </Card>
           ))}
@@ -251,21 +268,21 @@ export default function AdminBillingShippingChargesPage() {
           {/* Billing Summary */}
           <AccordionItem value="summary">
             <AccordionTrigger className="text-lg font-semibold">
-              Billing Summary for {new Date(selectedMonth + '-01').toLocaleDateString('en-US', {
+              Billing Summary for{' '}
+              {new Date(selectedMonth + '-01').toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'long',
-              })}
+              })}{' '}
+              ({new Date(selectedMonth + '-01').toLocaleDateString('en-US', { weekday: 'long' })})
               {billingSummary && (
-                <span className="text-sm font-normal text-muted-foreground ml-2">
-                  ({billingSummary.total_orders} orders, ₹{billingSummary.total_amount.toLocaleString()})
+                <span className="text-muted-foreground ml-2 text-sm font-normal">
+                  ({billingSummary.total_orders} orders, ₹
+                  {billingSummary.total_amount.toLocaleString()})
                 </span>
               )}
             </AccordionTrigger>
             <AccordionContent>
-              <AdminBillingSummaryTable
-                month={selectedMonth}
-                onUserSelect={handleUserSelect}
-              />
+              <AdminBillingSummaryTable month={selectedMonth} onUserSelect={handleUserSelect} />
             </AccordionContent>
           </AccordionItem>
 
@@ -287,10 +304,7 @@ export default function AdminBillingShippingChargesPage() {
                 </div>
               </AccordionTrigger>
               <AccordionContent>
-                <AdminBillingDetailTable
-                  userId={selectedUserId}
-                  month={selectedMonth}
-                />
+                <AdminBillingDetailTable userId={selectedUserId} month={selectedMonth} />
               </AccordionContent>
             </AccordionItem>
           )}
@@ -298,4 +312,4 @@ export default function AdminBillingShippingChargesPage() {
       )}
     </div>
   );
-} 
+}

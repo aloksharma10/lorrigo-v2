@@ -91,7 +91,7 @@ export class PlanService {
   constructor(private fastify: FastifyInstance) {}
 
   async getAllPlans() {
-    return this.fastify.prisma.plan.findMany({
+    const plans = await this.fastify.prisma.plan.findMany({
       include: {
         plan_courier_pricings: {
           include: {
@@ -108,6 +108,7 @@ export class PlanService {
         },
       },
     });
+    return plans;
   }
 
   async getPlanById(id: string) {
@@ -593,8 +594,8 @@ export class PlanService {
 
       // Get pincode details
       const [pickupDetails, deliveryDetails] = await Promise.all([
-        getPincodeDetails(Number(params.pickupPincode)),
-        getPincodeDetails(Number(params.deliveryPincode)),
+        getPincodeDetails(params.pickupPincode.toString()),
+        getPincodeDetails(params.deliveryPincode.toString()),
       ]);
 
       if (!pickupDetails || !deliveryDetails) {

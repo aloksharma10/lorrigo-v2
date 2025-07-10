@@ -237,8 +237,8 @@ export default function ShipOrderPage() {
                       </div>
                       <div>
                         <div className="text-muted-foreground text-sm">Payment</div>
-                        <Badge variant={order.payment_mode === 'COD' ? 'destructive' : 'default'}>
-                          {order.payment_mode}
+                                    <Badge variant={order.payment_method === 'COD' ? 'destructive' : 'default'}>
+              {order.payment_method}
                         </Badge>
                       </div>
                       <div>

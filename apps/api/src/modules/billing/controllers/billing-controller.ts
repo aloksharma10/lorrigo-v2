@@ -5,15 +5,17 @@ import { BillingService } from '../services/billing-service';
 const GetBillingByMonthSchema = z.object({
   month: z.string().regex(/^\d{4}-\d{2}$/, 'Month must be in YYYY-MM format'),
   page: z.coerce.number().int().min(1).optional().default(1),
-  limit: z.coerce.number().int().min(1).max(100).optional().default(20)
+  limit: z.coerce.number().int().min(1).max(100).optional().default(20),
 });
 
 const ManualBillingSchema = z.object({
   awbs: z.array(z.string()).optional(),
-  dateRange: z.object({
-    from: z.string().datetime(),
-    to: z.string().datetime()
-  }).optional()
+  dateRange: z
+    .object({
+      from: z.string().datetime(),
+      to: z.string().datetime(),
+    })
+    .optional(),
 });
 
 export class BillingController {
@@ -26,11 +28,11 @@ export class BillingController {
     try {
       // Get file from multipart form data
       const data = await request.file();
-      
+
       if (!data) {
         return reply.code(400).send({
           success: false,
-          message: 'No file uploaded'
+          message: 'No file uploaded',
         });
       }
 
@@ -38,40 +40,35 @@ export class BillingController {
       if (!data.mimetype.includes('csv') && !data.filename?.endsWith('.csv')) {
         return reply.code(400).send({
           success: false,
-          message: 'File must be a CSV'
+          message: 'File must be a CSV',
         });
       }
 
       // Get file buffer
       const buffer = await data.toBuffer();
-      
+
       if (buffer.length === 0) {
         return reply.code(400).send({
           success: false,
-          message: 'File is empty'
+          message: 'File is empty',
         });
       }
 
       const userId = request.userPayload!.id;
       const filename = data.filename || 'billing.csv';
 
-      const result = await this.billingService.uploadBillingCSV(
-        buffer,
-        userId,
-        filename
-      );
+      const result = await this.billingService.uploadBillingCSV(buffer, userId, filename);
 
       return reply.code(200).send({
         success: true,
-        data: result
+        data: result,
       });
-
     } catch (error: any) {
       request.log.error(`Error uploading billing CSV: ${error.message}`);
       return reply.code(500).send({
         success: false,
         message: 'Failed to upload billing CSV',
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -91,14 +88,16 @@ export class BillingController {
       if (!validatedData.awbs && !validatedData.dateRange) {
         return reply.code(400).send({
           success: false,
-          message: 'Either AWBs or date range must be provided'
+          message: 'Either AWBs or date range must be provided',
         });
       }
 
-      const dateRange = validatedData.dateRange ? {
-        from: new Date(validatedData.dateRange.from),
-        to: new Date(validatedData.dateRange.to)
-      } : undefined;
+      const dateRange = validatedData.dateRange
+        ? {
+            from: new Date(validatedData.dateRange.from),
+            to: new Date(validatedData.dateRange.to),
+          }
+        : undefined;
 
       const result = await this.billingService.processManualBilling(
         userId,
@@ -109,15 +108,14 @@ export class BillingController {
 
       return reply.code(200).send({
         success: true,
-        data: result
+        data: result,
       });
-
     } catch (error: any) {
       request.log.error(`Error processing manual billing: ${error.message}`);
       return reply.code(500).send({
         success: false,
         message: 'Failed to process manual billing',
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -128,10 +126,14 @@ export class BillingController {
   async createBillingCycle(request: FastifyRequest, reply: FastifyReply) {
     try {
       const { userId } = request.params as { userId: string };
-      const { cycleDays = 30 } = request.body as { cycleDays?: number };
+      const { cycleDays = 30, cycleType = 'MONTHLY' } = request.body as {
+        cycleDays?: number;
+        cycleType?: string;
+      };
 
       const billingCycleId = await this.billingService.createAutomaticBillingCycle(
         userId,
+        cycleType as any,
         cycleDays
       );
 
@@ -139,16 +141,15 @@ export class BillingController {
         success: true,
         data: {
           billingCycleId,
-          message: 'Billing cycle created successfully'
-        }
+          message: 'Billing cycle created successfully',
+        },
       });
-
     } catch (error: any) {
       request.log.error(`Error creating billing cycle: ${error.message}`);
       return reply.code(500).send({
         success: false,
         message: 'Failed to create billing cycle',
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -167,7 +168,7 @@ export class BillingController {
       if (!month || !/^\d{4}-\d{2}$/.test(month)) {
         return reply.code(400).send({
           success: false,
-          message: 'Month must be provided in YYYY-MM format'
+          message: 'Month must be provided in YYYY-MM format',
         });
       }
 
@@ -175,15 +176,14 @@ export class BillingController {
 
       return reply.code(200).send({
         success: true,
-        data: result
+        data: result,
       });
-
     } catch (error: any) {
       request.log.error(`Error getting billing summary: ${error.message}`);
       return reply.code(500).send({
         success: false,
         message: 'Failed to get billing summary',
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -195,15 +195,16 @@ export class BillingController {
     try {
       const { month } = request.params as { month: string };
       const { userId } = request.params as { userId?: string };
-      
+
       // For admin, use provided userId; for users, use their own ID
-      const targetUserId = request.userPayload!.role === 'ADMIN' && userId ? userId : request.userPayload!.id;
+      const targetUserId =
+        request.userPayload!.role === 'ADMIN' && userId ? userId : request.userPayload!.id;
 
       // Validate month format
       if (!/^\d{4}-\d{2}$/.test(month)) {
         return reply.code(400).send({
           success: false,
-          message: 'Month must be in YYYY-MM format'
+          message: 'Month must be in YYYY-MM format',
         });
       }
 
@@ -211,15 +212,14 @@ export class BillingController {
 
       return reply.code(200).send({
         success: true,
-        data: result
+        data: result,
       });
-
     } catch (error: any) {
       request.log.error(`Error getting user billing: ${error.message}`);
       return reply.code(500).send({
         success: false,
         message: 'Failed to get user billing',
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -233,15 +233,14 @@ export class BillingController {
 
       return reply.code(200).send({
         success: true,
-        data: months
+        data: months,
       });
-
     } catch (error: any) {
       request.log.error(`Error getting billing months: ${error.message}`);
       return reply.code(500).send({
         success: false,
         message: 'Failed to get billing months',
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -258,15 +257,14 @@ export class BillingController {
 
       return reply.code(200).send({
         success: true,
-        data: result
+        data: result,
       });
-
     } catch (error: any) {
       request.log.error(`Error getting bulk operation status: ${error.message}`);
       return reply.code(500).send({
         success: false,
         message: 'Failed to get bulk operation status',
-        error: error.message
+        error: error.message,
       });
     }
   }
