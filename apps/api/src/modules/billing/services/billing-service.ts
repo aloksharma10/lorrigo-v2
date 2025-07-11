@@ -1,702 +1,251 @@
 import { FastifyInstance } from 'fastify';
-import { format } from 'date-fns';
-import {
-  ShipmentStatus,
-  PaymentMethod,
-  CycleType,
-  WeightDisputeStatus,
-  BillingStatus,
-} from '@lorrigo/db';
-import { addJob, QueueNames } from '@/lib/queue';
-import { randomUUID } from 'crypto';
+import { ShipmentStatus, CycleType, BillingStatus } from '@lorrigo/db';
+import { ChargeProcessingService } from '../../shipments/services/charge-processing.service';
+import { redis } from '@/lib/redis';
+import { mapShipmentToBilling } from '../utils/billing-mapper';
 
-export interface BillingCSVRow {
-  awb: string;
-  weight: number;
-}
-
-export interface BillingProcessingResult {
-  success: boolean;
-  message: string;
-  totalRecords: number;
-  processedCount: number;
-  errorCount: number;
-  disputeCount: number;
-  bulkOperationId?: string;
-}
-
-export interface WeightDisputeInfo {
-  orderId: string;
-  awb: string;
-  originalWeight: number;
-  chargedWeight: number;
-  weightDifference: number;
-  courierName: string;
-}
+// Statuses/buckets that make a shipment NOT eligible for billing
+const EXCLUDED_BUCKETS = [0, 1, 61, 6, 11, 12];
+const EXCLUDED_STATUSES: ShipmentStatus[] = [
+  ShipmentStatus.NEW,
+  ShipmentStatus.CANCELLED_ORDER,
+  ShipmentStatus.CANCELLED_SHIPMENT,
+  ShipmentStatus.COURIER_ASSIGNED,
+  ShipmentStatus.PICKUP_SCHEDULED,
+];
 
 export class BillingService {
-  constructor(private fastify: FastifyInstance) {}
+  private chargeService: ChargeProcessingService;
 
-  /**
-   * Upload and process billing CSV
-   */
-  async uploadBillingCSV(
-    csvData: Buffer,
-    userId: string,
-    filename: string
-  ): Promise<BillingProcessingResult> {
-    try {
-      // Parse CSV data
-      const csvString = csvData.toString('utf8');
-      const lines = csvString.split('\n').filter((line) => line.trim());
-
-      if (lines.length < 2) {
-        throw new Error('CSV file must contain at least header and one data row');
-      }
-
-      const headers = lines[0]?.split(',').map((h) => h.trim().toLowerCase()) || [];
-      const expectedHeaders = ['awb', 'weight'];
-
-      // Validate headers
-      const missingHeaders = expectedHeaders.filter((header) => !headers.includes(header));
-
-      if (missingHeaders.length > 0) {
-        throw new Error(`Missing required headers: ${missingHeaders.join(', ')}`);
-      }
-
-      // Parse data rows
-      const billingRows: BillingCSVRow[] = [];
-      for (let i = 1; i < lines.length; i++) {
-        const line = lines[i];
-        if (!line) continue;
-
-        const values = line.split(',').map((v) => v.trim());
-        if (values.length < 2 || !values[0]) continue;
-
-        const weightValue = values[1];
-        if (!weightValue) continue;
-
-        billingRows.push({
-          awb: values[0].replace(/(\.\d+)$/, ''),
-          weight: parseFloat(weightValue) || 0,
-        });
-      }
-
-      if (billingRows.length === 0) {
-        throw new Error('No valid billing data found in CSV');
-      }
-
-      // Pre-process to detect potential weight disputes
-      const disputeInfo = await this.detectWeightDisputes(billingRows);
-
-      // Persist disputes & wallet holds
-      if (disputeInfo.length) {
-        await this.createDisputesAndHolds(disputeInfo);
-      }
-
-      // Create bulk operation record
-      const bulkOperation = await this.fastify.prisma.bulkOperation.create({
-        data: {
-          type: 'BILLING_CSV_UPLOAD',
-          status: 'PENDING',
-          code: `BLK-${randomUUID().slice(0, 8)}`,
-          user_id: userId,
-          total_count: billingRows.length,
-          processed_count: 0,
-          success_count: 0,
-          failed_count: 0,
-        },
-      });
-
-      // Add job to queue for background processing
-      await addJob(
-        QueueNames.BILLING_CSV_PROCESSING,
-        'process-billing-csv',
-        {
-          bulkOperationId: bulkOperation.id,
-          billingRows,
-          userId,
-          disputeInfo,
-        },
-        {
-          jobId: `billing-csv-${bulkOperation.id}`,
-          priority: 1,
-        }
-      );
-
-      return {
-        success: true,
-        message: 'Billing CSV uploaded successfully and is being processed',
-        totalRecords: billingRows.length,
-        processedCount: 0,
-        errorCount: 0,
-        disputeCount: 0,
-        bulkOperationId: bulkOperation.id,
-      };
-    } catch (error: any) {
-      this.fastify.log.error(`Error uploading billing CSV: ${error.message}`);
-      throw new Error(`Failed to upload billing CSV: ${error.message}`);
-    }
+  constructor(private fastify: FastifyInstance) {
+    this.chargeService = new ChargeProcessingService(fastify);
   }
 
   /**
-   * Detect potential weight disputes from CSV data
+   * Entry point for queue worker – processes billing either for a single user or all users.
    */
-  private async detectWeightDisputes(billingRows: BillingCSVRow[]): Promise<WeightDisputeInfo[]> {
-    const disputes: WeightDisputeInfo[] = [];
+  async runBilling(userId?: string) {
+    const users = userId
+      ? [{ id: userId }]
+      : await this.fastify.prisma.user.findMany({ select: { id: true } });
+    let processed = 0;
 
-    for (const row of billingRows) {
-      try {
-        // Find shipment by AWB
-        const shipment = await this.fastify.prisma.shipment.findFirst({
-          where: { awb: row.awb },
-          include: {
-            order: {
-              include: {
-                package: true,
-              },
-            },
-            courier: true,
-          },
-        });
-
-        if (!shipment || !shipment.order) continue;
-
-        const originalWeight = shipment.order.package?.weight || 0;
-        const chargedWeight = row.weight;
-        const weightDifference = chargedWeight - originalWeight;
-
-        // If charged weight is higher than order weight, flag for dispute
-        if (weightDifference > 0.1) {
-          // Allowing 0.1kg tolerance
-          disputes.push({
-            orderId: shipment.order.id,
-            awb: row.awb,
-            originalWeight,
-            chargedWeight,
-            weightDifference,
-            courierName: shipment.courier?.name || 'Unknown',
-          });
-        }
-      } catch (error) {
-        this.fastify.log.warn(`Error processing AWB ${row.awb} for dispute detection: ${error}`);
-      }
+    for (const u of users) {
+      const count = await this.processUserBilling(u.id);
+      processed += count.processedShipments;
     }
 
-    return disputes;
+    return { processedUsers: users.length, processedShipments: processed };
   }
 
   /**
-   * Create WeightDispute records and wallet holds for each dispute info
+   * Process billing for single user – determines cycle from UserProfile
    */
-  private async createDisputesAndHolds(disputes: WeightDisputeInfo[]) {
-    for (const info of disputes) {
-      try {
-        // Skip if dispute already exists
-        const existing = await this.fastify.prisma.weightDispute.findFirst({
-          where: { order_id: info.orderId },
-        });
-        if (existing) continue;
-
-        // Fetch order & wallet
-        const order = await this.fastify.prisma.order.findUnique({
-          where: { id: info.orderId },
-          include: { user: { include: { wallet: true } } },
-        });
-        if (!order || !order.user) continue;
-
-        const holdAmount = (Math.round(info.weightDifference * 100) / 100) * 20; // Placeholder Rs.20 per kg excess
-
-        // Create dispute
-        const dispute = await this.fastify.prisma.weightDispute.create({
-          data: {
-            dispute_id: `WD-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-            order_id: order.id,
-            user_id: order.user_id,
-            original_weight: info.originalWeight,
-            disputed_weight: info.chargedWeight,
-            status: 'PENDING',
-            courier_name: info.courierName,
-            original_charges: holdAmount,
-            forward_excess_amount: holdAmount,
-            total_disputed_amount: holdAmount,
-          },
-        });
-
-        // Wallet hold
-        if (order.user.wallet) {
-          await this.fastify.prisma.walletHoldTransaction.create({
-            data: {
-              code: `WH-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-              wallet_id: order.user.wallet.id,
-              user_id: order.user_id,
-              hold_amount: holdAmount,
-              hold_reason: 'WEIGHT_DISPUTE',
-              reference_id: dispute.id,
-              reference_type: 'DISPUTE',
-            },
-          });
-
-          // Adjust wallet balances
-          await this.fastify.prisma.userWallet.update({
-            where: { id: order.user.wallet.id },
-            data: {
-              hold_amount: { increment: holdAmount },
-              usable_amount: { decrement: holdAmount },
-            },
-          });
-        }
-      } catch (err) {
-        this.fastify.log.error(`Error creating dispute for order ${info.orderId}: ${err}`);
-      }
+  async processUserBilling(userId: string): Promise<{ processedShipments: number }> {
+    // Fetch user profile for cycle dates
+    const profile = await this.fastify.prisma.userProfile.findUnique({
+      where: { user_id: userId },
+    });
+    if (!profile) {
+      throw new Error('User profile not found');
     }
-  }
 
-  /**
-   * Process manual billing for specific AWBs or date range
-   */
-  async processManualBilling(
-    userId: string,
-    awbs?: string[],
-    dateRange?: { from: Date; to: Date },
-    adminUserId?: string
-  ): Promise<BillingProcessingResult> {
-    try {
-      let whereClause: any = {
+    const { billing_cycle_start_date, billing_cycle_end_date, billing_cycle_type } = profile as any;
+    if (!billing_cycle_start_date || !billing_cycle_end_date) {
+      throw new Error('Billing cycle dates not configured');
+    }
+
+    // Get or create UserBilling summary record
+    let userBilling = await this.fastify.prisma.userBilling.findFirst({
+      where: {
         user_id: userId,
-      };
-
-      if (awbs && awbs.length > 0) {
-        whereClause.shipment = {
-          awb: { in: awbs },
-        };
-      }
-
-      if (dateRange) {
-        whereClause.created_at = {
-          gte: dateRange.from,
-          lte: dateRange.to,
-        };
-      }
-
-      // Find orders that haven't been billed yet
-      const orders = await this.fastify.prisma.order.findMany({
-        where: {
-          ...whereClause,
-          billing: {
-            none: {}, // Orders with no billing records
-          },
-        },
-        include: {
-          shipment: true,
-          package: true,
-        },
-      });
-
-      let processedCount = 0;
-      let successCount = 0;
-      let errorCount = 0;
-
-      for (const order of orders) {
-        try {
-          if (order.shipment) {
-            const billingAmount = 0; // Placeholder - implement actual calculation
-            await this.createManualBillingRecord(
-              order,
-              order.package?.weight || 0,
-              billingAmount,
-              adminUserId
-            );
-            successCount++;
-          }
-        } catch (error) {
-          errorCount++;
-          this.fastify.log.error(`Error processing manual billing for order ${order.id}: ${error}`);
-        }
-        processedCount++;
-      }
-
-      return {
-        success: true,
-        message: 'Manual billing completed',
-        totalRecords: orders.length,
-        processedCount,
-        errorCount,
-        disputeCount: 0,
-      };
-    } catch (error: any) {
-      this.fastify.log.error(`Error processing manual billing: ${error.message}`);
-      throw error;
-    }
-  }
-
-  /**
-   * Create manual billing record
-   */
-  private async createManualBillingRecord(
-    order: any,
-    chargedWeight: number,
-    billingAmount: number,
-    adminUserId?: string
-  ): Promise<void> {
-    const billingCode = `BL-MAN-${Date.now()}-${randomUUID().slice(0, 8)}`;
-    const currentDate = new Date();
-    const billingMonth = format(currentDate, 'yyyy-MM');
-
-    await this.fastify.prisma.billing.create({
-      data: {
-        code: billingCode,
-        order_id: order.id,
-        billing_date: currentDate,
-        billing_month: billingMonth,
-        billing_amount: billingAmount,
-        charged_weight: chargedWeight,
-        original_weight: order.package?.weight || 0,
-        weight_difference: 0,
-        has_weight_dispute: false,
-        fw_excess_charge: 0,
-        rto_excess_charge: 0,
-        zone_change_charge: 0,
-        cod_charge: 0,
-        is_forward_applicable: true,
-        is_rto_applicable: true,
-        base_price: billingAmount,
-        base_weight: 0.5,
-        increment_price: 0,
-        order_weight: order.package?.weight || 0,
-        order_zone: order.shipment?.order_zone,
-        charged_zone: order.shipment?.order_zone,
-        courier_name: order.shipment?.courier?.name,
-        cycle_type: CycleType.MANUAL,
-        is_manual_billing: true,
-        approved_by: adminUserId,
-        approved_at: currentDate,
-        applied_charges: JSON.stringify(['base_charge']),
+        cycle_start_date: billing_cycle_start_date,
+        cycle_end_date: billing_cycle_end_date,
       },
     });
-  }
 
-  /**
-   * Create automatic billing cycle for user
-   */
-  async createAutomaticBillingCycle(
-    userId: string,
-    cycleType: CycleType = CycleType.MONTHLY,
-    cycleDays?: number
-  ): Promise<string> {
-    try {
-      const startDate = new Date();
-
-      // Determine cycle length in days based on type
-      const lengthDays = (() => {
-        switch (cycleType) {
-          case CycleType.DAILY:
-            return 1;
-          case CycleType.WEEKLY:
-            return 7;
-          case CycleType.FORTNIGHTLY:
-            return 15;
-          case CycleType.MONTHLY:
-            return 30;
-          case CycleType.CUSTOM:
-            return cycleDays && cycleDays > 0 ? cycleDays : 30;
-          default:
-            return 30;
-        }
-      })();
-
-      const endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + lengthDays);
-
-      const nextCycleDate = new Date(endDate);
-      nextCycleDate.setDate(nextCycleDate.getDate() + lengthDays);
-
-      const billingCycle = await this.fastify.prisma.billingCycle.create({
+    if (!userBilling) {
+      userBilling = await this.fastify.prisma.userBilling.create({
         data: {
-          code: `BC-${Date.now()}-${randomUUID().slice(0, 8)}`,
+          code: `UB-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
           user_id: userId,
-          cycle_type: cycleType,
-          cycle_days: lengthDays,
-          cycle_start_date: startDate,
-          cycle_end_date: endDate,
-          next_cycle_date: nextCycleDate,
-          status: BillingStatus.PENDING,
-          is_active: true,
+          cycle_type: billing_cycle_type || CycleType.MONTHLY,
+          cycle_start_date: billing_cycle_start_date,
+          cycle_end_date: billing_cycle_end_date,
+          status: BillingStatus.PROCESSING,
+          is_active: false,
         },
       });
-
-      return billingCycle.id;
-    } catch (error: any) {
-      this.fastify.log.error(`Error creating billing cycle: ${error.message}`);
-      throw error;
     }
-  }
 
-  /**
-   * Get billing summary by month for admin
-   */
-  async getBillingSummaryByMonth(month: string, page = 1, limit = 20) {
-    try {
-      const userBillingData = await this.fastify.prisma.billing.findMany({
-        where: {
-          billing_month: month,
-        },
-        include: {
-          order: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
-                },
-              },
-            },
-          },
-        },
-        skip: (page - 1) * limit,
-        take: limit,
-      });
-
-      // Group by user and calculate payment status amounts
-      const userSummaryMap = new Map();
-      let totalAmount = 0;
-      let totalOrders = 0;
-
-      userBillingData.forEach((billing) => {
-        const userId = billing.order.user_id;
-        const userInfo = billing.order.user;
-
-        if (!userSummaryMap.has(userId)) {
-          userSummaryMap.set(userId, {
-            user_id: userId,
-            user_name: userInfo.name,
-            user_email: userInfo.email,
-            total_orders: 0,
-            total_billing_amount: 0,
-            pending_amount: 0,
-            paid_amount: 0,
-            disputed_amount: 0,
-          });
-        }
-
-        const userSummary = userSummaryMap.get(userId);
-        userSummary.total_orders += 1;
-        userSummary.total_billing_amount += billing.billing_amount;
-
-        // Categorize amounts by payment status
-        switch (billing.payment_status.toUpperCase()) {
-          case 'PAID':
-            userSummary.paid_amount += billing.billing_amount;
-            break;
-          case 'DISPUTED':
-            userSummary.disputed_amount += billing.billing_amount;
-            break;
-          case 'NOT_PAID':
-          default:
-            userSummary.pending_amount += billing.billing_amount;
-            break;
-        }
-
-        totalOrders += 1;
-        totalAmount += billing.billing_amount;
-      });
-
-      const users = Array.from(userSummaryMap.values());
-
-      return {
-        billing_month: month,
-        users,
-        total_amount: totalAmount,
-        total_orders: totalOrders,
-        pagination: {
-          page,
-          pageSize: limit,
-          total: users.length,
-          pageCount: Math.ceil(users.length / limit),
-        },
-      };
-    } catch (error: any) {
-      this.fastify.log.error(`Error getting billing summary: ${error.message}`);
-      throw new Error(`Failed to get billing summary: ${error.message}`);
-    }
-  }
-
-  /**
-   * Get user billing details for a specific month
-   */
-  async getUserBillingByMonth(userId: string, month: string) {
-    try {
-      const billingRecords = await this.fastify.prisma.billing.findMany({
-        where: {
-          billing_month: month,
-          order: {
-            user_id: userId,
-          },
-        },
-        include: {
-          order: {
-            include: {
-              shipment: true,
-              customer: true,
-              user: true,
-              hub: true,
-              weight_dispute: true,
-            },
-          },
-        },
-        orderBy: {
-          billing_date: 'desc',
-        },
-      });
-
-      let totalAmount = 0;
-      let pendingAmount = 0;
-      let paidAmount = 0;
-      let disputedAmount = 0;
-
-      const records = billingRecords.map((billing) => {
-        totalAmount += billing.billing_amount;
-
-        // Categorize amounts by payment status
-        switch (billing.payment_status.toUpperCase()) {
-          case 'PAID':
-            paidAmount += billing.billing_amount;
-            break;
-          case 'DISPUTED':
-            disputedAmount += billing.billing_amount;
-            break;
-          case 'NOT_PAID':
-          default:
-            pendingAmount += billing.billing_amount;
-            break;
-        }
-
-        return {
-          id: billing.id,
-          code: billing.code,
-          order_id: billing.order_id,
-          billing_date: billing.billing_date.toISOString(),
-          billing_month: billing.billing_month,
-          billing_amount: billing.billing_amount,
-          charged_weight: billing.charged_weight,
-          original_weight: billing.original_weight,
-          weight_difference: billing.weight_difference,
-          has_weight_dispute: billing.has_weight_dispute,
-          fw_excess_charge: billing.fw_excess_charge,
-          rto_excess_charge: billing.rto_excess_charge,
-          zone_change_charge: billing.zone_change_charge,
-          cod_charge: billing.cod_charge,
-          is_forward_applicable: billing.is_forward_applicable,
-          is_rto_applicable: billing.is_rto_applicable,
-          base_price: billing.base_price,
-          base_weight: billing.base_weight,
-          increment_price: billing.increment_price,
-          order_weight: billing.order_weight,
-          order_zone: billing.order_zone,
-          charged_zone: billing.charged_zone,
-          courier_name: billing.courier_name,
-          cycle_type: billing.cycle_type,
-          is_manual_billing: billing.is_manual_billing,
-          is_processed: billing.is_processed,
-          payment_status: billing.payment_status,
-          created_at: billing.created_at.toISOString(),
-          updated_at: billing.updated_at.toISOString(),
-          order: {
-            order_number: billing.order.order_number,
-            customer: {
-              name: billing.order.customer.name,
-              phone: billing.order.customer.phone,
-              email: billing.order.customer.email || '',
-            },
-            hub: {
-              name: billing.order.hub?.name || '',
-            },
-            shipment: {
-              awb: billing.order.shipment?.awb || '',
-              courier: {
-                name: billing.courier_name || '',
-              },
-            },
-            weight_dispute: billing.order.weight_dispute,
-          },
-        };
-      });
-
-      return {
-        billing_month: month,
+    // Get eligible shipments
+    const shipments = await this.fastify.prisma.shipment.findMany({
+      where: {
         user_id: userId,
-        records,
-        summary: {
-          total_orders: billingRecords.length,
-          total_billing_amount: totalAmount,
-          pending_amount: pendingAmount,
-          paid_amount: paidAmount,
-          disputed_amount: disputedAmount,
-        },
-        pagination: {
-          page: 1,
-          pageSize: records.length,
-          total: records.length,
-          pageCount: 1,
-        },
-      };
-    } catch (error: any) {
-      this.fastify.log.error(`Error getting user billing: ${error.message}`);
-      throw new Error(`Failed to get user billing: ${error.message}`);
-    }
-  }
+        created_at: { gte: billing_cycle_start_date, lte: billing_cycle_end_date },
+        bucket: { notIn: EXCLUDED_BUCKETS },
+        status: { notIn: EXCLUDED_STATUSES },
+      },
+      include: {
+        order: true,
+        pricing: true,
+        courier: { include: { channel_config: true } },
+      },
+    });
 
-  /**
-   * Get available billing months
-   */
-  async getAvailableBillingMonths(): Promise<string[]> {
-    try {
-      const months = await this.fastify.prisma.billing.findMany({
-        select: {
-          billing_month: true,
-        },
-        distinct: ['billing_month'],
-        orderBy: {
-          billing_month: 'desc',
-        },
+    let processed = 0;
+    let billingAmount = 0;
+
+    for (const shipment of shipments) {
+      const cacheKey = `billing:processed:${shipment.awb}:${Date.now()}`;
+      if (await redis.get(cacheKey)) continue; // Skip if already processed
+
+      // Check Billing table to avoid duplication
+      const existing = await this.fastify.prisma.billing.findFirst({
+        where: { order_id: shipment.order_id },
       });
-
-      return months.map((m) => m.billing_month);
-    } catch (error: any) {
-      this.fastify.log.error(`Error getting billing months: ${error.message}`);
-      throw new Error(`Failed to get billing months: ${error.message}`);
-    }
-  }
-
-  /**
-   * Get bulk operation status
-   */
-  async getBulkOperationStatus(operationId: string, userId: string) {
-    try {
-      const operation = await this.fastify.prisma.bulkOperation.findFirst({
-        where: {
-          id: operationId,
-          user_id: userId,
-        },
-      });
-
-      if (!operation) {
-        throw new Error('Bulk operation not found');
+      if (existing) {
+        await redis.set(cacheKey, '1', 'EX', 60 * 60 * 24); // Cache for one day
+        continue;
       }
 
-      const progress =
-        operation.total_count > 0
-          ? Math.floor((operation.processed_count / operation.total_count) * 100)
-          : 0;
+      // Process RTO and COD charges
+      await this.chargeService.processRtoShipmentCharges(shipment);
 
-      return {
-        ...operation,
-        progress,
-      };
-    } catch (error: any) {
-      this.fastify.log.error(`Error getting bulk operation status: ${error.message}`);
-      throw new Error(`Failed to get bulk operation status: ${error.message}`);
+      // Map shipment to billing data
+      const billingData = mapShipmentToBilling(shipment, shipment.pricing || {}, {
+        code: `BL-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        billing_date: new Date(),
+        billing_month: new Date().toISOString().slice(0, 7),
+        billing_cycle_id: userBilling.id,
+        is_manual_billing: false,
+      });
+
+      // Create billing record
+      await this.fastify.prisma.billing.create({ data: billingData as any });
+      billingAmount += billingData.billing_amount;
+      await redis.set(cacheKey, '1', 'EX', 60 * 60 * 24); // Cache for one day
+      processed++;
     }
+
+    // Update UserBilling summary
+    await this.fastify.prisma.userBilling.update({
+      where: { id: userBilling.id },
+      data: {
+        total_orders: processed,
+        processed_orders: processed,
+        total_amount: billingAmount,
+        status: BillingStatus.COMPLETED,
+      },
+    });
+
+    return { processedShipments: processed };
+  }
+  /**
+   * Generate billing manually either by explicit AWB list or by date range
+   */
+  async generateManualBilling(params: {
+    awbs?: string[];
+    startDate?: string;
+    endDate?: string;
+    userId?: string;
+  }) {
+    const { awbs, startDate, endDate, userId } = params;
+    if (!awbs && !(startDate && endDate)) {
+      throw new Error('Provide either awbs array or startDate & endDate');
+    }
+
+    const where: any = {
+      bucket: { notIn: EXCLUDED_BUCKETS },
+      status: { notIn: EXCLUDED_STATUSES },
+    };
+
+    if (userId) where.user_id = userId;
+    if (awbs) {
+      where.awb = { in: awbs };
+    } else {
+      where.created_at = { gte: new Date(startDate as string), lte: new Date(endDate as string) };
+    }
+
+    const shipments = await this.fastify.prisma.shipment.findMany({
+      where,
+      include: { order: true, pricing: true, courier: { include: { channel_config: true } } },
+    });
+
+    let processed = 0;
+    let billingAmount = 0;
+    // create UserBilling summary for manual run
+    const userBilling = await this.fastify.prisma.userBilling.create({
+      data: {
+        code: `UB-M-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        user_id: userId || 'GLOBAL',
+        cycle_type: CycleType.MANUAL,
+        cycle_start_date: awbs ? new Date() : new Date(startDate as string),
+        cycle_end_date: awbs ? new Date() : new Date(endDate as string),
+        status: BillingStatus.PROCESSING,
+        is_active: false,
+      },
+    });
+
+    for (const shipment of shipments) {
+      const cacheKey = `billing:manual:${shipment.awb}:${Date.now()}`;
+      if (awbs && (await redis.get(cacheKey))) continue;
+
+      await this.chargeService.processRtoShipmentCharges(shipment);
+
+      const billingData = mapShipmentToBilling(shipment, shipment.pricing || {}, {
+        code: `BL-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        billing_date: new Date(),
+        billing_month: new Date().toISOString().slice(0, 7),
+        billing_cycle_id: userBilling.id,
+        is_manual_billing: false,
+      });
+
+      await this.fastify.prisma.billing.create({ data: billingData as any });
+      billingAmount += billingData.billing_amount;
+      await redis.set(cacheKey, '1', 'EX', 60 * 60);
+      processed++;
+    }
+
+    await this.fastify.prisma.userBilling.update({
+      where: { id: userBilling.id },
+      data: {
+        total_orders: processed,
+        processed_orders: processed,
+        total_amount: billingAmount,
+        status: BillingStatus.COMPLETED,
+      },
+    });
+
+    return { processedShipments: processed };
+  }
+
+  /**
+   * Automatically resolve disputes older than 7 days
+   */
+  async autoResolveDisputes() {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const disputes = await this.fastify.prisma.weightDispute.findMany({
+      where: {
+        status: 'PENDING',
+        dispute_raised_at: { lt: sevenDaysAgo },
+      },
+      include: { order: true },
+    });
+
+    for (const dispute of disputes) {
+      // Apply disputed amount to wallet via TransactionService inside ChargeProcessingService
+      // For now mark resolved and deduct.
+      await this.fastify.prisma.weightDispute.update({
+        where: { id: dispute.id },
+        data: {
+          status: 'RESOLVED',
+          auto_resolved_at: new Date(),
+          resolution: 'Auto-resolved after 7 days',
+        },
+      });
+    }
+
+    return { resolved: disputes.length };
   }
 }

@@ -15,8 +15,4 @@ export async function flushKeysByPattern(pattern: string): Promise<void> {
     const batch = keysToDelete.slice(i, i + BATCH_SIZE);
     await redis.del(...batch);
   }
-
-  // if (keysToDelete.length > 0) {
-  //    console.log(`Flushed ${keysToDelete.length} keys for pattern: ${pattern}`);
-  // }
 }

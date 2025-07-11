@@ -59,13 +59,12 @@ export class ShipmentController {
 
       return reply.code(201).send(result);
     } catch (error) {
-      console.log(error, 'error');
-      captureException(error as Error, {
-        userId: userId,
-        data: request.body,
-        error: error,
+      request.log.error('Error creating shipment:', error);
+      reply.status(500).send({
+        success: false,
+        message: 'Failed to create shipment',
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
-      return reply.code(500).send({ error: 'Failed to create shipment' });
     }
   }
 
@@ -439,14 +438,16 @@ export class ShipmentController {
     try {
       const { batchSize } = request.body as { batchSize?: number };
 
-      const result = await processShipmentTracking(request.server, this.shipmentService, {
-        batchSize: batchSize || 50,
-      });
+      const result = await processShipmentTracking(
+        request.server,
+        this.shipmentService,
+        { batchSize: batchSize || 50 },
+        request.log
+      );
 
       return reply.send({
-        success: true,
-        message: `Processed ${result.processed} shipments: ${result.updated} updated, ${result.skipped} skipped, ${result.failed} failed`,
-        ...result,
+        success: result.success,
+        message: result.message,
       });
     } catch (error) {
       request.log.error('Error in trackShipmentBatch:', error);

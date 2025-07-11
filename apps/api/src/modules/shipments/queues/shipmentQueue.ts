@@ -11,13 +11,19 @@ import {
   BulkOperationResult,
 } from '@/modules/bulk-operations/utils/file-utils';
 import pLimit from 'p-limit';
+import csv from 'csvtojson';
+import { TransactionType } from '@/modules/transactions/services/transaction-service';
+import { mapShipmentToBilling } from '@/modules/billing/utils/billing-mapper';
 import {
   processShipmentTracking,
   processTrackingRetry,
   TrackingProcessor,
   TrackingProcessorConfig,
+  processBulkShipmentTracking,
 } from '../batch/processor';
-import { ShipmentStatus } from '@lorrigo/db';
+import { ChargeType, ShipmentStatus } from '@lorrigo/db';
+import { calculateExcessCharges } from '@/utils/calculate-order-price';
+import { TransactionService } from '@/modules/transactions/services/transaction-service';
 
 // Job types for the shipment queue
 export enum JobType {
@@ -38,6 +44,8 @@ export enum JobType {
   PROCESS_EDD_UPDATES = 'process-edd-updates',
   PROCESS_NDR_DETAILS = 'process-ndr-details',
   PROCESS_BULK_TRACKING_EVENTS = 'process-bulk-tracking-events',
+  PROCESS_BILLING_WEIGHT_CSV = 'process-billing-weight-csv',
+  PROCESS_DISPUTE_ACTIONS_CSV = 'process-dispute-actions-csv',
 }
 
 /**
@@ -132,6 +140,10 @@ export function initShipmentQueue(fastify: FastifyInstance, shipmentService: Shi
             return await processBulkDownloadLabel(job, fastify, shipmentService);
           case JobType.BULK_EDIT_PICKUP_ADDRESS:
             return await processBulkEditPickupAddress(job, fastify, shipmentService);
+          case JobType.PROCESS_BILLING_WEIGHT_CSV:
+            return await processBillingWeightCsv(job, fastify);
+          case JobType.PROCESS_DISPUTE_ACTIONS_CSV:
+            return await processDisputeActionsCsv(job, fastify);
           default:
             throw new Error(`Unknown job type: ${job.name}`);
         }
@@ -188,10 +200,12 @@ export function initShipmentQueue(fastify: FastifyInstance, shipmentService: Shi
         switch (job.name) {
           case JobType.TRACK_SHIPMENTS:
             const { batchSize, config } = job.data as TrackingJobData;
-            return await processShipmentTracking(fastify, shipmentService, {
-              batchSize: batchSize || 50,
-              ...config,
-            });
+            return await processShipmentTracking(
+              fastify,
+              shipmentService,
+              { batchSize: batchSize || 50, ...config },
+              job // Pass the job as the fourth argument
+            );
 
           case JobType.RETRY_TRACK_SHIPMENT:
             const { shipmentId } = job.data as TrackingJobData;
@@ -205,10 +219,10 @@ export function initShipmentQueue(fastify: FastifyInstance, shipmentService: Shi
             if (!rtoShipmentId || !orderId) {
               throw new Error('Missing shipment ID or order ID for RTO charges');
             }
-            return await TrackingProcessor.processRtoCharges(rtoShipmentId, orderId);
+            return await TrackingProcessor.processRtoCharges(fastify, rtoShipmentId, orderId);
 
           case JobType.PROCESS_BULK_STATUS_UPDATES:
-            return await TrackingProcessor.processBulkStatusUpdates(fastify);
+            return await processOptimizedBulkStatusUpdates(fastify);
 
           case JobType.PROCESS_UNMAPPED_STATUSES:
             return await TrackingProcessor.processUnmappedStatuses(fastify);
@@ -1025,4 +1039,278 @@ async function processBulkEditPickupAddress(
   await job.updateProgress(100);
 
   return { success: true, results };
+}
+
+/**
+ * Optimized bulk status updates using the new bulk processing function
+ */
+async function processOptimizedBulkStatusUpdates(fastify: FastifyInstance): Promise<{
+  processed: number;
+  updated: number;
+  rtoProcessed: number;
+  errors: Array<{ shipmentId: string; error: string }>;
+}> {
+  try {
+    const BATCH_SIZE = 100;
+    
+    // Get shipments that need status updates
+    const shipments = await fastify.prisma.shipment.findMany({
+      where: {
+        awb: { not: null },
+        status: {
+          notIn: [
+            ShipmentStatus.DELIVERED,
+            ShipmentStatus.RTO_DELIVERED,
+            ShipmentStatus.CANCELLED_SHIPMENT,
+            ShipmentStatus.CANCELLED_ORDER,
+          ],
+        },
+      },
+      select: {
+        id: true,
+        awb: true,
+        status: true,
+        bucket: true,
+        user_id: true,
+        updated_at: true,
+        order: {
+          select: {
+            id: true,
+            code: true,
+          },
+        },
+        courier: {
+          select: {
+            channel_config: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+      take: BATCH_SIZE,
+      orderBy: { updated_at: 'asc' },
+    });
+
+    if (shipments.length === 0) {
+      return { processed: 0, updated: 0, rtoProcessed: 0, errors: [] };
+    }
+
+    // Use the optimized bulk processing function
+    const shipmentService = new (await import('../services/shipmentService')).ShipmentService(
+      fastify,
+      new (await import('../../orders/services/order-service')).OrderService(fastify)
+    );
+    
+    const result = await processBulkShipmentTracking(fastify, shipmentService, shipments);
+
+    fastify.log.info(`Optimized bulk status update completed: ${result.updated} updated, ${result.rtoProcessed} RTO processed`);
+
+    return result;
+  } catch (error) {
+    fastify.log.error(`Error in optimized bulk status updates: ${error}`);
+    return { processed: 0, updated: 0, rtoProcessed: 0, errors: [] };
+  }
+}
+
+async function processBillingWeightCsv(job: Job, fastify: FastifyInstance) {
+  const { csvPath, operationId } = job.data as { csvPath: string; operationId: string };
+  try {
+    const rows = await csv().fromFile(csvPath);
+    let processed = 0;
+    let success = 0;
+
+    for (const row of rows) {
+      const awb = String(row['AWB'] || row['awb']).trim();
+      const chargedW = parseFloat(row['Charged weight'] || row['charged_weight'] || row['Charged_Weight']);
+      const evidenceUrl = row['evidence_url'] || row['Evidence'] || '';
+      if (!awb || !chargedW || Number.isNaN(chargedW)) continue;
+
+      const shipment = await fastify.prisma.shipment.findFirst({
+        where: { awb },
+        include: {
+          order: true,
+          pricing: true,
+          courier: { include: { channel_config: true } },
+        },
+      });
+      if (!shipment) continue;
+
+      const orderWeight = shipment.order?.applicable_weight || 0;
+      if (chargedW <= orderWeight) continue; // no excess
+
+      const weightDiff = chargedW - orderWeight;
+
+      // Calculate excess charges
+      const shipmentPricing = await fastify.prisma.shipmentPricing.findUnique({ where: { shipment_id: shipment.id }, include: { courier_other_zone_pricing: true } });
+      let fwEx = 0;
+      let rtoEx = 0;
+      if (shipmentPricing) {
+        const zoneP = shipmentPricing.courier_other_zone_pricing?.find((z:any)=>z.zone===shipment.order_zone) || shipmentPricing.courier_other_zone_pricing?.[0];
+        if (zoneP) {
+          const mockCourierPricing = {
+            weight_slab: shipmentPricing.weight_slab,
+            increment_weight: shipmentPricing.increment_weight,
+            cod_charge_hard: shipmentPricing.cod_charge_hard || 0,
+            cod_charge_percent: shipmentPricing.cod_charge_percent || 0,
+            is_cod_applicable: shipmentPricing.is_cod_applicable,
+            is_rto_applicable: shipmentPricing.is_rto_applicable,
+            is_fw_applicable: shipmentPricing.is_fw_applicable,
+            is_cod_reversal_applicable: shipmentPricing.is_cod_reversal_applicable,
+            zone_pricing: [zoneP]
+          };
+          const res = calculateExcessCharges(weightDiff, mockCourierPricing, zoneP);
+          fwEx = res.fwExcess;
+          rtoEx = res.rtoExcess;
+        }
+      }
+
+      const totalExcess = fwEx + rtoEx;
+
+      // create or update WeightDispute
+      let dispute = await fastify.prisma.weightDispute.findFirst({ where: { order_id: shipment.order_id } });
+      if (!dispute) {
+        dispute = await fastify.prisma.weightDispute.create({
+          data: {
+            dispute_id: `WD-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${Date.now().toString().slice(-6)}`,
+            order_id: shipment.order_id,
+            user_id: shipment.user_id,
+            original_weight: orderWeight,
+            disputed_weight: chargedW,
+            status: 'PENDING',
+            evidence_urls: evidenceUrl ? [evidenceUrl] : [],
+            forward_excess_amount: fwEx,
+            rto_excess_amount: rtoEx,
+            total_disputed_amount: totalExcess,
+            original_charges: shipment.shipping_charge || 0,
+            courier_name: `${shipment.courier?.name}  ${shipment.courier?.channel_config?.nickname}` || '',
+            deadline_date: new Date(Date.now() + 7*24*60*60*1000),
+            wallet_hold_applied: totalExcess > 0,
+          },
+        });
+      } else {
+        await fastify.prisma.weightDispute.update({
+          where: { id: dispute.id },
+          data: {
+            disputed_weight: chargedW,
+            forward_excess_amount: fwEx,
+            rto_excess_amount: rtoEx,
+            total_disputed_amount: totalExcess,
+            evidence_urls: evidenceUrl ? { push: evidenceUrl } : undefined,
+            wallet_hold_applied: totalExcess > 0,
+          },
+        });
+      }
+
+      // Update Billing record linked to shipment
+      await fastify.prisma.billing.updateMany({
+        where: { order_id: shipment.order_id },
+        data: {
+          fw_excess_charge: fwEx,
+          rto_excess_charge: rtoEx,
+          has_weight_dispute: true,
+          charged_weight: chargedW,
+          weight_difference: weightDiff,
+        },
+      });
+
+      // Hold amount in wallet only if there's a dispute amount
+      if (totalExcess > 0) {
+        const transactionService = new TransactionService(fastify);
+        await transactionService.createShipmentTransaction({
+          amount: totalExcess,
+          type: TransactionType.HOLD,
+          description: `Weight dispute hold for AWB ${awb}`,
+          userId: shipment.user_id,
+          shipmentId: shipment.id,
+          awb: awb,
+          status: 'COMPLETED',
+          currency: 'INR',
+          merchantTransactionId: `HOLD-${awb}-${Date.now()}`,
+          charge_type: ChargeType.FORWARD_EXCESS_WEIGHT,
+        });
+      }
+
+      processed++;
+      success++;
+    }
+
+    await fastify.prisma.bulkOperation.update({
+      where: { id: operationId },
+      data: {
+        status: 'COMPLETED',
+        processed_count: processed,
+        success_count: success,
+      },
+    });
+
+    return { processed };
+  } catch (err) {
+    fastify.log.error(err);
+    await fastify.prisma.bulkOperation.update({ where: { id: operationId }, data: { status: 'FAILED', error_message: (err as Error).message } });
+    throw err;
+  }
+}
+
+async function processDisputeActionsCsv(job: Job, fastify: FastifyInstance) {
+  const { csvPath, operationId, actor } = job.data as { csvPath: string; operationId: string; actor: 'ADMIN' | 'SELLER' };
+  try {
+    const rows = await csv().fromFile(csvPath);
+    let processed = 0;
+
+    for (const row of rows) {
+      const awb = String(row['AWB'] || row['awb']).trim();
+      const action = String(row['Action'] || row['action']).toUpperCase();
+      const finalWeightField = row['final_weight'] || row['Final weight'] || row['Final_Weight'];
+      const finalWeight = finalWeightField ? parseFloat(finalWeightField) : undefined;
+
+      const shipment = await fastify.prisma.shipment.findFirst({ where: { awb } });
+      if (!shipment) continue;
+
+      const dispute = await fastify.prisma.weightDispute.findFirst({ where: { order_id: shipment.order_id } });
+      if (!dispute) continue;
+
+      if (actor === 'SELLER') {
+        // seller can ACCEPT or RAISED (raise evidence)
+        if (action === 'ACCEPT') {
+          await fastify.prisma.weightDispute.update({
+            where: { id: dispute.id },
+            data: {
+              status: 'RESOLVED',
+              seller_action_taken: true,
+            },
+          });
+        } else if (action === 'RAISED') {
+          await fastify.prisma.weightDispute.update({
+            where: { id: dispute.id },
+            data: {
+              status: 'RAISED_BY_SELLER',
+              seller_action_taken: true,
+            },
+          });
+        }
+      } else {
+        // ADMIN flow: ACCEPT / REJECT, optional final_weight
+        if (action === 'ACCEPT') {
+          let updateData: any = { status: 'RESOLVED' };
+          if (finalWeight) {
+            updateData.final_weight = finalWeight;
+          }
+          await fastify.prisma.weightDispute.update({ where: { id: dispute.id }, data: updateData });
+          // apply wallet debit/credit if needed using TransactionService
+        } else if (action === 'REJECT') {
+          await fastify.prisma.weightDispute.update({ where: { id: dispute.id }, data: { status: 'REJECTED' } });
+        }
+      }
+      processed++;
+    }
+
+    await fastify.prisma.bulkOperation.update({ where: { id: operationId }, data: { status: 'COMPLETED', processed_count: processed, success_count: processed } });
+    return { processed };
+  } catch (err) {
+    fastify.log.error(err);
+    await fastify.prisma.bulkOperation.update({ where: { id: operationId }, data: { status: 'FAILED', error_message: (err as Error).message } });
+    throw err;
+  }
 }

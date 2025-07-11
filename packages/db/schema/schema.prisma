@@ -80,8 +80,16 @@ enum TransactionStatus {
   REFUNDED
 }
 
+enum TransactionType {
+  CREDIT
+  DEBIT
+  HOLD
+  HOLD_RELEASE
+}
+
 enum WeightDisputeStatus {
   PENDING
+  RAISED_BY_SELLER
   RESOLVED
   REJECTED
 }
@@ -600,7 +608,7 @@ model ShipmentTransaction {
 
   charge_type ChargeType @default(FORWARD_CHARGE)
 
-  @@unique([shipment_id, charge_type])
+  @@unique([shipment_id, awb, charge_type])
   @@index([wallet_id, user_id, status, created_at])
   @@index([merchant_transaction_id])
   @@index([awb])
@@ -712,6 +720,7 @@ model Billing {
   code     String @unique // Format: BL-YYMM-XXXXX
   order_id String
   order    Order  @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  awb      String?
 
   billing_date   DateTime
   billing_month  String   @db.VarChar(7) // Format: YYYY-MM
@@ -726,6 +735,8 @@ model Billing {
   rto_excess_charge     Float   @default(0)
   zone_change_charge    Float   @default(0)
   cod_charge            Float   @default(0)
+  fw_charge             Float   @default(0)
+  rto_charge            Float   @default(0)
   is_forward_applicable Boolean
   is_rto_applicable     Boolean
 
@@ -744,7 +755,6 @@ model Billing {
   cycle_type          CycleType     @default(MONTHLY)
   is_manual_billing   Boolean       @default(false)
   payment_status      BillingStatus @default(PENDING)
-  previous_billing_id String?
 
   admin_notes String?   @db.Text
   approved_by String?
@@ -753,10 +763,12 @@ model Billing {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  @@unique([code, order_id])
   @@index([billing_month, order_id])
   @@index([order_id, billing_date])
+  @@index([billing_cycle_id])
   @@index([has_weight_dispute])
+  @@index([awb])
+  @@index([code])
 }
 
 model Remittance {
@@ -1185,8 +1197,8 @@ model WeightDispute {
 
 model UserBilling {
   id      String @id @default(cuid())
-  code    String @unique // Custom ID
-  user_id String @unique
+  code    String // Custom ID
+  user_id String
   user    User   @relation("UserBillings", fields: [user_id], references: [id], onDelete: Cascade)
 
   // Cycle Configuration
@@ -1211,6 +1223,7 @@ model UserBilling {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
+  @@unique([code, user_id])
   @@index([user_id])
   @@index([cycle_type])
   @@index([status])

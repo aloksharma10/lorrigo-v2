@@ -49,10 +49,11 @@ export class CourierService {
     const [existingCourier, channelConfig] = await Promise.all([
       this.fastify.prisma.courier.findUnique({
         where: {
-          code_name_weight_slab: {
-            code: data.code,
+          name_channel_config_id_is_reversed_courier_courier_code: {
             name: data.name,
-            weight_slab: data.weight_slab || 0,
+            channel_config_id: data.channel_config_id || '',
+            is_reversed_courier: data.is_reversed_courier,
+            courier_code: data.courier_code,
           },
         },
         select: { id: true },
@@ -239,26 +240,6 @@ export class CourierService {
       };
     }
 
-    // If code is being updated, check if it conflicts with another courier
-    if (data.code && data.code !== existingCourier.code) {
-      const codeConflict = await this.fastify.prisma.courier.findUnique({
-        where: {
-          code_name_weight_slab: {
-            code: data.code,
-            name: data.name || '',
-            weight_slab: data.weight_slab || 0,
-          },
-        },
-      });
-
-      if (codeConflict) {
-        return {
-          error: 'Courier with this code already exists',
-          status: 409,
-        };
-      }
-    }
-
     // Update the courier
     return await this.fastify.prisma.courier.update({
       where: { id },
@@ -280,14 +261,6 @@ export class CourierService {
       return {
         error: 'Courier not found',
         status: 404,
-      };
-    }
-
-    // Only admins can set pricing for others, or users can set their own
-    if (!ADMIN_ROLES.includes(userRole as any) && userId !== userId) {
-      return {
-        error: 'You do not have permission to set pricing for other users',
-        status: 403,
       };
     }
 

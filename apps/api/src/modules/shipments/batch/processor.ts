@@ -1,5 +1,5 @@
-import { prisma, ShipmentStatus } from '@lorrigo/db';
-import { ShipmentBucketManager, ShipmentBucket } from '@lorrigo/utils';
+import { ChargeType, prisma, ShipmentStatus } from '@lorrigo/db';
+import { ShipmentBucketManager, ShipmentBucket, getShipmentBucket } from '@lorrigo/utils';
 import { FastifyInstance } from 'fastify';
 import { ShipmentService } from '../services/shipmentService';
 import { addJob, QueueNames } from '@/lib/queue';
@@ -7,7 +7,6 @@ import { redis } from '@/lib/redis';
 import pLimit from 'p-limit';
 import { TrackingEventData } from '@/types/vendor';
 import { JobType } from '../queues/shipmentQueue';
-import { TransactionService, TransactionType, TransactionEntityType } from '@/modules/transactions/services/transaction-service';
 import { ChargeProcessingService } from '../services/charge-processing.service';
 
 /**
@@ -61,367 +60,238 @@ export interface TrackingResult {
 }
 
 /**
- * Process shipments for tracking updates
- * Fetches shipments that need tracking and processes them in batches
- *
+ * Process shipments for tracking updates with proper function signature
  * @param fastify Fastify instance for database and logging access
  * @param shipmentService Service for tracking shipments
  * @param config Optional configuration overrides
+ * @param job Optional job instance for progress tracking
  * @returns Processing statistics
  */
 export async function processShipmentTracking(
   fastify: FastifyInstance,
   shipmentService: ShipmentService,
-  config: Partial<TrackingProcessorConfig> = {}
-): Promise<{
-  processed: number;
-  updated: number;
-  skipped: number;
-  failed: number;
-  results: TrackingResult[];
-}> {
-  const processorConfig: TrackingProcessorConfig = {
-    ...DEFAULT_CONFIG,
-    ...config,
-    updateFrequency: {
-      ...DEFAULT_CONFIG.updateFrequency,
-      ...(config.updateFrequency || {}),
-    },
-  };
-
+  config: { batchSize: number; [key: string]: any },
+  job?: any
+): Promise<{ success: boolean; message: string; processed: number; updated: number }> {
   try {
-    fastify.log.info('Starting shipment tracking batch process');
-
-    const shipments = await getShipmentsForTracking(fastify, processorConfig);
+    const { batchSize = 50 } = config;
+    
+    // Get shipments that need tracking updates
+    const shipments = await fastify.prisma.shipment.findMany({
+      where: {
+        awb: { not: null },
+        status: {
+          notIn: [
+            ShipmentStatus.DELIVERED,
+            ShipmentStatus.RTO_DELIVERED,
+            ShipmentStatus.CANCELLED_SHIPMENT,
+            ShipmentStatus.CANCELLED_ORDER,
+          ],
+        },
+      },
+      include: {
+        order: {
+          select: {
+            id: true,
+            code: true,
+          },
+        },
+        courier: {
+          select: {
+            channel_config: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+      take: batchSize,
+      orderBy: { updated_at: 'asc' },
+    });
 
     if (shipments.length === 0) {
-      fastify.log.info('No shipments found for tracking');
-      return { processed: 0, updated: 0, skipped: 0, failed: 0, results: [] };
+      return { success: true, message: 'No shipments to track', processed: 0, updated: 0 };
     }
 
-    fastify.log.info(`Found ${shipments.length} shipments for tracking`);
+    // Use the optimized bulk processing function
+    const result = await processBulkShipmentTracking(fastify, shipmentService, shipments);
 
-    const shipmentsToTrack = [];
-    const skippedFromCache: TrackingResult[] = [];
+    fastify.log.info(`Tracking batch completed: ${result.updated} updated, ${result.rtoProcessed} RTO processed`);
 
-    for (const shipment of shipments) {
-      const cacheKey = `tracking:${shipment.id}`;
-      const cachedResult = await fastify.redis.get(cacheKey);
+    return {
+      success: true,
+      message: `Processed ${result.processed} shipments, updated ${result.updated}`,
+      processed: result.processed,
+      updated: result.updated,
+    };
+  } catch (error) {
+    fastify.log.error(`Error in processShipmentTracking: ${error}`);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      processed: 0,
+      updated: 0,
+    };
+  }
+}
 
-      if (cachedResult) {
-        skippedFromCache.push({
-          shipmentId: shipment.id,
-          awb: shipment.awb,
-          previousStatus: shipment.status,
-          success: true,
-          message: 'Skipped tracking - recently checked (cached)',
-        });
-      } else {
-        shipmentsToTrack.push(shipment);
-      }
-    }
+/**
+ * Optimized bulk shipment tracking processor that uses real tracking data
+ * Processes multiple shipments using the actual trackShipment function
+ */
+export async function processBulkShipmentTracking(
+  fastify: FastifyInstance,
+  shipmentService: ShipmentService,
+  shipments: Array<{
+    id: string;
+    awb: string | null;
+    status: ShipmentStatus;
+    bucket: number | null;
+    user_id: string;
+    updated_at: Date;
+    order?: {
+      id: string;
+      code: string;
+    };
+    courier?: {
+      channel_config: {
+        name: string;
+      };
+    } | null;
+  }>
+): Promise<{ 
+  processed: number; 
+  updated: number; 
+  rtoProcessed: number; 
+  errors: Array<{ shipmentId: string; error: string }> 
+}> {
+  const result = {
+    processed: 0,
+    updated: 0,
+    rtoProcessed: 0,
+    errors: [] as Array<{ shipmentId: string; error: string }>
+  };
 
-    fastify.log.info(
-      `Skipping ${skippedFromCache.length} recently tracked shipments, processing ${shipmentsToTrack.length}`
-    );
+  if (shipments.length === 0) {
+    return result;
+  }
 
-    const limit = pLimit(processorConfig.concurrency);
-
-    const trackingPromises = shipmentsToTrack.map((shipment) =>
+  try {
+    // Create concurrency limiter to avoid overwhelming external APIs
+    const limit = pLimit(5); // Process 5 shipments concurrently
+    
+    // Process shipments in parallel with concurrency control
+    const trackingPromises = shipments.map(shipment => 
       limit(async () => {
         try {
-          const processingKey = `tracking:processing:${shipment.id}`;
-          const isBeingProcessed = await fastify.redis.get(processingKey);
-
-          if (isBeingProcessed) {
-            return {
-              shipmentId: shipment.id,
-              awb: shipment.awb,
-              previousStatus: shipment.status,
-              success: true,
-              message: 'Skipped tracking - currently being processed by another worker',
-            };
+          result.processed++;
+          
+          if (!shipment.awb || !shipment.courier?.channel_config?.name) {
+            result.errors.push({ 
+              shipmentId: shipment.id, 
+              error: 'Missing AWB or courier configuration' 
+            });
+            return;
           }
 
-          await fastify.redis.set(processingKey, '1', 'EX', 300);
-
-          const vendorName = shipment.courier?.channel_config?.name;
-          if (!vendorName) {
-            await fastify.redis.del(processingKey);
-            return {
-              shipmentId: shipment.id,
-              awb: shipment.awb,
-              previousStatus: shipment.status,
-              success: false,
-              message: 'Missing vendor configuration',
-            };
-          }
-
+          // Use the real trackShipment function to get tracking data
           const trackingResult = await shipmentService.trackShipment(
             shipment.id,
-            vendorName,
-            shipment.awb!,
-            shipment.order.id
+            shipment.courier.channel_config.name,
+            shipment.awb,
+            shipment.order?.id || ''
           );
 
-          await fastify.redis.del(processingKey);
-
-          if (!trackingResult.success) {
-            const cacheKey = `tracking:${shipment.id}`;
-            await fastify.redis.set(cacheKey, 'error', 'EX', 900);
-            return {
-              shipmentId: shipment.id,
-              awb: shipment.awb,
-              previousStatus: shipment.status,
-              success: false,
-              message: trackingResult.message || 'Failed to track shipment',
-            };
-          }
-
-          if (trackingResult.newBucket === undefined) {
-            return {
-              shipmentId: shipment.id,
-              awb: shipment.awb,
-              previousStatus: shipment.status,
-              success: true,
-              message: 'No status change',
-            };
-          }
-
-          const newStatus = trackingResult.newStatus || shipment.status;
-          const status_code = trackingResult.status_code || shipment.status;
-
-          const cacheKey = `tracking:${shipment.id}`;
-          await fastify.redis.set(
-            cacheKey,
-            JSON.stringify({
-              status: newStatus,
-              bucket: trackingResult.newBucket,
-              timestamp: new Date().toISOString(),
-            }),
-            'EX',
-            processorConfig.cacheExpiry
-          );
-
-          if (newStatus === shipment.status && (!trackingResult.events || trackingResult.events.length === 0)) {
-            return {
-              shipmentId: shipment.id,
-              awb: shipment.awb,
-              previousStatus: shipment.status,
-              status_code,
-              newStatus,
-              newBucket: trackingResult.newBucket,
-              events: trackingResult.events,
-              success: true,
-              message: 'No status change detected',
-            };
-          }
-
-          const isRTO = Boolean(trackingResult.events?.some((event) => event.isRTO));
-          const isNDR = newStatus === ShipmentStatus.NDR;
-
-          await fastify.redis.rpush(
-            'shipment:status:updates',
-            JSON.stringify({
-              id: shipment.id,
-              orderId: shipment.order.id,
-              status: newStatus,
-              isRTO,
-              isNDR,
-              timestamp: new Date().toISOString(),
-            })
-          );
-
-          if (trackingResult.events && trackingResult.events.length > 0) {
-            // Check for existing tracking events to avoid duplicates
-            const existingEvents = await fastify.prisma.trackingEvent.findMany({
-              where: {
-                shipment_id: shipment.id,
-                timestamp: { in: trackingResult.events.map((e) => new Date(e.timestamp)) },
-                description: { in: trackingResult.events.map((e) => e.description || e.status || '') },
-              },
-              select: { timestamp: true, description: true },
-            });
-
-            const existingEventKeys = new Set(
-              existingEvents.map((e) => `${e.timestamp.toISOString()}:${e.description}`)
-            );
-
-            const newEvents = trackingResult.events.filter(
-              (event) =>
-                !existingEventKeys.has(
-                  `${new Date(event.timestamp).toISOString()}:${event.description || event.status || ''}`
-                )
-            );
-
-            if (newEvents.length > 0) {
-              await fastify.redis.rpush(
-                'tracking:events:queue',
-                ...newEvents.map((event) =>
-                  JSON.stringify({
-                    shipment_id: shipment.id,
-                    status: newStatus,
-                    location: event.location || '',
-                    description: event.description || event.status || '',
-                    timestamp: event.timestamp || new Date().toISOString(),
-                    raw_data: event.raw_data || null,
-                    vendor_name: event.vendor_name || vendorName,
-                  })
-                )
-              );
-
-              await addJob(
-                QueueNames.SHIPMENT_TRACKING,
-                JobType.PROCESS_BULK_TRACKING_EVENTS,
-                { count: newEvents.length },
-                { delay: 1000 }
-              );
+          if (trackingResult.success && trackingResult.updated) {
+            result.updated++;
+            
+            // Check if this is an RTO shipment that needs charge processing
+            if (trackingResult.newStatus && isRtoStatus(trackingResult.newStatus)) {
+              result.rtoProcessed++;
             }
+          } else if (!trackingResult.success) {
+            result.errors.push({ 
+              shipmentId: shipment.id, 
+              error: trackingResult.message 
+            });
           }
-
-          if (isRTO) {
-            await addJob(
-              QueueNames.SHIPMENT_TRACKING,
-              JobType.PROCESS_RTO,
-              {
-                shipmentId: shipment.id,
-                orderId: shipment.order.id,
-                vendorName,
-              },
-              { delay: 1000 }
-            );
-          }
-
-          if (isNDR) {
-            await addJob(
-              QueueNames.SHIPMENT_TRACKING,
-              JobType.PROCESS_NDR_DETAILS,
-              {
-                shipmentId: shipment.id,
-                awb: shipment.awb,
-                vendorName,
-                orderId: shipment.order.id,
-              },
-              { delay: 1000 }
-            );
-          }
-
-          return {
-            shipmentId: shipment.id,
-            awb: shipment.awb,
-            previousStatus: shipment.status,
-            status_code,
-            newStatus: newStatus as ShipmentStatus,
-            newBucket: trackingResult.newBucket,
-            events: trackingResult.events,
-            success: true,
-            message: `Shipment status updated from ${shipment.status} to ${newStatus}`,
-          };
         } catch (error) {
-          fastify.log.error(`Error tracking shipment ${shipment.id}:`, error);
-
-          const retryKey = `tracking:retry:${shipment.id}`;
-          const retryCount = parseInt((await fastify.redis.get(retryKey)) || '0', 10);
-
-          if (retryCount < processorConfig.maxRetries) {
-            await fastify.redis.set(retryKey, (retryCount + 1).toString(), 'EX', 86400);
-            const delay = processorConfig.retryDelay * Math.pow(2, retryCount);
-            await addJob(
-              QueueNames.SHIPMENT_TRACKING,
-              JobType.RETRY_TRACK_SHIPMENT,
-              { shipmentId: shipment.id },
-              { delay, priority: 3 }
-            );
-
-            return {
-              shipmentId: shipment.id,
-              awb: shipment.awb,
-              previousStatus: shipment.status,
-              success: false,
-              message: `Tracking failed, scheduled retry #${retryCount + 1}`,
-              retryCount: retryCount + 1,
-              error: error instanceof Error ? error.message : String(error),
-            };
-          }
-
-          await fastify.redis.del(retryKey);
-
-          return {
-            shipmentId: shipment.id,
-            awb: shipment.awb,
-            previousStatus: shipment.status,
-            success: false,
-            message: `Tracking failed after ${processorConfig.maxRetries} retries`,
-            error: error instanceof Error ? error.message : String(error),
-          };
+          result.errors.push({ 
+            shipmentId: shipment.id, 
+            error: error instanceof Error ? error.message : 'Unknown error' 
+          });
         }
       })
     );
 
-    const trackingResults = await Promise.all(trackingPromises);
-    const allResults = [...trackingResults, ...skippedFromCache];
+    // Wait for all tracking operations to complete
+    await Promise.all(trackingPromises);
 
-    const updated = allResults.filter((r) => {
-      return (
-        r.success &&
-        'newStatus' in r &&
-        r.newStatus !== undefined &&
-        r.newStatus !== r.previousStatus
-      );
-    }).length;
-    const failed = allResults.filter((r) => !r.success).length;
-    const skipped = allResults.length - updated - failed;
+    fastify.log.info(`Bulk tracking completed: ${result.updated}/${result.processed} shipments updated`);
 
-    fastify.log.info(
-      `Shipment tracking batch completed: ${updated} updated, ${skipped} skipped, ${failed} failed`
-    );
-
-    if (updated > 0 || allResults.some((r) => r.events && r.events.length > 0)) {
-      await addJob(
-        QueueNames.SHIPMENT_TRACKING,
-        JobType.PROCESS_BULK_STATUS_UPDATES,
-        { count: updated },
-        { delay: 1000 }
-      );
-    }
-
-    if (shipments.length === processorConfig.batchSize) {
-      await addJob(
-        QueueNames.SHIPMENT_TRACKING,
-        JobType.TRACK_SHIPMENTS,
-        { batchSize: processorConfig.batchSize },
-        { delay: 5000 }
-      );
-      fastify.log.info('Scheduled next batch of shipment tracking');
-    }
-
-    return {
-      processed: allResults.length,
-      updated,
-      skipped,
-      failed,
-      results: allResults,
-    };
+    return result;
   } catch (error) {
-    fastify.log.error('Error in shipment tracking batch process:', error);
-    return {
-      processed: 0,
-      updated: 0,
-      skipped: 0,
-      failed: 0,
-      results: [
-        {
-          shipmentId: 'batch-error',
-          awb: null,
-          previousStatus: ShipmentStatus.NEW,
-          success: false,
-          message: 'Batch processing error',
-          error: error instanceof Error ? error.message : String(error),
-        },
-      ],
-    };
+    fastify.log.error(`Error in bulk shipment tracking: ${error}`);
+    throw error;
   }
 }
+
+/**
+ * Process RTO charges for multiple shipments efficiently
+ */
+async function processRtoChargesBulk(
+  fastify: FastifyInstance,
+  shipmentIds: string[]
+): Promise<number> {
+  try {
+    const chargeService = new ChargeProcessingService(fastify);
+    let processed = 0;
+
+    // Get shipment details in bulk
+    const shipments = await fastify.prisma.shipment.findMany({
+      where: { id: { in: shipmentIds } },
+      include: {
+        order: {
+          select: {
+            id: true,
+            user_id: true,
+            payment_method: true,
+            amount_to_collect: true,
+            total_amount: true,
+          }
+        },
+        pricing: true,
+      },
+    });
+
+    // Process RTO charges for each shipment
+    for (const shipment of shipments) {
+      try {
+        const results = await chargeService.processRtoShipmentCharges(shipment);
+        if (results.length > 0) {
+          processed++;
+          fastify.log.info(`Processed RTO charges for shipment ${shipment.id}`);
+        }
+      } catch (error) {
+        fastify.log.error(`Failed to process RTO charges for shipment ${shipment.id}: ${error}`);
+      }
+    }
+
+    return processed;
+  } catch (error) {
+    fastify.log.error(`Error in bulk RTO processing: ${error}`);
+    throw error;
+  }
+}
+
+/**
+ * Check if a status indicates RTO
+ */
+function isRtoStatus(status: string): boolean {
+  return ['RTO_INITIATED', 'RTO_IN_TRANSIT', 'RTO_DELIVERED'].includes(status);
+}
+
 /**
  * Get shipments that need tracking updates based on their status and last update time
  * @param fastify Fastify instance
@@ -564,7 +434,7 @@ export class TrackingProcessor {
    * @param vendorName Vendor name
    * @returns Promise resolving to true if charges were processed
    */
-  public static async processRtoCharges(shipmentId: string, orderId: string): Promise<boolean> {
+  public static async processRtoCharges(fastify: FastifyInstance, shipmentId: string, orderId: string): Promise<boolean> {
     try {
       // Check if shipment is already in RTO status
       const shipment = await prisma.shipment.findUnique({
@@ -576,7 +446,7 @@ export class TrackingProcessor {
       });
 
       if (shipment?.status === ShipmentStatus.RTO_INITIATED) {
-        console.log(`Shipment ${shipmentId} is already in RTO status`);
+        fastify.log.info(`Shipment ${shipmentId} is already in RTO status`);
         return false;
       }
 
@@ -593,7 +463,7 @@ export class TrackingProcessor {
 
       return true;
     } catch (error) {
-      console.error(`Error processing RTO charges for shipment ${shipmentId}:`, error);
+      fastify.log.error(`Error processing RTO charges for shipment ${shipmentId}:`, error);
       return false;
     }
   }
@@ -815,12 +685,10 @@ export class TrackingProcessor {
           if (!existingMapping) {
             // Create unmapped status record if model exists
             if (hasUnmappedModel) {
-              await (fastify.prisma as any).unmappedCourierStatus.upsert({
+              await fastify.prisma.unmappedCourierStatus.upsert({
                 where: {
-                  courier_name_status_code: {
-                    courier_name: data.courier_name,
-                    status_code: data.status_code,
-                  },
+                  courier: data.courier_name,
+                  courier_status_code: data.status_code,
                 },
                 update: {
                   count: data.count,
@@ -1007,7 +875,7 @@ export class TrackingProcessor {
       }
 
       // Get NDR details from vendor API
-      const ndrDetailsResult = await (vendor as any).getNdrDetails(awb);
+      const ndrDetailsResult = await vendor.getNdrDetails(awb);
 
       if (!ndrDetailsResult.success || !ndrDetailsResult.data?.data?.[0]) {
         return {
@@ -1090,7 +958,7 @@ export class TrackingProcessor {
               ? new Date(ndrData.ndr_raised_at)
               : existingNdr.ndr_raised_at,
             updated_at: new Date(),
-          } as any,
+          },
         });
 
         // Add new history records if there are changes
@@ -1193,7 +1061,7 @@ export class TrackingProcessor {
           ndr_raised_at: ndrData.ndr_raised_at ? new Date(ndrData.ndr_raised_at) : new Date(),
           action_taken: false,
           otp_verified: false, // Default to false for new NDR records
-        } as any,
+        },
       });
 
       // Create NDR history records from the API response history
@@ -1302,8 +1170,13 @@ export class TrackingProcessor {
       const processingPromises = rtoShipments.map((shipment: any) =>
         concurrency(async () => {
           try {
-            // Process all applicable charges for this shipment
-            const chargeResults = await chargeProcessingService.processShipmentCharges(shipment);
+            // Check if shipment is already in RTO status to avoid duplicate processing
+            if (await chargeProcessingService.hasChargeBeenApplied(shipment.id, ChargeType.RTO_CHARGE)) {
+              fastify.log.info(`Shipment ${shipment.id} is already in RTO status`);
+              return;
+            }
+            // Process RTO charges for this shipment
+            const chargeResults = await chargeProcessingService.processRtoShipmentCharges(shipment);
             // Log results
             const successfulCharges = chargeResults.filter(r => r.success);
             const failedCharges = chargeResults.filter(r => !r.success);

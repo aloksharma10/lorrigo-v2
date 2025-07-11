@@ -1,13 +1,40 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@lorrigo/ui/components';
-import { api } from './axios';
+import { ApiResponse } from '@/lib/type/response-types';
+import { api as axios } from './axios';
 import { useAuthToken } from '@/components/providers/token-provider';
 
 // Types
-export interface BillingRecord {
+export interface BillingCycle {
+  id: string;
+  code: string;
+  user_id: string;
+  cycle_type: string;
+  cycle_start_date: string;
+  cycle_end_date: string;
+  cycle_days: number;
+  status: string;
+  is_active: boolean;
+  total_orders: number;
+  total_amount: number;
+  processed_orders: number;
+  failed_orders: number;
+  created_at: string;
+  updated_at: string;
+  user?: {
+    name: string;
+    email: string;
+  };
+  _count?: {
+    billings: number;
+  };
+}
+
+export interface Billing {
   id: string;
   code: string;
   order_id: string;
+  awb: string | null;
   billing_date: string;
   billing_month: string;
   billing_amount: number;
@@ -19,6 +46,8 @@ export interface BillingRecord {
   rto_excess_charge: number;
   zone_change_charge: number;
   cod_charge: number;
+  fw_charge: number;
+  rto_charge: number;
   is_forward_applicable: boolean;
   is_rto_applicable: boolean;
   base_price: number;
@@ -28,584 +57,268 @@ export interface BillingRecord {
   order_zone: string | null;
   charged_zone: string | null;
   courier_name: string | null;
-  cycle_type: string | null;
+  billing_cycle_id: string | null;
+  cycle_type: string;
   is_manual_billing: boolean;
-  is_processed: boolean;
   payment_status: string;
-  admin_notes?: string;
-  approved_by?: string;
-  approved_at?: string;
+  admin_notes: string | null;
+  approved_by: string | null;
+  approved_at: string | null;
   created_at: string;
   updated_at: string;
-  order: {
-    order_number: string;
-    customer: {
+  order?: {
+    code: string;
+    user?: {
       name: string;
-      phone: string;
       email: string;
     };
-    hub: {
+    customer?: {
       name: string;
     };
-    shipment: {
-      awb: string;
-      courier: {
-        name: string;
-      };
-    };
-    weight_dispute?: {
-      id: string;
-      dispute_id: string;
-      status: string;
-      original_weight: number;
-      disputed_weight: number;
-      final_weight?: number;
-      evidence_urls: string[];
-      courier_response?: string;
-      resolution?: string;
-      resolution_date?: string;
-      resolved_by?: string;
-    } | null;
   };
-}
-
-export interface BillingSummaryByUser {
-  user_id: string;
-  user_name: string;
-  user_email: string;
-  total_orders: number;
-  total_billing_amount: number;
-  pending_amount: number;
-  paid_amount: number;
-  disputed_amount: number;
-}
-
-export interface BillingSummary {
-  billing_month: string;
-  users: BillingSummaryByUser[];
-  total_amount: number;
-  total_orders: number;
-  pagination: {
-    page: number;
-    pageSize: number;
-    total: number;
-    pageCount: number;
-  };
-}
-
-export interface UserBillingData {
-  billing_month: string;
-  user_id: string;
-  records: BillingRecord[];
-  summary: {
-    total_orders: number;
-    total_billing_amount: number;
-    pending_amount: number;
-    paid_amount: number;
-    disputed_amount: number;
-  };
-  pagination: {
-    page: number;
-    pageSize: number;
-    total: number;
-    pageCount: number;
-  };
-}
-
-export interface BillingUploadResult {
-  success: boolean;
-  message: string;
-  totalRecords: number;
-  processedCount: number;
-  errorCount: number;
-  disputeCount?: number;
-  bulkOperationId?: string;
 }
 
 export interface WeightDispute {
   id: string;
   dispute_id: string;
   order_id: string;
-  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'RESOLVED';
+  user_id: string;
+  charged_order_box_height: number | null;
+  charged_order_box_width: number | null;
+  charged_order_box_length: number | null;
+  charged_order_size_unit: string | null;
   original_weight: number;
   disputed_weight: number;
-  final_weight?: number;
-  courier_name: string;
+  final_weight: number | null;
+  status: string;
   original_charges: number;
-  revised_charges?: number;
+  revised_charges: number | null;
+  dispute_raised_at: string;
+  deadline_date: string | null;
+  notification_sent_at: string | null;
+  auto_resolved_at: string | null;
+  seller_action_taken: boolean;
+  seller_response: string | null;
+  seller_evidence_urls: string[];
+  forward_excess_amount: number;
+  rto_excess_amount: number;
+  total_disputed_amount: number;
+  wallet_hold_applied: boolean;
   evidence_urls: string[];
-  courier_response?: string;
-  resolution?: string;
-  resolution_date?: string;
-  resolved_by?: string;
+  courier_name: string;
+  courier_response: string | null;
+  resolution: string | null;
+  resolution_date: string | null;
+  resolved_by: string | null;
   created_at: string;
   updated_at: string;
-  order: {
-    order_number: string;
-    customer: {
+  order?: {
+    code: string;
+    customer?: {
       name: string;
-      phone: string;
     };
-    shipment: {
-      awb: string;
-    };
+  };
+  user?: {
+    name: string;
+    email: string;
   };
 }
 
-export interface BillingCycle {
-  id: string;
+export interface WalletBalance {
+  balance: number;
+  hold_amount: number;
+  usable_amount: number;
   code: string;
-  user_id: string;
-  cycle_type: 'AUTOMATIC' | 'MANUAL' | 'CUSTOM';
-  cycle_days: number;
-  cycle_start_date: string;
-  cycle_end_date: string;
-  next_cycle_date?: string;
-  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
-  is_active: boolean;
-  total_orders: number;
-  total_amount: number;
-  processed_orders: number;
-  failed_orders: number;
-  created_at: string;
-  updated_at: string;
 }
 
-export interface BulkOperation {
-  id: string;
-  type: string;
-  status: string;
-  code: string;
-  total_count: number;
-  processed_count: number;
-  success_count: number;
-  failed_count: number;
-  results?: string;
-  report_path?: string;
-  file_path?: string;
-  error_message?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface BillingParams {
-  page?: number;
-  pageSize?: number;
-  sort?: { id: string; desc: boolean }[];
-  filters?: { id: string; value: any }[];
-  globalFilter?: string;
-  dateRange?: { from: Date; to: Date };
-  month?: string;
+export interface ManualBillingRequest {
+  awbs?: string[];
+  startDate?: string;
+  endDate?: string;
   userId?: string;
 }
 
-export interface ManualBillingParams {
-  awbs?: string[];
-  dateRange?: {
-    from: string;
-    to: string;
+export interface DisputeActionRequest {
+  action: 'ACCEPT' | 'REJECT' | 'RAISE';
+  comment?: string;
+  finalWeight?: number;
+}
+
+export interface PaginationParams {
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginatedResponse<T> {
+  success: boolean;
+  data: T[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
   };
 }
 
-// Direct API functions for immediate use (without React Query hooks)
+// API Functions
+const billingAPI = {
+  // Billing Cycles
+  getBillingCycles: async (params?: PaginationParams & { userId?: string }): Promise<PaginatedResponse<BillingCycle>> => {
+    return await axios.get('/billing/cycles', { params });
+  },
 
-// Upload billing CSV (Admin only)
-export const uploadBillingCSVAPI = async (file: File): Promise<BillingUploadResult> => {
-  const formData = new FormData();
-  formData.append('file', file);
+  // Billing History
+  getBillingHistory: async (params?: PaginationParams & { billingCycleId?: string }): Promise<PaginatedResponse<Billing>> => {
+    return await axios.get('/billing/history', { params });
+  },
 
-  const response = await api.post<{ success: boolean; data: BillingUploadResult }>(
-    '/billing/upload-csv',
-    formData,
-    {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    }
-  );
+  // Manual Billing
+  createManualBilling: async (request: ManualBillingRequest): Promise<ApiResponse> => {
+    return await axios.post('/billing/manual', request);
+  },
 
-  return response.data;
-};
+  // Disputes
+  getDisputes: async (params?: PaginationParams & { status?: string }): Promise<PaginatedResponse<WeightDispute>> => {
+    return await axios.get('/billing/disputes', { params });
+  },
 
-// Process manual billing (Admin only)
-export const processManualBillingAPI = async (
-  userId: string,
-  params: ManualBillingParams
-): Promise<BillingUploadResult> => {
-  const response = await api.post<{ success: boolean; data: BillingUploadResult }>(
-    `/billing/manual/${userId}`,
-    params
-  );
+  actOnDispute: async (disputeId: string, request: DisputeActionRequest): Promise<ApiResponse> => {
+    return await axios.post(`/billing/disputes/${disputeId}/action`, request);
+  },
 
-  return response.data;
-};
+  // Wallet
+  getWalletBalance: async (userId?: string): Promise<{ success: boolean; wallet: WalletBalance }> => {
+    return await axios.get('/billing/wallet/balance', { 
+      params: userId ? { userId } : undefined 
+    });
+  },
 
-// Create billing cycle (Admin only)
-export const createBillingCycleAPI = async (
-  userId: string,
-  cycleType: string,
-  cycleDays: number = 30
-): Promise<{ billingCycleId: string; message: string }> => {
-  const response = await api.post<{
-    success: boolean;
-    data: { billingCycleId: string; message: string };
-  }>(`/billing/cycle/${userId}`, { cycleDays, cycleType });
+  // CSV Upload for Weight Disputes
+  uploadWeightDisputeCSV: async (csvData: Array<{
+    AWB: string;
+    Charged_Weight: number;
+    evidence_url?: string;
+  }>): Promise<{ operationId: string }> => {
+    return await axios.post('/bulk-operations/weight-charges', { csvData });
+  },
 
-  return response.data;
-};
-
-// Get billing summary by month (Admin)
-export const getBillingSummaryByMonthAPI = async (
-  month: string,
-  params: BillingParams = {}
-): Promise<BillingSummary> => {
-  const { page = 0, pageSize = 15 } = params;
-
-  const queryParams = new URLSearchParams({
-    page: (page + 1).toString(), // Backend expects 1-based page indexing
-    limit: pageSize.toString(),
-  });
-
-  const response = await api.get<{ success: boolean; data: BillingSummary }>(
-    `/billing/summary/${month}?${queryParams}`
-  );
-  return response.data;
-};
-
-// Get user billing by month (Admin/User)
-export const getUserBillingByMonthAPI = async (
-  userId: string,
-  month: string,
-  params: BillingParams = {}
-): Promise<UserBillingData> => {
-  const { page = 0, pageSize = 15, globalFilter, sort } = params;
-
-  const queryParams = new URLSearchParams({
-    page: (page + 1).toString(), // Backend expects 1-based page indexing
-    limit: pageSize.toString(),
-  });
-
-  if (globalFilter) {
-    queryParams.append('search', globalFilter);
-  }
-
-  if (sort && sort.length > 0) {
-    queryParams.append('sort', JSON.stringify(sort));
-  }
-
-  const response = await api.get<{ success: boolean; data: UserBillingData }>(
-    `/billing/user/${userId}/${month}?${queryParams}`
-  );
-  return response.data;
-};
-
-// Get current user billing (for sellers)
-export const getCurrentUserBillingAPI = async (
-  month: string,
-  params: BillingParams = {}
-): Promise<UserBillingData> => {
-  const { page = 0, pageSize = 15, globalFilter, sort } = params;
-
-  const queryParams = new URLSearchParams({
-    page: (page + 1).toString(), // Backend expects 1-based page indexing
-    limit: pageSize.toString(),
-  });
-
-  if (globalFilter) {
-    queryParams.append('search', globalFilter);
-  }
-
-  if (sort && sort.length > 0) {
-    queryParams.append('sort', JSON.stringify(sort));
-  }
-
-  const response = await api.get<{ success: boolean; data: UserBillingData }>(
-    `/billing/my/${month}?${queryParams}`
-  );
-  return response.data;
-};
-
-// Get available billing months
-export const getAvailableBillingMonthsAPI = async (): Promise<string[]> => {
-  const response = await api.get<{ success: boolean; data: string[] }>('/billing/months');
-  return response.data;
-};
-
-// Get bulk operation status
-export const getBulkOperationStatusAPI = async (operationId: string): Promise<BulkOperation> => {
-  const response = await api.get<{ success: boolean; data: BulkOperation }>(
-    `/billing/operation/${operationId}`
-  );
-  return response.data;
-};
-
-// Weight dispute APIs
-export const getWeightDisputesAPI = async (
-  params: BillingParams = {}
-): Promise<{
-  disputes: WeightDispute[];
-  pagination: { page: number; pageSize: number; total: number; pageCount: number };
-}> => {
-  const { page = 0, pageSize = 15, globalFilter, sort } = params;
-
-  const queryParams = new URLSearchParams({
-    page: (page + 1).toString(),
-    limit: pageSize.toString(),
-  });
-
-  if (globalFilter) {
-    queryParams.append('search', globalFilter);
-  }
-
-  if (sort && sort.length > 0) {
-    queryParams.append('sort', JSON.stringify(sort));
-  }
-
-  const response = await api.get<{ success: boolean; data: any }>(
-    `/weight-disputes?${queryParams}`
-  );
-  return response.data;
-};
-
-export const resolveWeightDisputeAPI = async (
-  disputeId: string,
-  resolution: {
-    status: 'ACCEPTED' | 'REJECTED' | 'RESOLVED';
+  // CSV Upload for Dispute Actions
+  uploadDisputeActionsCSV: async (csvData: Array<{
+    AWB: string;
+    Action: 'ACCEPT' | 'REJECT' | 'RAISE';
     final_weight?: number;
-    resolution: string;
-    revised_charges?: number;
-  }
-): Promise<WeightDispute> => {
-  const response = await api.put<{ success: boolean; data: WeightDispute }>(
-    `/weight-disputes/${disputeId}/resolve`,
-    resolution
-  );
-  return response.data;
+    comment?: string;
+  }>): Promise<{ operationId: string }> => {
+    return await axios.post('/bulk-operations/dispute-actions', { csvData });
+  },
 };
 
-// Billing cycle APIs
-export const getBillingCyclesAPI = async (userId?: string): Promise<BillingCycle[]> => {
-  const queryParams = userId ? `?userId=${userId}` : '';
-  const response = await api.get<{ success: boolean; data: BillingCycle[] }>(
-    `/billing-cycles${queryParams}`
-  );
-  return response.data;
-};
-
-export const updateBillingCycleAPI = async (
-  cycleId: string,
-  updates: Partial<BillingCycle>
-): Promise<BillingCycle> => {
-  const response = await api.put<{ success: boolean; data: BillingCycle }>(
-    `/billing-cycles/${cycleId}`,
-    updates
-  );
-  return response.data;
-};
-
-// Main React Query hook for all billing operations
-export const useBillingOperations = () => {
+// Comprehensive hook for billing operations
+export function useBillingOperations(params: PaginationParams & { userId?: string, billingCycleId?: string, status?: string } = {}) {
   const { isTokenReady } = useAuthToken();
   const queryClient = useQueryClient();
 
-  // Upload billing CSV mutation
-  const uploadBillingCSV = useMutation({
-    mutationFn: uploadBillingCSVAPI,
-    onSuccess: (data) => {
-      toast.success('Billing CSV uploaded successfully');
-      // Invalidate billing-related queries
-      queryClient.invalidateQueries({ queryKey: ['billing'] });
-    },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to upload billing CSV');
-    },
+  // Fetch billing cycles
+  const billingCyclesQuery = useQuery({
+    queryKey: ['billing-cycles', params],
+    queryFn: () => billingAPI.getBillingCycles(params),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    enabled: isTokenReady,
   });
 
-  // Process manual billing mutation
-  const processManualBilling = useMutation({
-    mutationFn: ({ userId, params }: { userId: string; params: ManualBillingParams }) =>
-      processManualBillingAPI(userId, params),
-    onSuccess: (data) => {
-      toast.success(`Manual billing processed: ${data.processedCount} records`);
-      queryClient.invalidateQueries({ queryKey: ['billing'] });
-    },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to process manual billing');
-    },
+  // Fetch billing history
+  const billingHistoryQuery = useQuery({
+    queryKey: ['billing-history', params],
+    queryFn: () => billingAPI.getBillingHistory(params),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    enabled: isTokenReady,
   });
 
-  // Create billing cycle mutation
-  const createBillingCycle = useMutation({
-    mutationFn: ({
-      userId,
-      cycleType,
-      cycleDays,
-    }: {
-      userId: string;
-      cycleType: string;
-      cycleDays: number;
-    }) => createBillingCycleAPI(userId, cycleType, cycleDays),
+  // Fetch disputes
+  const disputesQuery = useQuery({
+    queryKey: ['disputes', params],
+    queryFn: () => billingAPI.getDisputes(params),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    enabled: isTokenReady,
+  });
+
+  // Fetch wallet balance
+  const walletBalanceQuery = useQuery({
+    queryKey: ['wallet-balance', params.userId],
+    queryFn: () => billingAPI.getWalletBalance(params.userId),
+    staleTime: 30 * 1000, // 30 seconds
+    gcTime: 2 * 60 * 1000, // 2 minutes
+    enabled: isTokenReady,
+  });
+
+  // Create manual billing
+  const createManualBilling = useMutation({
+    mutationFn: billingAPI.createManualBilling,
     onSuccess: (data) => {
-      toast.success(data.message);
+      toast.success('Manual billing initiated successfully');
       queryClient.invalidateQueries({ queryKey: ['billing-cycles'] });
+      queryClient.invalidateQueries({ queryKey: ['billing-history'] });
+      return data;
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to create billing cycle');
+      toast.error(error.response?.data?.error || 'Failed to initiate manual billing');
     },
   });
 
-  // Update billing cycle mutation
-  const updateBillingCycle = useMutation({
-    mutationFn: ({ cycleId, updates }: { cycleId: string; updates: Partial<BillingCycle> }) =>
-      updateBillingCycleAPI(cycleId, updates),
+  // Act on dispute
+  const actOnDispute = useMutation({
+    mutationFn: ({ disputeId, request }: { disputeId: string; request: DisputeActionRequest }) =>
+      billingAPI.actOnDispute(disputeId, request),
     onSuccess: (data) => {
-      toast.success('Billing cycle updated successfully');
-      queryClient.invalidateQueries({ queryKey: ['billing-cycles'] });
+      toast.success('Dispute action completed successfully');
+      queryClient.invalidateQueries({ queryKey: ['disputes'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet-balance'] });
+      return data;
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update billing cycle');
+      toast.error(error.response?.data?.error || 'Failed to process dispute action');
     },
   });
 
-  // Resolve weight dispute mutation
-  const resolveWeightDispute = useMutation({
-    mutationFn: ({ disputeId, resolution }: { disputeId: string; resolution: any }) =>
-      resolveWeightDisputeAPI(disputeId, resolution),
-    onSuccess: () => {
-      toast.success('Weight dispute resolved successfully');
-      queryClient.invalidateQueries({ queryKey: ['weight-disputes'] });
-      queryClient.invalidateQueries({ queryKey: ['billing'] });
+  // Upload weight dispute CSV
+  const uploadWeightDisputeCSV = useMutation({
+    mutationFn: billingAPI.uploadWeightDisputeCSV,
+    onSuccess: (data) => {
+      toast.success('Weight dispute CSV uploaded successfully');
+      queryClient.invalidateQueries({ queryKey: ['disputes'] });
+      return data;
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to resolve weight dispute');
+      toast.error(error.response?.data?.error || 'Failed to upload weight dispute CSV');
     },
   });
 
-  // Get billing summary by month query (Admin)
-  const getBillingSummaryByMonthQuery = (month: string, params: BillingParams = {}) =>
-    useQuery({
-      queryKey: ['billing', 'summary', month, params],
-      queryFn: () => getBillingSummaryByMonthAPI(month, params),
-      enabled: !!month && isTokenReady,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes
-    });
-
-  // Get user billing by month query
-  const getUserBillingByMonthQuery = (userId: string, month: string, params: BillingParams = {}) =>
-    useQuery({
-      queryKey: ['billing', 'user', userId, month, params],
-      queryFn: () => getUserBillingByMonthAPI(userId, month, params),
-      enabled: !!userId && !!month && isTokenReady,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes
-    });
-
-  // Get current user billing query (for sellers)
-  const getCurrentUserBillingQuery = (month: string, params: BillingParams = {}) =>
-    useQuery({
-      queryKey: ['billing', 'me', month, params],
-      queryFn: () => getCurrentUserBillingAPI(month, params),
-      enabled: !!month && isTokenReady,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes
-    });
-
-  // Get available billing months query
-  const getAvailableBillingMonthsQuery = () =>
-    useQuery({
-      queryKey: ['billing', 'months'],
-      queryFn: getAvailableBillingMonthsAPI,
-      enabled: isTokenReady,
-      staleTime: 10 * 60 * 1000, // 10 minutes
-      gcTime: 30 * 60 * 1000, // 30 minutes
-    });
-
-  // Get bulk operation status query
-  const getBulkOperationStatusQuery = (operationId: string) =>
-    useQuery({
-      queryKey: ['billing', 'operation', operationId],
-      queryFn: () => getBulkOperationStatusAPI(operationId),
-      enabled: !!operationId && isTokenReady,
-      refetchInterval: 2000, // Poll every 2 seconds
-      refetchIntervalInBackground: true,
-    });
-
-  // Get weight disputes query
-  const getWeightDisputesQuery = (params: BillingParams = {}) =>
-    useQuery({
-      queryKey: ['weight-disputes', params],
-      queryFn: () => getWeightDisputesAPI(params),
-      enabled: isTokenReady,
-      staleTime: 2 * 60 * 1000, // 2 minutes
-      gcTime: 5 * 60 * 1000, // 5 minutes
-    });
-
-  // Get billing cycles query
-  const getBillingCyclesQuery = (userId?: string) =>
-    useQuery({
-      queryKey: ['billing-cycles', userId],
-      queryFn: () => getBillingCyclesAPI(userId),
-      enabled: isTokenReady,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes
-    });
+  // Upload dispute actions CSV
+  const uploadDisputeActionsCSV = useMutation({
+    mutationFn: billingAPI.uploadDisputeActionsCSV,
+    onSuccess: (data) => {
+      toast.success('Dispute actions CSV uploaded successfully');
+      queryClient.invalidateQueries({ queryKey: ['disputes'] });
+      return data;
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to upload dispute actions CSV');
+    },
+  });
 
   return {
-    // Mutations
-    uploadBillingCSV,
-    processManualBilling,
-    createBillingCycle,
-    updateBillingCycle,
-    resolveWeightDispute,
-
-    // Queries
-    getBillingSummaryByMonthQuery,
-    getUserBillingByMonthQuery,
-    getCurrentUserBillingQuery,
-    getAvailableBillingMonthsQuery,
-    getBulkOperationStatusQuery,
-    getWeightDisputesQuery,
-    getBillingCyclesQuery,
+    billingCyclesQuery,
+    billingHistoryQuery,
+    disputesQuery,
+    walletBalanceQuery,
+    createManualBilling,
+    actOnDispute,
+    uploadWeightDisputeCSV,
+    uploadDisputeActionsCSV,
   };
-};
+}
 
-// Export individual hooks for backward compatibility (deprecated - use useBillingOperations instead)
-export const useUploadBillingCSV = () => {
-  const { uploadBillingCSV } = useBillingOperations();
-  return uploadBillingCSV;
-};
-
-export const useBillingSummaryByMonth = (month: string, params: BillingParams = {}) => {
-  const { getBillingSummaryByMonthQuery } = useBillingOperations();
-  return getBillingSummaryByMonthQuery(month, params);
-};
-
-export const useUserBillingByMonth = (
-  userId: string,
-  month: string,
-  params: BillingParams = {}
-) => {
-  const { getUserBillingByMonthQuery } = useBillingOperations();
-  return getUserBillingByMonthQuery(userId, month, params);
-};
-
-export const useCurrentUserBilling = (month: string, params: BillingParams = {}) => {
-  const { getCurrentUserBillingQuery } = useBillingOperations();
-  return getCurrentUserBillingQuery(month, params);
-};
-
-export const useAvailableBillingMonths = () => {
-  const { getAvailableBillingMonthsQuery } = useBillingOperations();
-  return getAvailableBillingMonthsQuery();
-};
-
-export const useWeightDisputes = (params: BillingParams = {}) => {
-  const { getWeightDisputesQuery } = useBillingOperations();
-  return getWeightDisputesQuery(params);
-};
-
-export const useBillingCycles = (userId?: string) => {
-  const { getBillingCyclesQuery } = useBillingOperations();
-  return getBillingCyclesQuery(userId);
-};
+export default billingAPI;

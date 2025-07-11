@@ -1,4 +1,4 @@
-import { ShipmentStatus, TransactionStatus } from '@lorrigo/db';
+import { ChargeType, ShipmentStatus, TransactionStatus } from '@lorrigo/db';
 import { z } from 'zod';
 import { FastifyInstance } from 'fastify';
 import {
@@ -32,7 +32,7 @@ import {
 } from '@/modules/transactions/services/transaction-service';
 import { JobType } from '../queues/shipmentQueue';
 import { TrackingEventData } from '@/types/vendor';
-import { scheduleRtoChargesProcessing } from '../batch/scheduler';
+import { ChargeProcessingService } from './charge-processing.service';
 
 // Define the interface for the extended FastifyInstance
 interface ExtendedFastifyInstance extends FastifyInstance {
@@ -51,7 +51,7 @@ export class ShipmentService {
   private vendorService: VendorService;
   private fastify: ExtendedFastifyInstance;
   private transactionService: TransactionService;
-
+  private chargeProcessingService: ChargeProcessingService;
   constructor(
     fastify: FastifyInstance,
     private orderService: OrderService
@@ -59,12 +59,16 @@ export class ShipmentService {
     this.fastify = fastify as ExtendedFastifyInstance;
     this.vendorService = new VendorService(fastify);
     this.transactionService = new TransactionService(fastify);
+    this.chargeProcessingService = new ChargeProcessingService(fastify);
 
-    this.fastify.redis.flushall().then(() => {
-      this.fastify.log.info('Redis flushed successfully');
-    }).catch((error) => {
-      this.fastify.log.error('Failed to flush Redis:', error);
-    });
+    this.fastify.redis
+      .flushall()
+      .then(() => {
+        this.fastify.log.info('Redis flushed successfully');
+      })
+      .catch((error) => {
+        this.fastify.log.error('Failed to flush Redis:', error);
+      });
   }
 
   /**
@@ -111,7 +115,7 @@ export class ShipmentService {
       boxWidth: order?.package?.breadth || 0,
       boxHeight: order?.package?.height || 0,
       sizeUnit: 'cm',
-              paymentType: order?.payment_method === 'COD' ? 1 : 0,
+      paymentType: order?.payment_method === 'COD' ? 1 : 0,
       collectableAmount: order?.amount_to_collect || 0,
       pickupPincode: order?.hub?.address?.pincode || '',
       deliveryPincode: order?.customer?.address?.pincode || '',
@@ -308,7 +312,9 @@ export class ShipmentService {
     const courier_curr_zone_pricing = selectedCourierRate.pricing.pricing.zone_pricing.find(
       (zone: any) => zone.zone === selectedCourierRate.zone
     );
-    const shippingCost = selectedCourierRate.pricing.totalPrice;
+    const fwCharges = selectedCourierRate.pricing.fwCharges || 0;
+    const codCharges = selectedCourierRate.pricing.codCharges || 0;
+    const shippingCost = selectedCourierRate.pricing.totalPrice || 0;
 
     if (!selectedCourierRate) {
       return { error: 'Selected courier not found in available options' };
@@ -394,7 +400,9 @@ export class ShipmentService {
                 where: { order_id: data.order_id },
                 data: {
                   awb,
-                  bucket: ShipmentBucketManager.getBucketFromStatus(ShipmentStatus.COURIER_ASSIGNED),
+                  bucket: ShipmentBucketManager.getBucketFromStatus(
+                    ShipmentStatus.COURIER_ASSIGNED
+                  ),
                   sr_shipment_id: vendorResult.data?.sr_shipment_id?.toString() || '',
                   status: isSchedulePickup
                     ? ShipmentStatus.PICKUP_SCHEDULED
@@ -503,18 +511,22 @@ export class ShipmentService {
           }
         )
         .then(async (result) => {
-          // Create transaction record for the shipment after the transaction is complete
-          await this.transactionService.createTransaction(TransactionEntityType.SHIPMENT, {
-            amount: shippingCost,
-            type: TransactionType.DEBIT,
-            description: `Shipping charges for AWB: ${awb}`,
-            userId: userId,
-            shipmentId: result.shipment.id,
-            awb: awb,
-            srShipmentId: vendorResult.data?.sr_shipment_id?.toString(),
-            status: TransactionStatus.COMPLETED,
-            currency: 'INR',
-          });
+          if (fwCharges > 0) {
+           
+          }
+
+          if (codCharges > 0) {
+            await this.transactionService.createShipmentTransaction({
+              shipmentId: result.shipment?.id,
+              userId: userId,
+              amount: codCharges,
+              type: TransactionType.DEBIT,
+              description: `COD charge for AWB: ${awb}`,
+              awb: awb,
+              charge_type: ChargeType.COD_CHARGE,
+            });
+          }
+
           return result;
         })
         .catch((error) => {
@@ -815,29 +827,8 @@ export class ShipmentService {
             }
 
             // Determine refund amount based on shipment status
-            // let refundAmount = 0;
-            // let refundDescription = '';
-            // if (
-            //   shipment.status === ShipmentStatus.NEW ||
-            //   shipment.status === ShipmentStatus.PICKUP_SCHEDULED
-            // ) {
-            // Full refund for shipments that haven't been picked up
-            // refundAmount =
-            //   (shipment.fw_charge || 0) +
-            //   (shipment.order.payment_mode === 'COD' ? shipment.cod_charge || 0 : 0);
-            // refundDescription = `Full refund for cancelled shipment: ${shipment.awb || 'No AWB'}`;
-            // }
-
-            const refundAmount =
-              (shipment.fw_charge || 0) +
-              (shipment.order.payment_method === 'COD' ? shipment.cod_charge || 0 : 0);
-            const refundDescription = `Full refund for cancelled shipment: ${shipment.awb || 'No AWB'}`;
-
-            // else if (shipment.status === ShipmentStatus.IN_TRANSIT) {
-            // Partial refund for picked-up shipments (no COD refund)
-            //   refundAmount = (shipment.fw_charge || 0) * 0.5; // 50% of forward charge
-            //   refundDescription = `Partial refund for cancelled picked-up shipment: ${shipment.awb || 'No AWB'}`;
-            // }
+            const fwCharges = shipment.fw_charge || 0;
+            const codCharges = shipment.cod_charge || 0;
 
             // Update shipment status
             await prisma.shipment.update({
@@ -882,22 +873,24 @@ export class ShipmentService {
               where: { id: shipment.order_id },
               data: { shipment: { update: { status: shipmentStatus } } },
             });
-
+            // i want separate transaction for fw and cod
             return {
               success: true,
               message: 'Shipment cancelled successfully',
-              refundAmount: refundAmount > 0 ? refundAmount : undefined,
+              refundAmount: fwCharges + codCharges > 0 ? fwCharges + codCharges : undefined,
               // Return additional data for transaction creation
               _transactionData:
-                refundAmount > 0
-                  ? {
-                      amount: refundAmount,
-                      description: refundDescription,
-                      shipmentId: shipment.id,
-                      awb: shipment.awb,
-                      srShipmentId: shipment.sr_shipment_id,
-                    }
-                  : undefined,
+                fwCharges > 0 ? {
+                  amount: fwCharges,
+                  description: `Forward shipping charge for AWB: ${shipment.awb || 'No AWB'}`,
+                  charge_type: ChargeType.FORWARD_CHARGE,
+                } : undefined,
+              _transactionDataCod:
+                codCharges > 0 ? {  
+                  amount: codCharges,
+                  description: `COD charge for AWB: ${shipment.awb || 'No AWB'}`,
+                  charge_type: ChargeType.COD_CHARGE,
+                } : undefined,
             };
           },
           {
@@ -909,17 +902,26 @@ export class ShipmentService {
         .then(async (result) => {
           // Create transaction record after the transaction is complete
           if (result.success && result._transactionData) {
-            await this.transactionService.createTransaction(TransactionEntityType.SHIPMENT, {
+            await this.transactionService.createShipmentTransaction({
+              shipmentId: shipment.id,
+              userId: shipment.user_id,
               amount: result._transactionData.amount,
               type: TransactionType.CREDIT,
               description: result._transactionData.description,
-              userId: userId,
-              shipmentId: result._transactionData.shipmentId,
-              awb: result._transactionData.awb || undefined,
-              srShipmentId: result._transactionData.srShipmentId || undefined,
-              status: TransactionStatus.COMPLETED,
-              currency: 'INR',
+              awb: shipment.awb || undefined,
+              charge_type: result._transactionData.charge_type,
             });
+            if (result._transactionDataCod) {
+              await this.transactionService.createShipmentTransaction({
+                shipmentId: shipment.id,
+                userId: shipment.user_id,
+                amount: result._transactionDataCod.amount,
+                type: TransactionType.CREDIT,
+                description: result._transactionDataCod.description,
+                awb: shipment.awb || undefined,
+                charge_type: result._transactionDataCod.charge_type,
+              });
+            }
 
             // Remove the internal transaction data before returning
             const { _transactionData, ...cleanResult } = result;
@@ -1833,7 +1835,7 @@ export class ShipmentService {
 
         // If status changed to RTO, schedule RTO charges processing
         if (newStatus.includes('RTO')) {
-          await scheduleRtoChargesProcessing(this.fastify, shipmentId, orderId, 5000);
+          await this.chargeProcessingService.processRtoShipmentCharges(shipment);
         }
 
         // Store tracking events

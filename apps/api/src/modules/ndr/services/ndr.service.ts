@@ -159,7 +159,7 @@ export class NDRService {
             action_date: new Date(),
             otp_verified: isOtpVerified,
             updated_at: new Date(),
-          } as any,
+          },
         });
 
         // Create NDR history record
@@ -177,7 +177,7 @@ export class NDRService {
           let newStatus: ShipmentStatus | undefined;
           switch (actionType) {
             case 'return':
-              newStatus = ShipmentStatus.RTO;
+              newStatus = ShipmentStatus.RTO_INITIATED;
               break;
             // For reattempt and fake-attempt, keep current status
           }
@@ -192,15 +192,14 @@ export class NDRService {
             });
 
             // Also update order status
-            if (ndrRecord.order_id) {
-              await this.fastify.prisma.order.update({
-                where: { id: ndrRecord.order_id },
-                data: {
-                  status: newStatus,
-                  updated_at: new Date(),
-                },
-              });
-            }
+            // if (ndrRecord.order_id) {
+              // await this.fastify.prisma.order.update({
+              //   where: { id: ndrRecord.order_id },
+              //   data: {
+              //     updated_at: new Date(),
+              //   },
+              // });
+            // }
           }
         }
       } else if (isOtpVerified) {
@@ -211,7 +210,7 @@ export class NDRService {
             otp_verified: true,
             action_comment: `${comment} - ${result.message}`,
             updated_at: new Date(),
-          } as any,
+          },
         });
 
         // Create NDR history record for OTP verification

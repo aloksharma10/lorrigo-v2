@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
-import { TransactionService, TransactionType, TransactionEntityType } from '@/modules/transactions/services/transaction-service';
-import { ShipmentStatus, ChargeType as PrismaChargeType, ChargeType } from '@lorrigo/db';
+import { ChargeType, TransactionStatus } from '@lorrigo/db';
+import { TransactionService, TransactionType, TransactionEntityType } from '../../transactions/services/transaction-service';
+
 
 interface ChargeProcessingResult {
   success: boolean;
@@ -10,6 +11,11 @@ interface ChargeProcessingResult {
   error?: string;
 }
 
+/**
+ * Unified Charge Processing Service
+ * This service handles all shipment charge processing and transaction creation
+ * It's designed to work with the consolidated billing approach
+ */
 export class ChargeProcessingService {
   private transactionService: TransactionService;
 
@@ -17,226 +23,203 @@ export class ChargeProcessingService {
     this.transactionService = new TransactionService(fastify);
   }
 
-  async processShipmentCharges(shipment: any): Promise<ChargeProcessingResult[]> {
+  /**
+   * Process shipment charges for shipments that have moved to RTO status
+   * This is primarily used by the tracking processor when shipments change to RTO
+   */
+  async processRtoShipmentCharges(shipment: any): Promise<ChargeProcessingResult[]> {
     const results: ChargeProcessingResult[] = [];
-    if (this.shouldProcessForwardCharge(shipment)) {
-      results.push(await this.processForwardCharge(shipment));
+    
+    // Only process RTO charges for shipments that are actually in RTO status
+    if (!this.isRtoStatus(shipment.status)) {
+      return results;
     }
-    if (this.shouldProcessCodCharge(shipment)) {
-      results.push(await this.processCodCharge(shipment));
-    }
+
+    // Process RTO charges if not already applied
     if (this.shouldProcessRtoCharge(shipment)) {
-      results.push(await this.processRtoCharge(shipment));
+      const rtoResult = await this.processRtoCharge(shipment);
+      results.push(rtoResult);
     }
-    if (this.shouldProcessForwardExcessWeight(shipment)) {
-      results.push(await this.processForwardExcessWeight(shipment));
+
+    // Process COD refund for RTO shipments if applicable
+    if (this.shouldProcessCodRefund(shipment)) {
+      const codRefundResult = await this.processCodRefund(shipment);
+      results.push(codRefundResult);
     }
-    if (this.shouldProcessRtoExcessWeight(shipment)) {
-      results.push(await this.processRtoExcessWeight(shipment));
-    }
-    if (this.shouldProcessCodReversal(shipment)) {
-      results.push(await this.processCodReversal(shipment));
-    }
+
     return results;
   }
 
-  private shouldProcessForwardCharge(shipment: any): boolean {
-    return !shipment.forward_charge_processed && shipment.fw_charge && shipment.fw_charge > 0;
-  }
-  private shouldProcessCodCharge(shipment: any): boolean {
-    return !shipment.cod_charge_processed && shipment.cod_charge && shipment.cod_charge > 0 && shipment.order?.payment_method === 'COD';
-  }
-  private shouldProcessRtoCharge(shipment: any): boolean {
-    return !shipment.rto_charge_processed && shipment.rto_charge && shipment.rto_charge > 0 && (shipment.status === ShipmentStatus.RTO_INITIATED || shipment.status === ShipmentStatus.RTO_IN_TRANSIT);
-  }
-  private shouldProcessForwardExcessWeight(shipment: any): boolean {
-    return !shipment.forward_excess_weight_processed && shipment.forward_excess_weight_charge && shipment.forward_excess_weight_charge > 0;
-  }
-  private shouldProcessRtoExcessWeight(shipment: any): boolean {
-    return !shipment.rto_excess_weight_processed && shipment.rto_excess_weight_charge && shipment.rto_excess_weight_charge > 0 && (shipment.status === ShipmentStatus.RTO_INITIATED || shipment.status === ShipmentStatus.RTO_IN_TRANSIT);
-  }
-  private shouldProcessCodReversal(shipment: any): boolean {
-    return !shipment.cod_reversal_processed && shipment.cod_charge && shipment.cod_charge > 0 && shipment.order?.payment_method === 'COD' && (shipment.status === ShipmentStatus.RTO_INITIATED || shipment.status === ShipmentStatus.RTO_IN_TRANSIT);
+  /**
+   * Check if a charge has already been applied to avoid duplication
+   */
+  async hasChargeBeenApplied(shipmentId: string, chargeType: ChargeType): Promise<boolean> {
+    const existingTx = await this.fastify.prisma.shipmentTransaction.findFirst({
+      where: { 
+        shipment_id: shipmentId, 
+        charge_type: chargeType 
+      },
+    });
+    return !!existingTx;
   }
 
-  private async processForwardCharge(shipment: any): Promise<ChargeProcessingResult> {
-    try {
-      const amount = shipment.fw_charge;
-      const existingTx = await this.fastify.prisma.shipmentTransaction.findFirst({
-        where: { shipment_id: shipment.id, charge_type: PrismaChargeType.FORWARD_CHARGE },
-      });
-      if (existingTx) {
-        return { success: true, chargeType: ChargeType.FORWARD_CHARGE, amount, message: 'Forward charge already processed' };
-      }
-      const txResult = await this.transactionService.createTransaction(TransactionEntityType.SHIPMENT, {
-        amount,
-        type: TransactionType.DEBIT,
-        description: `Forward charge for shipment ${shipment.id}`,
-        userId: shipment.order.user_id,
-        shipmentId: shipment.id,
-        awb: shipment.awb,
-        status: 'COMPLETED',
-        currency: 'INR',
-        merchantTransactionId: `FW-${shipment.awb}`,
-        charge_type: PrismaChargeType.FORWARD_CHARGE,
-      });
-      if (txResult.success) {
-        return { success: true, chargeType: ChargeType.FORWARD_CHARGE, amount, message: 'Forward charge processed successfully' };
-      } else {
-        return { success: false, chargeType: ChargeType.FORWARD_CHARGE, amount, message: 'Failed to process forward charge', error: txResult.error };
-      }
-    } catch (error) {
-      return { success: false, chargeType: ChargeType.FORWARD_CHARGE, amount: shipment.fw_charge || 0, message: 'Error processing forward charge', error: error instanceof Error ? error.message : 'Unknown error' };
-    }
-  }
-  private async processCodCharge(shipment: any): Promise<ChargeProcessingResult> {
-    try {
-      const amount = shipment.cod_charge;
-      const existingTx = await this.fastify.prisma.shipmentTransaction.findFirst({
-        where: { shipment_id: shipment.id, charge_type: PrismaChargeType.COD_CHARGE },
-      });
-      if (existingTx) {
-        return { success: true, chargeType: ChargeType.COD_CHARGE, amount, message: 'COD charge already processed' };
-      }
-      const txResult = await this.transactionService.createTransaction(TransactionEntityType.SHIPMENT, {
-        amount,
-        type: TransactionType.DEBIT,
-        description: `COD charge for shipment ${shipment.id}`,
-        userId: shipment.order.user_id,
-        shipmentId: shipment.id,
-        awb: shipment.awb,
-        status: 'COMPLETED',
-        currency: 'INR',
-        merchantTransactionId: `COD-${shipment.id}`,
-        charge_type: PrismaChargeType.COD_CHARGE,
-      });
-      if (txResult.success) {
-        return { success: true, chargeType: ChargeType.COD_CHARGE, amount, message: 'COD charge processed successfully' };
-      } else {
-        return { success: false, chargeType: ChargeType.COD_CHARGE, amount, message: 'Failed to process COD charge', error: txResult.error };
-      }
-    } catch (error) {
-      return { success: false, chargeType: ChargeType.COD_CHARGE, amount: shipment.cod_charge || 0, message: 'Error processing COD charge', error: error instanceof Error ? error.message : 'Unknown error' };
-    }
-  }
+  /**
+   * Process individual charge types - used by tracking processor
+   */
   private async processRtoCharge(shipment: any): Promise<ChargeProcessingResult> {
     try {
-      const amount = shipment.rto_charge;
-      const existingTx = await this.fastify.prisma.shipmentTransaction.findFirst({
-        where: { shipment_id: shipment.id, charge_type: PrismaChargeType.RTO_CHARGE },
-      });
-      if (existingTx) {
-        return { success: true, chargeType: ChargeType.RTO_CHARGE, amount, message: 'RTO charge already processed' };
+      // Get RTO charge from shipment record or pricing
+      const rtoAmount = shipment.rto_charge || shipment.pricing?.rto_base_price || 0;
+      
+      if (rtoAmount <= 0) {
+        return { 
+          success: true, 
+          chargeType: ChargeType.RTO_CHARGE, 
+          amount: 0, 
+          message: 'No RTO charge applicable' 
+        };
       }
-      const txResult = await this.transactionService.createTransaction(TransactionEntityType.SHIPMENT, {
-        amount,
+
+      // Check if already processed
+      const exists = await this.hasChargeBeenApplied(shipment.id, ChargeType.RTO_CHARGE);
+      if (exists) {
+        return { 
+          success: true, 
+          chargeType: ChargeType.RTO_CHARGE, 
+          amount: rtoAmount, 
+          message: 'RTO charge already processed' 
+        };
+      }
+
+      // Create transaction
+      const txResult = await this.transactionService.createShipmentTransaction({
+        amount: rtoAmount,
         type: TransactionType.DEBIT,
-        description: `RTO charge for shipment ${shipment.id}`,
-        userId: shipment.order.user_id,
+        description: `RTO charge for shipment ${shipment.awb || shipment.id}`,
+        userId: shipment.order?.user_id || shipment.user_id,
         shipmentId: shipment.id,
         awb: shipment.awb,
-        status: 'COMPLETED',
+        status: TransactionStatus.COMPLETED,
         currency: 'INR',
-        merchantTransactionId: `RTO-${shipment.id}`,
-        charge_type: PrismaChargeType.RTO_CHARGE,
+        merchantTransactionId: `RTO-${shipment.awb || shipment.id}`,
+        charge_type: ChargeType.RTO_CHARGE,
       });
+
       if (txResult.success) {
-        return { success: true, chargeType: ChargeType.RTO_CHARGE, amount, message: 'RTO charge processed successfully' };
+        return { 
+          success: true, 
+          chargeType: ChargeType.RTO_CHARGE, 
+          amount: rtoAmount, 
+          message: 'RTO charge processed successfully' 
+        };
       } else {
-        return { success: false, chargeType: ChargeType.RTO_CHARGE, amount, message: 'Failed to process RTO charge', error: txResult.error };
+        return { 
+          success: false, 
+          chargeType: ChargeType.RTO_CHARGE, 
+          amount: rtoAmount, 
+          message: 'Failed to process RTO charge', 
+          error: txResult.error 
+        };
       }
     } catch (error) {
-      return { success: false, chargeType: ChargeType.RTO_CHARGE, amount: shipment.rto_charge || 0, message: 'Error processing RTO charge', error: error instanceof Error ? error.message : 'Unknown error' };
+      return { 
+        success: false, 
+        chargeType: ChargeType.RTO_CHARGE, 
+        amount: 0, 
+        message: 'Error processing RTO charge', 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      };
     }
   }
-  private async processForwardExcessWeight(shipment: any): Promise<ChargeProcessingResult> {
+
+  private async processCodRefund(shipment: any): Promise<ChargeProcessingResult> {
     try {
-      const amount = shipment.forward_excess_weight_charge;
-      const existingTx = await this.fastify.prisma.shipmentTransaction.findFirst({
-        where: { shipment_id: shipment.id, charge_type: PrismaChargeType.FORWARD_EXCESS_WEIGHT },
-      });
-      if (existingTx) {
-        return { success: true, chargeType: ChargeType.FORWARD_EXCESS_WEIGHT, amount, message: 'Forward excess weight charge already processed' };
+      // Get COD amount to refund
+      const codAmount = shipment.order?.amount_to_collect || shipment.order?.total_amount || 0;
+      
+      if (codAmount <= 0) {
+        return { 
+          success: true, 
+          chargeType: ChargeType.COD_REVERSAL, 
+          amount: 0, 
+          message: 'No COD amount to refund' 
+        };
       }
-      const txResult = await this.transactionService.createTransaction(TransactionEntityType.SHIPMENT, {
-        amount,
-        type: TransactionType.DEBIT,
-        description: `Forward excess weight charge for shipment ${shipment.id}`,
-        userId: shipment.order.user_id,
-        shipmentId: shipment.id,
-        awb: shipment.awb,
-        status: 'COMPLETED',
-        currency: 'INR',
-        merchantTransactionId: `FEW-${shipment.id}`,
-        charge_type: PrismaChargeType.FORWARD_EXCESS_WEIGHT,
+
+      // Check if COD refund already processed
+      const existingRefund = await this.fastify.prisma.shipmentTransaction.findFirst({
+        where: {
+          shipment_id: shipment.id,
+          charge_type: ChargeType.COD_CHARGE,
+          type: TransactionType.CREDIT,
+          description: { contains: 'refund' },
+        },
       });
-      if (txResult.success) {
-        return { success: true, chargeType: ChargeType.FORWARD_EXCESS_WEIGHT, amount, message: 'Forward excess weight charge processed successfully' };
-      } else {
-        return { success: false, chargeType: ChargeType.FORWARD_EXCESS_WEIGHT, amount, message: 'Failed to process forward excess weight charge', error: txResult.error };
+
+      if (existingRefund) {
+        return { 
+          success: true, 
+          chargeType: ChargeType.COD_REVERSAL, 
+          amount: codAmount, 
+          message: 'COD refund already processed' 
+        };
       }
-    } catch (error) {
-      return { success: false, chargeType: ChargeType.FORWARD_EXCESS_WEIGHT, amount: shipment.forward_excess_weight_charge || 0, message: 'Error processing forward excess weight charge', error: error instanceof Error ? error.message : 'Unknown error' };
-    }
-  }
-  private async processRtoExcessWeight(shipment: any): Promise<ChargeProcessingResult> {
-    try {
-      const amount = shipment.rto_excess_weight_charge;
-      const existingTx = await this.fastify.prisma.shipmentTransaction.findFirst({
-        where: { shipment_id: shipment.id, charge_type: PrismaChargeType.RTO_EXCESS_WEIGHT },
-      });
-      if (existingTx) {
-        return { success: true, chargeType: ChargeType.RTO_EXCESS_WEIGHT, amount, message: 'RTO excess weight charge already processed' };
-      }
-      const txResult = await this.transactionService.createTransaction(TransactionEntityType.SHIPMENT, {
-        amount,
-        type: TransactionType.DEBIT,
-        description: `RTO excess weight charge for shipment ${shipment.id}`,
-        userId: shipment.order.user_id,
-        shipmentId: shipment.id,
-        awb: shipment.awb,
-        status: 'COMPLETED',
-        currency: 'INR',
-        merchantTransactionId: `REW-${shipment.id}`,
-        charge_type: PrismaChargeType.RTO_EXCESS_WEIGHT,
-      });
-      if (txResult.success) {
-        return { success: true, chargeType: ChargeType.RTO_EXCESS_WEIGHT, amount, message: 'RTO excess weight charge processed successfully' };
-      } else {
-        return { success: false, chargeType: ChargeType.RTO_EXCESS_WEIGHT, amount, message: 'Failed to process RTO excess weight charge', error: txResult.error };
-      }
-    } catch (error) {
-      return { success: false, chargeType: ChargeType.RTO_EXCESS_WEIGHT, amount: shipment.rto_excess_weight_charge || 0, message: 'Error processing RTO excess weight charge', error: error instanceof Error ? error.message : 'Unknown error' };
-    }
-  }
-  private async processCodReversal(shipment: any): Promise<ChargeProcessingResult> {
-    try {
-      const amount = shipment.cod_charge;
-      const existingTx = await this.fastify.prisma.shipmentTransaction.findFirst({
-        where: { shipment_id: shipment.id, charge_type: PrismaChargeType.COD_REVERSAL },
-      });
-      if (existingTx) {
-        return { success: true, chargeType: ChargeType.COD_REVERSAL, amount, message: 'COD reversal already processed' };
-      }
-      const txResult = await this.transactionService.createTransaction(TransactionEntityType.SHIPMENT, {
-        amount,
+
+      // Create refund transaction
+      const txResult = await this.transactionService.createShipmentTransaction({
+        amount: codAmount,
         type: TransactionType.CREDIT,
-        description: `COD reversal for RTO shipment ${shipment.id}`,
-        userId: shipment.order.user_id,
+        description: `COD refund for RTO shipment ${shipment.awb || shipment.id}`,
+        userId: shipment.order?.user_id || shipment.user_id,
         shipmentId: shipment.id,
         awb: shipment.awb,
-        status: 'COMPLETED',
+        status: TransactionStatus.COMPLETED,
         currency: 'INR',
-        merchantTransactionId: `COD-REV-${shipment.id}`,
-        charge_type: PrismaChargeType.COD_REVERSAL,
+        merchantTransactionId: `COD-REFUND-${shipment.awb || shipment.id}`,
+        charge_type: ChargeType.COD_CHARGE,
       });
+
       if (txResult.success) {
-        return { success: true, chargeType: ChargeType.COD_REVERSAL, amount, message: 'COD reversal processed successfully' };
+        return { 
+          success: true, 
+          chargeType: ChargeType.COD_REVERSAL, 
+          amount: codAmount, 
+          message: 'COD refund processed successfully' 
+        };
       } else {
-        return { success: false, chargeType: ChargeType.COD_REVERSAL, amount, message: 'Failed to process COD reversal', error: txResult.error };
+        return { 
+          success: false, 
+          chargeType: ChargeType.COD_REVERSAL, 
+          amount: codAmount, 
+          message: 'Failed to process COD refund', 
+          error: txResult.error 
+        };
       }
     } catch (error) {
-      return { success: false, chargeType: ChargeType.COD_REVERSAL, amount: shipment.cod_charge || 0, message: 'Error processing COD reversal', error: error instanceof Error ? error.message : 'Unknown error' };
+      return { 
+        success: false, 
+        chargeType: ChargeType.COD_REVERSAL, 
+        amount: 0, 
+        message: 'Error processing COD refund', 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      };
     }
   }
+
+  // Helper methods for charge eligibility checks
+  private isRtoStatus(status: string): boolean {
+    return ['RTO_INITIATED', 'RTO_IN_TRANSIT', 'RTO_DELIVERED'].includes(status);
+  }
+
+  private shouldProcessRtoCharge(shipment: any): boolean {
+    return this.isRtoStatus(shipment.status) && 
+           (shipment.rto_charge > 0 || shipment.pricing?.is_rto_applicable);
+  }
+
+  private shouldProcessCodRefund(shipment: any): boolean {
+    return this.isRtoStatus(shipment.status) && 
+           shipment.order?.payment_method === 'COD' &&
+           (shipment.order?.amount_to_collect > 0 || shipment.order?.total_amount > 0);
+  }
+
 } 

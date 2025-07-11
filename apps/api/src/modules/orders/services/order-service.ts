@@ -712,7 +712,7 @@ export class OrderService {
         if (
           error instanceof Prisma.PrismaClientKnownRequestError &&
           error.code === 'P2002' &&
-          (error.meta?.target as any)?.includes?.('code')
+          (error.meta?.target as string[])?.includes?.('code')
         ) {
           attempt += 1;
           await new Promise((res) => setTimeout(res, 10));

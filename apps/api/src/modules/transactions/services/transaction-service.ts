@@ -10,6 +10,8 @@ import { addJob, QueueNames } from '@/lib/queue';
 export enum TransactionType {
   CREDIT = 'CREDIT',
   DEBIT = 'DEBIT',
+  HOLD = 'HOLD',
+  HOLD_RELEASE = 'HOLD_RELEASE',
 }
 
 export enum TransactionEntityType {
@@ -67,8 +69,8 @@ export class TransactionService {
     this.prisma = fastify.prisma;
 
     // Try to get the queue from fastify instance if available
-    if ((fastify as any).queues && (fastify as any).queues[QueueNames.BULK_OPERATION]) {
-      this.transactionQueue = (fastify as any).queues[QueueNames.BULK_OPERATION];
+    if (fastify.queues && fastify.queues[QueueNames.BULK_OPERATION]) {
+      this.transactionQueue = fastify.queues[QueueNames.BULK_OPERATION];
     }
   }
 
@@ -79,6 +81,24 @@ export class TransactionService {
    */
   async createShipmentTransaction(data: ShipmentTransactionData) {
     try {
+      // Check if transaction already exists to prevent duplicates
+      if (data.awb && data.charge_type) {
+        const existingTransaction = await this.prisma.shipmentTransaction.findFirst({
+          where: {
+            shipment_id: data.shipmentId,
+            awb: data.awb,
+            charge_type: data.charge_type,
+          },
+        });
+
+        if (existingTransaction) {
+          this.fastify.log.info(
+            `Transaction already exists for shipment ${data.shipmentId}, AWB ${data.awb}, charge type ${data.charge_type}`
+          );
+          return { success: true, transaction: existingTransaction };
+        }
+      }
+
       // Get user wallet
       const walletResult = await this.getUserWallet(data.userId);
       if (!walletResult.success) {
@@ -129,7 +149,7 @@ export class TransactionService {
           user_id: data.userId,
           shipment_id: data.shipmentId,
           transaction_id: data.transactionId,
-          ...(data.charge_type ? { charge_type: data.charge_type } : {}),
+          charge_type: data.charge_type,
         },
       });
 
@@ -230,15 +250,67 @@ export class TransactionService {
       // Generate transaction code
       const transactionCode = await this.generateTransactionCode('wallet');
 
-      // Update wallet balance
-      const walletUpdateResult = await this.updateWalletBalance(
-        walletResult.walletId!,
-        data.amount,
-        data.type
-      );
+      // Update wallet balance (skip for HOLD types as they're handled separately in billing logic)
+      let walletUpdateResult;
+      if (data.type === TransactionType.HOLD || data.type === TransactionType.HOLD_RELEASE) {
+        // Fetch wallet with lock to prevent race conditions
+        const wallet = await this.prisma.userWallet.findUnique({
+          where: { user_id: data.userId },
+        });
 
-      if (!walletUpdateResult.success) {
-        return { success: false, error: walletUpdateResult.error };
+        if (!wallet) {
+          return { success: false, error: 'User wallet not found' };
+        }
+
+        // Calculate new hold amount based on transaction type
+        let newHoldAmount: number;
+        if (data.type === TransactionType.HOLD) {
+          // For HOLD: increase hold_amount, check if sufficient usable funds
+          if (wallet.usable_amount < data.amount) {
+            return { success: false, error: 'Insufficient usable funds for hold' };
+          }
+          newHoldAmount = wallet.hold_amount + data.amount;
+        } else {
+          // For HOLD_RELEASE: decrease hold_amount, ensure non-negative
+          newHoldAmount = wallet.hold_amount - data.amount;
+          if (newHoldAmount < 0) {
+            return { success: false, error: 'Cannot release more than held amount' };
+          }
+        }
+
+        // Update wallet with new hold_amount and adjust usable_amount
+        await this.prisma.userWallet.update({
+          where: { id: wallet.id },
+          data: {
+            hold_amount: newHoldAmount,
+            usable_amount:
+              data.type === TransactionType.HOLD
+                ? wallet.usable_amount - data.amount
+                : wallet.usable_amount + data.amount,
+          },
+        });
+
+        return {
+          success: true,
+          balance: {
+            hold_amount: newHoldAmount,
+            usable_amount:
+              data.type === TransactionType.HOLD
+                ? wallet.usable_amount - data.amount
+                : wallet.usable_amount + data.amount,
+          },
+        };
+      } else {
+        // Existing logic for other transaction types
+        walletUpdateResult = await this.updateWalletBalance(
+          walletResult.walletId!,
+          data.amount,
+          data.type
+        );
+
+        if (!walletUpdateResult.success) {
+          return { success: false, error: walletUpdateResult.error };
+        }
       }
 
       // Create transaction record
@@ -664,7 +736,7 @@ export class TransactionService {
         const shipmentTransactions = await this.prisma.shipmentTransaction.findMany({
           where: { user_id: userId },
           skip,
-          take: type ? limit : Math.floor(limit / 3),
+          // take: type ? limit : Math.floor(limit / 3),
           orderBy: { created_at: 'desc' },
           include: {
             shipment: {

@@ -372,6 +372,34 @@ export function calculateRTOCharges(
 }
 
 // ================================
+// EXCESS WEIGHT CHARGE HELPER
+// ================================
+
+export function calculateExcessCharges(
+  weightDiffKg: number,
+  courierPricing: CourierPricing,
+  zonePricing: ZonePricing
+): { fwExcess: number; rtoExcess: number } {
+  if (weightDiffKg <= 0) return { fwExcess: 0, rtoExcess: 0 };
+
+  const incrementWeight = courierPricing.increment_weight || 0.5;
+  const increments = Math.ceil(weightDiffKg / incrementWeight);
+
+  const fwExcess = (zonePricing.increment_price || 0) * increments;
+
+  let rtoEx = 0;
+  if (courierPricing.is_rto_applicable) {
+    if (zonePricing.is_rto_same_as_fw) {
+      rtoEx = fwExcess;
+    } else {
+      rtoEx = (zonePricing.rto_increment_price || 0) * increments;
+    }
+  }
+
+  return { fwExcess: fwExcess, rtoExcess: rtoEx };
+}
+
+// ================================
 // MAIN CALCULATION FUNCTIONS
 // ================================
 

@@ -403,4 +403,48 @@ export class BulkOperationsService {
     const random = randomUUID()?.split('-')?.[0]?.toUpperCase();
     return `BLK-${timestamp}-${random}`;
   }
+
+  async createWeightChargeBulk(csvPath: string, userId: string) {
+    const operation = await this.fastify.prisma.bulkOperation.create({
+      data: {
+        id: randomUUID(),
+        type: 'BILLING_WEIGHT_CSV',
+        status: 'PENDING',
+        code: this.generateOperationCode(),
+        user_id: userId,
+        file_path: csvPath,
+      },
+    });
+
+    await addJob(
+      QueueNames.BULK_OPERATION,
+      JobType.PROCESS_BILLING_WEIGHT_CSV,
+      { csvPath, operationId: operation.id },
+      { priority: 1 }
+    );
+
+    return operation;
+  }
+
+  async createDisputeActionsBulk(csvPath: string, userId: string) {
+    const operation = await this.fastify.prisma.bulkOperation.create({
+      data: {
+        id: randomUUID(),
+        type: 'DISPUTE_ACTIONS_CSV',
+        status: 'PENDING',
+        code: this.generateOperationCode(),
+        user_id: userId,
+        file_path: csvPath,
+      },
+    });
+
+    await addJob(
+      QueueNames.BULK_OPERATION,
+      JobType.PROCESS_DISPUTE_ACTIONS_CSV,
+      { csvPath, operationId: operation.id },
+      { priority: 1 }
+    );
+
+    return operation;
+  }
 }

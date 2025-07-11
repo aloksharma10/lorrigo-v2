@@ -1,6 +1,9 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { BulkOperationsService } from '../services/bulk-operations-service';
 import fs from 'fs-extra';
+import { promisify } from 'util';
+import stream from 'stream';
+const pipeline = promisify(stream.pipeline);
 import { randomUUID } from 'crypto';
 import path from 'path';
 import { addJob, Job, QueueNames } from '@/lib/queue';
@@ -452,5 +455,34 @@ export class BulkOperationsController {
         error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
+  }
+
+  async uploadWeightCsv(request: FastifyRequest, reply: FastifyReply) {
+    if (!request.isMultipart()) {
+      return reply.code(400).send({ error: 'Multipart file expected' });
+    }
+
+    const userId = request.userPayload!.id;
+    const filePart = await (request as any).file();
+    if (!filePart) return reply.code(400).send({ error: 'CSV file missing' });
+
+    const tempPath = path.join('/tmp', `${Date.now()}-${filePart.filename}`);
+    await pipeline(filePart.file, fs.createWriteStream(tempPath));
+    const operation = await this.bulkOperationsService.createWeightChargeBulk(tempPath, userId);
+    return reply.code(201).send({ success: true, operationId: operation.id });
+  }
+
+  async uploadDisputeActionsCsv(request: FastifyRequest, reply: FastifyReply) {
+    if (!request.isMultipart()) {
+      return reply.code(400).send({ error: 'Multipart file expected' });
+    }
+
+    const userId = request.userPayload!.id;
+    const filePart = await (request as any).file();
+    if (!filePart) return reply.code(400).send({ error: 'CSV file missing' });
+    const tempPath = path.join('/tmp', `${Date.now()}-${filePart.filename}`);
+    await pipeline(filePart.file, fs.createWriteStream(tempPath));
+    const operation = await this.bulkOperationsService.createDisputeActionsBulk(tempPath, userId);
+    return reply.code(201).send({ success: true, operationId: operation.id });
   }
 }

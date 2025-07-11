@@ -79,4 +79,18 @@ export async function bulkOperationsRoutes(fastify: FastifyInstance) {
     { preHandler },
     bulkOperationsController.bulkUploadOrders.bind(bulkOperationsController)
   );
+
+  // Upload weight dispute CSV (admin)
+  fastify.post(
+    '/billing-weight-csv',
+    { preHandler },
+    bulkOperationsController.uploadWeightCsv.bind(bulkOperationsController)
+  );
+
+  // Upload dispute actions CSV (seller/admin)
+  fastify.post(
+    '/dispute-actions-csv',
+    { preHandler },
+    bulkOperationsController.uploadDisputeActionsCsv.bind(bulkOperationsController)
+  );
 }

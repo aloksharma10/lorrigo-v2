@@ -74,7 +74,7 @@ export class PickupController {
    */
   async getHubById(request: FastifyRequest, reply: FastifyReply) {
     try {
-      const hubId = request.params as any;
+      const hubId = request.params as { id: string };
       const hub = await this.pickupService.getHubById(hubId.id, request.userPayload!.id);
 
       if (!hub) {

@@ -1,101 +1,73 @@
 import { FastifyInstance } from 'fastify';
-import { BillingController } from './controllers/billing-controller';
+import { QueueNames, addRecurringJob } from '@/lib/queue';
 import { BillingService } from './services/billing-service';
-import { initBillingWorker } from './queues/billing-worker';
-import { authorizeRoles, authenticateUser } from '@/middleware/auth';
+import { initBillingQueue, BillingJobType } from './queues/billingQueue';
+import { authorizeRoles } from '@/middleware/auth';
 import { Role } from '@lorrigo/db';
+import { BillingController } from './controllers/billing-controller';
 
 /**
- * Billing module routes
+ * Register the billing module with Fastify
  */
-export default async function billingRoutes(fastify: FastifyInstance) {
+export async function billingRoutes(fastify: FastifyInstance) {
+  // Ensure user is authenticated for all billing routes
+  fastify.addHook('onRequest', fastify.authenticate);
+
   const billingService = new BillingService(fastify);
-  const billingController = new BillingController(billingService);
+  const { queue } = initBillingQueue(fastify, billingService);
 
-  // Initialize billing worker
-  const { billingWorker } = initBillingWorker(fastify);
+  // Nightly automation – every day at 00:05 AM
+  await addRecurringJob(
+    QueueNames.BILLING_AUTOMATION,
+    BillingJobType.AUTOMATE_BILLING,
+    {},
+    '5 0 * * *',
+    { jobId: 'billing-nightly' }
+  );
 
-  // Admin-only routes for billing management
-  fastify.register(async function (fastify) {
-    fastify.addHook('onRequest', fastify.authenticate);
-    const adminOnly = authorizeRoles([Role.ADMIN])
+  // Dispute auto-resolution – run hourly
+  await addRecurringJob(
+    QueueNames.BILLING_AUTOMATION,
+    BillingJobType.RESOLVE_DISPUTES,
+    {},
+    '0 * * * *',
+    { jobId: 'dispute-hourly' }
+  );
 
-    // CSV Upload for billing
-    fastify.post('/upload-csv', {
-      preHandler: [adminOnly]
-    }, billingController.uploadBillingCSV.bind(billingController));
+  // Controller
+  const controller = new BillingController(billingService);
 
-    // Manual billing routes
-    fastify.post('/manual/:userId', {
-      preHandler: [adminOnly]
-    }, billingController.processManualBilling.bind(billingController));
+  // Admin manual billing generation
+  fastify.post(
+    '/manual',
+    { preHandler: authorizeRoles([Role.ADMIN]) },
+    controller.manualBilling.bind(controller)
+  );
 
-    // Billing cycle management
-    fastify.post('/cycle/:userId', {
-      preHandler: [adminOnly]
-    }, billingController.createBillingCycle.bind(billingController));
+  // Billing cycles (admin and seller)
+  fastify.get(
+    '/cycles',
+    { preHandler: authorizeRoles([Role.SELLER, Role.ADMIN]) },
+    controller.getBillingCycles.bind(controller)
+  );
 
-    // Get billing summary by month (Admin view)
-    fastify.get('/summary/:month', {
-      preHandler: [adminOnly]
-    }, billingController.getBillingSummaryByMonth.bind(billingController));
+  // Billing history
+  fastify.get(
+    '/history',
+    { preHandler: authorizeRoles([Role.SELLER, Role.ADMIN]) },
+    controller.getBillingHistory.bind(controller)
+  );
 
-    // Get user billing details by month (Admin accessing user data)
-    fastify.get('/user/:userId/:month', {
-      preHandler: [adminOnly]
-    }, billingController.getUserBillingByMonth.bind(billingController));
+  // Dispute management
+  fastify.get(
+    '/disputes',
+    { preHandler: authorizeRoles([Role.SELLER, Role.ADMIN]) },
+    controller.getDisputes.bind(controller)
+  );
 
-    // Get bulk operation status
-    fastify.get('/operation/:operationId', {
-      preHandler: [adminOnly]
-    }, billingController.getBulkOperationStatus.bind(billingController));
-  });
-
-  // User-accessible routes
-  fastify.register(async function (fastify) {
-    fastify.addHook('onRequest', fastify.authenticate);
-    const sellerOnly = authorizeRoles([Role.SELLER])
-
-    // Get user's own billing details for a month
-    fastify.get('/my/:month', {
-      preHandler: [sellerOnly]
-    },
-      billingController.getUserBillingByMonth.bind(billingController)
-    );
-
-    // Get available billing months
-    fastify.get('/months', {
-      preHandler: [sellerOnly]
-    },
-      billingController.getAvailableBillingMonths.bind(billingController)
-    );
-  });
-
-  // Health check for billing worker
-  fastify.get('/worker/health', {
-    preHandler: [authorizeRoles([Role.ADMIN])],
-    schema: {
-      tags: ['Billing'],
-      summary: 'Check billing worker health',
-      security: [{ bearerAuth: [] }]
-    },
-    handler: async (request, reply) => {
-      try {
-        const queueHealth = await billingWorker.isRunning();
-        return reply.code(200).send({
-          success: true,
-          data: {
-            workerRunning: queueHealth,
-            timestamp: new Date().toISOString()
-          }
-        });
-      } catch (error) {
-        return reply.code(500).send({
-          success: false,
-          message: 'Failed to check worker health',
-          error: error instanceof Error ? error.message : 'Unknown error'
-        });
-      }
-    },
-  });
+  fastify.post(
+    '/disputes/:id/action',
+    { preHandler: authorizeRoles([Role.SELLER, Role.ADMIN]) },
+    controller.actOnDispute.bind(controller)
+  );
 } 

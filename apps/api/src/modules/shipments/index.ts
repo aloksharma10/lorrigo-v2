@@ -6,8 +6,59 @@ import { ShipmentController } from './controllers/shipmentsController';
 import { OrderService } from '../orders/services/order-service';
 import { ShipmentService } from './services/shipmentService';
 import { initShipmentQueue, JobType } from './queues/shipmentQueue';
-import { initTrackingScheduler } from './batch/scheduler';
-import { addJob, QueueNames } from '@/lib/queue';
+// import { initTrackingScheduler } from './batch/scheduler';
+import { addJob, QueueNames, addRecurringJob } from '@/lib/queue';
+
+/**
+ * Setup optimized tracking automation cron jobs
+ */
+async function setupOptimizedTrackingCron(fastify: FastifyInstance) {
+  try {
+    // Main tracking updates every 10 minutes
+    await addRecurringJob(
+      QueueNames.SHIPMENT_TRACKING,
+      JobType.PROCESS_BULK_STATUS_UPDATES,
+      { runDate: new Date().toISOString() },
+      '*/10 * * * *', // Every 10 minutes
+      {
+        priority: 1,
+        attempts: 3,
+        jobId: 'tracking-updates-cron',
+      }
+    );
+
+    // RTO charges processing every 30 minutes
+    await addRecurringJob(
+      QueueNames.SHIPMENT_TRACKING,
+      JobType.PROCESS_RTO,
+      { runDate: new Date().toISOString() },
+      '*/30 * * * *', // Every 30 minutes
+      {
+        priority: 2,
+        attempts: 3,
+        jobId: 'rto-processing-cron',
+      }
+    );
+
+    // Cleanup old events daily at 2 AM
+    await addRecurringJob(
+      QueueNames.SHIPMENT_TRACKING,
+      JobType.PROCESS_BULK_TRACKING_EVENTS,
+      { runDate: new Date().toISOString() },
+      '0 2 * * *', // Daily at 2 AM
+      {
+        priority: 4,
+        attempts: 2,
+        jobId: 'cleanup-events-cron',
+      }
+    );
+
+    fastify.log.info('Optimized tracking automation cron jobs scheduled successfully');
+  } catch (error) {
+    fastify.log.error(`Failed to setup optimized tracking automation cron: ${error}`);
+    throw error;
+  }
+}
 
 export async function shipmentRoutes(fastify: FastifyInstance) {
   fastify.addHook('onRequest', fastify.authenticate);
@@ -19,20 +70,8 @@ export async function shipmentRoutes(fastify: FastifyInstance) {
   // Initialize the shipment queue
   initShipmentQueue(fastify, shipmentService);
 
-  // Initialize the shipment tracking scheduler with optimized configuration
-  await initTrackingScheduler(fastify, shipmentService, {
-    useCron: true,
-    cronPattern: '*/10 * * * *', // Run every 10 minutes
-    processor: {
-      batchSize: 50,
-      concurrency: 5,
-      updateFrequency: {
-        inTransit: 2, // Check in-transit shipments every 2 hours
-        delivered: 24, // Check delivered shipments once a day
-        rto: 6, // Check RTO shipments every 6 hours
-      },
-    },
-  });
+  // Initialize optimized tracking system with cron scheduling
+  await setupOptimizedTrackingCron(fastify);
 
   // Schedule initial bulk processing jobs
   await addJob(
@@ -163,7 +202,7 @@ export async function shipmentRoutes(fastify: FastifyInstance) {
       try {
         // Check if the model exists in the Prisma client
         if ('unmappedCourierStatus' in fastify.prisma) {
-          const unmappedStatuses = await (fastify.prisma as any).unmappedCourierStatus.findMany({
+          const unmappedStatuses = await fastify.prisma.unmappedCourierStatus.findMany({
             orderBy: [{ courier: 'asc' }, { count: 'desc' }],
           });
           return reply.send(unmappedStatuses);
@@ -202,7 +241,7 @@ export async function shipmentRoutes(fastify: FastifyInstance) {
         // Delete from unmapped statuses if it exists
         try {
           if ('unmappedCourierStatus' in fastify.prisma) {
-            await (fastify.prisma as any).unmappedCourierStatus.delete({
+            await fastify.prisma.unmappedCourierStatus.delete({
               where: {
                 courier_status_code: {
                   courier: courier_name,

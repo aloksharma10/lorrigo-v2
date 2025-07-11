@@ -12,7 +12,13 @@ import {
   AlertDescription,
 } from '@lorrigo/ui/components';
 import { useDebounce } from '@/lib/hooks/use-debounce';
-import { useBillingOperations, type WeightDispute, type BillingParams } from '@/lib/apis/billing';
+import { 
+  useBillingOperations, 
+  useWeightDisputesEnhanced,
+  useResolveWeightDisputeEnhanced,
+  type WeightDispute, 
+  type BillingParams 
+} from '@/lib/apis/billing';
 import { CopyBtn } from '@/components/copy-btn';
 import { WeightDisputeModal } from '@/components/modals/weight-dispute-modal';
 import { currencyFormatter } from '@lorrigo/utils';
@@ -37,17 +43,46 @@ export function WeightDisputesTable({ className }: WeightDisputesTableProps) {
   const [selectedDispute, setSelectedDispute] = useState<WeightDispute | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Use the billing operations hook
-  const { getWeightDisputesQuery } = useBillingOperations();
-
-  // Fetch weight disputes
-  const { data, isLoading, isError, isFetching, refetch } = getWeightDisputesQuery({
-    page: pagination.pageIndex,
-    pageSize: pagination.pageSize,
-    sort: sorting,
-    filters,
-    globalFilter: debouncedGlobalFilter,
+  // Use the enhanced disputes hook
+  const { data, isLoading, isError, isFetching, refetch } = useWeightDisputesEnhanced({
+    page: pagination.pageIndex + 1, // API uses 1-based pagination
+    limit: pagination.pageSize,
+    status: filters.find(f => f.id === 'status')?.value,
   });
+
+  // Resolution hook for admin actions
+  const resolveDispute = useResolveWeightDisputeEnhanced();
+
+  // Transform the enhanced data to match the existing WeightDispute interface
+  const transformedDisputes = data?.disputes?.map(dispute => ({
+    id: dispute.id,
+    dispute_id: dispute.disputeId,
+    order_id: dispute.orderId,
+    status: dispute.status as 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'RESOLVED',
+    original_weight: dispute.originalWeight,
+    disputed_weight: dispute.disputedWeight,
+    final_weight: dispute.finalWeight,
+    courier_name: dispute.courierName,
+    original_charges: dispute.forwardExcessAmount + dispute.rtoExcessAmount,
+    revised_charges: dispute.totalDisputedAmount,
+    evidence_urls: dispute.sellerEvidenceUrls,
+    courier_response: dispute.sellerResponse,
+    resolution: dispute.resolution,
+    resolution_date: dispute.resolutionDate,
+    resolved_by: undefined,
+    created_at: dispute.createdAt,
+    updated_at: dispute.updatedAt,
+    order: {
+      order_number: `ORD-${dispute.orderId.slice(-8)}`, // Simplified order number
+      customer: {
+        name: 'Customer Name', // Enhanced API doesn't return customer details
+        phone: '9999999999',
+      },
+      shipment: {
+        awb: dispute.awb || 'N/A',
+      },
+    },
+  })) || [];
 
   // Define columns
   const columns: ColumnDef<WeightDispute>[] = [
@@ -359,9 +394,9 @@ export function WeightDisputesTable({ className }: WeightDisputesTableProps) {
     <div className={className}>
       <DataTable
         columns={columns}
-        data={data?.disputes || []}
+        data={transformedDisputes}
         count={data?.pagination?.total || 0}
-        pageCount={data?.pagination?.pageCount || 0}
+        pageCount={data?.pagination?.totalPages || 0}
         page={pagination.pageIndex}
         pageSize={pagination.pageSize}
         filterableColumns={filterableColumns}
