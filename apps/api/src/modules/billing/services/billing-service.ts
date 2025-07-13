@@ -430,6 +430,7 @@ export class BillingService {
         data: {
           charged_weight: final_weight || dispute.disputed_weight,
           has_weight_dispute: false, // Dispute is resolved
+          paid_amount: billingRecord.disputed_amount + billingRecord.disputed_amount,
           updated_at: new Date(),
         },
       });
@@ -709,13 +710,36 @@ export class BillingService {
       return 0; // Already processed
     }
 
+    // Check for existing weight dispute
+    const weightDispute = await this.fastify.prisma.weightDispute.findFirst({
+      where: {
+        order_id: shipment.order_id,
+        status: { 
+          in: [WeightDisputeStatus.PENDING, WeightDisputeStatus.RAISED_BY_SELLER] 
+        }
+      }
+    });
+
     let totalCharges = 0;
+    let fwExcessCharge = 0;
+    let rtoExcessCharge = 0;
+    let chargedWeight = shipment.order.applicable_weight;
+    let hasWeightDispute = false;
+
     const isRto = this.isRtoStatus(shipment.status);
 
     // Calculate base charges
     const forwardCharge = shipment.fw_charge || 0;
     const codCharge = isRto ? 0 : shipment.cod_charge || 0;
     let rtoCharge = isRto ? shipment.rto_charge : 0;
+
+    // If there's an active weight dispute, use dispute-related charges
+    if (weightDispute) {
+      chargedWeight = weightDispute.disputed_weight;
+      fwExcessCharge = weightDispute.forward_excess_amount || 0;
+      rtoExcessCharge = weightDispute.rto_excess_amount || 0;
+      hasWeightDispute = true;
+    }
 
     // Check if RTO charges need to be applied
     if (isRto && shipment.rto_charge > 0) {
@@ -757,7 +781,8 @@ export class BillingService {
       }
     }
 
-    totalCharges = forwardCharge + codCharge + rtoCharge;
+    // Calculate total charges including dispute amounts
+    totalCharges = forwardCharge + codCharge + rtoCharge + fwExcessCharge + rtoExcessCharge;
 
     // Create billing record
     const billingCode = `BL-${new Date().getFullYear().toString().slice(-2)}${(new Date().getMonth() + 1).toString().padStart(2, '0')}-${Date.now().toString().slice(-6)}`;
@@ -769,14 +794,20 @@ export class BillingService {
         awb: shipment.awb,
         billing_date: new Date(),
         billing_month: new Date().toISOString().slice(0, 7),
-        billing_amount: totalCharges,
-        charged_weight: 0,
         original_weight: shipment.order.applicable_weight,
+        charged_weight: chargedWeight,
+        has_weight_dispute: hasWeightDispute,
+        paid_amount: hasWeightDispute ? (forwardCharge + rtoCharge + codCharge) : 0,
+        billing_amount: totalCharges,
         fw_charge: forwardCharge,
         cod_charge: codCharge,
         rto_charge: rtoCharge,
+        fw_excess_charge: fwExcessCharge,
+        rto_excess_charge: rtoExcessCharge,
         is_forward_applicable: forwardCharge > 0,
         is_rto_applicable: rtoCharge > 0,
+        pending_amount: hasWeightDispute ? (fwExcessCharge + rtoExcessCharge) : 0,
+        disputed_amount: hasWeightDispute ? (fwExcessCharge + rtoExcessCharge) : 0,
         base_price: shipment.pricing?.base_price || 0,
         increment_price: shipment.pricing?.increment_price || 0,
         base_weight: shipment.pricing?.weight_slab || 0.5,
@@ -849,12 +880,15 @@ export class BillingService {
         where: { id: existingBilling.id },
         data: {
           awb: shipment.awb,
-          fw_excess_charge: fwExcess,
-          rto_excess_charge: rtoExcess,
           charged_weight: chargedWeight,
           weight_difference: weightDiff,
+          fw_excess_charge: fwExcess,
+          rto_excess_charge: rtoExcess,
           has_weight_dispute: true,
           billing_amount: existingBilling.billing_amount + totalDisputed,
+          pending_amount: existingBilling.pending_amount + totalDisputed,
+          disputed_amount: existingBilling.disputed_amount + totalDisputed,
+          paid_amount: existingBilling.paid_amount,
           updated_at: new Date()
         }
       });
@@ -880,7 +914,7 @@ export class BillingService {
       // Update dispute to mark hold as applied
       await this.fastify.prisma.weightDispute.update({
         where: { id: dispute.id },
-        data: { wallet_hold_applied: true }
+        data: { wallet_hold_applied: true, status: WeightDisputeStatus.PENDING }
       });
     }
 

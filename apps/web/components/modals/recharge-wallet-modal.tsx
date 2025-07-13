@@ -23,7 +23,7 @@ import {
   FormMessage,
 } from '@lorrigo/ui/components';
 import { X, Loader2, IndianRupee } from 'lucide-react';
-import { useWalletOperations } from '@/lib/apis/user';
+import { useWalletOperations } from '@/lib/apis/wallet';
 
 interface RechargeWalletModalProps {
   onClose: () => void;

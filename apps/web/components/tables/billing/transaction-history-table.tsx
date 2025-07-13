@@ -10,18 +10,20 @@ import {
   Alert,
   AlertDescription,
 } from '@lorrigo/ui/components';
-import { useTransactionHistory, type Transaction } from '@/lib/apis/billing';
 import { CopyBtn } from '@/components/copy-btn';
 import { currencyFormatter } from '@lorrigo/utils';
+import { useWalletOperations } from '@/lib/apis/wallet';
 
 interface TransactionHistoryTableProps {
   className?: string;
   entityType?: 'SHIPMENT' | 'INVOICE' | 'WALLET';
+  userId?: string;
 }
 
 export function TransactionHistoryTable({ 
   className, 
-  entityType 
+  entityType,
+  userId,
 }: TransactionHistoryTableProps) {
   const [pagination, setPagination] = useState({
     pageIndex: 0,
@@ -29,14 +31,15 @@ export function TransactionHistoryTable({
   });
 
   // Fetch transaction history
-  const { data, isLoading, isError, isFetching, refetch } = useTransactionHistory({
+  const { getTransactionHistory } = useWalletOperations();
+  const { data, isLoading, isError, isFetching, refetch } = getTransactionHistory({
     page: pagination.pageIndex + 1, // API uses 1-based pagination
     limit: pagination.pageSize,
-    type: entityType,
+    userId: userId,
   });
 
   // Define columns
-  const columns: ColumnDef<Transaction>[] = [
+  const columns: ColumnDef<any>[] = [
     {
       accessorKey: 'code',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Transaction" />,
@@ -221,6 +224,7 @@ export function TransactionHistoryTable({
   return (
     <div className={className}>
       <DataTable
+        showToolbar={false}
         columns={columns}
         data={data?.transactions || []}
         count={data?.pagination?.total || 0}

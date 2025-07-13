@@ -6,7 +6,7 @@ import { SidebarTrigger } from '@lorrigo/ui/components';
 import { IndianRupee, Search, Bell, Plus } from 'lucide-react';
 import { ModeToggle } from './mode-toggle';
 import HoverCardToolTip from '../hover-card-tooltip';
-import { useWalletOperations } from '@/lib/apis/user';
+import { useWalletOperations } from '@/lib/apis/wallet';
 import { useModalStore } from '@/modal/modal-store';
 
 export function SiteHeader() {
@@ -16,6 +16,8 @@ export function SiteHeader() {
   // Get wallet balance from API
   const { data: walletData, isLoading } = getWalletBalance;
   const walletBalance = walletData?.balance || 0;
+  const holdAmount = walletData?.hold_amount || 0;
+  const usableAmount = walletData?.usable_amount || 0;
 
   // Open recharge wallet modal
   const handleRechargeWallet = () => {
@@ -59,11 +61,11 @@ export function SiteHeader() {
             >
               <div className="grid grid-cols-2 gap-2">
                 <p>Usable Amount:</p>
-                <p>₹{walletBalance.toLocaleString('en-IN')}</p>
+                <p>₹{usableAmount.toLocaleString('en-IN')}</p>
                 <p>Total Amount:</p>
                 <p>₹{walletBalance.toLocaleString('en-IN')}</p>
                 <p>Hold Amount:</p>
-                <p>₹0.00</p>
+                <p>₹{holdAmount.toLocaleString('en-IN')}</p>
               </div>
             </HoverCardToolTip>
 

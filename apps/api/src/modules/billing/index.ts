@@ -58,6 +58,13 @@ export async function billingRoutes(fastify: FastifyInstance) {
     controller.getBillingHistory.bind(controller)
   );
 
+  // Billing summary by month
+  fastify.get(
+    '/summary/:month',
+    { preHandler: authorizeRoles([Role.SELLER, Role.ADMIN]) },
+    controller.getBillingSummary.bind(controller)
+  );
+
   // Dispute management
   fastify.get(
     '/disputes',

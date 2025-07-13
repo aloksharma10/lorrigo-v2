@@ -35,7 +35,7 @@ export function UserBillingDetailTable({ month }: UserBillingDetailTableProps) {
   const [globalFilter, setGlobalFilter] = useState('');
   const debouncedGlobalFilter = useDebounce(globalFilter, 500);
 
-  // Use the new billing operations hook
+  // Use the billing operations hook
   const { getCurrentUserBillingQuery } = useBillingOperations();
 
   // Fetch user billing details
@@ -178,7 +178,7 @@ export function UserBillingDetailTable({ month }: UserBillingDetailTableProps) {
       {/* Data Table */}
       <DataTable
         columns={columns}
-        data={data?.records || []}
+        data={data?.data || []}
         count={data?.pagination?.total || 0}
         pageCount={data?.pagination?.pageCount || 0}
         page={pagination.pageIndex}

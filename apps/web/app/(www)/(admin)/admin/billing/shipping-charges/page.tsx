@@ -22,12 +22,6 @@ import {
   CardTitle,
 } from '@lorrigo/ui/components';
 import { useBillingOperations } from '@/lib/apis/billing';
-import {
-  CSVUploadModal,
-  type CSVField,
-  type HeaderMapping,
-  type CSVUploadResult,
-} from '@/components/modals/csv-upload-modal';
 import { AdminBillingSummaryTable } from '@/components/tables/billing/admin-billing-summary-table';
 import { AdminBillingDetailTable } from '@/components/tables/billing/admin-billing-detail-table';
 import { Calculator, Users, TrendingUp, DollarSign } from 'lucide-react';
@@ -40,81 +34,45 @@ export default function AdminBillingShippingChargesPage() {
   const [selectedUserName, setSelectedUserName] = useState<string>('');
   const [expandedSection, setExpandedSection] = useState<string>('summary');
 
-  // Use the new billing operations hook
-  const { getAvailableBillingMonthsQuery, getBillingSummaryByMonthQuery, uploadBillingCSV } =
-    useBillingOperations();
+  // Use the billing operations hook
+  const { 
+    billingCyclesQuery, 
+    getBillingSummaryByMonthQuery, 
+    uploadWeightDisputeCSV 
+  } = useBillingOperations({
+    billingCycles: {
+      page: 1,
+      pageSize: 100,
+    }
+  });
 
   // API hooks using the new pattern
-  const { data: availableMonths, isLoading: monthsLoading } = getAvailableBillingMonthsQuery();
-  const {
-    data: billingSummary,
-    isLoading: summaryLoading,
-    refetch,
-  } = getBillingSummaryByMonthQuery(selectedMonth);
+  const { data: billingCycles, isLoading: cyclesLoading } = billingCyclesQuery;
+  
+  // Get unique billing months from cycles
+  const availableMonths = billingCycles?.data
+    ? [...new Set(billingCycles.data.map(cycle => 
+        new Date(cycle.cycle_start_date).toISOString().slice(0, 7)
+      ))]
+    : [];
+
+  // Default to current month if no months available
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  
+  // Get billing summary for selected month
+  const { data: billingSummary, isLoading: summaryLoading, refetch } = 
+    getBillingSummaryByMonthQuery(selectedMonth || currentMonth);
 
   // Set default month if not selected
-  if (!selectedMonth && availableMonths && availableMonths.length > 0) {
-    setSelectedMonth(availableMonths[0] || '');
-  }
-
-  // CSV upload configuration
-  const csvFields: CSVField[] = [
-    {
-      key: 'awb',
-      label: 'AWB Number',
-      required: true,
-      description: 'Airway Bill Number',
-      type: 'string',
-    },
-    {
-      key: 'weight',
-      label: 'Weight (kg)',
-      required: true,
-      description: 'Package weight in kilograms',
-      type: 'number',
-      validation: (value: string) => {
-        const weight = parseFloat(value);
-        if (isNaN(weight) || weight <= 0) {
-          return 'Weight must be a positive number';
-        }
-        return null;
-      },
-    },
-  ];
-
-  const handleCSVUpload = async (file: File, mapping: HeaderMapping): Promise<CSVUploadResult> => {
-    try {
-      const result = await uploadBillingCSV.mutateAsync(file);
-
-      if (result.success) {
-        // Refresh the billing summary after successful upload
-        setTimeout(() => {
-          refetch();
-        }, 2000);
-
-        return {
-          success: true,
-          processedRows: result.totalRecords,
-          summary: {
-            total: result.totalRecords,
-            successful: result.processedCount,
-            failed: result.errorCount,
-            skipped: 0,
-          },
-        };
-      } else {
-        return {
-          success: false,
-          errors: [result.message || 'Upload failed'],
-        };
-      }
-    } catch (error: any) {
-      return {
-        success: false,
-        errors: [error.message || 'Upload failed'],
-      };
+  if (!selectedMonth && availableMonths.length > 0) {
+    // Ensure we have a string value
+    const defaultMonth = availableMonths[0];
+    if (defaultMonth) {
+      setSelectedMonth(defaultMonth);
+    } else {
+      setSelectedMonth(currentMonth);
     }
-  };
+  }
 
   const handleUserSelect = (userId: string, userName: string) => {
     setSelectedUserId(userId);
@@ -123,6 +81,14 @@ export default function AdminBillingShippingChargesPage() {
   };
 
   const { openModal } = useModalStore();
+
+  const handleOpenCSVModal = () => {
+    openModal('weight-dispute-csv');
+  };
+
+  const handleOpenBillingCycleModal = () => {
+    openModal('billing-cycle', {});
+  };
 
   // Summary cards
   const summaryCards = [
@@ -183,8 +149,8 @@ export default function AdminBillingShippingChargesPage() {
                 <SelectValue placeholder="Select month" />
               </SelectTrigger>
               <SelectContent>
-                {availableMonths?.map((month) => (
-                  <SelectItem key={month} value={month}>
+                {availableMonths.map((month, i) => (
+                  <SelectItem key={i} value={month}>
                     {new Date(month + '-01').toLocaleDateString('en-US', {
                       year: 'numeric',
                       month: 'long',
@@ -202,21 +168,19 @@ export default function AdminBillingShippingChargesPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <CSVUploadModal
-            fields={csvFields}
-            onSubmit={handleCSVUpload}
-            title="Upload Billing CSV"
-            description="Upload CSV file with AWB and Weight columns for billing calculation"
-            buttonLabel="Upload Billing CSV"
-            className="bg-primary text-primary-foreground gap-2"
-            preferenceKey="billing"
-            enableMappingPreferences={true}
-          />
+          <Button 
+            variant="default" 
+            size="sm" 
+            className="gap-2"
+            onClick={handleOpenCSVModal}
+          >
+            <Upload className="h-4 w-4" /> Upload Billing CSV
+          </Button>
           <Button
             variant="outline"
             size="sm"
             className="gap-2"
-            onClick={() => openModal('billing-cycle', {})}
+            onClick={handleOpenBillingCycleModal}
           >
             <Calendar className="h-4 w-4" /> Manage Billing Cycles
           </Button>
@@ -224,14 +188,14 @@ export default function AdminBillingShippingChargesPage() {
       </div>
 
       {/* Loading State */}
-      {(monthsLoading || summaryLoading) && (
+      {(cyclesLoading || summaryLoading) && (
         <Alert>
           <AlertDescription>Loading billing data...</AlertDescription>
         </Alert>
       )}
 
       {/* No Month Selected */}
-      {!monthsLoading && !selectedMonth && (
+      {!cyclesLoading && !selectedMonth && (
         <Alert>
           <AlertDescription>
             No billing months available. Upload billing data to get started.
@@ -276,13 +240,22 @@ export default function AdminBillingShippingChargesPage() {
               ({new Date(selectedMonth + '-01').toLocaleDateString('en-US', { weekday: 'long' })})
               {billingSummary && (
                 <span className="text-muted-foreground ml-2 text-sm font-normal">
-                  ({billingSummary.total_orders} orders, ₹
-                  {billingSummary.total_amount.toLocaleString()})
+                  ({billingSummary.total_orders} orders, {currencyFormatter(billingSummary.total_amount)})
                 </span>
               )}
             </AccordionTrigger>
             <AccordionContent>
-              <AdminBillingSummaryTable month={selectedMonth} onUserSelect={handleUserSelect} />
+              <AdminBillingSummaryTable 
+                month={selectedMonth} 
+                onUserSelect={handleUserSelect}
+                onManualBilling={(userId, userName) => {
+                  // Use billing-cycle modal with manual billing option for now
+                  openModal('billing-cycle', { userId, userName });
+                }}
+                onBillingCycle={(userId, userName) => {
+                  openModal('billing-cycle', { userId, userName });
+                }}
+              />
             </AccordionContent>
           </AccordionItem>
 

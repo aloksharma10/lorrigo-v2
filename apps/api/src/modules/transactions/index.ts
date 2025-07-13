@@ -165,6 +165,8 @@ export default async function transactionRoutes(fastify: FastifyInstance): Promi
           properties: {
             success: { type: 'boolean' },
             balance: { type: 'number' },
+            hold_amount: { type: 'number' },
+            usable_amount: { type: 'number' },
             walletId: { type: 'string' },
             walletCode: { type: 'string' },
           },

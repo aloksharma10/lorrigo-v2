@@ -1,6 +1,6 @@
 'use client';
 
-import { useWalletOperations } from '@/lib/apis/user';
+import { useWalletOperations } from '@/lib/apis/wallet';
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@lorrigo/ui/components';
 import { IndianRupee, Plus, ArrowDownCircle, ArrowUpCircle, History, Loader2 } from 'lucide-react';
 import { useModalStore } from '@/modal/modal-store';

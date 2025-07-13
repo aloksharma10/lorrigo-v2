@@ -703,6 +703,8 @@ export class TransactionService {
       return {
         success: true,
         balance: wallet.balance,
+        hold_amount: wallet.hold_amount,
+        usable_amount: wallet.usable_amount,
         walletId: wallet.id,
         walletCode: wallet.code,
       };
@@ -721,7 +723,7 @@ export class TransactionService {
    * @returns Transaction history
    */
   async getTransactionHistory(
-    userId: string,
+    userId: string | undefined,
     type?: TransactionEntityType,
     page: number = 1,
     limit: number = 10
@@ -731,10 +733,11 @@ export class TransactionService {
       let transactions: any[] = [];
       let total = 0;
 
+      const whereClause = userId ? { user_id: userId } : {};
       // Get transactions based on type
       if (!type || type === TransactionEntityType.SHIPMENT) {
         const shipmentTransactions = await this.prisma.shipmentTransaction.findMany({
-          where: { user_id: userId },
+          where: whereClause,
           skip,
           // take: type ? limit : Math.floor(limit / 3),
           orderBy: { created_at: 'desc' },
@@ -750,7 +753,7 @@ export class TransactionService {
         });
 
         const shipmentCount = await this.prisma.shipmentTransaction.count({
-          where: { user_id: userId },
+          where: whereClause,
         });
 
         transactions = [
@@ -770,7 +773,7 @@ export class TransactionService {
 
       if (!type || type === TransactionEntityType.INVOICE) {
         const invoiceTransactions = await this.prisma.invoiceTransaction.findMany({
-          where: { user_id: userId },
+          where: whereClause,
           skip: type ? skip : 0,
           take: type ? limit : Math.floor(limit / 3),
           orderBy: { created_at: 'desc' },
@@ -786,7 +789,7 @@ export class TransactionService {
         });
 
         const invoiceCount = await this.prisma.invoiceTransaction.count({
-          where: { user_id: userId },
+          where: whereClause,
         });
 
         transactions = [
@@ -806,14 +809,14 @@ export class TransactionService {
 
       if (!type || type === TransactionEntityType.WALLET) {
         const walletTransactions = await this.prisma.walletRechargeTransaction.findMany({
-          where: { user_id: userId },
+          where: whereClause,
           skip: type ? skip : 0,
           take: type ? limit : Math.floor(limit / 3),
           orderBy: { created_at: 'desc' },
         });
 
         const walletCount = await this.prisma.walletRechargeTransaction.count({
-          where: { user_id: userId },
+          where: whereClause,
         });
 
         transactions = [

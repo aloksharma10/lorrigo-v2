@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Scale, AlertTriangle, CheckCircle, XCircle, Eye, ArrowRight, Upload, Download } from 'lucide-react';
+import { Upload, Download } from 'lucide-react';
 import {
   DataTable,
   DataTableColumnHeader,
@@ -22,17 +22,45 @@ import {
 } from '@/lib/apis/billing';
 import { CopyBtn } from '@/components/copy-btn';
 import { WeightDisputeModal } from '@/components/modals/weight-dispute-modal';
-import { currencyFormatter } from '@lorrigo/utils';
 import { useDrawerStore } from '@/drawer/drawer-store';
 import { useModalStore } from '@/modal/modal-store';
 
 interface WeightDisputesTableProps {
   className?: string;
   userRole?: 'ADMIN' | 'SELLER';
+  userId?: string;
+  status?: string;
 }
 
-export function WeightDisputesTable({ className, userRole = 'ADMIN' }: WeightDisputesTableProps) {
-  const [activeTab, setActiveTab] = useState<string>('new');
+export function WeightDisputesTable({ className, userRole = 'ADMIN', userId, status }: WeightDisputesTableProps) {
+  // Map tabs to status filters
+  const tabToStatusMap: Record<string, string | undefined> = {
+    'new': 'PENDING',
+    'pending': 'PENDING',
+    'raised_by_seller': 'RAISED_BY_SELLER',
+    'resolved': 'RESOLVED',
+    'rejected': 'REJECTED',
+    'auto-accepted': 'AUTO_ACCEPTED',
+    'all': undefined
+  };
+  
+  // If status is provided, use it to set the initial activeTab value
+  const [activeTab, setActiveTab] = useState<string>(
+    status ? 
+      Object.entries(tabToStatusMap).find(([key, value]) => value === status)?.[0] || 'new' : 
+      'new'
+  );
+  
+  // Update activeTab when status prop changes
+  useEffect(() => {
+    if (status) {
+      const tab = Object.entries(tabToStatusMap).find(([key, value]) => value === status)?.[0];
+      if (tab) {
+        setActiveTab(tab);
+      }
+    }
+  }, [status]);
+  
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 15,
@@ -53,20 +81,14 @@ export function WeightDisputesTable({ className, userRole = 'ADMIN' }: WeightDis
   const openDrawer = useDrawerStore((state) => state.openDrawer);
   const openModal = useModalStore((state) => state.openModal);
 
-  // Map tabs to status filters
-  const tabToStatusMap: Record<string, string | undefined> = {
-    'new': 'PENDING',
-    'auto-accepted': 'AUTO_ACCEPTED',
-    'all': undefined
-  };
-
   // Use the new disputes hook with all params
   const { disputesQuery, actOnDispute } = useBillingOperations({
     disputes: {
       page: pagination.pageIndex + 1, // API uses 1-based pagination
       pageSize: pagination.pageSize,
-      status: tabToStatusMap[activeTab],
+      status: status || tabToStatusMap[activeTab],
       search: searchAwb || undefined,
+      userId: userId
     },
   });
 
@@ -403,6 +425,10 @@ export function WeightDisputesTable({ className, userRole = 'ADMIN' }: WeightDis
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     setPagination({ ...pagination, pageIndex: 0 }); // Reset to first page
+    
+    // Manually refetch with the new status
+    const newStatus = tabToStatusMap[value];
+    disputesQuery.refetch();
   };
 
   // Filterable columns

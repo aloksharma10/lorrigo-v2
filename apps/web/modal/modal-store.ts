@@ -17,8 +17,13 @@ export type ModalType =
   | 'bulk-orders-operations'
   | 'billing-cycle'
   | 'weight-dispute-csv'
-  | 'dispute-actions-csv';
-export type ModalProps = Record<string, unknown>;
+  | 'dispute-actions-csv'
+  | 'manual-billing';
+
+// Modal props interface
+export interface ModalProps {
+  [key: string]: any;
+}
 
 // export type ModalType = "wallet" | "addPickupLocation" | "payForInvoice" | "addSeller" | "addCustomer" | "schedulePickup" | "cancelOrder" | "cloneOrder" | "trackModal" | "editOrder" | "downloadLabel" | "downloadManifest" | "ndrOrder" | "ndrRTOrder" | "BulkHubUpload" | "BulkPincodeUpload" | 'downloadLabels'  | "BulkPickupUpdate" | 'cancelBulkOrder' | "downloadManifests" | "updateShopifyOrders" | "ViewUserDocsAdmin" | "ClientBillingUpload" | "adminRemittanceManage" | "cloneB2BOrder" | "editB2BOrder" | "addB2BCustomer" | "completeKyc" | 'alert-kyc' | 'alert-payment' | "downloadB2BLabel" | "downloadB2BManifest" | "BulkShipNow" | "B2BClientBillingUpload" | "B2BShipNow" | "raiseDisputeManage" | "disputeDetails" | "DisputeUpload" | "bulkPickupSchedule" | "sellerRemittanceConfig";
 
@@ -67,6 +72,7 @@ export const useModalStore = create<ModalState>((set, get) => ({
     'billing-cycle': undefined as unknown as ModalComponent,
     'weight-dispute-csv': undefined as unknown as ModalComponent,
     'dispute-actions-csv': undefined as unknown as ModalComponent,
+    'manual-billing': undefined as unknown as ModalComponent,
   },
   registerModal: (type, component) =>
     set((state) => ({

@@ -79,6 +79,23 @@ export interface Billing {
   };
 }
 
+export interface BillingSummaryByUser {
+  user_id: string;
+  user_name: string;
+  user_email: string;
+  total_orders: number;
+  total_billing_amount: number;
+  paid_amount: number;
+  pending_amount: number;
+  disputed_amount: number;
+}
+
+export interface BillingSummary {
+  total_amount: number;
+  total_orders: number;
+  users: BillingSummaryByUser[];
+}
+
 export interface WeightDispute {
   id: string;
   dispute_id: string;
@@ -156,6 +173,14 @@ export interface ManualBillingRequest {
   userId?: string;
 }
 
+export interface ManualBillingParams {
+  awbs?: string[];
+  dateRange?: {
+    from: string;
+    to: string;
+  };
+}
+
 export interface DisputeActionRequest {
   action: 'ACCEPT' | 'REJECT' | 'RAISE';
   resolution?: string;
@@ -163,6 +188,15 @@ export interface DisputeActionRequest {
   final_weight?: number;
   revised_charges?: number;
   status?: string;
+}
+
+export interface BillingCycleRequest {
+  userId: string;
+  cycleType: string;
+  cycleDays: number;
+  startDate?: string;
+  weekDays?: number[];
+  monthDay?: number;
 }
 
 export interface PaginationParams {
@@ -183,6 +217,74 @@ export interface PaginatedResponse<T> {
   };
 }
 
+export interface BillingRecord {
+  id: string;
+  code: string;
+  order_id: string;
+  awb: string;
+  billing_date: string;
+  billing_month: string;
+  billing_amount: number;
+  charged_weight: number;
+  original_weight: number;
+  weight_difference: number;
+  has_weight_dispute: boolean;
+  fw_excess_charge: number;
+  rto_excess_charge: number;
+  zone_change_charge: number;
+  cod_charge: number;
+  fw_charge: number;
+  rto_charge: number;
+  is_forward_applicable: boolean;
+  is_rto_applicable: boolean;
+  base_price: number;
+  base_weight: number;
+  increment_price: number;
+  order_weight: number;
+  order_zone: string | null;
+  charged_zone: string | null;
+  courier_name: string | null;
+  billing_cycle_id: string | null;
+  cycle_type: string;
+  is_manual_billing: boolean;
+  payment_status: string;
+  admin_notes: string | null;
+  approved_by: string | null;
+  approved_at: string | null;
+  created_at: string;
+  updated_at: string;
+  order: {
+    order_type: string;
+    order_number: string;
+    code: string;
+    user: {
+      name: string;
+      email: string;
+    };
+    customer: {
+      name: string;
+      phone: string;
+      email: string;
+    },
+    hub: {
+      name: string;
+      address: {
+        pincode: string;
+      };
+    };
+  };
+}
+
+export interface BillingRecordsResponse {
+  data: BillingRecord[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    pageCount: number;
+  };
+}
+
 // API Functions
 const billingAPI = {
   // Billing Cycles
@@ -200,6 +302,20 @@ const billingAPI = {
     return await axios.post('/billing/manual', request);
   },
 
+  // Billing Summary by Month
+  getBillingSummaryByMonth: async (month: string, params?: PaginationParams): Promise<BillingSummary> => {
+    return await axios.get(`/billing/summary/${month}`, { params });
+  },
+
+  // Billing Cycle Management
+  createBillingCycle: async (request: BillingCycleRequest): Promise<ApiResponse> => {
+    return await axios.post('/billing/cycles', request);
+  },
+
+  updateBillingCycle: async (id: string, request: Partial<BillingCycleRequest>): Promise<ApiResponse> => {
+    return await axios.patch(`/billing/cycles/${id}`, request);
+  },
+
   // Disputes
   getDisputes: async (params?: PaginationParams & { status?: string }): Promise<PaginatedResponse<WeightDispute>> => {
     return await axios.get('/billing/disputes', { params });
@@ -207,6 +323,10 @@ const billingAPI = {
 
   actOnDispute: async (disputeId: string, request: DisputeActionRequest): Promise<ApiResponse> => {
     return await axios.post(`/billing/disputes/${disputeId}/action`, request);
+  },
+
+  resolveWeightDispute: async (disputeId: string, resolution: any): Promise<ApiResponse> => {
+    return await axios.post(`/billing/disputes/${disputeId}/resolve`, resolution);
   },
 
   // CSV Upload for Weight Disputes
@@ -224,6 +344,27 @@ const billingAPI = {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+    });
+  },
+
+  // Get billing records for a specific user and month
+  getUserBillingByMonth: async (userId: string, month: string, params?: PaginationParams): Promise<BillingRecordsResponse> => {
+    return await axios.get(`/billing/history`, { 
+      params: {
+        ...params,
+        userId,
+        month
+      }
+    });
+  },
+
+  // Get billing records for the current user by month
+  getCurrentUserBillingByMonth: async (month: string, params?: PaginationParams): Promise<BillingRecordsResponse> => {
+    return await axios.get(`/billing/history`, { 
+      params: {
+        ...params,
+        month
+      }
     });
   },
 };
@@ -260,7 +401,11 @@ export function useBillingOperations({
   // Fetch billing cycles
   const billingCyclesQuery = useQuery({
     queryKey: ['billing-cycles', billingCycles.page, billingCycles.pageSize, billingCycles.userId, billingCycles.billingCycleId, billingCycles.status],
-    queryFn: () => billingAPI.getBillingCycles(billingCycles),
+    queryFn: () => billingAPI.getBillingCycles({
+      page: billingCycles.page || 1,
+      limit: billingCycles.pageSize || 10,
+      userId: billingCycles.userId
+    }),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
     enabled: isTokenReady && !!billingCycles.page, // Only fetch if page is defined and token is ready
@@ -269,7 +414,11 @@ export function useBillingOperations({
   // Fetch billing history
   const billingHistoryQuery = useQuery({
     queryKey: ['billing-history', billingHistory.page, billingHistory.pageSize, billingHistory.userId, billingHistory.billingCycleId, billingHistory.status],
-    queryFn: () => billingAPI.getBillingHistory(billingHistory),
+    queryFn: () => billingAPI.getBillingHistory({
+      page: billingHistory.page || 1,
+      limit: billingHistory.pageSize || 10,
+      billingCycleId: billingHistory.billingCycleId
+    }),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
     enabled: isTokenReady && !!billingHistory.page, // Only fetch if page is defined and token is ready
@@ -278,11 +427,31 @@ export function useBillingOperations({
   // Fetch disputes
   const disputesQuery = useQuery({
     queryKey: ['disputes', debouncedDisputes.page, debouncedDisputes.pageSize, debouncedDisputes.userId, debouncedDisputes.status, debouncedDisputes.search],
-    queryFn: () => billingAPI.getDisputes(debouncedDisputes),
+    queryFn: () => billingAPI.getDisputes({
+      page: debouncedDisputes.page || 1,
+      limit: debouncedDisputes.pageSize || 10,
+      status: debouncedDisputes.status,
+      awb: debouncedDisputes.search
+    }),
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 5 * 60 * 1000, // 5 minutes
     enabled: isTokenReady && !!debouncedDisputes.page, // Only fetch if page is defined and token is ready
   });
+
+  // Fetch billing summary by month
+  const getBillingSummaryByMonthQuery = (month: string, options: any = {}) => {
+    return useQuery({
+      queryKey: ['billing-summary', month, options],
+      queryFn: () => billingAPI.getBillingSummaryByMonth(month, {
+        page: (options.page + 1) || 1,
+        limit: options.pageSize || 15
+      }),
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+      enabled: isTokenReady && !!month,
+    });
+  };
+
   // Create manual billing
   const createManualBilling = useMutation({
     mutationFn: billingAPI.createManualBilling,
@@ -297,6 +466,76 @@ export function useBillingOperations({
     },
   });
 
+  // Process manual billing with specific parameters
+  const processManualBilling = useMutation({
+    mutationFn: ({ userId, params }: { userId: string; params: ManualBillingParams }) => {
+      const request: ManualBillingRequest = { userId };
+      
+      if (params.awbs) {
+        request.awbs = params.awbs;
+      } else if (params.dateRange) {
+        request.startDate = params.dateRange.from;
+        request.endDate = params.dateRange.to;
+      }
+      
+      return billingAPI.createManualBilling(request);
+    },
+    onSuccess: (data) => {
+      toast.success('Manual billing processed successfully');
+      queryClient.invalidateQueries({ queryKey: ['billing-cycles'] });
+      queryClient.invalidateQueries({ queryKey: ['billing-history'] });
+      queryClient.invalidateQueries({ queryKey: ['billing-summary'] });
+      return data;
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to process manual billing');
+    },
+  });
+  
+  // Generate manual billing (direct API call with awbs or date range)
+  const generateManualBilling = useMutation({
+    mutationFn: (params: ManualBillingRequest) => {
+      return billingAPI.createManualBilling(params);
+    },
+    onSuccess: (data) => {
+      toast.success('Manual billing generated successfully');
+      queryClient.invalidateQueries({ queryKey: ['billing-cycles'] });
+      queryClient.invalidateQueries({ queryKey: ['billing-history'] });
+      queryClient.invalidateQueries({ queryKey: ['billing-summary'] });
+      return data;
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to generate manual billing');
+    },
+  });
+
+  // Create billing cycle
+  const createBillingCycle = useMutation({
+    mutationFn: billingAPI.createBillingCycle,
+    onSuccess: (data) => {
+      toast.success('Billing cycle created successfully');
+      queryClient.invalidateQueries({ queryKey: ['billing-cycles'] });
+      return data;
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to create billing cycle');
+    },
+  });
+
+  // Update billing cycle
+  const updateBillingCycle = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<BillingCycleRequest> }) => 
+      billingAPI.updateBillingCycle(id, data),
+    onSuccess: (data) => {
+      toast.success('Billing cycle updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['billing-cycles'] });
+      return data;
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to update billing cycle');
+    },
+  });
+
   // Act on dispute
   const actOnDispute = useMutation({
     mutationFn: ({ disputeId, request }: { disputeId: string; request: DisputeActionRequest }) =>
@@ -304,7 +543,7 @@ export function useBillingOperations({
     onSuccess: (data) => {
       toast.success('Dispute action completed successfully');
       queryClient.invalidateQueries({ queryKey: ['disputes'] });
-      // queryClient.invalidateQueries({ queryKey: ['wallet-balance'] }); // Uncomment if walletBalanceQuery is enabled
+      queryClient.invalidateQueries({ queryKey: ['wallet-balance'] });
       return data;
     },
     onError: (error: any) => {
@@ -312,18 +551,27 @@ export function useBillingOperations({
     },
   });
 
-  // Upload weight dispute CSV
-  const uploadWeightDisputeCSV = useMutation({
-    mutationFn: billingAPI.uploadWeightDisputeCSV,
+  // Resolve weight dispute
+  const resolveWeightDispute = useMutation({
+    mutationFn: ({ disputeId, resolution }: { disputeId: string; resolution: any }) =>
+      billingAPI.resolveWeightDispute(disputeId, resolution),
     onSuccess: (data) => {
-      toast.success('Weight dispute CSV uploaded successfully');
+      toast.success('Weight dispute resolved successfully');
       queryClient.invalidateQueries({ queryKey: ['disputes'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet-balance'] });
       return data;
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.error || 'Failed to upload weight dispute CSV');
+      toast.error(error.response?.data?.error || 'Failed to resolve weight dispute');
     },
   });
+
+  // Upload weight dispute CSV
+  const uploadWeightDisputeCSV = (csvfile: File) => {
+    const formData = new FormData();
+    formData.append('file', csvfile);
+    return billingAPI.uploadWeightDisputeCSV(formData);
+  };
 
   // Upload dispute actions CSV
   const uploadDisputeActionsCSV = useMutation({
@@ -338,12 +586,48 @@ export function useBillingOperations({
     },
   });
 
+  // Fetch billing records for a specific user by month
+  const getUserBillingByMonthQuery = (userId: string, month: string, options: any = {}) => {
+    return useQuery({
+      queryKey: ['user-billing', userId, month, options],
+      queryFn: () => billingAPI.getUserBillingByMonth(userId, month, {
+        page: (options.page + 1) || 1,
+        limit: options.pageSize || 15
+      }),
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+      enabled: isTokenReady && !!userId && !!month,
+    });
+  };
+
+  // Fetch billing records for the current user by month
+  const getCurrentUserBillingQuery = (month: string, options: any = {}) => {
+    return useQuery({
+      queryKey: ['current-user-billing', month, options],
+      queryFn: () => billingAPI.getCurrentUserBillingByMonth(month, {
+        page: (options.page + 1) || 1,
+        limit: options.pageSize || 15
+      }),
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+      enabled: isTokenReady && !!month,
+    });
+  };
+
   return {
     billingCyclesQuery,
     billingHistoryQuery,
     disputesQuery,
+    getBillingSummaryByMonthQuery,
+    getUserBillingByMonthQuery,
+    getCurrentUserBillingQuery,
     createManualBilling,
+    processManualBilling,
+    generateManualBilling,
+    createBillingCycle,
+    updateBillingCycle,
     actOnDispute,
+    resolveWeightDispute,
     uploadWeightDisputeCSV,
     uploadDisputeActionsCSV,
   };

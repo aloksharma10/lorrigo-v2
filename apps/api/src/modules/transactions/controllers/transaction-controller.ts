@@ -5,7 +5,7 @@ import {
   TransactionEntityType,
 } from '../services/transaction-service';
 import { z } from 'zod';
-import { TransactionStatus } from '@lorrigo/db';
+import { Role, TransactionStatus } from '@lorrigo/db';
 
 // Validation schemas
 export const CreateShipmentTransactionSchema = z.object({
@@ -303,8 +303,13 @@ export class TransactionController {
    */
   async getTransactionHistory(request: FastifyRequest, reply: FastifyReply) {
     try {
-      const userId = request.userPayload!.id;
+      let userId = (request.query as any).userId || request.userPayload!.id;
+      const isAdmin = request.userPayload!.role === Role.ADMIN;
       const query = request.query as z.infer<typeof GetTransactionHistorySchema>;
+
+      // if (isAdmin) {
+      //   userId = undefined as any;
+      // }
 
       const result = await this.transactionService.getTransactionHistory(
         userId,

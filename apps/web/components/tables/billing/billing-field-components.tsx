@@ -97,9 +97,9 @@ export function ShipmentDetailsCell({ record }: ShipmentDetailsCellProps) {
       <div className="text-sm font-medium">
         AWB:{' '}
         <CopyBtn
-          label={record.order.shipment.awb}
+          label={record.awb}
           tooltipText="Copy AWB"
-          text={record.order.shipment.awb}
+          text={record.awb}
           className="text-blue-600"
         />
       </div>
@@ -107,7 +107,7 @@ export function ShipmentDetailsCell({ record }: ShipmentDetailsCellProps) {
         <Truck className="h-3 w-3" />
         {record.courier_name}
       </div>
-      <div className="text-muted-foreground text-xs">Hub: {record.order.hub.name}</div>
+      <div className="text-muted-foreground text-xs">Hub: {record.order.hub.name}, Pincode: ({record.order.hub.address.pincode})</div>
       {(record.order_zone || record.charged_zone) && (
         <div className="text-muted-foreground text-xs">
           Zone: {record.order_zone}{' '}
@@ -156,7 +156,7 @@ export function WeightDetailsCell({ record }: WeightDetailsCellProps) {
         </div>
       )}
 
-      {record.order.weight_dispute && (
+      {record.has_weight_dispute && (
         <div className="flex items-center gap-1 text-xs text-red-600">
           <AlertCircle className="h-3 w-3" />
           <span>Under review</span>

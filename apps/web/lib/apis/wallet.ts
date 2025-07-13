@@ -3,38 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthToken } from '@/components/providers/token-provider';
 import { useSession } from 'next-auth/react';
 import { api } from './axios';
-import { AxiosResponse } from 'axios';
-
-// Fetch user profile
-export const useUserProfile = () => {
-  const { status } = useSession();
-  const { isTokenReady } = useAuthToken();
-
-  return useQuery({
-    queryKey: ['user'],
-    queryFn: async () => {
-      const response = await api.get<{ id: string; name: string; email: string }>('/auth/me');
-      return response;
-    },
-    enabled: status === 'authenticated' && isTokenReady, // Only run when authenticated AND token is ready
-    retry: 0, // Disable retries to avoid multiple requests on 401
-    refetchOnWindowFocus: false,
-    staleTime: 5 * 60 * 1000,
-  });
-};
-
-// Update user profile
-export const useUpdateUserProfile = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: { userId: string; name: string; email: string }) =>
-      api.put(`/users/${data.userId}`, { name: data.name, email: data.email }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user'] });
-    },
-  });
-};
 
 // Wallet operations
 export const useWalletOperations = () => {
@@ -46,7 +14,7 @@ export const useWalletOperations = () => {
   const getWalletBalance = useQuery({
     queryKey: ['wallet', 'balance'],
     queryFn: async () => {
-      const response = await api.get<{ balance: number }>('/transactions/wallet/balance');
+      const response = await api.get<{ balance: number, hold_amount: number, usable_amount: number }>('/transactions/wallet/balance');
       return response;
     },
     enabled: status === 'authenticated' && isTokenReady,
@@ -76,12 +44,12 @@ export const useWalletOperations = () => {
   });
 
   // Get transaction history
-  const getTransactionHistory = ({ page, limit }: { page: number; limit: number }) => {
+  const getTransactionHistory = ({ page, limit, userId }: { page: number; limit: number; userId?: string }) => {
     return useQuery({
       queryKey: ['wallet', 'transactions'],
       queryFn: async () => {
-        const response = await api.get<{ transactions: any[] }>('/transactions/history', {
-          params: { page, limit },
+        const response = await api.get<{ transactions: any[], pagination: { total: number, page: number, limit: number, totalPages: number } }>('/transactions/history', {
+          params: { page, limit, userId },
         });
         return response;
       },

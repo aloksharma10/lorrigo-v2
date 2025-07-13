@@ -77,7 +77,7 @@ export function AdminBillingDetailTable({ userId, month }: AdminBillingDetailTab
       enableHiding: true,
     },
     {
-      accessorKey: 'order.shipment.awb',
+      accessorKey: 'order.awb',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Shipment" />,
       cell: ({ row }) => <ShipmentDetailsCell record={row.original} />,
       enableSorting: true,
@@ -238,7 +238,7 @@ export function AdminBillingDetailTable({ userId, month }: AdminBillingDetailTab
       {/* Data Table */}
       <DataTable
         columns={columns}
-        data={data?.records || []}
+        data={data?.data || []}
         count={data?.pagination?.total || 0}
         pageCount={data?.pagination?.pageCount || 0}
         page={pagination.pageIndex}

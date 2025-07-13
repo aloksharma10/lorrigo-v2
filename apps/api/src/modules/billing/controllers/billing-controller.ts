@@ -108,7 +108,8 @@ export class BillingController {
               select: { 
                 code: true, 
                 user: { select: { name: true, email: true } },
-                customer: { select: { name: true } }
+                customer: { select: { name: true } },
+                hub: { select: { name: true, address: { select: { pincode: true } } } }
               }
             }
           },
@@ -305,6 +306,127 @@ export class BillingController {
       return reply.code(500).send({
         error: 'Failed to process dispute action',
         message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  /**
+   * Get billing summary by month
+   */
+  async getBillingSummary(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const { month } = request.params as { month: string };
+      const { page = 1, limit = 10 } = request.query as any;
+      const currentUserId = request.userPayload?.id;
+      const isAdmin = request.userPayload?.role === 'ADMIN';
+  
+      if (!month) {
+        return reply.code(400).send({
+          success: false,
+          error: 'Month parameter is required (format: YYYY-MM)',
+        });
+      }
+  
+      // Validate month format (YYYY-MM)
+      if (!/^\d{4}-\d{2}$/.test(month)) {
+        return reply.code(400).send({
+          success: false,
+          error: 'Invalid month format. Use YYYY-MM (e.g., 2023-05)',
+        });
+      }
+  
+      const skip = (page - 1) * limit;
+  
+      // Get all billings for the month
+      const billingWhere: any = {
+        billing_month: month,
+      };
+  
+      if (!isAdmin) {
+        billingWhere.order = { user_id: currentUserId };
+      }
+  
+      // Get billing data with pagination directly in the Prisma query
+      const [billings, totalBillings] = await Promise.all([
+        this.billingService['fastify'].prisma.billing.findMany({
+          where: billingWhere,
+          select: {
+            id: true,
+            billing_amount: true,
+            paid_amount: true,
+            pending_amount: true,
+            disputed_amount: true,
+            payment_status: true,
+            has_weight_dispute: true,
+            order: {
+              select: {
+                user_id: true,
+                user: { select: { name: true, email: true } },
+              },
+            },
+          },
+          skip: skip,
+          take: parseInt(limit),
+        }),
+        this.billingService['fastify'].prisma.billing.count({ where: billingWhere }),
+      ]);
+
+      console.log(billings);
+  
+      // Group billings by user
+      const userBillings = new Map();
+      let totalAmount = 0;
+      let totalOrders = billings.length;
+  
+      for (const billing of billings) {
+        const userId = billing.order?.user_id || '';
+        const userName = billing.order?.user?.name || 'Unknown';
+        const userEmail = billing.order?.user?.email || '';
+  
+        if (!userBillings.has(userId)) {
+          userBillings.set(userId, {
+            user_id: userId,
+            user_name: userName,
+            user_email: userEmail,
+            total_orders: 0,
+            total_billing_amount: 0,
+            paid_amount: 0,
+            pending_amount: 0,
+            disputed_amount: 0,
+          });
+        }
+  
+        const userSummary = userBillings.get(userId);
+        userSummary.total_orders += 1;
+        userSummary.total_billing_amount += billing.billing_amount;
+        userSummary.paid_amount += billing.paid_amount || 0;
+        userSummary.pending_amount += billing.pending_amount || 0;
+        if (billing.has_weight_dispute) {
+          userSummary.disputed_amount += billing.disputed_amount || 0;
+        }
+        totalAmount += billing.billing_amount;
+      }
+  
+      // Convert to array
+      const userSummaries = Array.from(userBillings.values());
+  
+      return reply.send({
+        success: true,
+        total_amount: totalAmount,
+        total_orders: totalOrders,
+        users: userSummaries,
+        pagination: {
+          total: totalBillings,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          totalPages: Math.ceil(totalBillings / limit),
+        },
+      });
+    } catch (error) {
+      request.log.error(`Error in getBillingSummary: ${error}`);
+      return reply.code(500).send({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get billing summary',
       });
     }
   }

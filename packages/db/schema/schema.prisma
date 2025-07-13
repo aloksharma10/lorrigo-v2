@@ -724,7 +724,6 @@ model Billing {
 
   billing_date   DateTime
   billing_month  String   @db.VarChar(7) // Format: YYYY-MM
-  billing_amount Float
 
   charged_weight     Float
   original_weight    Float
@@ -739,6 +738,12 @@ model Billing {
   rto_charge            Float   @default(0)
   is_forward_applicable Boolean
   is_rto_applicable     Boolean
+
+  // Amount
+  pending_amount Float @default(0)
+  disputed_amount Float @default(0)
+  paid_amount Float @default(0)
+  billing_amount Float
 
   base_price      Float
   base_weight     Float

@@ -1,16 +1,60 @@
 'use client';
 
-import { Badge, Button } from '@lorrigo/ui/components';
+import { useState } from 'react';
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Tabs, TabsContent, TabsList, TabsTrigger } from '@lorrigo/ui/components';
 import { WeightDisputesTable } from '@/components/tables/billing/weight-disputes-table';
-import { Upload } from 'lucide-react';
+import { Upload, Download, RefreshCw, Filter } from 'lucide-react';
 import { useModalStore } from '@/modal/modal-store';
+import { useBillingOperations } from '@/lib/apis/billing';
 
 export default function WeightDisputesPage() {
   const { openModal } = useModalStore();
+  const [activeTab, setActiveTab] = useState<string>('pending');
+  const { disputesQuery } = useBillingOperations({
+    disputes: {
+      page: 1,
+      pageSize: 10,
+      status: activeTab !== 'all' ? activeTab.toUpperCase() : undefined
+    }
+  });
+
+  const { data: disputes, refetch, isLoading } = disputesQuery;
 
   const handleOpenUploadModal = () => {
     openModal('weight-dispute-csv');
   };
+
+  const handleOpenActionsModal = () => {
+    openModal('dispute-actions-csv');
+  };
+
+  const handleExport = async () => {
+    try {
+      const response = await fetch(`/api/billing/disputes/export?status=${activeTab !== 'all' ? activeTab.toUpperCase() : ''}`, {
+        method: 'GET',
+      });
+      
+      if (!response.ok) throw new Error('Failed to export disputes');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `weight-disputes-${activeTab}-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting disputes:', error);
+    }
+  };
+
+  // Calculate stats
+  const pendingCount = disputes?.data.filter(d => d.status === 'PENDING').length || 0;
+  const resolvedCount = disputes?.data.filter(d => d.status === 'RESOLVED').length || 0;
+  const rejectedCount = disputes?.data.filter(d => d.status === 'REJECTED').length || 0;
+  const raisedCount = disputes?.data.filter(d => d.status === 'RAISED_BY_SELLER').length || 0;
 
   return (
     <div className="space-y-6 p-6">
@@ -29,16 +73,94 @@ export default function WeightDisputesPage() {
         </div>
       </div>
 
-      {/* Controls */}
-      <div className="flex justify-end">
-        <Button onClick={handleOpenUploadModal}>
-          <Upload className="mr-2 h-4 w-4" />
-          Upload Dispute Report
-        </Button>
+      {/* Summary Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Pending Disputes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-yellow-500">{pendingCount}</div>
+            <p className="text-xs text-muted-foreground">Awaiting resolution</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Raised by Seller</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-500">{raisedCount}</div>
+            <p className="text-xs text-muted-foreground">Evidence provided</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Resolved</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-500">{resolvedCount}</div>
+            <p className="text-xs text-muted-foreground">Successfully resolved</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Rejected</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-500">{rejectedCount}</div>
+            <p className="text-xs text-muted-foreground">Rejected disputes</p>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Weight Disputes Table */}
-      <WeightDisputesTable />
+      {/* Tabs */}
+      <Tabs defaultValue="pending" value={activeTab} onValueChange={setActiveTab}>
+        <div className="flex items-center justify-between">
+          <TabsList>
+            <TabsTrigger value="pending">Pending</TabsTrigger>
+            <TabsTrigger value="raised_by_seller">Raised</TabsTrigger>
+            <TabsTrigger value="resolved">Resolved</TabsTrigger>
+            <TabsTrigger value="rejected">Rejected</TabsTrigger>
+            <TabsTrigger value="all">All</TabsTrigger>
+          </TabsList>
+
+          {/* Controls */}
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Refresh
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExport}>
+              <Download className="mr-2 h-4 w-4" />
+              Export
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleOpenActionsModal}>
+              <Filter className="mr-2 h-4 w-4" />
+              Bulk Actions
+            </Button>
+            <Button onClick={handleOpenUploadModal}>
+              <Upload className="mr-2 h-4 w-4" />
+              Upload Dispute Report
+            </Button>
+          </div>
+        </div>
+
+        <TabsContent value="pending" className="mt-6">
+          <WeightDisputesTable userRole="ADMIN" status="PENDING" />
+        </TabsContent>
+        <TabsContent value="raised_by_seller" className="mt-6">
+          <WeightDisputesTable userRole="ADMIN" status="RAISED_BY_SELLER" />
+        </TabsContent>
+        <TabsContent value="resolved" className="mt-6">
+          <WeightDisputesTable userRole="ADMIN" status="RESOLVED" />
+        </TabsContent>
+        <TabsContent value="rejected" className="mt-6">
+          <WeightDisputesTable userRole="ADMIN" status="REJECTED" />
+        </TabsContent>
+        <TabsContent value="all" className="mt-6">
+          <WeightDisputesTable userRole="ADMIN" />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 } 
