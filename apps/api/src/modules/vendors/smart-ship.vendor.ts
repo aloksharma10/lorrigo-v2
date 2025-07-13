@@ -203,7 +203,7 @@ export class SmartShipVendor extends BaseVendor {
         Authorization: token,
       };
 
-      const pincodeConfig = await getPincodeDetails(Number(hubData.pincode));
+      const pincodeConfig = await getPincodeDetails(hubData.pincode);
       if (!pincodeConfig) {
         return {
           success: false,

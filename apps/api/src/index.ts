@@ -24,6 +24,7 @@ import sellerRoutes from '@/modules/sellers';
 import transactionRoutes from '@/modules/transactions';
 import { bulkOperationsRoutes } from '@/modules/bulk-operations';
 import ndrModule from '@/modules/ndr';
+import { usersRoutes } from '@/modules/users';
 
 
 // Hooks
@@ -116,6 +117,7 @@ const registerPlugins = async () => {
         fastify.register(transactionRoutes, { prefix: '/transactions' });
         fastify.register(billingRoutes, { prefix: '/billing' });
         fastify.register(ndrModule); // NDR routes will be prefixed with /ndr
+        fastify.register(usersRoutes, { prefix: '/users' });
 
         // Health check route
         fastify.get('/health', async () => {

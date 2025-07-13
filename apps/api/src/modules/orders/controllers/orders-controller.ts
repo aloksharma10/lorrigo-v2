@@ -103,7 +103,6 @@ export class OrderController {
         id: order.id,
         code: order.code,
         orderNumber: order.order_number,
-        status: order.status,
         createdAt: order.created_at.toISOString(),
       });
     } catch (error) {
@@ -151,66 +150,6 @@ export class OrderController {
       });
     }
   }
-  /**
-   * Update an order status
-   */
-  async updateOrderStatus(
-    request: FastifyRequest<{ Params: { id: string } }>,
-    reply: FastifyReply
-  ) {
-    try {
-      // Check if user is authenticated
-      await checkAuth(request, reply);
-
-      const { id } = request.params;
-      const updateData = updateOrderFormSchema.parse(request.body);
-      const user_id = request.userPayload!.id;
-
-      const existingOrder = await this.orderService.getOrderById(id, user_id);
-
-      if (!existingOrder) {
-        return reply.code(404).send({
-          message: 'Order not found',
-        });
-      }
-
-      const order = await this.orderService.updateOrderStatus(id, updateData);
-
-      // Add job to notification queue for order status update
-      // if (updateData.status && updateData.status !== existingOrder.status) {
-      //   await addJob(QueueNames.NOTIFICATION, 'order-status-updated', {
-      //     orderId: order.id,
-      //     orderNumber: order.order_number,
-      //     previousStatus: existingOrder.status,
-      //     newStatus: updateData.status,
-      //     userId: user_id,
-      //     customerId: order.customer_id,
-      //   });
-      // }
-
-      return {
-        id: order.id,
-        orderNumber: order.order_number,
-        status: order.status,
-        updatedAt: order.updated_at,
-      };
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return reply.code(400).send({
-          message: 'Validation error',
-          errors: error.errors,
-        });
-      }
-
-      request.log.error(error);
-      captureException(error as Error);
-
-      return reply.code(500).send({
-        message: 'Internal server error',
-      });
-    }
-  }
-
   /**
    * Get order statistics
    */

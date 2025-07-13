@@ -3,13 +3,10 @@
 import { useEffect } from 'react';
 import { create } from 'zustand';
 import { useDrawerStore } from './drawer-store';
-
-// Import your drawer components
 import CloneOrder from '@/components/drawer/clone-order';
 import EditOrder from '@/components/drawer/edit-order';
-// Import other drawer components as needed
+import RaiseDispute from '@/components/drawer/raise-dispute';
 
-// Store to track registered drawers
 interface DrawerRegistryState {
   isRegistered: boolean;
   setRegistered: (value: boolean) => void;
@@ -30,6 +27,7 @@ export function DrawerRegistry() {
       // Register all your drawer components here
       registerDrawer('clone-order', CloneOrder);
       registerDrawer('edit-order', EditOrder);
+      registerDrawer('raise-dispute', RaiseDispute);
       // Register other drawer components as needed
 
       setRegistered(true);

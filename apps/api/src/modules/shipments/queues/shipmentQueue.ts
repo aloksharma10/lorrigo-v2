@@ -44,7 +44,6 @@ export enum JobType {
   PROCESS_EDD_UPDATES = 'process-edd-updates',
   PROCESS_NDR_DETAILS = 'process-ndr-details',
   PROCESS_BULK_TRACKING_EVENTS = 'process-bulk-tracking-events',
-  PROCESS_BILLING_WEIGHT_CSV = 'process-billing-weight-csv',
   PROCESS_DISPUTE_ACTIONS_CSV = 'process-dispute-actions-csv',
 }
 
@@ -140,8 +139,6 @@ export function initShipmentQueue(fastify: FastifyInstance, shipmentService: Shi
             return await processBulkDownloadLabel(job, fastify, shipmentService);
           case JobType.BULK_EDIT_PICKUP_ADDRESS:
             return await processBulkEditPickupAddress(job, fastify, shipmentService);
-          case JobType.PROCESS_BILLING_WEIGHT_CSV:
-            return await processBillingWeightCsv(job, fastify);
           case JobType.PROCESS_DISPUTE_ACTIONS_CSV:
             return await processDisputeActionsCsv(job, fastify);
           default:
@@ -1111,145 +1108,6 @@ async function processOptimizedBulkStatusUpdates(fastify: FastifyInstance): Prom
   } catch (error) {
     fastify.log.error(`Error in optimized bulk status updates: ${error}`);
     return { processed: 0, updated: 0, rtoProcessed: 0, errors: [] };
-  }
-}
-
-async function processBillingWeightCsv(job: Job, fastify: FastifyInstance) {
-  const { csvPath, operationId } = job.data as { csvPath: string; operationId: string };
-  try {
-    const rows = await csv().fromFile(csvPath);
-    let processed = 0;
-    let success = 0;
-
-    for (const row of rows) {
-      const awb = String(row['AWB'] || row['awb']).trim();
-      const chargedW = parseFloat(row['Charged weight'] || row['charged_weight'] || row['Charged_Weight']);
-      const evidenceUrl = row['evidence_url'] || row['Evidence'] || '';
-      if (!awb || !chargedW || Number.isNaN(chargedW)) continue;
-
-      const shipment = await fastify.prisma.shipment.findFirst({
-        where: { awb },
-        include: {
-          order: true,
-          pricing: true,
-          courier: { include: { channel_config: true } },
-        },
-      });
-      if (!shipment) continue;
-
-      const orderWeight = shipment.order?.applicable_weight || 0;
-      if (chargedW <= orderWeight) continue; // no excess
-
-      const weightDiff = chargedW - orderWeight;
-
-      // Calculate excess charges
-      const shipmentPricing = await fastify.prisma.shipmentPricing.findUnique({ where: { shipment_id: shipment.id }, include: { courier_other_zone_pricing: true } });
-      let fwEx = 0;
-      let rtoEx = 0;
-      if (shipmentPricing) {
-        const zoneP = shipmentPricing.courier_other_zone_pricing?.find((z:any)=>z.zone===shipment.order_zone) || shipmentPricing.courier_other_zone_pricing?.[0];
-        if (zoneP) {
-          const mockCourierPricing = {
-            weight_slab: shipmentPricing.weight_slab,
-            increment_weight: shipmentPricing.increment_weight,
-            cod_charge_hard: shipmentPricing.cod_charge_hard || 0,
-            cod_charge_percent: shipmentPricing.cod_charge_percent || 0,
-            is_cod_applicable: shipmentPricing.is_cod_applicable,
-            is_rto_applicable: shipmentPricing.is_rto_applicable,
-            is_fw_applicable: shipmentPricing.is_fw_applicable,
-            is_cod_reversal_applicable: shipmentPricing.is_cod_reversal_applicable,
-            zone_pricing: [zoneP]
-          };
-          const res = calculateExcessCharges(weightDiff, mockCourierPricing, zoneP);
-          fwEx = res.fwExcess;
-          rtoEx = res.rtoExcess;
-        }
-      }
-
-      const totalExcess = fwEx + rtoEx;
-
-      // create or update WeightDispute
-      let dispute = await fastify.prisma.weightDispute.findFirst({ where: { order_id: shipment.order_id } });
-      if (!dispute) {
-        dispute = await fastify.prisma.weightDispute.create({
-          data: {
-            dispute_id: `WD-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${Date.now().toString().slice(-6)}`,
-            order_id: shipment.order_id,
-            user_id: shipment.user_id,
-            original_weight: orderWeight,
-            disputed_weight: chargedW,
-            status: 'PENDING',
-            evidence_urls: evidenceUrl ? [evidenceUrl] : [],
-            forward_excess_amount: fwEx,
-            rto_excess_amount: rtoEx,
-            total_disputed_amount: totalExcess,
-            original_charges: shipment.shipping_charge || 0,
-            courier_name: `${shipment.courier?.name}  ${shipment.courier?.channel_config?.nickname}` || '',
-            deadline_date: new Date(Date.now() + 7*24*60*60*1000),
-            wallet_hold_applied: totalExcess > 0,
-          },
-        });
-      } else {
-        await fastify.prisma.weightDispute.update({
-          where: { id: dispute.id },
-          data: {
-            disputed_weight: chargedW,
-            forward_excess_amount: fwEx,
-            rto_excess_amount: rtoEx,
-            total_disputed_amount: totalExcess,
-            evidence_urls: evidenceUrl ? { push: evidenceUrl } : undefined,
-            wallet_hold_applied: totalExcess > 0,
-          },
-        });
-      }
-
-      // Update Billing record linked to shipment
-      await fastify.prisma.billing.updateMany({
-        where: { order_id: shipment.order_id },
-        data: {
-          fw_excess_charge: fwEx,
-          rto_excess_charge: rtoEx,
-          has_weight_dispute: true,
-          charged_weight: chargedW,
-          weight_difference: weightDiff,
-        },
-      });
-
-      // Hold amount in wallet only if there's a dispute amount
-      if (totalExcess > 0) {
-        const transactionService = new TransactionService(fastify);
-        await transactionService.createShipmentTransaction({
-          amount: totalExcess,
-          type: TransactionType.HOLD,
-          description: `Weight dispute hold for AWB ${awb}`,
-          userId: shipment.user_id,
-          shipmentId: shipment.id,
-          awb: awb,
-          status: 'COMPLETED',
-          currency: 'INR',
-          merchantTransactionId: `HOLD-${awb}-${Date.now()}`,
-          charge_type: ChargeType.FORWARD_EXCESS_WEIGHT,
-        });
-      }
-
-      processed++;
-      success++;
-    }
-
-    await fastify.prisma.bulkOperation.update({
-      where: { id: operationId },
-      data: {
-        status: 'COMPLETED',
-        processed_count: processed,
-        success_count: success,
-      },
-    });
-
-    return { processed };
-  } catch (err) {
-    fastify.log.error(err);
-    await fastify.prisma.bulkOperation.update({ where: { id: operationId }, data: { status: 'FAILED', error_message: (err as Error).message } });
-    throw err;
   }
 }
 

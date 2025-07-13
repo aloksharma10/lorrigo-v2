@@ -102,7 +102,10 @@ export class CustomerService {
         ...(data.address
           ? {
               address: {
-                create: data.address,
+                create: {
+                  ...data.address,
+                  type: 'CUSTOMER',
+                },
               },
             }
           : {}),
@@ -212,6 +215,7 @@ export class CustomerService {
         country: data.country || 'India',
         is_default: data.isDefault || false,
         customer_id: customerId,
+        type: 'CUSTOMER',
       },
     });
 

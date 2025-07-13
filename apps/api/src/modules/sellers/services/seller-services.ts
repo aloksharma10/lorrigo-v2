@@ -91,6 +91,7 @@ export class SellerService {
             city: data.city || '',
             state: data.state || '',
             country: data.country || 'India',
+            type: 'SELLER',
           },
         },
       },

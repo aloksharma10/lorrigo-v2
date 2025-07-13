@@ -2,7 +2,7 @@ import type React from 'react';
 import { create } from 'zustand';
 import { DrawerSize, DrawerSide } from '@lorrigo/ui/components';
 
-export type DrawerType = 'clone-order' | 'edit-order';
+export type DrawerType = 'clone-order' | 'edit-order' | 'raise-dispute';
 
 export type DrawerProps = Record<string, unknown> & {
   size?: DrawerSize;
@@ -25,7 +25,7 @@ interface DrawerState {
   drawerComponents: Record<DrawerType, DrawerComponent>;
   registerDrawer: (type: DrawerType, component: DrawerComponent) => void;
   openDrawer: (type: DrawerType, props?: DrawerProps) => string;
-  closeDrawer: (id: string) => void;
+  closeDrawer: (id?: string) => void;
   closeAllDrawers: () => void;
   setDrawerAnimationState: (id: string, state: DrawerAnimationState) => void;
 }
@@ -39,6 +39,7 @@ export const useDrawerStore = create<DrawerState>((set, get) => ({
   drawerComponents: {
     'clone-order': undefined as unknown as DrawerComponent,
     'edit-order': undefined as unknown as DrawerComponent,
+    'raise-dispute': undefined as unknown as DrawerComponent,
   },
   registerDrawer: (type, component) =>
     set((state) => ({
@@ -57,14 +58,19 @@ export const useDrawerStore = create<DrawerState>((set, get) => ({
 
     return id;
   },
-  closeDrawer: (id) => {
+  closeDrawer: (id?: string) => {
+    // If no id is provided, close the most recent drawer
+    const drawerId = id || get().drawers[get().drawers.length - 1]?.id;
+    
+    if (!drawerId) return; // No drawers to close
+    
     // First set animation state to "exiting"
-    get().setDrawerAnimationState(id, 'exiting');
+    get().setDrawerAnimationState(drawerId, 'exiting');
 
     // Then remove drawer after animation completes
     setTimeout(() => {
       set((state) => ({
-        drawers: state.drawers.filter((drawer) => drawer.id !== id),
+        drawers: state.drawers.filter((drawer) => drawer.id !== drawerId),
       }));
     }, ANIMATION_DURATION);
   },

@@ -167,34 +167,34 @@ export function WeightDisputeModal({ dispute, isOpen, onClose, onResolved }: Wei
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Order Number:</span>
                     <CopyBtn
-                      label={dispute.order.order_number}
-                      text={dispute.order.order_number}
+                      label={dispute.order?.code}
+                      text={dispute.order?.code}
                       className="font-medium"
                     />
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">AWB Number:</span>
                     <CopyBtn
-                      label={dispute.order.shipment.awb}
-                      text={dispute.order.shipment.awb}
+                      label={dispute.order?.shipment?.awb}
+                      text={dispute.order?.shipment?.awb}
                       className="font-medium"
                     />
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Customer:</span>
-                    <span className="font-medium">{dispute.order.customer.name}</span>
+                    <span className="font-medium">{dispute.order?.customer?.name}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Phone:</span>
                     <CopyBtn
-                      label={dispute.order.customer.phone}
-                      text={dispute.order.customer.phone}
+                      label={dispute.order?.customer?.phone}
+                      text={dispute.order?.customer?.phone}
                       className="font-medium"
                     />
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Courier:</span>
-                    <span className="font-medium">{dispute.courier_name}</span>
+                    <span className="font-medium">{dispute.courier_name || ''}</span>
                   </div>
                 </CardContent>
               </Card>

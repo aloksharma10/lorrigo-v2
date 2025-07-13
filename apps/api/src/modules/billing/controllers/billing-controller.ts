@@ -190,70 +190,121 @@ export class BillingController {
     }
   }
 
+  /**
+   * Handle dispute action (accept, reject, or raise)
+   */
   async actOnDispute(request: FastifyRequest, reply: FastifyReply) {
     try {
       const { id } = request.params as { id: string };
-      const { action, comment, finalWeight } = request.body as { 
-        action: 'ACCEPT' | 'REJECT' | 'RAISE'; 
+      const { action, comment, resolution, final_weight, revised_charges } = request.body as {
+        action: 'ACCEPT' | 'REJECT' | 'RAISE';
         comment?: string;
-        finalWeight?: number;
+        resolution?: string;
+        final_weight?: number;
+        revised_charges?: number;
       };
-      const isAdmin = request.userPayload?.role === 'ADMIN';
 
-      const dispute = await this.billingService['fastify'].prisma.weightDispute.findUnique({
+      // Validate required fields
+      if (!action) {
+        return reply.code(400).send({ error: 'Action is required' });
+      }
+
+      // Get the dispute
+      const dispute = await request.server.prisma.weightDispute.findUnique({
         where: { id },
-        include: { order: true }
+        include: {
+          order: {
+            select: {
+              id: true,
+              user_id: true,
+            },
+          },
+        },
       });
 
       if (!dispute) {
-        return reply.code(404).send({ success: false, error: 'Dispute not found' });
+        return reply.code(404).send({ error: 'Dispute not found' });
       }
 
-      // Check permissions
-      if (!isAdmin && dispute.user_id !== request.userPayload?.id) {
-        return reply.code(403).send({ success: false, error: 'Access denied' });
+      // Check user permissions
+      const userId = request.userPayload?.id;
+      const userRole = request.userPayload?.role;
+
+      // Sellers can only act on their own disputes
+      if (userRole === 'SELLER' && dispute.order?.user_id !== userId) {
+        return reply.code(403).send({ error: 'You do not have permission to act on this dispute' });
       }
 
-      let updateData: any = {
-        seller_action_taken: true,
-        seller_response: comment || '',
-        updated_at: new Date(),
-      };
+      let result;
 
-      if (isAdmin) {
-        // Admin actions
-        if (action === 'ACCEPT') {
-          updateData.status = WeightDisputeStatus.RESOLVED;
-          updateData.resolution = 'Accepted by admin';
-          if (finalWeight) {
-            updateData.final_weight = finalWeight;
+      switch (action) {
+        case 'ACCEPT':
+          // Accept the dispute (admin or seller)
+          result = await this.billingService.acceptDispute(id, {
+            resolution: resolution || 'Accepted via API',
+            final_weight,
+            revised_charges,
+            resolved_by: userId || '',
+          });
+          break;
+        case 'REJECT':
+          // Reject the dispute (admin only)
+          if (userRole !== 'ADMIN') {
+            return reply.code(403).send({ error: 'Only admins can reject disputes' });
           }
-        } else if (action === 'REJECT') {
-          updateData.status = WeightDisputeStatus.REJECTED;
-          updateData.resolution = 'Rejected by admin';
-        }
-        updateData.resolved_by = request.userPayload?.id;
-        updateData.resolution_date = new Date();
-      } else {
-        // Seller actions
-        if (action === 'ACCEPT') {
-          updateData.status = WeightDisputeStatus.RESOLVED;
-          updateData.resolution = 'Accepted by seller';
-        } else if (action === 'RAISE') {
-          updateData.status = WeightDisputeStatus.RAISED_BY_SELLER;
-        }
+          result = await this.billingService.rejectDispute(id, {
+            resolution: resolution || 'Rejected via API',
+            resolved_by: userId || '',
+          });
+          break;
+        case 'RAISE':
+          // Raise the dispute (seller only)
+          if (userRole !== 'SELLER' && userRole !== 'ADMIN') {
+            return reply.code(403).send({ error: 'Only sellers can raise disputes' });
+          }
+          
+          // Process images if they exist in the request
+          const images: string[] = [];
+          
+          // Handle form data with images
+          if (request.isMultipart()) {
+            const parts = request.parts();
+            
+            for await (const part of parts) {
+              if (part.type === 'file') {
+                // Process and store the image
+                const fileName = `${Date.now()}-${part.filename}`;
+                const filePath = `/uploads/disputes/${fileName}`;
+                
+                // Save the file
+                await this.billingService.saveDisputeImage(part.file, filePath);
+                
+                // Add the file URL to the images array
+                images.push(filePath);
+              }
+            }
+          }
+          
+          result = await this.billingService.raiseDispute(id, {
+            comment: comment || '',
+            evidence_urls: images,
+            raised_by: userId || '',
+          });
+          break;
+        default:
+          return reply.code(400).send({ error: 'Invalid action' });
       }
 
-      await this.billingService['fastify'].prisma.weightDispute.update({
-        where: { id },
-        data: updateData
+      return reply.code(200).send({
+        success: true,
+        message: `Dispute ${action.toLowerCase()}ed successfully`,
+        data: result,
       });
-
-      return reply.send({ success: true });
     } catch (error) {
-      return reply.code(500).send({ 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to update dispute' 
+      request.log.error(`Error in actOnDispute: ${error}`);
+      return reply.code(500).send({
+        error: 'Failed to process dispute action',
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }

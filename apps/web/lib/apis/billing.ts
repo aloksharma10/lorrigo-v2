@@ -3,6 +3,7 @@ import { toast } from '@lorrigo/ui/components';
 import { ApiResponse } from '@/lib/type/response-types';
 import { api as axios } from './axios';
 import { useAuthToken } from '@/components/providers/token-provider';
+import { useDebounce } from '../hooks/use-debounce';
 
 // Types
 export interface BillingCycle {
@@ -113,9 +114,26 @@ export interface WeightDispute {
   created_at: string;
   updated_at: string;
   order?: {
+    id: string;
     code: string;
     customer?: {
       name: string;
+    };
+    user_id: string;
+    dimensions?: string;
+    volumetric_weight?: number;
+    shipment?: {
+      id: string;
+      awb: string;
+      courier?: {
+        id: string;
+        name: string;
+      };
+    };
+    product?: {
+      id: string;
+      name: string;
+      sku: string;
     };
   };
   user?: {
@@ -140,13 +158,18 @@ export interface ManualBillingRequest {
 
 export interface DisputeActionRequest {
   action: 'ACCEPT' | 'REJECT' | 'RAISE';
+  resolution?: string;
   comment?: string;
-  finalWeight?: number;
+  final_weight?: number;
+  revised_charges?: number;
+  status?: string;
 }
 
 export interface PaginationParams {
   page?: number;
   limit?: number;
+  awb?: string;
+  sort?: string;
 }
 
 export interface PaginatedResponse<T> {
@@ -186,74 +209,80 @@ const billingAPI = {
     return await axios.post(`/billing/disputes/${disputeId}/action`, request);
   },
 
-  // Wallet
-  getWalletBalance: async (userId?: string): Promise<{ success: boolean; wallet: WalletBalance }> => {
-    return await axios.get('/billing/wallet/balance', { 
-      params: userId ? { userId } : undefined 
+  // CSV Upload for Weight Disputes
+  uploadWeightDisputeCSV: async (formData: FormData): Promise<{ operationId: string }> => {
+    return await axios.post('/bulk-operations/billing-weight-csv', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     });
   },
 
-  // CSV Upload for Weight Disputes
-  uploadWeightDisputeCSV: async (csvData: Array<{
-    AWB: string;
-    Charged_Weight: number;
-    evidence_url?: string;
-  }>): Promise<{ operationId: string }> => {
-    return await axios.post('/bulk-operations/weight-charges', { csvData });
-  },
-
   // CSV Upload for Dispute Actions
-  uploadDisputeActionsCSV: async (csvData: Array<{
-    AWB: string;
-    Action: 'ACCEPT' | 'REJECT' | 'RAISE';
-    final_weight?: number;
-    comment?: string;
-  }>): Promise<{ operationId: string }> => {
-    return await axios.post('/bulk-operations/dispute-actions', { csvData });
+  uploadDisputeActionsCSV: async (formData: FormData): Promise<{ operationId: string }> => {
+    return await axios.post('/bulk-operations/dispute-actions-csv', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
   },
 };
 
-// Comprehensive hook for billing operations
-export function useBillingOperations(params: PaginationParams & { userId?: string, billingCycleId?: string, status?: string } = {}) {
+interface BillingOperationsPaginationParams {
+  page?: number;
+  pageSize?: number;
+  sort?: string;
+  status?: string;
+  limit?: number;
+  search?: string; // AWB search, primarily for disputes
+}
+
+interface BillingOperationsParams {
+  billingCycles?: BillingOperationsPaginationParams & { userId?: string; billingCycleId?: string; status?: string };
+  billingHistory?: BillingOperationsPaginationParams & { userId?: string; billingCycleId?: string; status?: string };
+  disputes?: BillingOperationsPaginationParams & { userId?: string; status?: string };
+}
+
+export function useBillingOperations({
+  billingCycles = {},
+  billingHistory = {},
+  disputes = {},
+}: BillingOperationsParams = {}) {
   const { isTokenReady } = useAuthToken();
   const queryClient = useQueryClient();
 
+  // Debounce the search param for disputes to avoid excessive API calls during typing
+  const debouncedDisputes = {
+    ...disputes,
+    search: disputes.search ? useDebounce(disputes.search, 300) : undefined,
+  };
+
   // Fetch billing cycles
   const billingCyclesQuery = useQuery({
-    queryKey: ['billing-cycles', params],
-    queryFn: () => billingAPI.getBillingCycles(params),
+    queryKey: ['billing-cycles', billingCycles.page, billingCycles.pageSize, billingCycles.userId, billingCycles.billingCycleId, billingCycles.status],
+    queryFn: () => billingAPI.getBillingCycles(billingCycles),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
-    enabled: isTokenReady,
+    enabled: isTokenReady && !!billingCycles.page, // Only fetch if page is defined and token is ready
   });
 
   // Fetch billing history
   const billingHistoryQuery = useQuery({
-    queryKey: ['billing-history', params],
-    queryFn: () => billingAPI.getBillingHistory(params),
+    queryKey: ['billing-history', billingHistory.page, billingHistory.pageSize, billingHistory.userId, billingHistory.billingCycleId, billingHistory.status],
+    queryFn: () => billingAPI.getBillingHistory(billingHistory),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
-    enabled: isTokenReady,
+    enabled: isTokenReady && !!billingHistory.page, // Only fetch if page is defined and token is ready
   });
 
   // Fetch disputes
   const disputesQuery = useQuery({
-    queryKey: ['disputes', params],
-    queryFn: () => billingAPI.getDisputes(params),
+    queryKey: ['disputes', debouncedDisputes.page, debouncedDisputes.pageSize, debouncedDisputes.userId, debouncedDisputes.status, debouncedDisputes.search],
+    queryFn: () => billingAPI.getDisputes(debouncedDisputes),
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 5 * 60 * 1000, // 5 minutes
-    enabled: isTokenReady,
+    enabled: isTokenReady && !!debouncedDisputes.page, // Only fetch if page is defined and token is ready
   });
-
-  // Fetch wallet balance
-  const walletBalanceQuery = useQuery({
-    queryKey: ['wallet-balance', params.userId],
-    queryFn: () => billingAPI.getWalletBalance(params.userId),
-    staleTime: 30 * 1000, // 30 seconds
-    gcTime: 2 * 60 * 1000, // 2 minutes
-    enabled: isTokenReady,
-  });
-
   // Create manual billing
   const createManualBilling = useMutation({
     mutationFn: billingAPI.createManualBilling,
@@ -275,7 +304,7 @@ export function useBillingOperations(params: PaginationParams & { userId?: strin
     onSuccess: (data) => {
       toast.success('Dispute action completed successfully');
       queryClient.invalidateQueries({ queryKey: ['disputes'] });
-      queryClient.invalidateQueries({ queryKey: ['wallet-balance'] });
+      // queryClient.invalidateQueries({ queryKey: ['wallet-balance'] }); // Uncomment if walletBalanceQuery is enabled
       return data;
     },
     onError: (error: any) => {
@@ -313,7 +342,6 @@ export function useBillingOperations(params: PaginationParams & { userId?: strin
     billingCyclesQuery,
     billingHistoryQuery,
     disputesQuery,
-    walletBalanceQuery,
     createManualBilling,
     actOnDispute,
     uploadWeightDisputeCSV,

@@ -512,7 +512,15 @@ export class ShipmentService {
         )
         .then(async (result) => {
           if (fwCharges > 0) {
-           
+            await this.transactionService.createShipmentTransaction({
+              shipmentId: result.shipment?.id,
+              userId: userId,
+              amount: fwCharges,
+              type: TransactionType.DEBIT,
+              description: `FW charge for AWB: ${awb}`,
+              awb: awb,
+              charge_type: ChargeType.FORWARD_CHARGE,
+            });
           }
 
           if (codCharges > 0) {

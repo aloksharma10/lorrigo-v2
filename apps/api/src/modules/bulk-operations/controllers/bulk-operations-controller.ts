@@ -458,18 +458,62 @@ export class BulkOperationsController {
   }
 
   async uploadWeightCsv(request: FastifyRequest, reply: FastifyReply) {
-    if (!request.isMultipart()) {
-      return reply.code(400).send({ error: 'Multipart file expected' });
+    try {
+      if (!request.isMultipart()) {
+        return reply.code(400).send({ error: 'Multipart file expected' });
+      }
+
+      const userId = request.userPayload!.id;
+      const filePart = await (request as any).file();
+      
+      if (!filePart) {
+        return reply.code(400).send({ error: 'CSV file missing' });
+      }
+      
+      request.log.info(`Received CSV file: ${filePart.filename}`);
+      
+      // Create temporary directory if it doesn't exist
+      const tempDir = '/tmp';
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
+      
+      const tempPath = path.join(tempDir, `${Date.now()}-${filePart.filename}`);
+      request.log.info(`Saving file to: ${tempPath}`);
+      
+      // Save the file
+      await pipeline(filePart.file, fs.createWriteStream(tempPath));
+      
+      // Verify file exists and has content
+      if (!fs.existsSync(tempPath)) {
+        return reply.code(500).send({ error: 'Failed to save CSV file' });
+      }
+      
+      const stats = fs.statSync(tempPath);
+      request.log.info(`File saved. Size: ${stats.size} bytes`);
+      
+      if (stats.size === 0) {
+        return reply.code(400).send({ error: 'CSV file is empty' });
+      }
+      
+      // Read the first few lines for debugging
+      const fileContent = fs.readFileSync(tempPath, 'utf8').slice(0, 500);
+      request.log.info(`File content sample: ${fileContent}`);
+      
+      const operation = await this.bulkOperationsService.createWeightChargeBulk(tempPath, userId);
+      
+      return reply.code(201).send({ 
+        success: true, 
+        operationId: operation.id,
+        message: 'Weight CSV uploaded successfully and queued for processing'
+      });
+    } catch (error) {
+      request.log.error(`Error uploading weight CSV: ${error}`);
+      return reply.code(500).send({ 
+        error: 'Failed to process weight CSV',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
-
-    const userId = request.userPayload!.id;
-    const filePart = await (request as any).file();
-    if (!filePart) return reply.code(400).send({ error: 'CSV file missing' });
-
-    const tempPath = path.join('/tmp', `${Date.now()}-${filePart.filename}`);
-    await pipeline(filePart.file, fs.createWriteStream(tempPath));
-    const operation = await this.bulkOperationsService.createWeightChargeBulk(tempPath, userId);
-    return reply.code(201).send({ success: true, operationId: operation.id });
   }
 
   async uploadDisputeActionsCsv(request: FastifyRequest, reply: FastifyReply) {

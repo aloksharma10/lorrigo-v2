@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { api } from './axios';
+import { useAuthToken } from '@/components/providers/token-provider';
 
 export interface Seller {
   id: string;
@@ -36,13 +37,16 @@ export const searchSellers = async (query: string, signal?: AbortSignal): Promis
 
 // React Query hooks for seller operations
 export const useSellerOperations = () => {
+
+  const {isTokenReady} = useAuthToken();
   // Fetch all sellers with pagination
-  const getSellersQuery = (page = 1, limit = 10, search = '') =>
+  const getSellersQuery = (page = 1, limit = 10, search = '', role = 'SELLER') =>
     useQuery({
-      queryKey: ['sellers', page, limit, search],
+      queryKey: ['sellers', page, limit, search, role],
       queryFn: () =>
-        api.get(`/sellers?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`),
+        api.get<any>(`/sellers?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&role=${role}`),
       staleTime: 1000 * 60 * 5, // 5 minutes: data is considered fresh
+      enabled: isTokenReady,
     });
 
   // Get seller by ID
@@ -50,7 +54,8 @@ export const useSellerOperations = () => {
     useQuery({
       queryKey: ['seller', id],
       queryFn: () => api.get(`/sellers/${id}`),
-      enabled: !!id, // Only run if ID is provided
+      staleTime: 1000 * 60 * 5, // 5 minutes: data is considered fresh
+      enabled: isTokenReady && !!id, // Only run if ID is provided
     });
 
   // Create seller

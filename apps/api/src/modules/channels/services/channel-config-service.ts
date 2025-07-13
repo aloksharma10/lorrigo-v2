@@ -50,7 +50,6 @@ export class ChannelConfigService {
           couriers: {
             select: {
               id: true,
-              code: true,
               name: true,
               is_active: true,
             },
@@ -86,7 +85,6 @@ export class ChannelConfigService {
         couriers: {
           select: {
             id: true,
-            code: true,
             name: true,
             courier_code: true,
             is_active: true,
@@ -128,7 +126,6 @@ export class ChannelConfigService {
           where: { is_active: true },
           select: {
             id: true,
-            code: true,
             name: true,
             courier_code: true,
             type: true,

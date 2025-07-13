@@ -17,6 +17,8 @@ import { RechargeWalletModal } from '@/components/modals/recharge-wallet-modal';
 import { NDRActionModal } from '@/components/modals/ndr-action-modal';
 import { BulkOrdersOperationsModal } from '@/components/modals/bulk-operations-modal';
 import { BillingCycleModal } from '@/components/modals/billing-cycle-modal';
+import { WeightDisputeCSVModal } from '@/components/modals/weight-dispute-csv-modal';
+import { DisputeActionsCSVModal } from '@/components/modals/dispute-actions-csv-modal';
 
 // Store to track registered modals
 interface ModalRegistryState {
@@ -49,6 +51,8 @@ export function ModalRegistry() {
       registerModal('ndr-action', NDRActionModal);
       registerModal('bulk-orders-operations', BulkOrdersOperationsModal);
       registerModal('billing-cycle', BillingCycleModal);
+      registerModal('weight-dispute-csv', WeightDisputeCSVModal);
+      registerModal('dispute-actions-csv', DisputeActionsCSVModal);
 
       setRegistered(true);
       console.log('Modal components registered successfully');

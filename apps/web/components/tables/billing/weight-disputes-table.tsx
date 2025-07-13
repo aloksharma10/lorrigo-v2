@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Scale, AlertTriangle, CheckCircle, XCircle, Eye } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Scale, AlertTriangle, CheckCircle, XCircle, Eye, ArrowRight, Upload, Download } from 'lucide-react';
 import {
   DataTable,
   DataTableColumnHeader,
@@ -10,24 +10,29 @@ import {
   Button,
   Alert,
   AlertDescription,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
 } from '@lorrigo/ui/components';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { 
-  useBillingOperations, 
-  useWeightDisputesEnhanced,
-  useResolveWeightDisputeEnhanced,
-  type WeightDispute, 
-  type BillingParams 
+  useBillingOperations,
+  type WeightDispute
 } from '@/lib/apis/billing';
 import { CopyBtn } from '@/components/copy-btn';
 import { WeightDisputeModal } from '@/components/modals/weight-dispute-modal';
 import { currencyFormatter } from '@lorrigo/utils';
+import { useDrawerStore } from '@/drawer/drawer-store';
+import { useModalStore } from '@/modal/modal-store';
 
 interface WeightDisputesTableProps {
   className?: string;
+  userRole?: 'ADMIN' | 'SELLER';
 }
 
-export function WeightDisputesTable({ className }: WeightDisputesTableProps) {
+export function WeightDisputesTable({ className, userRole = 'ADMIN' }: WeightDisputesTableProps) {
+  const [activeTab, setActiveTab] = useState<string>('new');
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 15,
@@ -42,92 +47,110 @@ export function WeightDisputesTable({ className }: WeightDisputesTableProps) {
   // Selected dispute for modal
   const [selectedDispute, setSelectedDispute] = useState<WeightDispute | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchAwb, setSearchAwb] = useState('');
+  const debouncedSearchAwb = useDebounce(searchAwb, 500);
 
-  // Use the enhanced disputes hook
-  const { data, isLoading, isError, isFetching, refetch } = useWeightDisputesEnhanced({
-    page: pagination.pageIndex + 1, // API uses 1-based pagination
-    limit: pagination.pageSize,
-    status: filters.find(f => f.id === 'status')?.value,
+  const openDrawer = useDrawerStore((state) => state.openDrawer);
+  const openModal = useModalStore((state) => state.openModal);
+
+  // Map tabs to status filters
+  const tabToStatusMap: Record<string, string | undefined> = {
+    'new': 'PENDING',
+    'auto-accepted': 'AUTO_ACCEPTED',
+    'all': undefined
+  };
+
+  // Use the new disputes hook with all params
+  const { disputesQuery, actOnDispute } = useBillingOperations({
+    disputes: {
+      page: pagination.pageIndex + 1, // API uses 1-based pagination
+      pageSize: pagination.pageSize,
+      status: tabToStatusMap[activeTab],
+      search: searchAwb || undefined,
+    },
   });
 
   // Resolution hook for admin actions
-  const resolveDispute = useResolveWeightDisputeEnhanced();
+  const { data, isLoading, isError, isFetching, refetch } = disputesQuery;
 
-  // Transform the enhanced data to match the existing WeightDispute interface
-  const transformedDisputes = data?.disputes?.map(dispute => ({
-    id: dispute.id,
-    dispute_id: dispute.disputeId,
-    order_id: dispute.orderId,
-    status: dispute.status as 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'RESOLVED',
-    original_weight: dispute.originalWeight,
-    disputed_weight: dispute.disputedWeight,
-    final_weight: dispute.finalWeight,
-    courier_name: dispute.courierName,
-    original_charges: dispute.forwardExcessAmount + dispute.rtoExcessAmount,
-    revised_charges: dispute.totalDisputedAmount,
-    evidence_urls: dispute.sellerEvidenceUrls,
-    courier_response: dispute.sellerResponse,
-    resolution: dispute.resolution,
-    resolution_date: dispute.resolutionDate,
-    resolved_by: undefined,
-    created_at: dispute.createdAt,
-    updated_at: dispute.updatedAt,
-    order: {
-      order_number: `ORD-${dispute.orderId.slice(-8)}`, // Simplified order number
-      customer: {
-        name: 'Customer Name', // Enhanced API doesn't return customer details
-        phone: '9999999999',
-      },
-      shipment: {
-        awb: dispute.awb || 'N/A',
-      },
-    },
-  })) || [];
+  // Use the data directly from the new API
+  const disputes = data?.data || [];
+  const awbsCount = disputes.length;
 
-  // Define columns
+  const handleAcceptDispute = async (dispute: WeightDispute) => {
+    try {
+      await actOnDispute.mutateAsync({
+        disputeId: dispute.id,
+        request: {
+          action: 'ACCEPT',
+          status: 'ACCEPTED',
+          resolution: 'Accepted via UI',
+        }
+      });
+      refetch();
+    } catch (error) {
+      console.error('Failed to accept dispute:', error);
+    }
+  };
+
+  const handleRaiseDispute = (dispute: WeightDispute) => {
+    openDrawer('raise-dispute', { dispute });
+  };
+
+  // Export disputes as CSV
+  const handleExport = async () => {
+    try {
+      const response = await fetch(`/api/billing/disputes/export?status=${tabToStatusMap[activeTab] || ''}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) throw new Error('Failed to export disputes');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `weight-disputes-${activeTab}-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting disputes:', error);
+    }
+  };
+
+  // Define columns for the new dispute structure
   const columns: ColumnDef<WeightDispute>[] = [
     {
-      accessorKey: 'dispute_id',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Dispute Details" />,
+      accessorKey: 'discrepancy_details',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Discrepancy Details" />,
       cell: ({ row }) => {
         const dispute = row.original;
         return (
-          <div className="flex flex-col">
-            <CopyBtn
-              label={dispute.dispute_id}
-              text={dispute.dispute_id}
-              className="text-blue-600 font-medium"
-              labelClassName="text-blue-600 hover:underline"
-              tooltipText="Copy Dispute ID"
-            />
+          <div className="flex flex-col space-y-1">
             <div className="text-xs text-muted-foreground">
-              {new Date(dispute.created_at).toLocaleDateString()}
+              Updated on:
             </div>
-          </div>
-        );
-      },
-      enableSorting: true,
-      enableHiding: true,
-    },
-    {
-      accessorKey: 'order.order_number',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Order Details" />,
-      cell: ({ row }) => {
-        const dispute = row.original;
-        return (
-          <div className="flex flex-col">
+            <div className="text-sm">
+              {new Date(dispute.created_at).toLocaleDateString()} | {new Date(dispute.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              AWB #
+            </div>
             <CopyBtn
-              label={dispute.order.order_number}
-              text={dispute.order.order_number}
-              className="font-medium"
-              tooltipText="Copy Order Number"
-            />
-            <CopyBtn
-              label={dispute.order.shipment.awb}
-              text={dispute.order.shipment.awb}
-              className="text-xs text-muted-foreground"
+              label={dispute.order?.shipment?.awb || ''}
+              text={dispute.order?.shipment?.awb || ''}
+              className="text-blue-600 font-medium text-sm"
+              labelClassName="text-blue-600 hover:underline"
               tooltipText="Copy AWB"
             />
+            <div className="text-xs mt-1">
+              {dispute.order?.shipment?.courier?.name || 'Unknown courier'}
+            </div>
           </div>
         );
       },
@@ -135,66 +158,24 @@ export function WeightDisputesTable({ className }: WeightDisputesTableProps) {
       enableHiding: true,
     },
     {
-      accessorKey: 'order.customer.name',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Customer" />,
+      accessorKey: 'product_details',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Product Details" />,
       cell: ({ row }) => {
         const dispute = row.original;
         return (
-          <div className="flex flex-col">
-            <span className="font-medium">{dispute.order.customer.name}</span>
-            <CopyBtn
-              label={dispute.order.customer.phone}
-              text={dispute.order.customer.phone}
-              className="text-xs text-muted-foreground"
-              tooltipText="Copy Phone"
-            />
-          </div>
-        );
-      },
-      enableSorting: true,
-      enableHiding: true,
-    },
-    {
-      accessorKey: 'courier_name',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Courier" />,
-      cell: ({ row }) => {
-        const dispute = row.original;
-        return (
-          <div className="font-medium">{dispute.courier_name}</div>
-        );
-      },
-      enableSorting: true,
-      enableHiding: true,
-    },
-    {
-      accessorKey: 'weight_details',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Weight Details" />,
-      cell: ({ row }) => {
-        const dispute = row.original;
-        const weightDifference = dispute.disputed_weight - dispute.original_weight;
-        
-        return (
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-muted-foreground">Original:</span>
-              <span className="font-medium">{dispute.original_weight} kg</span>
+          <div className="flex flex-col space-y-1">
+            <div className="font-medium text-sm">
+              {dispute.order?.product?.name || 'Product name'}
             </div>
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-muted-foreground">Disputed:</span>
-              <span className="font-medium text-red-600">{dispute.disputed_weight} kg</span>
+            <div className="text-xs text-muted-foreground">
+              PID: {dispute.order?.product?.id || 'N/A'}
             </div>
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-muted-foreground">Difference:</span>
-              <span className={`font-bold ${weightDifference > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                {weightDifference > 0 ? '+' : ''}{weightDifference} kg
-              </span>
+            <div className="text-xs text-muted-foreground">
+              SKU: {dispute.order?.product?.sku || 'N/A'}
             </div>
-            {dispute.final_weight && (
-              <div className="flex items-center gap-2 text-xs">
-                <span className="text-muted-foreground">Final:</span>
-                <span className="font-medium text-blue-600">{dispute.final_weight} kg</span>
-              </div>
-            )}
+            <div className="text-xs text-muted-foreground">
+              QTY: 1
+            </div>
           </div>
         );
       },
@@ -202,32 +183,124 @@ export function WeightDisputesTable({ className }: WeightDisputesTableProps) {
       enableHiding: true,
     },
     {
-      accessorKey: 'charges_impact',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Charges Impact" />,
+      accessorKey: 'applied_weight',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Applied Weight" />,
       cell: ({ row }) => {
         const dispute = row.original;
-        const chargesDifference = (dispute.revised_charges || dispute.original_charges) - dispute.original_charges;
+        return (
+          <div className="space-y-1">
+            <div className="text-sm font-medium">
+              {dispute.original_weight} kg
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Dead Weight
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {dispute.original_weight} kg
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Volumetric Weight
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {dispute.order?.volumetric_weight || dispute.original_weight} kg ({dispute.order?.dimensions || '10x10x10'})
+            </div>
+          </div>
+        );
+      },
+      enableSorting: false,
+      enableHiding: true,
+    },
+    {
+      accessorKey: 'courier_weight',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Courier Weight" />,
+      cell: ({ row }) => {
+        const dispute = row.original;
+        return (
+          <div className="space-y-1">
+            <div className="text-sm font-medium">
+              {dispute.disputed_weight} kg
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Dead Weight
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {dispute.disputed_weight} kg
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Volumetric Weight
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {dispute.disputed_weight} kg ({dispute.order?.dimensions || '10x10x10'})
+            </div>
+          </div>
+        );
+      },
+      enableSorting: false,
+      enableHiding: true,
+    },
+    {
+      accessorKey: 'charged_weight',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Charged Weight" />,
+      cell: ({ row }) => {
+        const dispute = row.original;
+        const isHigherDead = dispute.disputed_weight > dispute.original_weight;
+        const isHigherVol = dispute.disputed_weight > (dispute.order?.volumetric_weight || dispute.original_weight);
         
         return (
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-muted-foreground">Original:</span>
-              <span className="font-medium">{currencyFormatter(dispute.original_charges)}</span>
+            <div className="text-sm font-medium flex items-center">
+              {dispute.disputed_weight} kg
+              {isHigherDead && (
+                <Badge className="ml-2 bg-blue-100 text-blue-800 border-blue-200 text-xs">
+                  Higher Dead & Vol Weight
+                </Badge>
+              )}
+              {!isHigherDead && isHigherVol && (
+                <Badge className="ml-2 bg-blue-100 text-blue-800 border-blue-200 text-xs">
+                  Higher Vol Weight
+                </Badge>
+              )}
             </div>
-            {dispute.revised_charges && (
-              <div className="flex items-center gap-2 text-xs">
-                <span className="text-muted-foreground">Revised:</span>
-                <span className="font-medium text-blue-600">{currencyFormatter(dispute.revised_charges)}</span>
-              </div>
-            )}
-            {chargesDifference !== 0 && (
-              <div className="flex items-center gap-2 text-xs">
-                <span className="text-muted-foreground">Difference:</span>
-                <span className={`font-bold ${chargesDifference > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                  {chargesDifference > 0 ? '+' : ''}{currencyFormatter(chargesDifference)}
-                </span>
-              </div>
-            )}
+            <div className="text-xs text-muted-foreground">
+              Dead Weight
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {dispute.disputed_weight} kg
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Volumetric Weight
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {dispute.disputed_weight} kg ({dispute.order?.dimensions || '10x10x10'})
+            </div>
+          </div>
+        );
+      },
+      enableSorting: false,
+      enableHiding: true,
+    },
+    {
+      accessorKey: 'excess_weight',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Excess Weight & Charge" />,
+      cell: ({ row }) => {
+        const dispute = row.original;
+        const weightDifference = dispute.disputed_weight - dispute.original_weight;
+        const totalCharge = dispute.forward_excess_amount + dispute.rto_excess_amount;
+        
+        return (
+          <div className="space-y-1">
+            <div className="text-xs text-muted-foreground">
+              Excess Weight
+            </div>
+            <div className="text-sm font-medium text-red-600">
+              {weightDifference.toFixed(2)} kg
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Excess Charge
+            </div>
+            <div className="text-sm font-medium text-red-600">
+              ₹{totalCharge.toFixed(2)}
+            </div>
           </div>
         );
       },
@@ -240,83 +313,52 @@ export function WeightDisputesTable({ className }: WeightDisputesTableProps) {
       cell: ({ row }) => {
         const dispute = row.original;
         
-        const getStatusConfig = (status: string) => {
-          switch (status) {
-            case 'PENDING':
-              return {
-                icon: AlertTriangle,
-                className: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-                label: 'Pending'
-              };
-            case 'ACCEPTED':
-              return {
-                icon: CheckCircle,
-                className: 'bg-green-100 text-green-800 border-green-200',
-                label: 'Accepted'
-              };
-            case 'REJECTED':
-              return {
-                icon: XCircle,
-                className: 'bg-red-100 text-red-800 border-red-200',
-                label: 'Rejected'
-              };
-            case 'RESOLVED':
-              return {
-                icon: Scale,
-                className: 'bg-blue-100 text-blue-800 border-blue-200',
-                label: 'Resolved'
-              };
-            default:
-              return {
-                icon: AlertTriangle,
-                className: 'bg-gray-100 text-gray-800 border-gray-200',
-                label: status
-              };
-          }
-        };
-
-        const config = getStatusConfig(dispute.status);
-        const Icon = config.icon;
-        
         return (
           <div className="space-y-2">
-            <Badge className={`${config.className} flex items-center gap-1 w-fit`}>
-              <Icon className="h-3 w-3" />
-              {config.label}
+            <Badge className="bg-red-100 text-red-800 border-red-200 uppercase">
+              NEW DISCREPANCY
             </Badge>
-            {dispute.resolution_date && (
-              <div className="text-xs text-muted-foreground">
-                Resolved: {new Date(dispute.resolution_date).toLocaleDateString()}
-              </div>
-            )}
+            <div>
+              {dispute.evidence_urls && dispute.evidence_urls.length > 0 && (
+                <div className="text-sm">Shipment image available</div>
+              )}
+              {dispute.seller_evidence_urls && dispute.seller_evidence_urls.length > 0 && (
+                <div className="text-sm">Historical sample images</div>
+              )}
+              {dispute.deadline_date && (
+                <div className="text-xs text-muted-foreground">
+                  {Math.ceil((new Date(dispute.deadline_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} Working Days left
+                </div>
+              )}
+            </div>
           </div>
         );
       },
       enableSorting: true,
       enableHiding: true,
-      filterFn: (row, id, value) => {
-        return value.includes(row.getValue(id));
-      },
     },
     {
       id: 'actions',
-      header: 'Actions',
+      header: 'Action',
       cell: ({ row }) => {
         const dispute = row.original;
         
         return (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setSelectedDispute(dispute);
-              setIsModalOpen(true);
-            }}
-            className="gap-2"
-          >
-            <Eye className="h-4 w-4" />
-            View Details
-          </Button>
+          <div className="space-y-2">
+            <Button
+              className="w-full bg-blue-600 hover:bg-blue-700"
+              onClick={() => handleAcceptDispute(dispute)}
+            >
+              Accept Discrepancy
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => handleRaiseDispute(dispute)}
+            >
+              Raise Dispute
+            </Button>
+          </div>
         );
       },
       enableSorting: false,
@@ -357,18 +399,14 @@ export function WeightDisputesTable({ className }: WeightDisputesTableProps) {
     refetch(); // Refresh the table data
   };
 
+  // Handle tab change
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setPagination({ ...pagination, pageIndex: 0 }); // Reset to first page
+  };
+
   // Filterable columns
   const filterableColumns = [
-    {
-      id: 'status',
-      title: 'Status',
-      options: [
-        { label: 'Pending', value: 'PENDING' },
-        { label: 'Accepted', value: 'ACCEPTED' },
-        { label: 'Rejected', value: 'REJECTED' },
-        { label: 'Resolved', value: 'RESOLVED' },
-      ],
-    },
     {
       id: 'courier_name',
       title: 'Courier',
@@ -378,57 +416,159 @@ export function WeightDisputesTable({ className }: WeightDisputesTableProps) {
 
   if (isError) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center">
-          <AlertTriangle className="mx-auto h-12 w-12 text-red-500" />
-          <h3 className="mt-2 text-sm font-semibold">Error loading weight disputes</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            There was an error loading the weight disputes. Please try again.
-          </p>
-        </div>
-      </div>
+      <Alert variant="destructive">
+        <AlertDescription>
+          Error loading weight disputes. Please try again.
+        </AlertDescription>
+      </Alert>
     );
   }
 
   return (
     <div className={className}>
-      <DataTable
-        columns={columns}
-        data={transformedDisputes}
-        count={data?.pagination?.total || 0}
-        pageCount={data?.pagination?.totalPages || 0}
-        page={pagination.pageIndex}
-        pageSize={pagination.pageSize}
-        filterableColumns={filterableColumns}
-        searchableColumns={[
-          {
-            id: 'dispute_id',
-            title: 'Dispute ID',
-          },
-          {
-            id: 'order.order_number',
-            title: 'Order Number',
-          },
-          {
-            id: 'order.shipment.awb',
-            title: 'AWB Number',
-          },
-          {
-            id: 'order.customer.name',
-            title: 'Customer Name',
-          },
-        ]}
-        searchPlaceholder="Search disputes by ID, order number, AWB, or customer..."
-        isLoading={isLoading || isFetching}
-        isError={isError}
-        onPaginationChange={handlePaginationChange}
-        onSortingChange={handleSortingChange}
-        onFiltersChange={handleFiltersChange}
-        onGlobalFilterChange={handleGlobalFilterChange}
-        manualPagination={true}
-        manualSorting={true}
-        manualFiltering={true}
-      />
+      <Tabs defaultValue="new" onValueChange={handleTabChange} className="w-full">
+        <div className="border-b">
+          <TabsList className="bg-transparent">
+            <TabsTrigger value="new" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
+              New Discrepancies
+            </TabsTrigger>
+            <TabsTrigger value="auto-accepted" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
+              Discrepancies Auto Accepted
+            </TabsTrigger>
+            <TabsTrigger value="all" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
+              All Discrepancies
+            </TabsTrigger>
+          </TabsList>
+        </div>
+        
+        <div className="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="text-sm text-muted-foreground">
+            {data?.pagination?.total || 0} AWBs for Last 7 days
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search by AWB..."
+                className="px-3 py-1 border rounded-md w-full md:w-64"
+                value={searchAwb}
+                onChange={(e) => setSearchAwb(e.target.value)}
+              />
+            </div>
+            <Button variant="outline" size="sm" onClick={handleExport}>
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+            {userRole === 'ADMIN' && (
+              <Button variant="outline" size="sm" onClick={() => openModal('weight-dispute-csv')}>
+                <Upload className="h-4 w-4 mr-2" />
+                Upload
+              </Button>
+            )}
+            {userRole === 'SELLER' && (
+              <Button variant="outline" size="sm" onClick={() => openModal('dispute-actions-csv')}>
+                <Upload className="h-4 w-4 mr-2" />
+                Bulk Actions
+              </Button>
+            )}
+          </div>
+        </div>
+        
+        <TabsContent value="new" className="mt-2">
+          <DataTable
+            showToolbar={false}
+            columns={columns}
+            data={disputes}
+            count={data?.pagination?.total || 0}
+            pageCount={data?.pagination?.totalPages || 0}
+            page={pagination.pageIndex}
+            pageSize={pagination.pageSize}
+            filterableColumns={filterableColumns}
+            searchableColumns={[
+              {
+                id: 'order.shipment.awb',
+                title: 'AWB Number',
+              },
+              {
+                id: 'order.product.name',
+                title: 'Product Name',
+              },
+              {
+                id: 'order.product.sku',
+                title: 'SKU',
+              },
+            ]}
+            searchPlaceholder="Search by AWB, product name, or SKU..."
+            isLoading={isLoading || isFetching}
+            isError={isError}
+            onPaginationChange={handlePaginationChange}
+            onSortingChange={handleSortingChange}
+            onFiltersChange={handleFiltersChange}
+            onGlobalFilterChange={handleGlobalFilterChange}
+            manualPagination={true}
+            manualSorting={true}
+            manualFiltering={true}
+          />
+        </TabsContent>
+        
+        <TabsContent value="auto-accepted" className="mt-2">
+          <DataTable
+            showToolbar={false}
+            columns={columns}
+            data={disputes}
+            count={data?.pagination?.total || 0}
+            pageCount={data?.pagination?.totalPages || 0}
+            page={pagination.pageIndex}
+            pageSize={pagination.pageSize}
+            filterableColumns={filterableColumns}
+            searchableColumns={[
+              {
+                id: 'order.shipment.awb',
+                title: 'AWB Number',
+              },
+            ]}
+            searchPlaceholder="Search by AWB..."
+            isLoading={isLoading || isFetching}
+            isError={isError}
+            onPaginationChange={handlePaginationChange}
+            onSortingChange={handleSortingChange}
+            onFiltersChange={handleFiltersChange}
+            onGlobalFilterChange={handleGlobalFilterChange}
+            manualPagination={true}
+            manualSorting={true}
+            manualFiltering={true}
+          />
+        </TabsContent>
+        
+        <TabsContent value="all" className="mt-2">
+          <DataTable
+            showToolbar={false}
+            columns={columns}
+            data={disputes}
+            count={data?.pagination?.total || 0}
+            pageCount={data?.pagination?.totalPages || 0}
+            page={pagination.pageIndex}
+            pageSize={pagination.pageSize}
+            filterableColumns={filterableColumns}
+            searchableColumns={[
+              {
+                id: 'order.shipment.awb',
+                title: 'AWB Number',
+              },
+            ]}
+            searchPlaceholder="Search by AWB..."
+            isLoading={isLoading || isFetching}
+            isError={isError}
+            onPaginationChange={handlePaginationChange}
+            onSortingChange={handleSortingChange}
+            onFiltersChange={handleFiltersChange}
+            onGlobalFilterChange={handleGlobalFilterChange}
+            manualPagination={true}
+            manualSorting={true}
+            manualFiltering={true}
+          />
+        </TabsContent>
+      </Tabs>
 
       {/* Weight Dispute Modal */}
       <WeightDisputeModal

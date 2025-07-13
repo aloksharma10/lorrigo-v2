@@ -5,12 +5,14 @@ import type { Table } from '@tanstack/react-table';
 import { Button } from '../button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../select';
 import { Loader2 } from 'lucide-react';
+import { cn } from '@lorrigo/ui/lib/utils';
 
 interface DataTablePaginationProps<TData> {
   table: Table<TData>;
   pageSizeOptions?: number[];
   totalCount?: number;
   isLoading?: boolean;
+  showToolbar?: boolean;
 }
 
 export function DataTablePagination<TData>({
@@ -18,11 +20,12 @@ export function DataTablePagination<TData>({
   pageSizeOptions = [15, 25, 50, 100],
   totalCount,
   isLoading = false,
+  showToolbar = true,
 }: DataTablePaginationProps<TData>) {
   return (
     <div className="flex items-center justify-between px-2">
       <div className="flex items-center space-x-6 lg:space-x-8">
-        <div className="hidden items-center space-x-2 lg:flex">
+        <div className={cn(`items-center space-x-2`, showToolbar ? 'hidden' : 'flex')}>
           <p className="text-sm font-medium">Items per page</p>
           <Select
             value={`${table.getState().pagination.pageSize}`}

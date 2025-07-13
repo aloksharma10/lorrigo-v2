@@ -345,6 +345,7 @@ export function DataTable<TData, TValue>({
           pageSizeOptions={pageSizeOptions}
           totalCount={count}
           isLoading={isLoading}
+          showToolbar={showToolbar}
         />
       </CardContent>
     </Card>

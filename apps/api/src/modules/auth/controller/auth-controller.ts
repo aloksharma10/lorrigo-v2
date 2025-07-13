@@ -57,8 +57,13 @@ export class AuthController {
       // Register user using service
       const result = await this.authService.register({
         ...data,
-        gstin: data.gstin ?? undefined,
         password: hashedPassword,
+        business_type: 'INDIVIDUAL',
+        gst_no: data.gstin ?? undefined,
+        business_name: data.business_name,
+        phone: data.phone,
+        email: data.email,
+        name: data.name,
       });
 
       // Return user data and token

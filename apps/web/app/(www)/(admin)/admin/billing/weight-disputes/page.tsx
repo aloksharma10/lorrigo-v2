@@ -3,8 +3,15 @@
 import { Badge, Button } from '@lorrigo/ui/components';
 import { WeightDisputesTable } from '@/components/tables/billing/weight-disputes-table';
 import { Upload } from 'lucide-react';
+import { useModalStore } from '@/modal/modal-store';
 
 export default function WeightDisputesPage() {
+  const { openModal } = useModalStore();
+
+  const handleOpenUploadModal = () => {
+    openModal('weight-dispute-csv');
+  };
+
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
@@ -24,7 +31,7 @@ export default function WeightDisputesPage() {
 
       {/* Controls */}
       <div className="flex justify-end">
-        <Button>
+        <Button onClick={handleOpenUploadModal}>
           <Upload className="mr-2 h-4 w-4" />
           Upload Dispute Report
         </Button>

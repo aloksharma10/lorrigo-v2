@@ -874,8 +874,9 @@ export class TrackingProcessor {
         };
       }
 
-      // Get NDR details from vendor API
-      const ndrDetailsResult = await vendor.getNdrDetails(awb);
+      // Get NDR details from vendor API : this is only for shiprocket
+      // Type assertion to fix lint error: 'vendor.getNdrDetails' is of type 'unknown'
+      const ndrDetailsResult = await (vendor as { getNdrDetails: (awb: string) => Promise<any> }).getNdrDetails(awb);
 
       if (!ndrDetailsResult.success || !ndrDetailsResult.data?.data?.[0]) {
         return {

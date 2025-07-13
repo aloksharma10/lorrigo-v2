@@ -6,6 +6,8 @@ import { addJob, QueueNames } from '@/lib/queue';
 import { JobType } from '@/modules/shipments/queues/shipmentQueue';
 import { OrderService } from '@/modules/orders/services/order-service';
 import { randomUUID } from 'crypto';
+import { BillingJobType } from '@/modules/billing/queues/billingQueue';
+import csv from 'csvtojson';
 
 /**
  * Service for handling bulk operations
@@ -405,23 +407,54 @@ export class BulkOperationsService {
   }
 
   async createWeightChargeBulk(csvPath: string, userId: string) {
+    const csvData = await csv().fromFile(csvPath);
+    
+    // Enhanced logging for CSV processing
+    this.fastify.log.info(`Processing weight charge CSV with ${csvData.length} rows from file: ${csvPath}`);
+    
+    // Generate a unique ID for the operation
+    const operationId = randomUUID();
+    
+    // Create bulk operation record
     const operation = await this.fastify.prisma.bulkOperation.create({
       data: {
-        id: randomUUID(),
+        id: operationId,
         type: 'BILLING_WEIGHT_CSV',
         status: 'PENDING',
         code: this.generateOperationCode(),
         user_id: userId,
+        total_count: csvData.length,
         file_path: csvPath,
       },
     });
 
-    await addJob(
-      QueueNames.BULK_OPERATION,
-      JobType.PROCESS_BILLING_WEIGHT_CSV,
-      { csvPath, operationId: operation.id },
-      { priority: 1 }
+    // Transform CSV data to ensure correct field names with improved handling
+    const formattedData = csvData.map(row => ({
+      AWB: row.AWB || row.awb || row['Awb Number'] || row['AWB Number'] || '',
+      Charged_Weight: parseFloat(row['Charged_Weight'] || row['Charged Weight'] || row['charged_weight'] || row['weight'] || '0'),
+      evidence_url: row.evidence_url || row.Evidence || row['Evidence URL'] || ''
+    }));
+
+    // Log sample of formatted data for debugging
+    this.fastify.log.info(`Formatted CSV data sample: ${JSON.stringify(formattedData.slice(0, 2))}`);
+    this.fastify.log.info(`Queueing job to process ${formattedData.length} weight dispute entries`);
+
+    // Add job with high priority and immediate processing
+    const job = await addJob(
+      QueueNames.BILLING_AUTOMATION,
+      BillingJobType.PROCESS_WEIGHT_CSV,
+      { 
+        csvData: formattedData, 
+        operationId: operation.id 
+      },
+      { 
+        priority: 1,
+        attempts: 5,
+        jobId: `weight-csv-${operation.id}`
+      }
     );
+
+    this.fastify.log.info(`Weight CSV job queued with ID: ${job.id} for operation: ${operation.id}`);
 
     return operation;
   }
@@ -434,7 +467,7 @@ export class BulkOperationsService {
         status: 'PENDING',
         code: this.generateOperationCode(),
         user_id: userId,
-        file_path: csvPath,
+        total_count: 0,
       },
     });
 
