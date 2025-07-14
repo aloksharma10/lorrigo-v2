@@ -239,6 +239,8 @@ model UserProfile {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
+  bank_accounts UserBankAccount[]
+
   @@index([user_id])
   @@index([billing_cycle_type])
 }
@@ -393,13 +395,14 @@ model Order {
   invoice        Invoice?       @relation("OrderInvoice")
   shipment       Shipment?      @relation("OrderShipment")
   weight_dispute WeightDispute? @relation("OrderWeightDispute")
-  remittance     Remittance?    @relation("OrderRemittance")
+  remittance     Remittance?    @relation(fields: [remittanceId], references: [id])
   billings       Billing[]
   ndr            NDROrder?      @relation("OrderNDR")
 
-  freight_type   Int? @default(0)
-  pickup_type    Int? @default(0)
-  insurance_type Int? @default(0)
+  freight_type   Int?    @default(0)
+  pickup_type    Int?    @default(0)
+  insurance_type Int?    @default(0)
+  remittanceId   String?
 
   @@unique([order_number, user_id])
   @@index([user_id, customer_id])
@@ -425,26 +428,26 @@ model OrderSellerDetails {
 }
 
 model OrderItem {
-  id            String   @id @default(cuid())
-  code          String   @unique // Format: OI-YYMM-XXXXX
+  id            String  @id @default(cuid())
+  code          String  @unique // Format: OI-YYMM-XXXXX
   order_id      String
-  order         Order    @relation(fields: [order_id], references: [id], onDelete: Cascade)
-  name          String?  @db.VarChar(255)
-  sku           String?  @db.VarChar(50)
-  units         Int?     @default(1)
+  order         Order   @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  name          String? @db.VarChar(255)
+  sku           String? @db.VarChar(50)
+  units         Int?    @default(1)
   selling_price Float?
-  discount      Float?   @default(0)
-  tax           Float?   @default(0)
-  hsn           String?  @db.VarChar(8)
+  discount      Float?  @default(0)
+  tax           Float?  @default(0)
+  hsn           String? @db.VarChar(8)
 
   // B2C Specific
-  length Float?
+  length  Float?
   breadth Float?
-  height Float?
-  weight Float?
+  height  Float?
+  weight  Float?
 
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   ndr_order_id String?
   ndr_order    NDROrder? @relation("NDROrderItems", fields: [ndr_order_id], references: [id])
@@ -459,7 +462,7 @@ model Shipment {
   code   String         @unique // Format: SH-YYMM-XXXXX
   awb    String?        @unique @db.VarChar(50)
   status ShipmentStatus @default(NEW)
-  bucket Int? @default(0)
+  bucket Int?           @default(0)
 
   shipping_charge Float?     @default(0)
   fw_charge       Float?     @default(0)
@@ -557,8 +560,8 @@ model Courier {
   channel_config_id String
   channel_config    ChannelConfig @relation(fields: [channel_config_id], references: [id])
 
-  @@index([courier_code, is_active])
   @@unique([name, channel_config_id, is_reversed_courier, courier_code])
+  @@index([courier_code, is_active])
 }
 
 model UserWallet {
@@ -716,14 +719,14 @@ model Invoice {
 }
 
 model Billing {
-  id       String @id @default(cuid())
-  code     String @unique // Format: BL-YYMM-XXXXX
+  id       String  @id @default(cuid())
+  code     String  @unique // Format: BL-YYMM-XXXXX
   order_id String
-  order    Order  @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  order    Order   @relation(fields: [order_id], references: [id], onDelete: Cascade)
   awb      String?
 
-  billing_date   DateTime
-  billing_month  String   @db.VarChar(7) // Format: YYYY-MM
+  billing_date  DateTime
+  billing_month String   @db.VarChar(7) // Format: YYYY-MM
 
   charged_weight     Float
   original_weight    Float
@@ -740,10 +743,10 @@ model Billing {
   is_rto_applicable     Boolean
 
   // Amount
-  pending_amount Float @default(0)
+  pending_amount  Float @default(0)
   disputed_amount Float @default(0)
-  paid_amount Float @default(0)
-  billing_amount Float
+  paid_amount     Float @default(0)
+  billing_amount  Float
 
   base_price      Float
   base_weight     Float
@@ -755,11 +758,11 @@ model Billing {
   courier_name String?
 
   // Billing Cycle Information
-  billing_cycle_id    String?
-  billing_cycle       UserBilling?  @relation(fields: [billing_cycle_id], references: [id])
-  cycle_type          CycleType     @default(MONTHLY)
-  is_manual_billing   Boolean       @default(false)
-  payment_status      BillingStatus @default(PENDING)
+  billing_cycle_id  String?
+  billing_cycle     UserBilling?  @relation(fields: [billing_cycle_id], references: [id])
+  cycle_type        CycleType     @default(MONTHLY)
+  is_manual_billing Boolean       @default(false)
+  payment_status    BillingStatus @default(PENDING)
 
   admin_notes String?   @db.Text
   approved_by String?
@@ -785,27 +788,26 @@ model Remittance {
   remittance_date DateTime
   cycle_type      CycleType        @default(WEEKLY)
 
-  amount_before_adjustment       Float?    @default(0)
-  wallet_transfer_amount         Float?    @default(0)
-  wallet_balance_before          Float?    @default(0)
-  wallet_balance_after           Float?    @default(0)
-  early_remittance_charge        Float     @default(0)
-  early_remittance_charge_amount Float     @default(0)
-  final_payout_amount            Float?    @default(0)
+  amount_before_adjustment       Float? @default(0)
+  wallet_transfer_amount         Float? @default(0)
+  wallet_balance_before          Float? @default(0)
+  wallet_balance_after           Float? @default(0)
+  early_remittance_charge        Float  @default(0)
+  early_remittance_charge_amount Float  @default(0)
+  final_payout_amount            Float? @default(0)
 
   remittance_cycle_date String?
 
-  orders_count                   Int
-  orders                         Json
-  processing_details             Json?
-  hold_reason                    String?   @db.Text
-  processed_at                   DateTime?
-  completed_at                   DateTime?
-  failed_at                      DateTime?
+  orders_count       Int
+  processing_details Json?
+  hold_reason        String?   @db.Text
+  processed_at       DateTime?
+  completed_at       DateTime?
+  failed_at          DateTime?
 
-  created_by                     String
-  updated_by                     String?
-  notes                          String?   @db.Text
+  created_by String
+  updated_by String?
+  notes      String? @db.Text
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -813,12 +815,17 @@ model Remittance {
   user_id String
   user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
-  order_id String @unique
-  order    Order  @relation("OrderRemittance", fields: [order_id], references: [id], onDelete: Cascade)
+  bank_account_id String
+  bank_account    UserBankAccount @relation(fields: [bank_account_id], references: [id], onDelete: Restrict)
+
+  orders Order[]
+
+  // Removed order_id and order relation for multi-order support
 
   @@index([user_id, status, remittance_date])
   @@index([transaction_id])
   @@index([code])
+  @@index([bank_account_id])
 }
 
 model Notification {
@@ -1233,4 +1240,23 @@ model UserBilling {
   @@index([cycle_type])
   @@index([status])
   @@index([cycle_start_date, cycle_end_date])
+}
+
+model UserBankAccount {
+  id              String      @id @default(cuid())
+  user_profile_id String
+  user_profile    UserProfile @relation(fields: [user_profile_id], references: [id], onDelete: Cascade)
+  account_number  String // Masked for display, full for processing
+  ifsc            String
+  bank_name       String
+  account_holder  String
+  is_verified     Boolean     @default(false)
+  verified_at     DateTime?
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
+
+  remittances Remittance[]
+
+  @@unique([user_profile_id, account_number])
+  @@index([user_profile_id])
 }

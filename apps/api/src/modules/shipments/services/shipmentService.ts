@@ -322,7 +322,7 @@ export class ShipmentService {
 
     try {
       // Prepare data outside of transaction to minimize transaction time
-      const [lastShipment, shipmentCount, userWallet, courier] = await Promise.all([
+      const [lastShipment, shipmentCount, userWallet, courier, userProfile] = await Promise.all([
         this.fastify.prisma.shipment.findFirst({
           orderBy: { created_at: 'desc' },
         }),
@@ -339,14 +339,18 @@ export class ShipmentService {
           where: { id: data.courier_id },
           include: { channel_config: true },
         }),
+        this.fastify.prisma.userProfile.findUnique({
+          where: { user_id: userId },
+        }),
       ]);
 
       if (!userWallet) {
         return { error: 'User wallet not found' };
       }
 
-      if (userWallet.balance < shippingCost) {
-        return { error: 'Insufficient wallet balance' };
+      const maxNegativeBalance = userProfile?.max_negative_balance ?? 0;
+      if ((userWallet.balance - shippingCost) < -maxNegativeBalance) {
+        return { error: `Insufficient wallet balance. You have reached your allowed negative limit (max: ${maxNegativeBalance}). Please recharge your wallet to create more shipments.` };
       }
 
       if (!courier || !courier.channel_config) {
