@@ -152,16 +152,6 @@ export default function UsersPage() {
     },
   ];
 
-  const filteredUsers = users.filter((user: UserDisplay) => {
-    if (!search) return true;
-    const searchLower = search.toLowerCase();
-    return (
-      user.name.toLowerCase().includes(searchLower) ||
-      user.email.toLowerCase().includes(searchLower) ||
-      (user.profile?.company_name || '').toLowerCase().includes(searchLower)
-    );
-  });
-
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -202,7 +192,7 @@ export default function UsersPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {users.reduce((sum: number, user: UserDisplay) => sum + (user._count?.orders || 0), 0)}
+              {users.reduce((sum: number, user) => sum + (user._count?.orders || 0), 0)}
             </div>
             <p className="text-xs text-muted-foreground">Across all users</p>
           </CardContent>
@@ -216,7 +206,7 @@ export default function UsersPage() {
           <CardContent>
             <div className="text-2xl font-bold">
               {currencyFormatter(
-                users.reduce((sum: number, user: UserDisplay) => sum + (user.wallet_balance || 0), 0)
+                users.reduce((sum: number, user) => sum + (user.wallet_balance || 0), 0)
               )}
             </div>
             <p className="text-xs text-muted-foreground">Total balance</p>
@@ -230,7 +220,7 @@ export default function UsersPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {users.filter((user: UserDisplay) => {
+              {users.filter((user) => {
                 const date = new Date(user.created_at);
                 const now = new Date();
                 const thirtyDaysAgo = new Date();

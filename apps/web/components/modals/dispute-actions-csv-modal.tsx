@@ -65,80 +65,22 @@ export function DisputeActionsCSVModal({ modalId, onClose }: DisputeActionsCSVMo
       setIsUploading(true);
       setError(null);
 
-      // Read the file content
-      const fileContent = await file.text();
-      const lines = fileContent.trim().split('\n');
-      
-      if (lines.length < 2) {
-        throw new Error('CSV file must contain at least one data row');
-      }
-
-      // Parse CSV headers and create formData
-      const headers = lines[0].split(',').map(h => h.trim());
-      
-      // Parse CSV data
-      const csvData = [];
-      for (let i = 1; i < lines.length; i++) {
-        if (!lines[i].trim()) continue;
-        
-        const values = lines[i].split(',').map(v => v.trim());
-        const row: Record<string, any> = {};
-        
-        // Map values using the provided mapping
-        for (const [fieldKey, headerName] of Object.entries(mapping)) {
-          const headerIndex = headers.indexOf(headerName);
-          if (headerIndex !== -1) {
-            row[fieldKey] = values[headerIndex] || '';
-          }
-        }
-        
-        // Validate required fields
-        if (!row.AWB || !row.Action) {
-          continue; // Skip invalid rows
-        }
-        
-        // Validate action type
-        if (!['ACCEPT', 'REJECT', 'RAISE'].includes(row.Action.toUpperCase())) {
-          continue; // Skip invalid actions
-        }
-        
-        // Ensure action is uppercase
-        row.Action = row.Action.toUpperCase();
-        
-        // Convert numeric fields
-        if (row.final_weight) {
-          row.final_weight = parseFloat(row.final_weight);
-        }
-        
-        csvData.push(row);
-      }
-
       // Create a FormData object
       const formData = new FormData();
       formData.append('file', file);
 
       // Call the API to upload the CSV
-      const response = await fetch('/api/v2/bulk-operations/dispute-actions-csv', {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await uploadDisputeActionsCSV.mutateAsync(formData);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData?.error || 'Failed to upload CSV');
-      }
-
-      const result = await response.json();
-
-      if (result?.operationId) {
+      if (response?.operationId) {
         // Show the bulk operation status modal
-        showBulkOperationStatus(result.operationId, false);
+        showBulkOperationStatus(response.operationId, false);
       }
 
       return {
         success: true,
-        processedRows: csvData.length,
-        data: result,
+        processedRows: 1,
+        data: [response],
       };
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to upload CSV');

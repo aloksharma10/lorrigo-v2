@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Upload, Download } from 'lucide-react';
 import {
   DataTable,
@@ -10,10 +10,6 @@ import {
   Button,
   Alert,
   AlertDescription,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
 } from '@lorrigo/ui/components';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { 
@@ -21,7 +17,6 @@ import {
   type WeightDispute
 } from '@/lib/apis/billing';
 import { CopyBtn } from '@/components/copy-btn';
-import { WeightDisputeModal } from '@/components/modals/weight-dispute-modal';
 import { useDrawerStore } from '@/drawer/drawer-store';
 import { useModalStore } from '@/modal/modal-store';
 
@@ -33,34 +28,6 @@ interface WeightDisputesTableProps {
 }
 
 export function WeightDisputesTable({ className, userRole = 'ADMIN', userId, status }: WeightDisputesTableProps) {
-  // Map tabs to status filters
-  const tabToStatusMap: Record<string, string | undefined> = {
-    'new': 'PENDING',
-    'pending': 'PENDING',
-    'raised_by_seller': 'RAISED_BY_SELLER',
-    'resolved': 'RESOLVED',
-    'rejected': 'REJECTED',
-    'auto-accepted': 'AUTO_ACCEPTED',
-    'all': undefined
-  };
-  
-  // If status is provided, use it to set the initial activeTab value
-  const [activeTab, setActiveTab] = useState<string>(
-    status ? 
-      Object.entries(tabToStatusMap).find(([key, value]) => value === status)?.[0] || 'new' : 
-      'new'
-  );
-  
-  // Update activeTab when status prop changes
-  useEffect(() => {
-    if (status) {
-      const tab = Object.entries(tabToStatusMap).find(([key, value]) => value === status)?.[0];
-      if (tab) {
-        setActiveTab(tab);
-      }
-    }
-  }, [status]);
-  
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 15,
@@ -86,7 +53,7 @@ export function WeightDisputesTable({ className, userRole = 'ADMIN', userId, sta
     disputes: {
       page: pagination.pageIndex + 1, // API uses 1-based pagination
       pageSize: pagination.pageSize,
-      status: status || tabToStatusMap[activeTab],
+      status: status, // Use the status prop directly
       search: searchAwb || undefined,
       userId: userId
     },
@@ -122,7 +89,7 @@ export function WeightDisputesTable({ className, userRole = 'ADMIN', userId, sta
   // Export disputes as CSV
   const handleExport = async () => {
     try {
-      const response = await fetch(`/api/billing/disputes/export?status=${tabToStatusMap[activeTab] || ''}`, {
+      const response = await fetch(`/api/billing/disputes/export?status=${status || ''}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -136,7 +103,7 @@ export function WeightDisputesTable({ className, userRole = 'ADMIN', userId, sta
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
-      a.download = `weight-disputes-${activeTab}-${new Date().toISOString().split('T')[0]}.csv`;
+      a.download = `weight-disputes-${status || 'all'}-${new Date().toISOString().split('T')[0]}.csv`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -421,16 +388,6 @@ export function WeightDisputesTable({ className, userRole = 'ADMIN', userId, sta
     refetch(); // Refresh the table data
   };
 
-  // Handle tab change
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    setPagination({ ...pagination, pageIndex: 0 }); // Reset to first page
-    
-    // Manually refetch with the new status
-    const newStatus = tabToStatusMap[value];
-    disputesQuery.refetch();
-  };
-
   // Filterable columns
   const filterableColumns = [
     {
@@ -452,157 +409,75 @@ export function WeightDisputesTable({ className, userRole = 'ADMIN', userId, sta
 
   return (
     <div className={className}>
-      <Tabs defaultValue="new" onValueChange={handleTabChange} className="w-full">
-        <div className="border-b">
-          <TabsList className="bg-transparent">
-            <TabsTrigger value="new" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
-              New Discrepancies
-            </TabsTrigger>
-            <TabsTrigger value="auto-accepted" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
-              Discrepancies Auto Accepted
-            </TabsTrigger>
-            <TabsTrigger value="all" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
-              All Discrepancies
-            </TabsTrigger>
-          </TabsList>
+      <div className="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="text-sm text-muted-foreground">
+          {data?.pagination?.total || 0} AWBs found
         </div>
-        
-        <div className="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="text-sm text-muted-foreground">
-            {data?.pagination?.total || 0} AWBs for Last 7 days
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search by AWB..."
+              className="px-3 py-1 border rounded-md w-full md:w-64"
+              value={searchAwb}
+              onChange={(e) => setSearchAwb(e.target.value)}
+            />
           </div>
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search by AWB..."
-                className="px-3 py-1 border rounded-md w-full md:w-64"
-                value={searchAwb}
-                onChange={(e) => setSearchAwb(e.target.value)}
-              />
-            </div>
-            <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="h-4 w-4 mr-2" />
-              Export
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
+          {userRole === 'ADMIN' && (
+            <Button variant="outline" size="sm" onClick={() => openModal('weight-dispute-csv')}>
+              <Upload className="h-4 w-4 mr-2" />
+              Upload
             </Button>
-            {userRole === 'ADMIN' && (
-              <Button variant="outline" size="sm" onClick={() => openModal('weight-dispute-csv')}>
-                <Upload className="h-4 w-4 mr-2" />
-                Upload
-              </Button>
-            )}
-            {userRole === 'SELLER' && (
-              <Button variant="outline" size="sm" onClick={() => openModal('dispute-actions-csv')}>
-                <Upload className="h-4 w-4 mr-2" />
-                Bulk Actions
-              </Button>
-            )}
-          </div>
+          )}
+          {userRole === 'SELLER' && (
+            <Button variant="outline" size="sm" onClick={() => openModal('dispute-actions-csv')}>
+              <Upload className="h-4 w-4 mr-2" />
+              Bulk Actions
+            </Button>
+          )}
         </div>
-        
-        <TabsContent value="new" className="mt-2">
-          <DataTable
-            showToolbar={false}
-            columns={columns}
-            data={disputes}
-            count={data?.pagination?.total || 0}
-            pageCount={data?.pagination?.totalPages || 0}
-            page={pagination.pageIndex}
-            pageSize={pagination.pageSize}
-            filterableColumns={filterableColumns}
-            searchableColumns={[
-              {
-                id: 'order.shipment.awb',
-                title: 'AWB Number',
-              },
-              {
-                id: 'order.product.name',
-                title: 'Product Name',
-              },
-              {
-                id: 'order.product.sku',
-                title: 'SKU',
-              },
-            ]}
-            searchPlaceholder="Search by AWB, product name, or SKU..."
-            isLoading={isLoading || isFetching}
-            isError={isError}
-            onPaginationChange={handlePaginationChange}
-            onSortingChange={handleSortingChange}
-            onFiltersChange={handleFiltersChange}
-            onGlobalFilterChange={handleGlobalFilterChange}
-            manualPagination={true}
-            manualSorting={true}
-            manualFiltering={true}
-          />
-        </TabsContent>
-        
-        <TabsContent value="auto-accepted" className="mt-2">
-          <DataTable
-            showToolbar={false}
-            columns={columns}
-            data={disputes}
-            count={data?.pagination?.total || 0}
-            pageCount={data?.pagination?.totalPages || 0}
-            page={pagination.pageIndex}
-            pageSize={pagination.pageSize}
-            filterableColumns={filterableColumns}
-            searchableColumns={[
-              {
-                id: 'order.shipment.awb',
-                title: 'AWB Number',
-              },
-            ]}
-            searchPlaceholder="Search by AWB..."
-            isLoading={isLoading || isFetching}
-            isError={isError}
-            onPaginationChange={handlePaginationChange}
-            onSortingChange={handleSortingChange}
-            onFiltersChange={handleFiltersChange}
-            onGlobalFilterChange={handleGlobalFilterChange}
-            manualPagination={true}
-            manualSorting={true}
-            manualFiltering={true}
-          />
-        </TabsContent>
-        
-        <TabsContent value="all" className="mt-2">
-          <DataTable
-            showToolbar={false}
-            columns={columns}
-            data={disputes}
-            count={data?.pagination?.total || 0}
-            pageCount={data?.pagination?.totalPages || 0}
-            page={pagination.pageIndex}
-            pageSize={pagination.pageSize}
-            filterableColumns={filterableColumns}
-            searchableColumns={[
-              {
-                id: 'order.shipment.awb',
-                title: 'AWB Number',
-              },
-            ]}
-            searchPlaceholder="Search by AWB..."
-            isLoading={isLoading || isFetching}
-            isError={isError}
-            onPaginationChange={handlePaginationChange}
-            onSortingChange={handleSortingChange}
-            onFiltersChange={handleFiltersChange}
-            onGlobalFilterChange={handleGlobalFilterChange}
-            manualPagination={true}
-            manualSorting={true}
-            manualFiltering={true}
-          />
-        </TabsContent>
-      </Tabs>
-
-      {/* Weight Dispute Modal */}
-      <WeightDisputeModal
-        dispute={selectedDispute}
-        isOpen={isModalOpen}
-        onClose={handleModalClose}
-        onResolved={handleDisputeResolved}
-      />
+      </div>
+      
+      <div className="mt-2">
+        <DataTable
+          showToolbar={false}
+          columns={columns}
+          data={disputes}
+          count={data?.pagination?.total || 0}
+          pageCount={data?.pagination?.totalPages || 0}
+          page={pagination.pageIndex}
+          pageSize={pagination.pageSize}
+          filterableColumns={filterableColumns}
+          searchableColumns={[
+            {
+              id: 'order.shipment.awb',
+              title: 'AWB Number',
+            },
+            {
+              id: 'order.product.name',
+              title: 'Product Name',
+            },
+            {
+              id: 'order.product.sku',
+              title: 'SKU',
+            },
+          ]}
+          searchPlaceholder="Search by AWB, product name, or SKU..."
+          isLoading={isLoading || isFetching}
+          isError={isError}
+          onPaginationChange={handlePaginationChange}
+          onSortingChange={handleSortingChange}
+          onFiltersChange={handleFiltersChange}
+          onGlobalFilterChange={handleGlobalFilterChange}
+          manualPagination={true}
+          manualSorting={true}
+          manualFiltering={true}
+        />
+      </div>
     </div>
   );
 } 

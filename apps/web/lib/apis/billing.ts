@@ -94,6 +94,12 @@ export interface BillingSummary {
   total_amount: number;
   total_orders: number;
   users: BillingSummaryByUser[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }
 
 export interface WeightDispute {

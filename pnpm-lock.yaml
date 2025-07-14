@@ -21,9 +21,6 @@ importers:
       '@lorrigo/typescript-config':
         specifier: workspace:*
         version: link:packages/typescript-config
-      '@types/csvtojson':
-        specifier: ^2.0.3
-        version: 2.0.3
       prettier:
         specifier: ^3.5.1
         version: 3.5.3
@@ -121,6 +118,9 @@ importers:
       '@types/bcrypt':
         specifier: ^5.0.2
         version: 5.0.2
+      '@types/csvtojson':
+        specifier: ^2.0.3
+        version: 2.0.3
       '@types/fs-extra':
         specifier: ^11.0.4
         version: 11.0.4

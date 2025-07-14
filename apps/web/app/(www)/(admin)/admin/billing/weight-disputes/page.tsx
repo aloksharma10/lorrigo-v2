@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Tabs, TabsContent, TabsList, TabsTrigger } from '@lorrigo/ui/components';
 import { WeightDisputesTable } from '@/components/tables/billing/weight-disputes-table';
 import { Upload, Download, RefreshCw, Filter } from 'lucide-react';
@@ -10,15 +10,30 @@ import { useBillingOperations } from '@/lib/apis/billing';
 export default function WeightDisputesPage() {
   const { openModal } = useModalStore();
   const [activeTab, setActiveTab] = useState<string>('pending');
+  
+  // Map tabs to status values for API
+  const tabToStatusMap: Record<string, string | undefined> = {
+    'pending': 'PENDING',
+    'raised_by_seller': 'RAISED_BY_SELLER',
+    'resolved': 'RESOLVED',
+    'rejected': 'REJECTED',
+    'all': undefined
+  };
+  
   const { disputesQuery } = useBillingOperations({
     disputes: {
       page: 1,
       pageSize: 10,
-      status: activeTab !== 'all' ? activeTab.toUpperCase() : undefined
+      status: tabToStatusMap[activeTab]
     }
   });
 
   const { data: disputes, refetch, isLoading } = disputesQuery;
+
+  // Refetch data when tab changes
+  useEffect(() => {
+    refetch();
+  }, [activeTab, refetch]);
 
   const handleOpenUploadModal = () => {
     openModal('weight-dispute-csv');
@@ -30,7 +45,7 @@ export default function WeightDisputesPage() {
 
   const handleExport = async () => {
     try {
-      const response = await fetch(`/api/billing/disputes/export?status=${activeTab !== 'all' ? activeTab.toUpperCase() : ''}`, {
+      const response = await fetch(`/api/billing/disputes/export?status=${tabToStatusMap[activeTab] || ''}`, {
         method: 'GET',
       });
       
@@ -124,7 +139,7 @@ export default function WeightDisputesPage() {
             <TabsTrigger value="all">All</TabsTrigger>
           </TabsList>
 
-          {/* Controls */}
+      {/* Controls */}
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => refetch()}>
               <RefreshCw className="mr-2 h-4 w-4" />
@@ -146,19 +161,19 @@ export default function WeightDisputesPage() {
         </div>
 
         <TabsContent value="pending" className="mt-6">
-          <WeightDisputesTable userRole="ADMIN" status="PENDING" />
+          <WeightDisputesTable userRole="ADMIN" status={tabToStatusMap[activeTab]} />
         </TabsContent>
         <TabsContent value="raised_by_seller" className="mt-6">
-          <WeightDisputesTable userRole="ADMIN" status="RAISED_BY_SELLER" />
+          <WeightDisputesTable userRole="ADMIN" status={tabToStatusMap[activeTab]} />
         </TabsContent>
         <TabsContent value="resolved" className="mt-6">
-          <WeightDisputesTable userRole="ADMIN" status="RESOLVED" />
+          <WeightDisputesTable userRole="ADMIN" status={tabToStatusMap[activeTab]} />
         </TabsContent>
         <TabsContent value="rejected" className="mt-6">
-          <WeightDisputesTable userRole="ADMIN" status="REJECTED" />
+          <WeightDisputesTable userRole="ADMIN" status={tabToStatusMap[activeTab]} />
         </TabsContent>
         <TabsContent value="all" className="mt-6">
-          <WeightDisputesTable userRole="ADMIN" />
+          <WeightDisputesTable userRole="ADMIN" status={tabToStatusMap[activeTab]} />
         </TabsContent>
       </Tabs>
     </div>

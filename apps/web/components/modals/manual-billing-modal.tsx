@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Calculator, Calendar, FileText, AlertTriangle, Users, Package } from 'lucide-react';
+import { Calculator, Calendar as CalendarIcon, FileText, AlertTriangle, Users, Package } from 'lucide-react';
+import { Calendar } from '@lorrigo/ui/components';
 import {
   Modal,
   Button,
   Input,
   Label,
   Textarea,
-  DatePicker,
   Select,
   SelectContent,
   SelectItem,
@@ -29,6 +29,9 @@ import {
   Separator,
   Checkbox,
   toast,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from '@lorrigo/ui/components';
 import { useBillingOperations, type ManualBillingParams } from '@/lib/apis/billing';
 import { CopyBtn } from '@/components/copy-btn';
@@ -155,7 +158,7 @@ export function ManualBillingModal({
         params,
       });
 
-      toast.success(`Manual billing processed successfully! ${result.processedCount} orders processed.`);
+      toast.success(`Manual billing processed successfully! ${result.data.length} orders processed.`);
       onBillingProcessed?.();
       onClose();
     } catch (error) {
@@ -239,7 +242,7 @@ export function ManualBillingModal({
                 <Tabs value={selectedTab} onValueChange={(value: any) => setSelectedTab(value)}>
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="dateRange" className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
+                      <CalendarIcon className="h-4 w-4" />
                       Date Range
                     </TabsTrigger>
                     <TabsTrigger value="awbs" className="flex items-center gap-2">
@@ -252,19 +255,63 @@ export function ManualBillingModal({
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="start-date">Start Date</Label>
-                        <DatePicker
-                          date={dateRange.from}
-                          onSelect={(date) => setDateRange(prev => ({ ...prev, from: date }))}
-                          placeholder="Select start date"
-                        />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={`w-full pl-3 text-left font-normal ${!dateRange.from && 'text-muted-foreground'}`}
+                            >
+                              {dateRange.from ? (
+                                dateRange.from.toLocaleDateString()
+                              ) : (
+                                <span>Select start date</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={dateRange.from}
+                              onSelect={(date) => {
+                                if (date instanceof Date || date === undefined) {
+                                  setDateRange(prev => ({ ...prev, from: date }));
+                                }
+                              }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
                       <div>
                         <Label htmlFor="end-date">End Date</Label>
-                        <DatePicker
-                          date={dateRange.to}
-                          onSelect={(date) => setDateRange(prev => ({ ...prev, to: date }))}
-                          placeholder="Select end date"
-                        />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={`w-full pl-3 text-left font-normal ${!dateRange.to && 'text-muted-foreground'}`}
+                            >
+                              {dateRange.to ? (
+                                dateRange.to.toLocaleDateString()
+                              ) : (
+                                <span>Select end date</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={dateRange.to}
+                              onSelect={(date) => {
+                                if (date instanceof Date || date === undefined) {
+                                  setDateRange(prev => ({ ...prev, to: date }));
+                                }
+                              }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </div>
                     <Alert>
@@ -358,7 +405,7 @@ Example:
                   <Checkbox
                     id="confirm-processing"
                     checked={confirmProcessing}
-                    onCheckedChange={setConfirmProcessing}
+                    onCheckedChange={(checked: boolean) => setConfirmProcessing(checked)}
                   />
                   <div className="grid gap-1.5 leading-none">
                     <Label

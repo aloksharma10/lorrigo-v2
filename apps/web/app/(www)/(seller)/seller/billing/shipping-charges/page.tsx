@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { RefreshCw, Calendar, Calculator, Package, AlertCircle } from 'lucide-react';
+import { useState } from 'react';
+import { RefreshCw, Upload, Calendar } from 'lucide-react';
 import {
   Badge,
   Button,
@@ -22,111 +22,124 @@ import {
   CardTitle,
 } from '@lorrigo/ui/components';
 import { useBillingOperations } from '@/lib/apis/billing';
-import { UserBillingDetailTable } from '@/components/tables/billing/user-billing-detail-table';
+import { AdminBillingSummaryTable } from '@/components/tables/billing/admin-billing-summary-table';
+import { AdminBillingDetailTable } from '@/components/tables/billing/admin-billing-detail-table';
+import { Calculator, Users, TrendingUp, DollarSign } from 'lucide-react';
 import { currencyFormatter } from '@lorrigo/utils';
+import { useModalStore } from '@/modal/modal-store';
 
-export default function SellerBillingShippingChargesPage() {
+export default function AdminBillingShippingChargesPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>('');
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [selectedUserName, setSelectedUserName] = useState<string>('');
+  const [expandedSection, setExpandedSection] = useState<string>('summary');
 
-  // Use the new billing operations hook
-  const { getAvailableBillingMonthsQuery, getCurrentUserBillingQuery } = useBillingOperations();
+  // Use the billing operations hook
+  const { 
+    billingCyclesQuery, 
+    getBillingSummaryByMonthQuery, 
+    uploadWeightDisputeCSV 
+  } = useBillingOperations({
+    billingCycles: {
+      page: 1,
+      pageSize: 100,
+    }
+  });
 
   // API hooks using the new pattern
-  const { data: availableMonths, isLoading: monthsLoading } = getAvailableBillingMonthsQuery();
-  const {
-    data: billingData,
-    isLoading: billingLoading,
-    refetch,
-  } = getCurrentUserBillingQuery(selectedMonth);
+  const { data: billingCycles, isLoading: cyclesLoading } = billingCyclesQuery;
+  
+  // Get unique billing months from cycles
+  const availableMonths = billingCycles?.data
+    ? [...new Set(billingCycles.data.map(cycle => 
+        new Date(cycle.cycle_start_date).toISOString().slice(0, 7)
+      ))]
+    : [];
+
+  // Default to current month if no months available
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  
+  // Get billing summary for selected month
+  const { data: billingSummary, isLoading: summaryLoading, refetch } = 
+    getBillingSummaryByMonthQuery(selectedMonth || currentMonth);
 
   // Set default month if not selected
-  useEffect(() => {
-    if (!selectedMonth && availableMonths && availableMonths.length > 0 && availableMonths[0]) {
-      setSelectedMonth(availableMonths[0]);
+  if (!selectedMonth && availableMonths.length > 0) {
+    // Ensure we have a string value
+    const defaultMonth = availableMonths[0];
+    if (defaultMonth) {
+      setSelectedMonth(defaultMonth);
+    } else {
+      setSelectedMonth(currentMonth);
     }
-  }, [availableMonths, selectedMonth]);
+  }
+
+  const handleUserSelect = (userId: string, userName: string) => {
+    setSelectedUserId(userId);
+    setSelectedUserName(userName);
+    setExpandedSection('user-details');
+  };
+
+  const { openModal } = useModalStore();
+
+  const handleOpenCSVModal = () => {
+    openModal('weight-dispute-csv');
+  };
+
+  const handleOpenBillingCycleModal = () => {
+    openModal('billing-cycle', {});
+  };
 
   // Summary cards
-  const summaryCards = useMemo(() => {
-    if (!billingData) {
-      return [
-        {
-          title: 'Total Orders',
-          value: 0,
-          icon: Package,
-          description: 'Billing records for the month',
-        },
-        {
-          title: 'Total Billing Amount',
-          value: '₹0',
-          icon: Calculator,
-          description: 'Total charges for the month',
-        },
-        {
-          title: 'Pending Payment',
-          value: '₹0',
-          icon: AlertCircle,
-          description: 'Amount pending payment',
-          textColor: 'text-orange-600',
-        },
-        {
-          title: 'Paid Amount',
-          value: '₹0',
-          icon: Calculator,
-          description: 'Amount already paid',
-          textColor: 'text-green-600',
-        },
-      ];
-    }
-
-    return [
-      {
-        title: 'Total Orders',
-        value: billingData.summary?.total_orders || 0,
-        icon: Package,
-        description: 'Billing records for the month',
-      },
-      {
-        title: 'Total Billing Amount',
-        value: currencyFormatter(billingData.summary?.total_billing_amount || 0),
-        icon: Calculator,
-        description: 'Total charges for the month',
-      },
-      {
-        title: 'Pending Payment',
-        value: currencyFormatter(billingData.summary?.pending_amount || 0),
-        icon: AlertCircle,
-        description: 'Amount pending payment',
-        textColor: 'text-orange-600',
-      },
-      {
-        title: 'Paid Amount',
-        value: currencyFormatter(billingData.summary?.paid_amount || 0),
-        icon: Calculator,
-        description: 'Amount already paid',
-        textColor: 'text-green-600',
-      },
-    ];
-  }, [billingData]);
+  const summaryCards = [
+    {
+      title: 'Total Users',
+      value: billingSummary?.users?.length || 0,
+      icon: Users,
+      description: 'Users with billing records',
+    },
+    {
+      title: 'Total Billing Amount',
+      value: currencyFormatter(billingSummary?.total_amount || 0),
+      icon: DollarSign,
+      description: 'Total billing for the month',
+    },
+    {
+      title: 'Total Orders',
+      value: billingSummary?.total_orders || 0,
+      icon: Calculator,
+      description: 'Total billed orders',
+    },
+    {
+      title: 'Average per User',
+      value: billingSummary?.users?.length
+        ? currencyFormatter((billingSummary.total_amount || 0) / billingSummary.users.length)
+        : currencyFormatter(0),
+      icon: TrendingUp,
+      description: 'Average billing per user',
+    },
+  ];
 
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Shipping Charges</h1>
-          <p className="text-muted-foreground">View your billing charges and payment status</p>
+          <h1 className="text-3xl font-bold tracking-tight">Billing Management</h1>
+          <p className="text-muted-foreground">
+            Manage billing charges and view user billing summaries
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="px-3 py-1">
-            Seller Dashboard
+            Admin Portal
           </Badge>
         </div>
       </div>
 
       {/* Controls */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
           <div className="flex items-center gap-2">
             <label htmlFor="month-select" className="text-sm font-medium">
               Billing Month:
@@ -136,8 +149,8 @@ export default function SellerBillingShippingChargesPage() {
                 <SelectValue placeholder="Select month" />
               </SelectTrigger>
               <SelectContent>
-                {availableMonths?.map((month) => (
-                  <SelectItem key={month} value={month}>
+                {availableMonths.map((month, i) => (
+                  <SelectItem key={i} value={month}>
                     {new Date(month + '-01').toLocaleDateString('en-US', {
                       year: 'numeric',
                       month: 'long',
@@ -153,26 +166,45 @@ export default function SellerBillingShippingChargesPage() {
             Refresh
           </Button>
         </div>
+
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="default" 
+            size="sm" 
+            className="gap-2"
+            onClick={handleOpenCSVModal}
+          >
+            <Upload className="h-4 w-4" /> Upload Billing CSV
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={handleOpenBillingCycleModal}
+          >
+            <Calendar className="h-4 w-4" /> Manage Billing Cycles
+          </Button>
+        </div>
       </div>
 
       {/* Loading State */}
-      {(monthsLoading || billingLoading) && (
+      {(cyclesLoading || summaryLoading) && (
         <Alert>
           <AlertDescription>Loading billing data...</AlertDescription>
         </Alert>
       )}
 
       {/* No Month Selected */}
-      {!monthsLoading && !selectedMonth && (
+      {!cyclesLoading && !selectedMonth && (
         <Alert>
           <AlertDescription>
-            No billing data available. Billing records will appear here once they are processed.
+            No billing months available. Upload billing data to get started.
           </AlertDescription>
         </Alert>
       )}
 
       {/* Summary Cards */}
-      {selectedMonth && billingData && (
+      {selectedMonth && billingSummary && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {summaryCards.map((card, index) => (
             <Card key={index}>
@@ -181,7 +213,7 @@ export default function SellerBillingShippingChargesPage() {
                 <card.icon className="text-muted-foreground h-4 w-4" />
               </CardHeader>
               <CardContent>
-                <div className={`text-2xl font-bold ${card.textColor || ''}`}>{card.value}</div>
+                <div className="text-2xl font-bold">{card.value}</div>
                 <p className="text-muted-foreground text-xs">{card.description}</p>
               </CardContent>
             </Card>
@@ -189,27 +221,66 @@ export default function SellerBillingShippingChargesPage() {
         </div>
       )}
 
-      {/* Billing Details */}
+      {/* Content */}
       {selectedMonth && (
-        <Accordion type="single" defaultValue="billing-details" className="w-full">
-          <AccordionItem value="billing-details">
+        <Accordion
+          type="single"
+          value={expandedSection}
+          onValueChange={setExpandedSection}
+          className="w-full"
+        >
+          {/* Billing Summary */}
+          <AccordionItem value="summary">
             <AccordionTrigger className="text-lg font-semibold">
-              Billing Details for{' '}
+              Billing Summary for{' '}
               {new Date(selectedMonth + '-01').toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'long',
               })}{' '}
               ({new Date(selectedMonth + '-01').toLocaleDateString('en-US', { weekday: 'long' })})
-              {billingData && (
+              {billingSummary && (
                 <span className="text-muted-foreground ml-2 text-sm font-normal">
-                  ({billingData.summary?.total_orders || 0} orders)
+                  ({billingSummary.total_orders} orders, {currencyFormatter(billingSummary.total_amount)})
                 </span>
               )}
             </AccordionTrigger>
             <AccordionContent>
-              <UserBillingDetailTable month={selectedMonth} />
+              <AdminBillingSummaryTable 
+                month={selectedMonth} 
+                onUserSelect={handleUserSelect}
+                onManualBilling={(userId, userName) => {
+                  // Use billing-cycle modal with manual billing option for now
+                  openModal('billing-cycle', { userId, userName });
+                }}
+                onBillingCycle={(userId, userName) => {
+                  openModal('billing-cycle', { userId, userName });
+                }}
+              />
             </AccordionContent>
           </AccordionItem>
+
+          {/* User Details */}
+          {selectedUserId && (
+            <AccordionItem value="user-details">
+              <AccordionTrigger className="text-lg font-semibold">
+                User Billing Details: {selectedUserName}
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedUserId('');
+                    setSelectedUserName('');
+                    setExpandedSection('summary');
+                  }}
+                  className="ml-2"
+                >
+                  Close
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <AdminBillingDetailTable userId={selectedUserId} month={selectedMonth} />
+              </AccordionContent>
+            </AccordionItem>
+          )}
         </Accordion>
       )}
     </div>

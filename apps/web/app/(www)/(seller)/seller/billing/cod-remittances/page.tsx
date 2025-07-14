@@ -1,5 +1,4 @@
 import CODRemittanceTab from '@/components/tables/billing/cod-remittance-tab';
-import ShippingChargesTab from '@/components/tables/billing/shipping-charges-tab';
 
 interface PageProps {
   params: Promise<{
@@ -45,5 +44,5 @@ export default async function CODRemittancesPage({ searchParams }: PageProps) {
     //  status: "",
   };
 
-  return <div className="space-y-4 px-4 pt-4">{/* <CODRemittanceTab  /> */}</div>;
+  return <div className="space-y-4 px-4 pt-4"><CODRemittanceTab /></div>;
 }

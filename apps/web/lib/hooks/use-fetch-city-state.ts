@@ -22,7 +22,7 @@ const useFetchCityState = (pincode?: string) => {
         return cacheRef.current.get(pincode)!;
       }
 
-      const response = await getPincode(Number(pincode));
+      const response = await getPincode(pincode);
       if (!response) throw new Error('No data found for pincode');
       cacheRef.current.set(pincode, response);
       return response;

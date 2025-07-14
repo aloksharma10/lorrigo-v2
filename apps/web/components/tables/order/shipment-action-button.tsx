@@ -238,7 +238,7 @@ export const ShipmentActionButton: React.FC<ShipmentActionButtonProps> = ({ ship
 
   // RTO and other statuses
   if (
-    [ShipmentBucket.RTO, ShipmentBucket.RTO_DELIVERED, ShipmentBucket.EXCEPTION].includes(
+    [ShipmentBucket.RTO_INITIATED, ShipmentBucket.RTO_IN_TRANSIT, ShipmentBucket.RTO_DELIVERED, ShipmentBucket.EXCEPTION].includes(
       shipmentBucket
     )
   ) {

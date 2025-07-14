@@ -7,11 +7,23 @@ import Link from 'next/link';
 import { useBillingOperations } from '@/lib/apis/billing';
 
 export default function AdminBillingPage() {
-  const { walletBalanceQuery, billingCyclesQuery, disputesQuery } = useBillingOperations();
+  const { billingCyclesQuery, disputesQuery } = useBillingOperations({
+    billingCycles: {
+      page: 1,
+      pageSize: 10,
+    },
+    disputes: {
+      page: 1,
+      pageSize: 10,
+    },
+  });
+
+  const billingCycles = billingCyclesQuery.data?.data || [];
+  const disputes = disputesQuery.data?.data || [];
   
   // Get counts from queries
-  const pendingDisputesCount = disputesQuery.data?.data.filter(d => d.status === 'PENDING').length || 0;
-  const activeCyclesCount = billingCyclesQuery.data?.data.filter(c => c.status === 'ACTIVE').length || 0;
+  const pendingDisputesCount = disputes.filter(d => d.status === 'PENDING').length || 0;
+  const activeCyclesCount = billingCycles.filter(c => c.status === 'ACTIVE').length || 0;
   
   return (
     <div className="p-6 space-y-6">

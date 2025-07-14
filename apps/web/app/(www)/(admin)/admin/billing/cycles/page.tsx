@@ -17,8 +17,10 @@ export default function AdminBillingCyclesPage() {
   const router = useRouter();
 
   const { billingCyclesQuery } = useBillingOperations({
-    page: currentPage,
-    limit: pageSize,
+    billingCycles: {
+      page: currentPage,
+      pageSize: pageSize,
+    },
   });
 
   const billingCycles = billingCyclesQuery?.data?.data || [];
