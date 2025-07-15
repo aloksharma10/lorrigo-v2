@@ -2,6 +2,7 @@ import { addDays, startOfDay, isAfter, format, parseISO } from 'date-fns';
 import { exportData } from '@/utils/exportData';
 import { FastifyInstance } from 'fastify';
 import { Role } from '@lorrigo/db';
+import { ShipmentBucket } from '@lorrigo/utils';
 
 export class RemittanceService {
   constructor(private fastify: FastifyInstance) {}
@@ -13,8 +14,8 @@ export class RemittanceService {
     console.log('Starting daily remittance calculation...');
     try {
       const users = await this.fastify.prisma.user.findMany({
-        where: { is_active: true, role: "SELLER" },
-        include: { profile: true, wallet: true, UserBankAccount: true },
+        where: { is_active: true,  },
+        include: { profile: true, wallet: true, user_bank_accounts: true },
       });
       console.log(`Found ${users.length} active users`);
       for (const user of users) {
@@ -35,24 +36,14 @@ export class RemittanceService {
    * Process remittance for a single user
    */
   private async processUserRemittance(user: any) {
-    if (!user.UserBankAccount || user.UserBankAccount.length === 0) {
-      console.log(`User ${user.id} has no bank accounts`);
-      return;
-    }
-    if (user.UserBankAccount.length > 10) {
+    // Allow remittance calculation even if user has no bank account
+    if (user.user_bank_accounts && user.user_bank_accounts.length > 10) {
       console.log(`User ${user.id} has more than 10 bank accounts, skipping`);
       return;
     }
-    const eligibleBankAccounts = user.UserBankAccount.filter((acc: any) => this.isBankAccountEligible(acc));
-    if (eligibleBankAccounts.length === 0) {
-      console.log(`User ${user.id} has no eligible bank accounts`);
-      return;
-    }
-    const selectedBankAccount = eligibleBankAccounts.find((acc: any) => acc.is_selected_for_remittance) || eligibleBankAccounts[eligibleBankAccounts.length - 1];
-    if (!selectedBankAccount) {
-      console.log(`User ${user.id} has no selected bank account`);
-      return;
-    }
+    const eligibleBankAccounts = user.user_bank_accounts ? user.user_bank_accounts.filter((acc: any) => this.isBankAccountEligible(acc)) : [];
+    // Select eligible bank account if available, else null
+    const selectedBankAccount = eligibleBankAccounts.find((acc: any) => acc.is_selected_for_remittance) || eligibleBankAccounts[eligibleBankAccounts.length - 1] || null;
     const remittanceDelay = user.profile?.remittance_days_after_delivery || 7;
     const remittanceDays = user.profile?.remittance_days_of_week || [5];
     const minRemittanceAmount = user.profile?.remittance_min_amount || 0;
@@ -105,10 +96,25 @@ export class RemittanceService {
       where: {
         user_id: userId,
         remittanceId: null,
-        shipment: { status: 'DELIVERED', updated_at: { lte: cutoffDate } },
+        shipment: { 
+          status: 'DELIVERED',
+        },
         payment_method: 'COD',
       },
-      include: { shipment: true, billings: true },
+      include: { shipment: {
+        include: { 
+          tracking_events: {
+            where: {
+              bucket: ShipmentBucket.DELIVERED,
+              timestamp: { lte: cutoffDate },
+            },
+            orderBy: {
+              created_at: 'desc',
+            },
+            take: 1,
+          }
+        }
+      }, billings: true },
     });
   }
 
@@ -118,7 +124,7 @@ export class RemittanceService {
   private groupOrdersByRemittanceDate(orders: any[], remittanceDelay: number, remittanceDays: number[]) {
     const ordersGroupedByDate: Record<string, any[]> = {};
     for (const order of orders) {
-      const deliveryDate = order.shipment?.updated_at;
+      const deliveryDate = order.shipment?.tracking_events[0]?.timestamp;
       if (!deliveryDate) continue;
       const cutoffDate = addDays(deliveryDate, remittanceDelay + 1);
       const remittanceDate = this.findNearestRemittanceDay(cutoffDate, remittanceDays);
@@ -135,7 +141,6 @@ export class RemittanceService {
    * Find the nearest remittance day
    */
   private findNearestRemittanceDay(date: Date, remittanceDays: number[]): Date {
-    const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     let currentDate = startOfDay(date);
     let attempts = 0;
     while (attempts < 7) {
@@ -157,43 +162,30 @@ export class RemittanceService {
    */
   private async calculateRemittanceAmount(orders: any[], earlyRemittanceChargeRate: number) {
     let totalAmount = 0;
-    let totalCharges = 0;
     const orderDetails = [];
     for (const order of orders) {
       let orderAmount = 0;
-      let orderCharges = 0;
       if (order.payment_method === 'COD' && order.amount_to_collect) {
         orderAmount += order.amount_to_collect;
       }
-      if (order.billings && order.billings.length > 0) {
-        for (const billing of order.billings) {
-          orderCharges += billing.fw_excess_charge || 0;
-          orderCharges += billing.rto_excess_charge || 0;
-          orderCharges += billing.zone_change_charge || 0;
-          orderCharges += billing.cod_charge || 0;
-          orderCharges += billing.fw_charge || 0;
-          orderCharges += billing.rto_charge || 0;
-        }
-      }
-      const netOrderAmount = orderAmount - orderCharges;
+      const netOrderAmount = orderAmount;
       orderDetails.push({
         orderId: order.id,
         orderAmount,
-        orderCharges,
         netAmount: netOrderAmount,
       });
       totalAmount += orderAmount;
-      totalCharges += orderCharges;
     }
     const earlyRemittanceCharge = totalAmount * (earlyRemittanceChargeRate / 100);
-    const netAmount = totalAmount - totalCharges - earlyRemittanceCharge;
-    return { totalAmount, totalCharges, earlyRemittanceCharge, netAmount, orderDetails };
+    const netAmount = totalAmount - earlyRemittanceCharge;
+    return { totalAmount, earlyRemittanceCharge, netAmount, orderDetails };
   }
 
   /**
    * Create remittance record and update wallet
    */
   private async createRemittanceRecord(user: any, bankAccount: any, orders: any[], calculation: any, remittanceDate: Date) {
+    console.log('Creating remittance record for user', user.id, 'with amount', calculation.netAmount);
     return await this.fastify.prisma.$transaction(async (tx) => {
       const remittance = await tx.remittance.create({
         data: {
@@ -208,8 +200,13 @@ export class RemittanceService {
           wallet_transfer_amount: calculation.totalCharges,
           early_remittance_charge: calculation.earlyRemittanceCharge,
           final_payout_amount: calculation.netAmount,
-          user_id: user.id,
-          bank_account_id: bankAccount.id,
+          // user_id: user.id,
+          user: { 
+            connect: { id: user.id },
+          },  
+          // bank_account: {
+          //   connect: { id: bankAccount ? bankAccount.id : null },
+          // },
           created_by: 'system',
           processing_details: {
             totalAmount: calculation.totalAmount,
@@ -224,24 +221,33 @@ export class RemittanceService {
         where: { id: { in: orders.map((o) => o.id) } },
         data: { remittanceId: remittance.id },
       });
-      if (user.wallet) {
-        const walletBalanceBefore = user.wallet.balance;
-        const walletBalanceAfter = walletBalanceBefore + calculation.netAmount;
-        await tx.userWallet.update({
-          where: { id: user.wallet.id },
-          data: {
-            balance: walletBalanceAfter,
-            usable_amount: walletBalanceAfter - user.wallet.hold_amount,
-          },
-        });
-        await tx.remittance.update({
-          where: { id: remittance.id },
-          data: {
-            wallet_balance_before: walletBalanceBefore,
-            wallet_balance_after: walletBalanceAfter,
-          },
-        });
-      }
+
+      await tx.userWallet.update({
+        where: { id: user.wallet.id },
+        data: {
+          available_amount: { increment: calculation.netAmount },
+        },
+      });
+
+      // [ 16 Jul 2025 ]: Will be used later: when @nishant (owner) wants to add wallet balance to remittance
+      // if (user.wallet) {
+      //   const walletBalanceBefore = user.wallet.balance;
+      //   const walletBalanceAfter = walletBalanceBefore + calculation.netAmount;
+      //   await tx.userWallet.update({
+      //     where: { id: user.wallet.id },
+      //     data: {
+      //       balance: walletBalanceAfter,
+      //       usable_amount: walletBalanceAfter - user.wallet.hold_amount,
+      //     },
+      //   });
+      //   await tx.remittance.update({
+      //     where: { id: remittance.id },
+      //     data: {
+      //       wallet_balance_before: walletBalanceBefore,
+      //       wallet_balance_after: walletBalanceAfter,
+      //     },
+      //   });
+      // }
       console.log(`Created remittance ${remittance.code} for user ${user.id} with amount ${calculation.netAmount}`);
       return remittance;
     });
@@ -281,24 +287,33 @@ export class RemittanceService {
         where: { id: { in: orders.map((o) => o.id) } },
         data: { remittanceId: remittance.id },
       });
-      if (user.wallet) {
-        const walletBalanceBefore = user.wallet.balance;
-        const walletBalanceAfter = walletBalanceBefore + calculation.netAmount;
-        await tx.userWallet.update({
-          where: { id: user.wallet.id },
-          data: {
-            balance: walletBalanceAfter,
-            usable_amount: walletBalanceAfter - user.wallet.hold_amount,
-          },
-        });
-        await tx.remittance.update({
-          where: { id: remittance.id },
-          data: {
-            wallet_balance_before: walletBalanceBefore,
-            wallet_balance_after: walletBalanceAfter,
-          },
-        });
-      }
+
+      await tx.userWallet.update({
+        where: { id: user.wallet.id },
+        data: {
+          available_amount: { increment: calculation.netAmount },
+        },
+      });
+
+      // [ 16 Jul 2025 ]: Will be used later: when @nishant (owner) wants to add wallet balance to remittance
+      // if (user.wallet) {
+      //   const walletBalanceBefore = user.wallet.balance;
+      //   const walletBalanceAfter = walletBalanceBefore + calculation.netAmount;
+      //   await tx.userWallet.update({
+      //     where: { id: user.wallet.id },
+      //     data: {
+      //       balance: walletBalanceAfter,
+      //       usable_amount: walletBalanceAfter - user.wallet.hold_amount,
+      //     },
+      //   });
+      //   await tx.remittance.update({
+      //     where: { id: remittance.id },
+      //     data: {
+      //       wallet_balance_before: walletBalanceBefore,
+      //       wallet_balance_after: walletBalanceAfter,
+      //     },
+      //   });
+      // }
       console.log(`Updated remittance ${remittance.code} for user ${user.id} with amount ${updatedAmount}`);
       return updatedRemittance;
     });
@@ -418,7 +433,7 @@ export class RemittanceService {
           user: { select: { id: true, name: true, email: true } },
         },
         skip,
-        take: limit,
+        take: parseInt(limit),
         orderBy: { remittance_date: 'desc' },
       }),
     ]);
@@ -686,5 +701,36 @@ export class RemittanceService {
       'remittance_id', 'remittance_code', 'id', 'code', 'order_number', 'total_amount', 'amount_to_collect', 'payment_method',
     ];
     return exportData(fields, orders, 'csv', `remittance-${id}-${Date.now()}.csv`);
+  }
+
+  /**
+   * Export remittances as XLSX (ADMIN/SUBADMIN)
+   */
+  async exportRemittancesAsXLSX(filters: any) {
+    const { remittanceOrders } = await this.getAllRemittances({ ...filters, page: 1, limit: 10000 });
+    const fields = [
+      'id', 'code', 'transaction_id', 'amount', 'status', 'remittance_date', 'orders_count', 'user_id', 'bank_account_id',
+      'user.name', 'user.email',
+    ];
+    return exportData(fields, remittanceOrders, 'xlsx', `remittances-${Date.now()}.xlsx`);
+  }
+
+  /**
+   * Export remittance detail as XLSX (ADMIN/SUBADMIN)
+   */
+  async exportRemittanceDetailAsXLSX(id: string) {
+    const { remittanceOrder } = await this.getRemittanceById(id, '', Role.ADMIN);
+    if (!remittanceOrder) {
+      return { csvBuffer: Buffer.from('', 'utf-8'), filename: `remittance-${id}.xlsx` };
+    }
+    const orders = (remittanceOrder.orders || []).map((order: any) => ({
+      remittance_id: remittanceOrder.id,
+      remittance_code: remittanceOrder.code,
+      ...order,
+    }));
+    const fields = [
+      'remittance_id', 'remittance_code', 'id', 'code', 'order_number', 'total_amount', 'amount_to_collect', 'payment_method',
+    ];
+    return exportData(fields, orders, 'xlsx', `remittance-${id}-${Date.now()}.xlsx`);
   }
 }

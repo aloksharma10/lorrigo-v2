@@ -195,14 +195,15 @@ export function initShipmentQueue(fastify: FastifyInstance, shipmentService: Shi
 
       try {
         switch (job.name) {
-          case JobType.TRACK_SHIPMENTS:
-            const { batchSize, config } = job.data as TrackingJobData;
-            return await processShipmentTracking(
-              fastify,
-              shipmentService,
-              { batchSize: batchSize || 50, ...config },
-              job // Pass the job as the fourth argument
-            );
+          // case JobType.TRACK_SHIPMENTS:
+          //   const { batchSize, config } = job.data as TrackingJobData;
+            // return await processShipmentTracking(
+            //   fastify,
+            //   shipmentService,
+            //   { batchSize: batchSize || 50, ...config },
+            //   job // Pass the job as the fourth argument
+            // );
+            // return processOptimizedBulkStatusUpdates(fastify);
 
           case JobType.RETRY_TRACK_SHIPMENT:
             const { shipmentId } = job.data as TrackingJobData;
@@ -287,11 +288,11 @@ export function initShipmentQueue(fastify: FastifyInstance, shipmentService: Shi
   });
 
   bulkOperationWorker.on('failed', (job, err) => {
-    fastify.log.error(`Bulk operation job ${job?.id} failed with error: ${err.message}`);
+    fastify.log.error(`Bulk operation job ${job?.id} failed with error:`, err instanceof Error ? err.stack || err.message : JSON.stringify(err));
   });
 
   bulkOperationWorker.on('error', (err) => {
-    fastify.log.error(`Bulk operation worker error: ${err.message}`);
+    fastify.log.error('Bulk operation worker error:', err instanceof Error ? err.stack || err.message : JSON.stringify(err));
   });
 
   // Log tracking worker events

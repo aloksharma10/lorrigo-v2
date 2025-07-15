@@ -14,7 +14,7 @@ export const useWalletOperations = () => {
   const getWalletBalance = useQuery({
     queryKey: ['wallet', 'balance'],
     queryFn: async () => {
-      const response = await api.get<{ balance: number, hold_amount: number, usable_amount: number }>('/transactions/wallet/balance');
+      const response = await api.get<{ balance: number, hold_amount: number, usable_amount: number, max_negative_amount: number, available_amount: number, can_create_shipment: boolean }>('/transactions/wallet/balance');
       return response;
     },
     enabled: status === 'authenticated' && isTokenReady,

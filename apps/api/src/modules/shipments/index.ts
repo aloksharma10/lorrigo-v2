@@ -15,17 +15,17 @@ import { addJob, QueueNames, addRecurringJob } from '@/lib/queue';
 async function setupOptimizedTrackingCron(fastify: FastifyInstance) {
   try {
     // Main tracking updates every 10 minutes
-    await addRecurringJob(
-      QueueNames.SHIPMENT_TRACKING,
-      JobType.PROCESS_BULK_STATUS_UPDATES,
-      { runDate: new Date().toISOString() },
-      '*/10 * * * *', // Every 10 minutes
-      {
-        priority: 1,
-        attempts: 3,
-        jobId: 'tracking-updates-cron',
-      }
-    );
+    // await addRecurringJob(
+    //   QueueNames.SHIPMENT_TRACKING,
+    //   JobType.PROCESS_BULK_STATUS_UPDATES,
+    //   { runDate: new Date().toISOString() },
+    //   '*/10 * * * *', // Every 10 minutes
+    //   {
+    //     priority: 1,
+    //     attempts: 3,
+    //     jobId: 'tracking-updates-cron',
+    //   }
+    // );
 
     // RTO charges processing every 30 minutes
     await addRecurringJob(

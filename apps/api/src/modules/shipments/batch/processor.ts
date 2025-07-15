@@ -160,42 +160,40 @@ export async function processBulkShipmentTracking(
       };
     } | null;
   }>
-): Promise<{ 
-  processed: number; 
-  updated: number; 
-  rtoProcessed: number; 
-  errors: Array<{ shipmentId: string; error: string }> 
+): Promise<{
+  processed: number;
+  updated: number;
+  rtoProcessed: number;
+  errors: Array<{ shipmentId: string; error: string }>;
 }> {
   const result = {
     processed: 0,
     updated: 0,
     rtoProcessed: 0,
-    errors: [] as Array<{ shipmentId: string; error: string }>
+    errors: [] as Array<{ shipmentId: string; error: string }>,
   };
 
   if (shipments.length === 0) {
     return result;
   }
 
+  const trackingEvents: any[] = [];
+
   try {
-    // Create concurrency limiter to avoid overwhelming external APIs
-    const limit = pLimit(5); // Process 5 shipments concurrently
-    
-    // Process shipments in parallel with concurrency control
-    const trackingPromises = shipments.map(shipment => 
+    const limit = pLimit(5);
+    const trackingPromises = shipments.map((shipment) =>
       limit(async () => {
         try {
           result.processed++;
-          
+
           if (!shipment.awb || !shipment.courier?.channel_config?.name) {
-            result.errors.push({ 
-              shipmentId: shipment.id, 
-              error: 'Missing AWB or courier configuration' 
+            result.errors.push({
+              shipmentId: shipment.id,
+              error: 'Missing AWB or courier configuration',
             });
             return;
           }
 
-          // Use the real trackShipment function to get tracking data
           const trackingResult = await shipmentService.trackShipment(
             shipment.id,
             shipment.courier.channel_config.name,
@@ -205,34 +203,49 @@ export async function processBulkShipmentTracking(
 
           if (trackingResult.success && trackingResult.updated) {
             result.updated++;
-            
-            // Check if this is an RTO shipment that needs charge processing
+            // Collect tracking events for batch DB write
+            if (Array.isArray(trackingResult.events)) {
+              trackingEvents.push({shipment_id: shipment.id, events: trackingResult.events});
+            }
             if (trackingResult.newStatus && isRtoStatus(trackingResult.newStatus)) {
               result.rtoProcessed++;
             }
           } else if (!trackingResult.success) {
-            result.errors.push({ 
-              shipmentId: shipment.id, 
-              error: trackingResult.message 
+            result.errors.push({
+              shipmentId: shipment.id,
+              error: trackingResult.message,
             });
           }
         } catch (error) {
-          result.errors.push({ 
-            shipmentId: shipment.id, 
-            error: error instanceof Error ? error.message : 'Unknown error' 
+          result.errors.push({
+            shipmentId: shipment.id,
+            error: error instanceof Error ? error.message : 'Unknown error',
           });
         }
       })
     );
 
-    // Wait for all tracking operations to complete
     await Promise.all(trackingPromises);
 
-    fastify.log.info(`Bulk tracking completed: ${result.updated}/${result.processed} shipments updated`);
+    // Push all tracking events to Redis queue for batch DB write
+    if (trackingEvents.length > 0) {
+      const redis = fastify.redis;
+      const eventQueue = 'tracking:events:queue';
+      const eventPayloads = trackingEvents.map((e) => JSON.stringify(e));
+      await redis.rpush(eventQueue, ...eventPayloads);
+      fastify.log.info(`Queued ${trackingEvents.length} tracking events to Redis for batch processing.`);
+      // Schedule a job to process the tracking events in bulk
+      await addJob(
+        QueueNames.SHIPMENT_TRACKING,
+        JobType.PROCESS_BULK_TRACKING_EVENTS,
+        {},
+        { priority: 2, delay: 2000 }
+      );
+    }
 
     return result;
   } catch (error) {
-    fastify.log.error(`Error in bulk shipment tracking: ${error}`);
+    fastify.log.error(`Error in bulk shipment tracking: ${error instanceof Error ? error.stack || error.message : JSON.stringify(error)}`);
     throw error;
   }
 }
@@ -477,56 +490,59 @@ export class TrackingProcessor {
     try {
       const eventQueue = 'tracking:events:queue';
       const events = await fastify.redis.lrange(eventQueue, 0, -1);
-
+  
       if (events.length === 0) {
         return 0;
       }
-
-      fastify.log.info(`Processing ${events.length} tracking events`);
-
+  
       // Process events in chunks to avoid overwhelming the database
       const CHUNK_SIZE = 100;
       const chunks = [];
-
+  
       for (let i = 0; i < events.length; i += CHUNK_SIZE) {
         chunks.push(events.slice(i, i + CHUNK_SIZE));
       }
-
+  
       let processedCount = 0;
-
+  
       for (const chunk of chunks) {
         const eventData = chunk
           .map((event) => {
             try {
               const data = JSON.parse(event);
-              return {
+              if (!Array.isArray(data.events)) {
+                fastify.log.error(`Invalid events format for shipment ${data.shipment_id}: expected an array`);
+                return null;
+              }
+              return data.events.map((event: any) => ({
                 shipment_id: data.shipment_id,
-                status: data.status,
-                location: data.location || '',
-                description: data.description || '',
-                timestamp: new Date(data.timestamp),
-                action: data.vendor_name || '',
-              };
+                bucket: event.bucket,
+                status: event.status || '',
+                location: event.location || '',
+                description: event.description || '',
+                timestamp: event.timestamp ? new Date(event.timestamp) : new Date(),
+                action: event.vendor_name || '',
+              }));
             } catch (e) {
-              fastify.log.error('Error parsing tracking event:', e);
+              fastify.log.error(`Error parsing tracking event: ${e}`);
               return null;
             }
           })
-          .filter((item): item is NonNullable<typeof item> => item !== null);
-
+          .flat()
+          .filter((item): item is NonNullable<typeof item> => item !== null && item.timestamp instanceof Date && !isNaN(item.timestamp.getTime()));
+  
         if (eventData.length > 0) {
           await fastify.prisma.trackingEvent.createMany({
             data: eventData,
             skipDuplicates: true,
           });
-
+  
           processedCount += eventData.length;
         }
       }
-
-      // Clear the processed events
+  
       await fastify.redis.del(eventQueue);
-
+  
       fastify.log.info(`Processed ${processedCount} tracking events`);
       return processedCount;
     } catch (error) {

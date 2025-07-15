@@ -177,7 +177,7 @@ model User {
   wallet_recharge_transactions WalletRechargeTransaction[]
   invoices                     Invoice[]
   remittances                  Remittance[]
-  UserBankAccount              UserBankAccount[]
+  user_bank_accounts           UserBankAccount[]
 
   @@index([email])
   @@index([code])
@@ -824,8 +824,8 @@ model Remittance {
   user_id String
   user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
-  bank_account_id String
-  bank_account    UserBankAccount @relation(fields: [bank_account_id], references: [id], onDelete: Restrict)
+  bank_account_id String?
+  bank_account    UserBankAccount? @relation(fields: [bank_account_id], references: [id], onDelete: Restrict)
 
   orders Order[]
 
@@ -1269,8 +1269,8 @@ model UserBankAccount {
 
   remittances   Remittance[]
   // Enforce max 10 accounts per user at application level
-  UserProfile   UserProfile? @relation(fields: [userProfileId], references: [id])
-  userProfileId String?
+  user_profile   UserProfile? @relation(fields: [user_profile_id], references: [id])
+  user_profile_id String?
 
   @@unique([user_id, account_number])
   @@index([user_id])

@@ -659,8 +659,12 @@ export class ShiprocketVendor extends BaseVendor {
             shipment_id: shipmentId,
           };
 
-          await redis.rpush('tracking:events:queue', JSON.stringify(eventData));
-
+          // await redis.rpush('tracking:events:queue', JSON.stringify(eventData));
+          // await addJob(QueueNames.SHIPMENT_TRACKING, JobType.PROCESS_BULK_TRACKING_EVENTS, [eventData], {
+          //   priority: 2, // High priority for NDR processing
+          //   delay: 5000, // 5 second delay to ensure tracking event is processed first
+          // });
+          
           // Queue NDR processing if this is a new NDR status
           if (isNDR && trackingInput.awb) {
             // We'll need to get the order ID from the shipment in the processor

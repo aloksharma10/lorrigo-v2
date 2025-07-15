@@ -700,6 +700,7 @@ export class TransactionService {
       }
       
       return {
+        success: true,
         balance: wallet.balance,
         hold_amount: wallet.hold_amount,
         usable_amount: wallet.usable_amount,

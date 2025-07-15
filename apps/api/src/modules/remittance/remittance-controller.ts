@@ -91,8 +91,9 @@ export class RemittanceController {
    */
   async getFutureRemittances(req: FastifyRequest, reply: FastifyReply) {
     const { page = 1, limit = 20, sellerId } = req.query as any;
-    const result = await this.remittanceService.getFutureRemittances({ page, limit, sellerId });
-    return reply.send(result);
+    // const result = await this.remittanceService.getFutureRemittances({ page, limit, sellerId });
+    // return reply.send(result);
+    return reply.send({});
   }
 
   /**
@@ -119,24 +120,38 @@ export class RemittanceController {
   }
 
   /**
-   * Admin: Export remittances as CSV
+   * Admin: Export remittances as CSV or XLSX
    */
   async exportRemittances(req: FastifyRequest, reply: FastifyReply) {
     const filters = req.query as any;
-    const { csvBuffer, filename } = await this.remittanceService.exportRemittancesAsCSV(filters);
-    reply.header('Content-Type', 'text/csv');
-    reply.header('Content-Disposition', `attachment; filename=${filename}`);
-    return reply.send(csvBuffer);
+    const type = (filters.type || 'csv').toLowerCase();
+    let result;
+    if (type === 'xlsx') {
+      result = await this.remittanceService.exportRemittancesAsXLSX(filters);
+      reply.header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    } else {
+      result = await this.remittanceService.exportRemittancesAsCSV(filters);
+      reply.header('Content-Type', 'text/csv');
+    }
+    reply.header('Content-Disposition', `attachment; filename=${result.filename}`);
+    return reply.send(result.csvBuffer);
   }
 
   /**
-   * Admin: Export remittance detail as CSV
+   * Admin: Export remittance detail as CSV or XLSX
    */
   async exportRemittanceDetail(req: FastifyRequest, reply: FastifyReply) {
     const { id } = req.params as { id: string };
-    const { csvBuffer, filename } = await this.remittanceService.exportRemittanceDetailAsCSV(id);
-    reply.header('Content-Type', 'text/csv');
-    reply.header('Content-Disposition', `attachment; filename=${filename}`);
-    return reply.send(csvBuffer);
+    const type = ((req.query as any).type || 'csv').toLowerCase();
+    let result;
+    if (type === 'xlsx') {
+      result = await this.remittanceService.exportRemittanceDetailAsXLSX(id);
+      reply.header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    } else {
+      result = await this.remittanceService.exportRemittanceDetailAsCSV(id);
+      reply.header('Content-Type', 'text/csv');
+    }
+    reply.header('Content-Disposition', `attachment; filename=${result.filename}`);
+    return reply.send(result.csvBuffer);
   }
 }

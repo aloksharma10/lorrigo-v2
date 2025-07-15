@@ -1,6 +1,6 @@
 import { writeFileSync } from 'fs';
 import { Parser as Json2CsvParser } from 'json2csv';
-import { utils, writeFile } from 'xlsx';
+import { utils, writeFile, write } from 'xlsx';
 
 type ExportFormat = 'csv' | 'xlsx' | 'json';
 
@@ -33,16 +33,17 @@ export function exportData(
       const worksheet = utils.json_to_sheet(data);
       const workbook = utils.book_new();
       utils.book_append_sheet(workbook, worksheet, 'Sheet1');
-
+    
       const fullFileName = fileName.endsWith('.xlsx') ? fileName : `${fileName}.xlsx`;
-
-      // Write file using writeFileSync with xlsx.write
-      const wbBuffer = writeFile(workbook, fullFileName, { bookType: 'xlsx', type: 'buffer' });
-
-      // xlsx `writeFile` already saves the file, no need to call writeFileSync again
-
+    
+      // Generate buffer using write (not writeFile)
+      const wbBuffer = write(workbook, { bookType: 'xlsx', type: 'buffer' });
+    
+      // Optionally save the file to disk
+      writeFileSync(fullFileName, wbBuffer);
+    
       return {
-        csvBuffer: Buffer.from(wbBuffer as Buffer),
+        csvBuffer: wbBuffer, // wbBuffer is already a Buffer, no need for Buffer.from
         filename: fullFileName,
       };
     }

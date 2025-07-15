@@ -18,7 +18,8 @@ export type ModalType =
   | 'billing-cycle'
   | 'weight-dispute-csv'
   | 'dispute-actions-csv'
-  | 'manual-billing';
+  | 'manual-billing'
+  | 'remittance-detail';
 
 // Modal props interface
 export interface ModalProps {
@@ -73,6 +74,7 @@ export const useModalStore = create<ModalState>((set, get) => ({
     'weight-dispute-csv': undefined as unknown as ModalComponent,
     'dispute-actions-csv': undefined as unknown as ModalComponent,
     'manual-billing': undefined as unknown as ModalComponent,
+    'remittance-detail': undefined as unknown as ModalComponent,
   },
   registerModal: (type, component) =>
     set((state) => ({
