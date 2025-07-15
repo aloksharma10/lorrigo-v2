@@ -71,6 +71,31 @@ export class ShipmentService {
       });
   }
 
+   /**
+   * Check if user can create shipment based on wallet balance
+   */
+   async canCreateShipment(userId: string): Promise<{ canCreate: boolean; reason?: string }> {
+    const wallet = await this.fastify.prisma.userWallet.findUnique({
+      where: { user_id: userId },
+    });
+    
+    if (!wallet) {
+      return { canCreate: false, reason: 'Wallet not found' };
+    }
+    
+    const availableAmount = wallet.balance + wallet.max_negative_amount;
+    
+    if (availableAmount <= 0) {
+      return { 
+        canCreate: false, 
+        reason: `Insufficient balance. Available: ${wallet.balance}, Max negative: ${wallet.max_negative_amount}` 
+      };
+    }
+    
+    return { canCreate: true };
+  }
+
+
   /**
    * Calculate shipping rates for an order
    * @param id Order ID
@@ -322,7 +347,7 @@ export class ShipmentService {
 
     try {
       // Prepare data outside of transaction to minimize transaction time
-      const [lastShipment, shipmentCount, userWallet, courier, userProfile] = await Promise.all([
+      const [lastShipment, shipmentCount, courier, canCreateShipment] = await Promise.all([
         this.fastify.prisma.shipment.findFirst({
           orderBy: { created_at: 'desc' },
         }),
@@ -332,25 +357,15 @@ export class ShipmentService {
             created_at: { gte: getFinancialYearStartDate(new Date().getFullYear().toString()) },
           },
         }),
-        this.fastify.prisma.userWallet.findUnique({
-          where: { user_id: userId },
-        }),
         this.fastify.prisma.courier.findUnique({
           where: { id: data.courier_id },
           include: { channel_config: true },
         }),
-        this.fastify.prisma.userProfile.findUnique({
-          where: { user_id: userId },
-        }),
+        this.canCreateShipment(userId)
       ]);
 
-      if (!userWallet) {
-        return { error: 'User wallet not found' };
-      }
-
-      const maxNegativeBalance = userProfile?.max_negative_balance ?? 0;
-      if ((userWallet.balance - shippingCost) < -maxNegativeBalance) {
-        return { error: `Insufficient wallet balance. You have reached your allowed negative limit (max: ${maxNegativeBalance}). Please recharge your wallet to create more shipments.` };
+      if (!canCreateShipment.canCreate) {
+        return { error: canCreateShipment.reason };
       }
 
       if (!courier || !courier.channel_config) {

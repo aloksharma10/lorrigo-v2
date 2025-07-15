@@ -177,6 +177,7 @@ model User {
   wallet_recharge_transactions WalletRechargeTransaction[]
   invoices                     Invoice[]
   remittances                  Remittance[]
+  UserBankAccount              UserBankAccount[]
 
   @@index([email])
   @@index([code])
@@ -204,7 +205,6 @@ model UserProfile {
   acc_type        String? @db.VarChar(20)
 
   // Seller Config
-  max_negative_balance Float?  @default(0)
   is_d2c               Boolean @default(true)
   is_b2b               Boolean @default(true)
   is_prepaid           Boolean @default(true)
@@ -375,6 +375,9 @@ model Order {
   order_invoice_date   DateTime? @default(now())
   order_invoice_number String?   @db.VarChar(50)
 
+  // Remittance and dispute tracking
+  remittanceId   String?
+
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
@@ -402,13 +405,13 @@ model Order {
   freight_type   Int?    @default(0)
   pickup_type    Int?    @default(0)
   insurance_type Int?    @default(0)
-  remittanceId   String?
 
   @@unique([order_number, user_id])
   @@index([user_id, customer_id])
   @@index([created_at(sort: Desc)])
   @@index([code])
   @@index([order_number, order_reference_id, ewaybill], map: "order_global_search_idx")
+  @@index([remittanceId])
 }
 
 model OrderSellerDetails {
@@ -567,9 +570,11 @@ model Courier {
 model UserWallet {
   id                    String                      @id @default(cuid())
   code                  String                      @unique // Format: WL-YYMM-XXXXX
-  balance               Float                       @default(0)
-  hold_amount           Float                       @default(0)
-  usable_amount         Float                       @default(0)
+  balance               Float                       @default(0) // Total balance : usable_amount + hold_amount
+  hold_amount           Float                       @default(0) // Amount on hold : Disputed amount
+  available_amount      Float                       @default(0) // Total available amount : remittance amount
+  usable_amount         Float                       @default(0) // Amount available for use : balance + max_negative_amount - hold_amount 
+  max_negative_amount   Float                       @default(0) // Maximum negative balance allowed
   user_id               String                      @unique
   user                  User                        @relation(fields: [user_id], references: [id], onDelete: Cascade)
   shipment_transactions ShipmentTransaction[]
@@ -805,6 +810,10 @@ model Remittance {
   completed_at       DateTime?
   failed_at          DateTime?
 
+  // Bank transaction details
+  bank_transaction_id String? // External bank transaction ID
+  bank_transaction_date DateTime?
+
   created_by String
   updated_by String?
   notes      String? @db.Text
@@ -826,6 +835,7 @@ model Remittance {
   @@index([transaction_id])
   @@index([code])
   @@index([bank_account_id])
+  @@index([bank_transaction_id])
 }
 
 model Notification {
@@ -1243,20 +1253,26 @@ model UserBilling {
 }
 
 model UserBankAccount {
-  id              String      @id @default(cuid())
-  user_profile_id String
-  user_profile    UserProfile @relation(fields: [user_profile_id], references: [id], onDelete: Cascade)
-  account_number  String // Masked for display, full for processing
-  ifsc            String
-  bank_name       String
-  account_holder  String
-  is_verified     Boolean     @default(false)
-  verified_at     DateTime?
-  created_at      DateTime    @default(now())
-  updated_at      DateTime    @updatedAt
+  id             String    @id @default(cuid())
+  user_id        String
+  user           User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  account_number String // Masked for display, full for processing
+  ifsc           String
+  bank_name      String
+  account_holder String
+  is_verified    Boolean   @default(false)
+  verified_by    String?
+  verified_at    DateTime?
+  is_selected_for_remittance Boolean @default(false) // User selected this account for remittance
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
 
-  remittances Remittance[]
+  remittances   Remittance[]
+  // Enforce max 10 accounts per user at application level
+  UserProfile   UserProfile? @relation(fields: [userProfileId], references: [id])
+  userProfileId String?
 
-  @@unique([user_profile_id, account_number])
-  @@index([user_profile_id])
+  @@unique([user_id, account_number])
+  @@index([user_id])
+  @@index([is_verified, is_selected_for_remittance])
 }

@@ -9,7 +9,7 @@ import pLimit from 'p-limit';
 import fs from 'fs/promises';
 import path from 'path';
 import { prisma } from '@lorrigo/db';
-import { parse as parseCsvSync } from 'csv-parse/sync';
+import csv from 'csvtojson';
 import { parse as parseDateFns, isValid as isValidDateFns } from 'date-fns';
 
 // Job types for bulk order processing
@@ -172,7 +172,7 @@ async function processBulkOrders(
     }
 
     // Parse CSV and transform to orders
-    const csvData = parseCsvContent(csvText);
+    const csvData = await parseCsvContent(csvText);
     const effectiveMapping = headerMapping || {};
     const ordersToProcess = transformCsvToOrders(csvData, effectiveMapping);
 
@@ -508,15 +508,15 @@ async function createOrdersBatch(
 }
 
 // CSV parsing and transformation functions
-function parseCsvContent(csvText: string): any[] {
-  // Use csv-parse for robust parsing (handles quotes, commas, line breaks)
-  const records = parseCsvSync(csvText, {
-    columns: true,
-    skip_empty_lines: true,
+async function parseCsvContent(csvText: string): Promise<any[]> {
+  const jsonArray = await csv({
     trim: true,
-  });
-  return records as any[];
+    ignoreEmpty: true,
+  }).fromString(csvText);
+
+  return jsonArray;
 }
+
 
 function transformCsvToOrders(csvData: any[], mapping: Record<string, string>): OrderFormValues[] {
   return csvData.map((row, index) => {

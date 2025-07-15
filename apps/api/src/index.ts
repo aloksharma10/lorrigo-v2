@@ -33,7 +33,8 @@ import { ensureDefaultPlan } from '@/modules/plan/services/default-plan';
 import { queues } from '@/lib/queue';
 import { assignDefaultPlanToAllUsers } from './scripts/assign-default-plan';
 import multipart from '@fastify/multipart';
-import { billingRoutes } from './modules/billing';
+import { billingRoutes } from '@/modules/billing';
+import { remittanceRoutes } from '@/modules/remittance';
 
 // Initialize Sentry
 initSentry();
@@ -116,6 +117,7 @@ const registerPlugins = async () => {
         fastify.register(productRoutes, { prefix: '/products' });
         fastify.register(transactionRoutes, { prefix: '/transactions' });
         fastify.register(billingRoutes, { prefix: '/billing' });
+        fastify.register(remittanceRoutes, { prefix: '/remittance' });
         fastify.register(ndrModule); // NDR routes will be prefixed with /ndr
         fastify.register(usersRoutes, { prefix: '/users' });
 

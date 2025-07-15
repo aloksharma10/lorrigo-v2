@@ -416,16 +416,15 @@ export class TransactionService {
       // Check if balance would go negative
       if (newBalance < 0) {
         // Check if user has permission for negative balance
-        const userProfile = await this.prisma.userProfile.findUnique({
+        const maxNegativeBalance = (await this.prisma.userWallet.findUnique({
           where: { user_id: wallet.user_id },
-        });
+          select: { max_negative_amount: true },
+        })) || { max_negative_amount: 0 };
 
-        const maxNegativeBalance = userProfile?.max_negative_balance || 0;
-
-        if (newBalance < -maxNegativeBalance) {
+        if (newBalance < -maxNegativeBalance?.max_negative_amount) {
           return {
             success: false,
-            error: `Insufficient funds. Maximum allowed negative balance is ${maxNegativeBalance}`,
+            error: `Insufficient funds. Maximum allowed negative balance is ${maxNegativeBalance?.max_negative_amount}`,
           };
         }
       }
@@ -699,14 +698,14 @@ export class TransactionService {
       if (!wallet) {
         return { success: false, error: 'Wallet not found' };
       }
-
+      
       return {
-        success: true,
         balance: wallet.balance,
         hold_amount: wallet.hold_amount,
         usable_amount: wallet.usable_amount,
-        walletId: wallet.id,
-        walletCode: wallet.code,
+        max_negative_amount: wallet.max_negative_amount,
+        available_amount: wallet.available_amount,
+        can_create_shipment: wallet.usable_amount > 0,
       };
     } catch (error) {
       this.fastify.log.error(`Error getting wallet balance: ${error}`);
@@ -999,16 +998,15 @@ export class TransactionService {
       // Check if balance would go negative
       if (newBalance < 0) {
         // Check if user has permission for negative balance
-        const userProfile = await this.prisma.userProfile.findUnique({
+        const maxNegativeBalance = (await this.prisma.userWallet.findUnique({
           where: { user_id: wallet.user_id },
-        });
+          select: { max_negative_amount: true },
+        })) || { max_negative_amount: 0 };
 
-        const maxNegativeBalance = userProfile?.max_negative_balance || 0;
-
-        if (newBalance < -maxNegativeBalance) {
+        if (newBalance < -maxNegativeBalance?.max_negative_amount) {
           return {
             success: false,
-            error: `Insufficient funds. Maximum allowed negative balance is ${maxNegativeBalance}`,
+            error: `Insufficient funds. Maximum allowed negative balance is ${maxNegativeBalance?.max_negative_amount}`,
           };
         }
       }
