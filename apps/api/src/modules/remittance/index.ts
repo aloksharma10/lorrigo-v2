@@ -7,10 +7,6 @@ import { remittanceWorker, RemittanceJobType } from './remittance-job';
 import { addRecurringJob, QueueNames } from '@/lib/queue';
 import { Queue } from 'bullmq';
 
-/**
- * Register the remittance module with Fastify
- */
-
 export async function remittanceRoutes(fastify: FastifyInstance) {
   const remittanceService = new RemittanceService(fastify);
   const remittanceController = new RemittanceController(remittanceService);
@@ -36,74 +32,61 @@ export async function remittanceRoutes(fastify: FastifyInstance) {
     '5 0 * * *',
     { jobId: 'remittance-nightly' }
   );
-  // User routes (require authentication)
-  fastify.get('/remittance', {
-    preHandler: [authorizeRoles([Role.SELLER])],
+
+  // Shared routes (role-based access)
+  fastify.get('/remittances', {
+    preHandler: [authorizeRoles([Role.SELLER, Role.ADMIN, Role.SUBADMIN])],
     handler: remittanceController.getRemittances,
   });
 
-  fastify.get('/remittance/:id', {
-    preHandler: [authorizeRoles([Role.SELLER])],
+  fastify.get('/remittances/:id', {
+    preHandler: [authorizeRoles([Role.SELLER, Role.ADMIN, Role.SUBADMIN])],
     handler: remittanceController.getRemittanceById,
   });
 
-  fastify.get('/remittance/bank-accounts', {
-    preHandler: [authorizeRoles([Role.SELLER])],
-    handler: remittanceController.getUserBankAccounts,
+  fastify.get('/analytics', {
+    preHandler: [authorizeRoles([Role.SELLER, Role.ADMIN, Role.SUBADMIN])],
+    handler: remittanceController.getRemittanceAnalytics,
   });
 
-  fastify.post('/remittance/bank-accounts', {
+  fastify.get('/bank-accounts', {
+    preHandler: [authorizeRoles([Role.SELLER, Role.ADMIN, Role.SUBADMIN])],
+    handler: remittanceController.getBankAccounts,
+  });
+
+  // Seller-specific routes
+  fastify.post('/bank-accounts', {
     preHandler: [authorizeRoles([Role.SELLER])],
     handler: remittanceController.addBankAccount,
   });
 
-  fastify.post('/remittance/bank-accounts/select', {
+  fastify.post('/bank-accounts/select', {
     preHandler: [authorizeRoles([Role.SELLER])],
     handler: remittanceController.selectBankAccountForRemittance,
   });
 
-  fastify.get('/remittance/analytics', {
-    preHandler: [authorizeRoles([Role.SELLER])],
-    handler: remittanceController.getRemittanceAnalytics,
-  });
-
-  // Admin routes (require admin authentication)
-  fastify.get('/admin/remittance', {
-    preHandler: [authorizeRoles([Role.ADMIN, Role.SUBADMIN])],
-    handler: remittanceController.getAllRemittances,
-  });
-
-  fastify.get('/admin/remittance/future', {
+  // Admin-specific routes
+  fastify.get('/remittances/future', {
     preHandler: [authorizeRoles([Role.ADMIN, Role.SUBADMIN])],
     handler: remittanceController.getFutureRemittances,
   });
 
-  fastify.get('/admin/remittance/analytics', {
-    preHandler: [authorizeRoles([Role.ADMIN, Role.SUBADMIN])],
-    handler: remittanceController.getRemittanceAnalytics,
-  });
-
-  fastify.post('/admin/remittance/manage', {
+  fastify.post('/remittances/manage', {
     preHandler: [authorizeRoles([Role.ADMIN, Role.SUBADMIN])],
     handler: remittanceController.manageUserRemittance,
   });
 
-  fastify.get('/admin/bank-accounts', {
-    preHandler: [authorizeRoles([Role.ADMIN, Role.SUBADMIN])],
-    handler: remittanceController.getAllBankAccounts,
-  });
-
-  fastify.put('/admin/bank-accounts/:bankAccountId/verify', {
+  fastify.put('/bank-accounts/:bankAccountId/verify', {
     preHandler: [authorizeRoles([Role.ADMIN, Role.SUBADMIN])],
     handler: remittanceController.verifyBankAccount,
   });
 
-  // Export endpoints
-  fastify.get('/admin/remittance/export', {
+  fastify.get('/export/remittances', {
     preHandler: [authorizeRoles([Role.ADMIN, Role.SUBADMIN])],
     handler: remittanceController.exportRemittances,
   });
-  fastify.get('/admin/remittance/:id/export', {
+
+  fastify.get('/export/remittance/:id', {
     preHandler: [authorizeRoles([Role.ADMIN, Role.SUBADMIN])],
     handler: remittanceController.exportRemittanceDetail,
   });
