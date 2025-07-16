@@ -8,38 +8,31 @@ import { CourierSplitChart } from './components/courier-split-chart';
 import { IndiaMap } from './components/india-map';
 import { Header } from '@/components/header';
 import { ShipmentOverviewTable } from './components/shipment-overview-table';
-import { useOrdersAnalytics, useShipmentsAnalytics, useNdrAnalytics, useRtoAnalytics } from '@/lib/apis/analytics';
-import type { OrdersAnalytics, ShipmentsAnalytics, NdrAnalytics, RtoAnalytics } from '@/lib/type/analytics';
-// import { IndiaMap } from "@/components/india-map"
+import { useShipmentAnalysis } from '@/lib/hooks/use-shipment-analysis';
 
 export default function SellerDashboardOverview() {
-  const { data: ordersData, isLoading: ordersLoading } = useOrdersAnalytics();
-  const { data: shipmentsData, isLoading: shipmentsLoading } = useShipmentsAnalytics();
-  const { data: ndrData, isLoading: ndrLoading } = useNdrAnalytics();
-  const { data: rtoData, isLoading: rtoLoading } = useRtoAnalytics();
-  const orders: OrdersAnalytics = (ordersData as any) || {};
-  const shipments: ShipmentsAnalytics = (shipmentsData as any) || {};
-  const ndr: NdrAnalytics = (ndrData as any) || {};
-  const rto: RtoAnalytics = (rtoData as any) || {};
+  const { home, performance, realtime, predictive, isTokenReady } = useShipmentAnalysis();
 
-  // Helper: get today's date in YYYY-MM-DD
-  const today = new Date().toISOString().slice(0, 10);
-  const todayOrders = Array.isArray(orders.summary) ? orders.summary.find((s: any) => s.date === today)?.totalOrders ?? 0 : 0;
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-  const yesterdayOrders = Array.isArray(orders.summary) ? orders.summary.find((s: any) => s.date === yesterday)?.totalOrders ?? 0 : 0;
+  // Extract summary data
+  const summary = home.data?.summary || [];
+  const shipmentsOverview: Partial<{ totalShipments: number }> = performance.data?.overview || {};
+  const courierPerformance = performance.data?.courierPerformance || [];
+  const ndrMetrics = performance.data?.topIssues || [];
+  // Add more mappings as needed for your UI
 
-  // Revenue: sum of today's orders
-  const todayRevenue = 0; // If you have revenue in orders.summary, sum it here
-  const yesterdayRevenue = 0; // Same for yesterday
+  // Example: Today's and yesterday's orders from summary
+  const todayOrders = summary.find((s) => s.title === 'Orders Today')?.value || 0;
+  const yesterdayOrders = summary.find((s) => s.title === 'Orders Today')?.trend?.percentage || 0;
+  const todayRevenue = summary.find((s) => s.title === 'Revenue Today')?.value || 0;
+  const yesterdayRevenue = summary.find((s) => s.title === 'Revenue Today')?.trend?.percentage || 0;
 
-  // Shipments summary
-  const shipmentsTotal = Array.isArray(shipments.courierWise) ? shipments.courierWise.reduce((acc: number, c: any) => acc + Number(c.totalShipments || 0), 0) : 0;
-  // You can add more aggregation for pending, inTransit, delivered, rto if available in API
+  // Example: Shipments total from overview
+  const shipmentsTotal = (shipmentsOverview && typeof shipmentsOverview.totalShipments === 'number') ? shipmentsOverview.totalShipments : 0;
 
-  // NDR summary
-  const ndrTotal = ndr.metrics?.raised || 0;
-  const ndrReattempts = ndr.metrics?.actionRequired || 0;
-  const ndrDelivered = ndr.metrics?.delivered || 0;
+  // Example: NDR summary (replace with real mapping as needed)
+  const ndrTotal = ndrMetrics.length;
+  const ndrReattempts = 0; // Map from real API if available
+  const ndrDelivered = 0; // Map from real API if available
 
   return (
     <div className="mx-auto space-y-6 p-4">
@@ -53,7 +46,6 @@ export default function SellerDashboardOverview() {
           </Button>
         </div>
       </div>
-
       {/* First row */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <Card className="border-none">
@@ -99,7 +91,6 @@ export default function SellerDashboardOverview() {
           </CardContent>
         </Card>
       </div>
-
       {/* Second row: Shipments and NDR summary */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <Card>
@@ -154,34 +145,26 @@ export default function SellerDashboardOverview() {
           </CardContent>
         </Card>
       </div>
-
       {/* Fourth row: Charts */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <CourierSplitChart
-          data={Array.isArray(shipments.courierWise)
-            ? shipments.courierWise.map((item) => ({
-                name: item.courier,
-                value: Number(item.totalShipments),
-              }))
-            : []}
-          isLoading={shipmentsLoading}
+          data={courierPerformance.map((item) => ({
+            name: item.courierName,
+            value: Number(item.totalShipments),
+          }))}
+          isLoading={performance.isLoading}
         />
         <ShipmentStatusChart
-          data={Array.isArray(shipments.shipmentStatus)
-            ? shipments.shipmentStatus.map((item) => ({ name: item.name, value: item.value }))
-            : []}
-          isLoading={shipmentsLoading}
+          data={[]}
+          isLoading={performance.isLoading}
         />
         <DeliveryPerformanceChart
-          data={Array.isArray(shipments.deliveryPerformance)
-            ? shipments.deliveryPerformance.map((item) => ({ name: item.name, value: item.value }))
-            : []}
-          isLoading={shipmentsLoading}
+          data={[]}
+          isLoading={performance.isLoading}
         />
       </div>
-
       {/* Sixth row: Shipment Overview Table */}
-      <ShipmentOverviewTable data={shipments.shipmentOverview || []} isLoading={shipmentsLoading} />
+      <ShipmentOverviewTable data={[]} isLoading={performance.isLoading} />
     </div>
   );
 }

@@ -10,11 +10,25 @@ import Link from 'next/link';
 import { LineChart } from '@/components/charts/line-chart';
 import { BarChart } from '@/components/charts/bar-chart';
 import { MetricCard } from '@/components/charts/metric-card';
-import { useRtoAnalytics } from '@/lib/apis/analytics';
+import { useShipmentAnalysis } from '@/lib/hooks/use-shipment-analysis';
+import { RtoAnalytics } from '@/lib/type/analytics';
+import type { ShipmentPerformanceAnalytics } from '@/lib/type/shipment-analysis';
 
 export default function RTOPage() {
-  const { data, isLoading, error } = useRtoAnalytics();
-  const analytics = data?.data || {};
+  // Use the unified shipment analysis hook
+  const { performance, isTokenReady } = useShipmentAnalysis();
+  const analytics: ShipmentPerformanceAnalytics | {} = performance.data || {};
+  const isLoading = performance.isLoading;
+
+  // Map RTO metrics
+  const rtoMetrics = (analytics as any).rtoMetrics || {};
+  const countOverTime = (analytics as any).rtoCountOverTime || [];
+  const status = (analytics as any).rtoStatus || [];
+  const reasons = (analytics as any).rtoReasons || [];
+  const topByPincode = (analytics as any).rtoTopByPincode || [];
+  const topByCity = (analytics as any).rtoTopByCity || [];
+  const topByCourier = (analytics as any).rtoTopByCourier || [];
+  const topByCustomer = (analytics as any).rtoTopByCustomer || [];
 
   return (
     <div className="mx-auto space-y-6 p-4">
@@ -68,27 +82,27 @@ export default function RTOPage() {
             <div className="grid grid-cols-5 gap-4">
               <MetricCard
                 title="Total RTO"
-                value={analytics.metrics?.total}
+                value={rtoMetrics.total}
                 className="bg-gray-50 dark:bg-neutral-900"
               />
               <MetricCard
                 title="RTO Percentage"
-                value={analytics.metrics?.percentage}
+                value={rtoMetrics.percentage}
                 className="bg-gray-50 dark:bg-neutral-900"
               />
               <MetricCard
                 title="RTO Initiated"
-                value={analytics.metrics?.initiated}
+                value={rtoMetrics.initiated}
                 className="bg-gray-50 dark:bg-neutral-900"
               />
               <MetricCard
                 title="RTO Undelivered"
-                value={analytics.metrics?.undelivered}
+                value={rtoMetrics.undelivered}
                 className="bg-gray-50 dark:bg-neutral-900"
               />
               <MetricCard
                 title="RTO Delivered"
-                value={analytics.metrics?.delivered}
+                value={rtoMetrics.delivered}
                 className="bg-gray-50 dark:bg-neutral-900"
               />
             </div>
@@ -99,7 +113,7 @@ export default function RTOPage() {
         <div className="mb-6">
           <ChartCard title="RTO Count">
             <LineChart
-              data={analytics.rtoCount || []}
+              data={countOverTime}
               lines={[{ dataKey: 'RTO Count', color: '#818cf8' }]}
               height={300}
             />
@@ -110,11 +124,11 @@ export default function RTOPage() {
         <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
           <ChartCard title="RTO Status">
             <BarChart
-              data={analytics.rtoStatus || []}
+              data={status}
               bars={[
-                { dataKey: 'RTO Initiated', color: '#818cf8' },
-                { dataKey: 'RTO Delivered', color: '#4ade80' },
-                { dataKey: 'RTO Undelivered', color: '#f87171' },
+                { dataKey: 'rtoInitiated', color: '#818cf8' },
+                { dataKey: 'rtoDelivered', color: '#4ade80' },
+                { dataKey: 'rtoUndelivered', color: '#f87171' },
               ]}
               height={300}
             />
@@ -122,7 +136,7 @@ export default function RTOPage() {
 
           <ChartCard title="RTO Reasons">
             <PieChart
-              data={analytics.rtoReasons || []}
+              data={reasons}
               // tooltipFormatter={(value) => [`${value}`, "RTOs"]}
               showLegend={true}
               legendPosition="bottom"
@@ -140,7 +154,7 @@ export default function RTOPage() {
               { header: 'RTO Count', accessorKey: 'rtoCount' },
               { header: 'Percentage', accessorKey: 'percentage' },
             ]}
-            data={analytics.topRtoByPincode || []}
+            data={topByPincode}
           />
 
           <SimpleDataTable
@@ -151,7 +165,7 @@ export default function RTOPage() {
               { header: 'RTO Count', accessorKey: 'rtoCount' },
               { header: 'Percentage', accessorKey: 'percentage' },
             ]}
-            data={analytics.topRtoByCity || []}
+            data={topByCity}
           />
         </div>
 
@@ -165,7 +179,7 @@ export default function RTOPage() {
               { header: 'RTO Count', accessorKey: 'rtoCount' },
               { header: 'Percentage', accessorKey: 'percentage' },
             ]}
-            data={analytics.topRtoByCourier || []}
+            data={topByCourier}
           />
 
           <SimpleDataTable
@@ -176,7 +190,7 @@ export default function RTOPage() {
               { header: 'RTO Count', accessorKey: 'rtoCount' },
               { header: 'Percentage', accessorKey: 'percentage' },
             ]}
-            data={analytics.topRtoByCustomer || []}
+            data={topByCustomer}
           />
         </div>
 

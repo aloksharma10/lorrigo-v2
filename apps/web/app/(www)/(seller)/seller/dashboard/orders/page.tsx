@@ -1,17 +1,53 @@
 'use client';
 import { ChartCard } from '@/components/charts/chart-card';
 import { PieChart } from '@/components/charts/pie-chart';
-import { SimpleDataTable } from '@lorrigo/ui/components';
+import { SimpleDataTable, type Column } from '@lorrigo/ui/components';
 import { Badge } from '@lorrigo/ui/components';
 import { Button } from '@lorrigo/ui/components';
 import { CalendarIcon, ChevronDown } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@lorrigo/ui/components';
 import Link from 'next/link';
-import { useOrdersAnalytics } from '@/lib/apis/analytics';
+import { useShipmentAnalysis } from '@/lib/hooks/use-shipment-analysis';
+import type { ShipmentPerformanceAnalytics, ChannelAnalysisItem, ZonePerformanceItem, CourierPerformanceItem, WeightAnalysisItem } from '@/lib/type/shipment-analysis';
 
 export default function OrdersPage() {
-  const { data, isLoading, error } = useOrdersAnalytics();
-  const analytics = data?.data || {};
+  const { performance, isTokenReady } = useShipmentAnalysis();
+  const analytics: Partial<ShipmentPerformanceAnalytics> = performance.data || {};
+  // Map fields from shipment-analysis API
+  const overview = analytics.overview || {};
+  const channelAnalysis = (analytics.channelAnalysis || []).map((item: ChannelAnalysisItem) => ({
+    name: item.channel,
+    value: item.totalOrders,
+  }));
+  const zonePerformance = (analytics.zonePerformance || []).map((item: ZonePerformanceItem) => ({
+    zone: item.zone,
+    totalShipments: item.totalShipments,
+    delivered: item.delivered,
+    rto: item.rto,
+    lostDamaged: item.lostDamaged,
+    successRate: item.successRate,
+    averageDeliveryTime: item.averageDeliveryTime,
+  }));
+  const topCustomers = (analytics.courierPerformance || []).map((item: CourierPerformanceItem) => ({
+    courierName: item.courierName,
+    totalShipments: item.totalShipments,
+    delivered: item.delivered,
+    rto: item.rto,
+    lostDamaged: item.lostDamaged,
+    onTimeDelivery: item.onTimeDelivery,
+    delayedDelivery: item.delayedDelivery,
+    successRate: item.successRate,
+    averageDeliveryTime: item.averageDeliveryTime,
+    ndrCount: item.ndrCount,
+    ndrResolved: item.ndrResolved,
+  }));
+  const topProducts = (analytics.weightAnalysis || []).map((item: WeightAnalysisItem) => ({
+    weightRange: item.weightRange,
+    count: item.count,
+    percentage: item.percentage,
+    averageDeliveryTime: item.averageDeliveryTime,
+    successRate: item.successRate,
+  }));
 
   return (
     <div className="mx-auto space-y-6 p-4">
@@ -49,26 +85,19 @@ export default function OrdersPage() {
           <SimpleDataTable
             title="Orders Summary"
             columns={[
-              {
-                header: 'Date',
-                accessorKey: 'date',
-                // cell: (value) => {
-                //    const date = new Date(value)
-                //    return date.toLocaleDateString("en-US", { year: "numeric", month: "2-digit", day: "2-digit" })
-                // },
-              },
-              { header: 'Total Orders', accessorKey: 'totalOrders' },
-              { header: 'Pickup Unscheduled', accessorKey: 'pickupUnscheduled' },
-              { header: 'Pickup Scheduled', accessorKey: 'pickupScheduled' },
-              { header: 'In Transit', accessorKey: 'inTransit' },
+              { header: 'Total Shipments', accessorKey: 'totalShipments' },
               { header: 'Delivered', accessorKey: 'delivered' },
-              { header: 'Undelivered', accessorKey: 'undelivered' },
+              { header: 'In Transit', accessorKey: 'inTransit' },
+              { header: 'Pending', accessorKey: 'pending' },
               { header: 'RTO', accessorKey: 'rto' },
               { header: 'Lost/Damaged', accessorKey: 'lostDamaged' },
-              { header: 'Cancelled', accessorKey: 'cancelled' },
-            ]}
-            data={analytics.ordersSummary || []}
-            isLoading={isLoading}
+              { header: 'On Time Delivery', accessorKey: 'onTimeDelivery' },
+              { header: 'Delayed Delivery', accessorKey: 'delayedDelivery' },
+              { header: 'Average Delivery Time', accessorKey: 'averageDeliveryTime' },
+              { header: 'Success Rate', accessorKey: 'successRate' },
+            ] as Column<any>[]}
+            data={overview ? [overview] : []}
+            isLoading={performance.isLoading}
           />
           <div className="mt-2 flex justify-end gap-2">
             <Button variant="outline" size="sm">
@@ -84,8 +113,7 @@ export default function OrdersPage() {
         <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-3">
           <ChartCard title="Prepaid vs. COD Orders">
             <PieChart
-              data={analytics.paymentType || []}
-              // tooltipFormatter={(value) => [`${value}`, "Orders"]}
+              data={channelAnalysis}
               showLegend={true}
               legendPosition="bottom"
             />
@@ -121,13 +149,16 @@ export default function OrdersPage() {
             title="Most Popular Orders Location"
             badge="Last 30 days"
             columns={[
-              { header: 'States', accessorKey: 'state' },
-              { header: 'Order Count', accessorKey: 'orderCount' },
-              { header: 'Revenue', accessorKey: 'revenue' },
-              { header: 'Revenue %', accessorKey: 'revenuePercentage' },
-            ]}
-            data={analytics.popularLocations || []}
-            isLoading={isLoading}
+              { header: 'Zone', accessorKey: 'zone' },
+              { header: 'Total Shipments', accessorKey: 'totalShipments' },
+              { header: 'Delivered', accessorKey: 'delivered' },
+              { header: 'RTO', accessorKey: 'rto' },
+              { header: 'Lost/Damaged', accessorKey: 'lostDamaged' },
+              { header: 'Success Rate', accessorKey: 'successRate' },
+              { header: 'Average Delivery Time', accessorKey: 'averageDeliveryTime' },
+            ] as Column<any>[]}
+            data={zonePerformance}
+            isLoading={performance.isLoading}
           />
         </div>
 
@@ -136,23 +167,33 @@ export default function OrdersPage() {
           <SimpleDataTable
             title="Top 10 Customers"
             columns={[
-              { header: 'Customer Name', accessorKey: 'customerName' },
-              { header: 'Order Count', accessorKey: 'orderCount' },
-              { header: 'Revenue', accessorKey: 'revenue' },
-            ]}
-            data={analytics.topCustomers || []}
-            isLoading={isLoading}
+              { header: 'Courier Name', accessorKey: 'courierName' },
+              { header: 'Total Shipments', accessorKey: 'totalShipments' },
+              { header: 'Delivered', accessorKey: 'delivered' },
+              { header: 'RTO', accessorKey: 'rto' },
+              { header: 'Lost/Damaged', accessorKey: 'lostDamaged' },
+              { header: 'On Time Delivery', accessorKey: 'onTimeDelivery' },
+              { header: 'Delayed Delivery', accessorKey: 'delayedDelivery' },
+              { header: 'Success Rate', accessorKey: 'successRate' },
+              { header: 'Average Delivery Time', accessorKey: 'averageDeliveryTime' },
+              { header: 'NDR Count', accessorKey: 'ndrCount' },
+              { header: 'NDR Resolved', accessorKey: 'ndrResolved' },
+            ] as Column<any>[]}
+            data={topCustomers}
+            isLoading={performance.isLoading}
           />
 
           <SimpleDataTable
             title="Top 10 Products"
             columns={[
-              { header: 'Product Name', accessorKey: 'productName' },
-              { header: 'Unit Sold', accessorKey: 'unitSold' },
-              { header: 'Revenue', accessorKey: 'revenue' },
-            ]}
-            data={analytics.topProducts || []}
-            isLoading={isLoading}
+              { header: 'Weight Range', accessorKey: 'weightRange' },
+              { header: 'Count', accessorKey: 'count' },
+              { header: 'Percentage', accessorKey: 'percentage' },
+              { header: 'Average Delivery Time', accessorKey: 'averageDeliveryTime' },
+              { header: 'Success Rate', accessorKey: 'successRate' },
+            ] as Column<any>[]}
+            data={topProducts}
+            isLoading={performance.isLoading}
           />
         </div>
 

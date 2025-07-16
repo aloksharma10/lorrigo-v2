@@ -4,11 +4,53 @@ import { PieChart } from '@/components/charts/pie-chart';
 import { SimpleDataTable } from '@lorrigo/ui/components';
 import { BarChart } from '@/components/charts/bar-chart';
 import { CalendarIcon, ChevronDown } from 'lucide-react';
-import { useShipmentsAnalytics } from '@/lib/apis/analytics';
+import { useShipmentAnalysis } from '@/lib/hooks/use-shipment-analysis';
+import type { ShipmentPerformanceAnalytics } from '@/lib/type/shipment-analysis';
 
 export default function ShipmentsPage() {
-  const { data, isLoading, error } = useShipmentsAnalytics();
-  const analytics = data?.data || {};
+  // Use the unified shipment analysis hook
+  const { performance, isTokenReady } = useShipmentAnalysis();
+  const analytics: ShipmentPerformanceAnalytics | {} = performance.data || {};
+  const isLoading = performance.isLoading;
+
+  // Map courier performance to table format
+  const courierTableData = (Array.isArray((analytics as ShipmentPerformanceAnalytics).courierPerformance) ? (analytics as ShipmentPerformanceAnalytics).courierPerformance : []).map((item: any) => ({
+    courier: item.courierName,
+    totalShipments: item.totalShipments,
+    delivered: item.delivered,
+    rto: item.rto,
+    lostDamaged: item.lostDamaged,
+    pickupWithinSLA: item.onTimeDelivery, // Assuming onTimeDelivery means within SLA
+    deliveredWithinSLA: item.onTimeDelivery, // Same as above
+    ndrRaised: item.ndrCount,
+    ndrDelivered: item.ndrResolved,
+  }));
+
+  // Map zone performance to chart format
+  const zoneChartData = (Array.isArray((analytics as ShipmentPerformanceAnalytics).zonePerformance) ? (analytics as ShipmentPerformanceAnalytics).zonePerformance : []).map((item: any) => ({
+    name: item.zone,
+    Delivered: item.delivered,
+    RTO: item.rto,
+    'Lost/Damage': item.lostDamaged,
+  }));
+
+  // Map channel analysis to table format
+  const channelTableData = (Array.isArray((analytics as ShipmentPerformanceAnalytics).channelAnalysis) ? (analytics as ShipmentPerformanceAnalytics).channelAnalysis : []).map((item: any) => ({
+    channel: item.channel,
+    orders: item.totalOrders,
+  }));
+
+  // Map weight analysis to pie chart format
+  const weightProfileData = (Array.isArray((analytics as ShipmentPerformanceAnalytics).weightAnalysis) ? (analytics as ShipmentPerformanceAnalytics).weightAnalysis : []).map((item: any) => ({
+    name: item.weightRange,
+    value: item.count,
+  }));
+
+  // Map zone performance to pie chart format
+  const shipmentZoneData = (Array.isArray((analytics as ShipmentPerformanceAnalytics).zonePerformance) ? (analytics as ShipmentPerformanceAnalytics).zonePerformance : []).map((item: any) => ({
+    name: item.zone,
+    value: item.totalShipments,
+  }));
 
   return (
     <>
@@ -59,7 +101,7 @@ export default function ShipmentsPage() {
                 { header: 'NDR Raised', accessorKey: 'ndrRaised' },
                 { header: 'NDR Delivered', accessorKey: 'ndrDelivered' },
               ]}
-              data={analytics.courierWiseShipments || []}
+              data={courierTableData}
               isLoading={isLoading}
               // onExternalLinkClick={() => { }}
             />
@@ -72,7 +114,7 @@ export default function ShipmentsPage() {
               // onExternalLinkClick={() => { }}
             >
               <BarChart
-                data={analytics.zoneWiseShipments || []}
+                data={zoneChartData}
                 bars={[
                   { dataKey: 'Delivered', color: '#4ade80' },
                   { dataKey: 'RTO', color: '#818cf8' },
@@ -91,7 +133,7 @@ export default function ShipmentsPage() {
                 { header: 'Channels', accessorKey: 'channel' },
                 { header: 'Orders', accessorKey: 'orders' },
               ]}
-              data={analytics.shipmentChannel || []}
+              data={channelTableData}
               isLoading={isLoading}
             />
 
@@ -100,7 +142,7 @@ export default function ShipmentsPage() {
               // onExternalLinkClick={() => { }}
             >
               <PieChart
-                data={analytics.weightProfile || []}
+                data={weightProfileData}
                 // tooltipFormatter={(value) => [`${value}`, "Shipments"]}
                 showLegend={true}
                 legendPosition="bottom"
@@ -112,7 +154,7 @@ export default function ShipmentsPage() {
               // onExternalLinkClick={() => { }}
             >
               <PieChart
-                data={analytics.shipmentZone || []}
+                data={shipmentZoneData}
                 // tooltipFormatter={(value) => [`${value}`, "Shipments"]}
                 showLegend={true}
                 legendPosition="bottom"

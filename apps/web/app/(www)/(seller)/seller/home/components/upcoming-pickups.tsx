@@ -17,6 +17,7 @@ import {
 } from '@lorrigo/ui/components';
 import { PickupCard } from './pickup-card';
 import { DateRange } from 'react-day-picker';
+import { UpcomingPickupItem } from '@/lib/type/shipment-analysis';
 
 export const mockPickupData = [
   {
@@ -88,7 +89,11 @@ export const mockPickupData = [
   },
 ];
 
-export const UpcomingPickups = () => {
+interface UpcomingPickupsProps {
+  data?: UpcomingPickupItem[];
+}
+
+export const UpcomingPickups = ({ data }: UpcomingPickupsProps) => {
   const [selectedDate, setSelectedDate] = useState<DateRange>({
     from: new Date(),
     to: new Date(),
@@ -96,6 +101,26 @@ export const UpcomingPickups = () => {
 
   const handleDateSelect = (date: DateRange) => {
     setSelectedDate(date);
+  };
+
+  // Convert API data to the format expected by PickupCard
+  const convertToPickupFormat = (apiData: UpcomingPickupItem[]) => {
+    return apiData.map(item => ({
+      id: item.id,
+      customerName: item.customerName,
+      address: item.pickupAddress,
+      phone: 'N/A', // API doesn't provide phone
+      date: item.scheduledDate,
+      items: [
+        {
+          id: item.orderId,
+          brand: item.courierName,
+          description: `Pickup from ${item.customerName}`,
+          quantity: 1,
+          brandLogo: undefined,
+        }
+      ]
+    }));
   };
 
   return (
@@ -113,14 +138,14 @@ export const UpcomingPickups = () => {
             <div className="flex items-center">
               <h2 className="mr-2 font-medium text-blue-700">Pickups Scheduled</h2>
               <Badge variant="outline" className="bg-green-100 font-medium text-green-800">
-                {mockPickupData.length}
+                {data?.length || 0}
               </Badge>
             </div>
           </div>
 
           <div className="space-y-4">
-            {mockPickupData.length > 0 ? (
-              mockPickupData.map((pickup) => <PickupCard key={pickup.id} pickup={pickup} />)
+            {data && data.length > 0 ? (
+              convertToPickupFormat(data).map((pickup) => <PickupCard key={pickup.id} pickup={pickup} />)
             ) : (
               <Card>
                 <CardContent className="flex h-40 items-center justify-center">

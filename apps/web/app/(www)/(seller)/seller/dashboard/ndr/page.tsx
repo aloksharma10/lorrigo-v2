@@ -9,12 +9,27 @@ import Link from 'next/link';
 import { BarChart } from '@/components/charts/bar-chart';
 import { MetricCard } from '@/components/charts/metric-card';
 import { ComboChart } from '@/components/charts/combo-chart';
-import { useNdrAnalytics } from '@/lib/apis/analytics';
+import { useShipmentAnalysis } from '@/lib/hooks/use-shipment-analysis';
+import type { ShipmentPerformanceAnalytics } from '@/lib/type/shipment-analysis';
 
 export default function NDRPage() {
-  const { data, isLoading, error } = useNdrAnalytics();
-  // Fallback to empty object if no data
-  const analytics = data?.data || {};
+  // Use the unified shipment analysis hook
+  const { performance, isTokenReady } = useShipmentAnalysis();
+  const analytics : any = performance.data || {};
+  const isLoading = performance.isLoading;
+
+  // Map NDR metrics
+  const ndrMetrics = (analytics as any).topIssues || [];
+  // Map other NDR-related analytics as needed
+
+  // Example: NDR summary metrics (replace with real mapping as needed)
+  const metrics = (analytics as any).ndrMetrics || {};
+  const responseSummary = (analytics as any).ndrResponseSummary || {};
+  const funnel = (analytics as any).ndrFunnel || {};
+  const reasonSplit = (analytics as any).ndrReasonSplit || [];
+  const statusSplit = (analytics as any).ndrStatusSplit || [];
+  const responsesByAttempt = (analytics as any).ndrResponsesByAttempt || [];
+  const ndrVsDeliveryAttempt = (analytics as any).ndrVsDeliveryAttempt || [];
 
   return (
     <div className="mx-auto space-y-6 p-4">
@@ -55,27 +70,27 @@ export default function NDRPage() {
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
               <MetricCard
                 title="NDR Raised"
-                value={analytics.metrics?.raised}
+                value={metrics.raised}
                 className="bg-gray-50 dark:bg-neutral-900"
               />
               <MetricCard
                 title="NDR Raised Percentage"
-                value={analytics.metrics?.percentage}
+                value={metrics.percentage}
                 className="bg-gray-50 dark:bg-neutral-900"
               />
               <MetricCard
                 title="Action Required"
-                value={analytics.metrics?.actionRequired}
+                value={metrics.actionRequired}
                 className="bg-gray-50 dark:bg-neutral-900"
               />
               <MetricCard
                 title="Delivered"
-                value={analytics.metrics?.delivered}
+                value={metrics.delivered}
                 className="bg-gray-50 dark:bg-neutral-900"
               />
               <MetricCard
                 title="Your RTO"
-                value={analytics.metrics?.rto}
+                value={metrics.rto}
                 className="bg-gray-50 dark:bg-neutral-900"
               />
             </div>
@@ -87,28 +102,28 @@ export default function NDRPage() {
           <ChartCard title="NDR Response Summary">
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col items-center justify-center rounded-md border p-4">
-                <div className="text-2xl font-bold">{analytics.responseSummary?.sellerResponse}</div>
+                <div className="text-2xl font-bold">{responseSummary.sellerResponse}</div>
                 <div className="text-muted-foreground text-sm">Seller Response</div>
               </div>
               <div className="flex flex-col items-center justify-center rounded-md border p-4">
-                <div className="text-2xl font-bold">{analytics.responseSummary?.buyerResponse}</div>
+                <div className="text-2xl font-bold">{responseSummary.buyerResponse}</div>
                 <div className="text-muted-foreground text-sm">Buyer Response</div>
               </div>
               <div className="flex flex-col items-center justify-center rounded-md border p-4">
                 <div className="text-2xl font-bold">
-                  {analytics.responseSummary?.sellerPositiveResponse}
+                  {responseSummary.sellerPositiveResponse}
                 </div>
                 <div className="text-muted-foreground text-sm">Seller Positive Response</div>
               </div>
               <div className="flex flex-col items-center justify-center rounded-md border p-4">
                 <div className="text-2xl font-bold">
-                  {analytics.responseSummary?.buyerPositiveResponse}
+                  {responseSummary.buyerPositiveResponse}
                 </div>
                 <div className="text-muted-foreground text-sm">Buyer Positive Response</div>
               </div>
               <div className="flex flex-col items-center justify-center rounded-md border p-4">
                 <div className="text-2xl font-bold">
-                  {analytics.responseSummary?.sellerPositiveResponseDelivered}
+                  {responseSummary.sellerPositiveResponseDelivered}
                 </div>
                 <div className="text-muted-foreground text-sm">
                   Seller Positive Response Delivered
@@ -116,7 +131,7 @@ export default function NDRPage() {
               </div>
               <div className="flex flex-col items-center justify-center rounded-md border p-4">
                 <div className="text-2xl font-bold">
-                  {analytics.responseSummary?.buyerPositiveResponseDelivered}
+                  {responseSummary.buyerPositiveResponseDelivered}
                 </div>
                 <div className="text-muted-foreground text-sm">
                   Buyer Positive Response Delivered
@@ -131,17 +146,17 @@ export default function NDRPage() {
                 <div className="mb-2 text-center font-medium">1st NDR</div>
                 <div className="flex flex-col gap-2">
                   <div className="flex flex-col items-center justify-center rounded-md p-2">
-                    <div className="text-sm font-medium">{analytics.funnel?.firstNDR?.total}</div>
+                    <div className="text-sm font-medium">{funnel.firstNDR?.total}</div>
                     <div className="text-muted-foreground text-center text-xs">Total Shipments</div>
                   </div>
                   <div className="flex flex-col items-center justify-center rounded-md p-2">
-                    <div className="text-sm font-medium">{analytics.funnel?.firstNDR?.pending}</div>
+                    <div className="text-sm font-medium">{funnel.firstNDR?.pending}</div>
                     <div className="text-muted-foreground text-center text-xs">
                       Pending Shipments
                     </div>
                   </div>
                   <div className="flex flex-col items-center justify-center rounded-md p-2">
-                    <div className="text-sm font-medium">{analytics.funnel?.firstNDR?.delivered}</div>
+                    <div className="text-sm font-medium">{funnel.firstNDR?.delivered}</div>
                     <div className="text-muted-foreground text-center text-xs">
                       Delivered Shipments
                     </div>
@@ -152,17 +167,17 @@ export default function NDRPage() {
                 <div className="mb-2 text-center font-medium">2nd NDR</div>
                 <div className="flex flex-col gap-2">
                   <div className="flex flex-col items-center justify-center rounded-md p-2 dark:bg-neutral-900">
-                    <div className="text-sm font-medium">{analytics.funnel?.secondNDR?.total}</div>
+                    <div className="text-sm font-medium">{funnel.secondNDR?.total}</div>
                     <div className="text-muted-foreground text-center text-xs">Total Shipments</div>
                   </div>
                   <div className="flex flex-col items-center justify-center rounded-md p-2">
-                    <div className="text-sm font-medium">{analytics.funnel?.secondNDR?.pending}</div>
+                    <div className="text-sm font-medium">{funnel.secondNDR?.pending}</div>
                     <div className="text-muted-foreground text-center text-xs">
                       Pending Shipments
                     </div>
                   </div>
                   <div className="flex flex-col items-center justify-center rounded-md p-2">
-                    <div className="text-sm font-medium">{analytics.funnel?.secondNDR?.delivered}</div>
+                    <div className="text-sm font-medium">{funnel.secondNDR?.delivered}</div>
                     <div className="text-muted-foreground text-center text-xs">
                       Delivered Shipments
                     </div>
@@ -173,17 +188,17 @@ export default function NDRPage() {
                 <div className="mb-2 text-center font-medium">3rd NDR</div>
                 <div className="flex flex-col gap-2">
                   <div className="flex flex-col items-center justify-center rounded-md p-2 dark:bg-neutral-900">
-                    <div className="text-sm font-medium">{analytics.funnel?.thirdNDR?.total}</div>
+                    <div className="text-sm font-medium">{funnel.thirdNDR?.total}</div>
                     <div className="text-muted-foreground text-center text-xs">Total Shipments</div>
                   </div>
                   <div className="flex flex-col items-center justify-center rounded-md p-2">
-                    <div className="text-sm font-medium">{analytics.funnel?.thirdNDR?.pending}</div>
+                    <div className="text-sm font-medium">{funnel.thirdNDR?.pending}</div>
                     <div className="text-muted-foreground text-center text-xs">
                       Pending Shipments
                     </div>
                   </div>
                   <div className="flex flex-col items-center justify-center rounded-md p-2">
-                    <div className="text-sm font-medium">{analytics.funnel?.thirdNDR?.delivered}</div>
+                    <div className="text-sm font-medium">{funnel.thirdNDR?.delivered}</div>
                     <div className="text-muted-foreground text-center text-xs">
                       Delivered Shipments
                     </div>
@@ -198,7 +213,7 @@ export default function NDRPage() {
         <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
           <ChartCard title="NDR Reason Split">
             <PieChart
-              data={analytics.reasonSplit}
+              data={reasonSplit}
               // tooltipFormatter={(value) => [`${value}`, "NDRs"]}
               showLegend={true}
               legendPosition="bottom"
@@ -207,7 +222,7 @@ export default function NDRPage() {
 
           <ChartCard title="NDR Status Split">
             <BarChart
-              data={analytics.statusSplit}
+              data={statusSplit}
               bars={[
                 { dataKey: 'Delivered', color: '#4ade80' },
                 { dataKey: 'RTO', color: '#818cf8' },
@@ -235,7 +250,7 @@ export default function NDRPage() {
               { header: 'Total RTO', accessorKey: 'totalRTO' },
               { header: 'Lost/ Damaged', accessorKey: 'lostDamaged' },
             ]}
-            data={analytics.responsesByAttempt}
+            data={responsesByAttempt}
           />
         </div>
 
@@ -243,7 +258,7 @@ export default function NDRPage() {
         <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-3">
           <ChartCard title="NDR vs Delivery Attempt">
             <ComboChart
-              data={analytics.ndrVsDeliveryAttempt}
+              data={ndrVsDeliveryAttempt}
               bars={[{ dataKey: 'NDR Raised', color: '#818cf8' }]}
               lines={[{ dataKey: 'Delivery Attempt', color: '#facc15' }]}
               height={300}
