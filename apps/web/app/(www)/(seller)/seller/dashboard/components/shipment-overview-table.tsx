@@ -13,39 +13,6 @@ interface ShipmentData {
   totalShipment: number;
 }
 
-const data: ShipmentData[] = [
-  {
-    courierName: 'Bluedart Surface 500 g Surface',
-    pickupUnscheduled: 0,
-    pickupScheduled: 532,
-    inTransit: 2141,
-    delivered: 8605,
-    rto: 2933,
-    lostDamaged: 2,
-    totalShipment: 14809,
-  },
-  {
-    courierName: 'Bluedart Surface 2Kg-5Kg',
-    pickupUnscheduled: 0,
-    pickupScheduled: 3,
-    inTransit: 43,
-    delivered: 337,
-    rto: 5,
-    lostDamaged: 0,
-    totalShipment: 388,
-  },
-  {
-    courierName: 'Blue Dart Air',
-    pickupUnscheduled: 0,
-    pickupScheduled: 4,
-    inTransit: 7,
-    delivered: 104,
-    rto: 1,
-    lostDamaged: 0,
-    totalShipment: 116,
-  },
-];
-
 const columns = [
   { header: 'Courier Name', accessorKey: 'courierName' },
   { header: 'Pickup Unscheduled', accessorKey: 'pickupUnscheduled' },
@@ -58,10 +25,11 @@ const columns = [
 ];
 
 interface ShipmentOverviewTableProps {
+  data: ShipmentData[];
   isLoading?: boolean;
 }
 
-export function ShipmentOverviewTable({ isLoading = false }: ShipmentOverviewTableProps) {
+export function ShipmentOverviewTable({ data, isLoading = false }: ShipmentOverviewTableProps) {
   return (
     <SimpleDataTable
       title="Shipment Overview by Courier"

@@ -63,7 +63,7 @@ const renderActiveShape = (props: any) => {
 };
 
 export function PieChart({
-  data,
+  data = [],
   tooltipFormatter = (value) => [`${value}`, 'Value'],
   innerRadius = 60,
   outerRadius = 80,
@@ -79,7 +79,7 @@ export function PieChart({
   const activeIndex = externalActiveIndex !== undefined ? externalActiveIndex : internalActiveIndex;
   const setActiveIndex = externalSetActiveIndex || setInternalActiveIndex;
 
-  const colors = data.map((item, index) => item.color || COLORS[index % COLORS.length]);
+  const colors = data?.map((item, index) => item.color || COLORS[index % COLORS.length]) || [];
 
   const onPieEnter = (_: any, index: number) => {
     setActiveIndex(index);
@@ -107,13 +107,13 @@ export function PieChart({
               onMouseEnter={onPieEnter}
               onMouseLeave={onPieLeave}
             >
-              {data.map((entry, index) => (
+              {data?.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={colors[index]} />
               ))}
               {showDataLabels && (
                 <Label
                   position="center"
-                  value={data.reduce((sum, item) => sum + item.value, 0)}
+                  value={data?.reduce((sum, item) => sum + item.value, 0)}
                   className="text-lg font-semibold"
                 />
               )}
@@ -135,7 +135,7 @@ export function PieChart({
         <div
           className={`mt-4 grid ${legendPosition === 'bottom' ? 'grid-cols-2 gap-2 md:grid-cols-3' : 'grid-cols-1 gap-1'}`}
         >
-          {data.map((item, index) => (
+          {data?.map((item, index) => (
             <div
               key={`legend-${index}`}
               className="flex items-center gap-2"

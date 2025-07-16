@@ -3,18 +3,12 @@
 import { ChartCard } from '@/components/charts/chart-card';
 import { PieChart, type PieChartData } from '@/components/charts/pie-chart';
 
-const data: PieChartData[] = [
-  { name: 'Bluedart Surface 500g', value: 14809 },
-  { name: 'Bluedart Surface 2Kg-5Kg', value: 388 },
-  { name: 'Xpressbees Surface', value: 9 },
-  { name: 'Others', value: 148 },
-];
-
 interface CourierSplitChartProps {
+  data: PieChartData[];
   isLoading?: boolean;
 }
 
-export function CourierSplitChart({ isLoading = false }: CourierSplitChartProps) {
+export function CourierSplitChart({ data, isLoading = false }: CourierSplitChartProps) {
   return (
     <ChartCard
       title="Couriers Split"

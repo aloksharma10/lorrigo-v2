@@ -86,7 +86,7 @@ export function SimpleDataTable<T>({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((row, i) => (
+              {data?.map((row, i) => (
                 <TableRow key={i}>
                   {columns.map((column) => (
                     <TableCell key={String(column.accessorKey)}>

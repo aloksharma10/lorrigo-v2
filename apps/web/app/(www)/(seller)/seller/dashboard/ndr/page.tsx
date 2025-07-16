@@ -1,3 +1,4 @@
+'use client';
 import { ChartCard } from '@/components/charts/chart-card';
 import { PieChart } from '@/components/charts/pie-chart';
 import { SimpleDataTable } from '@lorrigo/ui/components';
@@ -8,226 +9,13 @@ import Link from 'next/link';
 import { BarChart } from '@/components/charts/bar-chart';
 import { MetricCard } from '@/components/charts/metric-card';
 import { ComboChart } from '@/components/charts/combo-chart';
-
-// Sample data for NDR metrics
-const ndrMetricsData = {
-  raised: '5.8K',
-  percentage: '34.33%',
-  actionRequired: '3.8K',
-  delivered: '1.6K',
-  rto: '2.8K',
-};
-
-// Sample data for NDR response summary
-const ndrResponseSummaryData = {
-  sellerResponse: 49,
-  buyerResponse: 2,
-  sellerPositiveResponse: 37,
-  buyerPositiveResponse: 2,
-  sellerPositiveResponseDelivered: 14,
-  buyerPositiveResponseDelivered: 2,
-};
-
-// Sample data for NDR funnel
-const ndrFunnelData = {
-  firstNDR: {
-    total: '5.8K',
-    pending: 634,
-    delivered: '1.3K',
-  },
-  secondNDR: {
-    total: '2.3K',
-    pending: 367,
-    delivered: 203,
-  },
-  thirdNDR: {
-    total: '1.3K',
-    pending: 367,
-    delivered: 82,
-  },
-};
-
-// Sample data for NDR reason split
-const ndrReasonSplitData = [
-  { name: 'Customer Not Available', value: 2500, percentage: '43%' },
-  { name: 'Address Not Found', value: 1200, percentage: '21%' },
-  { name: 'Customer Refused', value: 800, percentage: '14%' },
-  { name: 'Payment Issues', value: 700, percentage: '12%' },
-  { name: 'Other', value: 600, percentage: '10%' },
-];
-
-// Sample data for NDR status split
-const ndrStatusSplitData = [
-  { name: '22 Apr-28 Apr', Delivered: 500, RTO: 100, Pending: 400 },
-  { name: '29 Apr-05 May', Delivered: 700, RTO: 150, Pending: 650 },
-  { name: '06 May-12 May', Delivered: 400, RTO: 120, Pending: 300 },
-  { name: '13 May-19 May', Delivered: 300, RTO: 80, Pending: 200 },
-  { name: '20 May-21 May', Delivered: 200, RTO: 50, Pending: 100 },
-];
-
-// Sample data for NDR responses by attempt
-const ndrResponsesByAttemptData = [
-  {
-    category: 'Total NDR Raised',
-    ndrShipments: 5833,
-    firstNDRAttempt: 5179,
-    firstNDRDelivered: 1309,
-    secondNDRAttempt: 1905,
-    secondNDRDelivered: 203,
-    thirdNDRAttempt: 574,
-    thirdNDRDelivered: 82,
-    totalDelivered: 1624,
-    totalRTO: 2201,
-    lostDamaged: 0,
-  },
-  {
-    category: 'Seller Response',
-    ndrShipments: 49,
-    firstNDRAttempt: 45,
-    firstNDRDelivered: 8,
-    secondNDRAttempt: 26,
-    secondNDRDelivered: 7,
-    thirdNDRAttempt: 14,
-    thirdNDRDelivered: 3,
-    totalDelivered: 14,
-    totalRTO: 26,
-    lostDamaged: 0,
-  },
-  {
-    category: 'Seller Positive Response',
-    ndrShipments: 37,
-    firstNDRAttempt: 34,
-    firstNDRDelivered: 6,
-    secondNDRAttempt: 24,
-    secondNDRDelivered: 7,
-    thirdNDRAttempt: 10,
-    thirdNDRDelivered: 3,
-    totalDelivered: 14,
-    totalRTO: 15,
-    lostDamaged: 0,
-  },
-  {
-    category: 'Buyer Response',
-    ndrShipments: 2,
-    firstNDRAttempt: 2,
-    firstNDRDelivered: 0,
-    secondNDRAttempt: 2,
-    secondNDRDelivered: 0,
-    thirdNDRAttempt: 2,
-    thirdNDRDelivered: 2,
-    totalDelivered: 0,
-    totalRTO: 0,
-    lostDamaged: 0,
-  },
-  {
-    category: 'Buyer Positive Response',
-    ndrShipments: 2,
-    firstNDRAttempt: 2,
-    firstNDRDelivered: 0,
-    secondNDRAttempt: 2,
-    secondNDRDelivered: 0,
-    thirdNDRAttempt: 2,
-    thirdNDRDelivered: 2,
-    totalDelivered: 0,
-    totalRTO: 0,
-    lostDamaged: 0,
-  },
-];
-
-// Sample data for NDR vs Delivery Attempt
-const ndrVsDeliveryAttemptData = [
-  { name: '22 Apr-28 Apr', 'NDR Raised': 1200, 'Delivery Attempt': 1500 },
-  { name: '29 Apr-05 May', 'NDR Raised': 1800, 'Delivery Attempt': 2000 },
-  { name: '05 May-12 May', 'NDR Raised': 1400, 'Delivery Attempt': 1600 },
-  { name: '13 May-19 May', 'NDR Raised': 1100, 'Delivery Attempt': 1300 },
-  { name: '20 May-21 May', 'NDR Raised': 800, 'Delivery Attempt': 900 },
-];
-
-// Sample data for Seller Response
-const sellerResponseData = [
-  { name: '22 Apr-28 Apr', NDR: 1200, 'Seller Response': 100 },
-  { name: '29 Apr-05 May', NDR: 1800, 'Seller Response': 150 },
-  { name: '06 May-12 May', NDR: 1400, 'Seller Response': 120 },
-  { name: '13 May-19 May', NDR: 1100, 'Seller Response': 90 },
-  { name: '20 May-21 May', NDR: 800, 'Seller Response': 70 },
-];
-
-// Sample data for Buyer Response
-const buyerResponseData = [
-  { name: '22 Apr-28 Apr', NDR: 1200, 'Buyer Response': 50 },
-  { name: '29 Apr-05 May', NDR: 1800, 'Buyer Response': 80 },
-  { name: '06 May-12 May', NDR: 1400, 'Buyer Response': 60 },
-  { name: '13 May-19 May', NDR: 1100, 'Buyer Response': 40 },
-  { name: '20 May-21 May', NDR: 800, 'Buyer Response': 30 },
-];
-
-// Sample data for Success by Courier
-const successByCourierData = [
-  {
-    name: 'NDR Raised',
-    total: 19934,
-    zoneA: 745,
-    zoneB: 1361,
-    zoneC: 1560,
-    zoneD: 12118,
-    zoneE: 1150,
-  },
-  {
-    name: 'NDR Delivered',
-    total: 9507,
-    zoneA: 355,
-    zoneB: 731,
-    zoneC: 810,
-    zoneD: 6214,
-    zoneE: 460,
-  },
-];
-
-// Sample data for NDR Reason
-const ndrReasonData = [
-  {
-    reason: 'Customer Not Found / Not Available',
-    total: 2115,
-    pending: 364,
-    delivered: 12,
-    rto: 1743,
-    lostDamaged: 0,
-  },
-  {
-    reason: 'Customer Not Available',
-    total: 1230,
-    pending: 175,
-    delivered: 445,
-    rto: 607,
-    lostDamaged: 0,
-  },
-  {
-    reason: 'Wrong Address',
-    total: 629,
-    pending: 311,
-    delivered: 236,
-    rto: 284,
-    lostDamaged: 0,
-  },
-  {
-    reason: 'Payment/Delivery/PIN/OTP Invalid',
-    total: 627,
-    pending: 80,
-    delivered: 577,
-    rto: 10,
-    lostDamaged: 0,
-  },
-  {
-    reason: 'Customer Refused',
-    total: 291,
-    pending: 50,
-    delivered: 3,
-    rto: 200,
-    lostDamaged: 0,
-  },
-];
+import { useNdrAnalytics } from '@/lib/apis/analytics';
 
 export default function NDRPage() {
+  const { data, isLoading, error } = useNdrAnalytics();
+  // Fallback to empty object if no data
+  const analytics = data?.data || {};
+
   return (
     <div className="mx-auto space-y-6 p-4">
       <div className="flex flex-col">
@@ -267,27 +55,27 @@ export default function NDRPage() {
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
               <MetricCard
                 title="NDR Raised"
-                value={ndrMetricsData.raised}
+                value={analytics.metrics?.raised}
                 className="bg-gray-50 dark:bg-neutral-900"
               />
               <MetricCard
                 title="NDR Raised Percentage"
-                value={ndrMetricsData.percentage}
+                value={analytics.metrics?.percentage}
                 className="bg-gray-50 dark:bg-neutral-900"
               />
               <MetricCard
                 title="Action Required"
-                value={ndrMetricsData.actionRequired}
+                value={analytics.metrics?.actionRequired}
                 className="bg-gray-50 dark:bg-neutral-900"
               />
               <MetricCard
                 title="Delivered"
-                value={ndrMetricsData.delivered}
+                value={analytics.metrics?.delivered}
                 className="bg-gray-50 dark:bg-neutral-900"
               />
               <MetricCard
                 title="Your RTO"
-                value={ndrMetricsData.rto}
+                value={analytics.metrics?.rto}
                 className="bg-gray-50 dark:bg-neutral-900"
               />
             </div>
@@ -299,28 +87,28 @@ export default function NDRPage() {
           <ChartCard title="NDR Response Summary">
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col items-center justify-center rounded-md border p-4">
-                <div className="text-2xl font-bold">{ndrResponseSummaryData.sellerResponse}</div>
+                <div className="text-2xl font-bold">{analytics.responseSummary?.sellerResponse}</div>
                 <div className="text-muted-foreground text-sm">Seller Response</div>
               </div>
               <div className="flex flex-col items-center justify-center rounded-md border p-4">
-                <div className="text-2xl font-bold">{ndrResponseSummaryData.buyerResponse}</div>
+                <div className="text-2xl font-bold">{analytics.responseSummary?.buyerResponse}</div>
                 <div className="text-muted-foreground text-sm">Buyer Response</div>
               </div>
               <div className="flex flex-col items-center justify-center rounded-md border p-4">
                 <div className="text-2xl font-bold">
-                  {ndrResponseSummaryData.sellerPositiveResponse}
+                  {analytics.responseSummary?.sellerPositiveResponse}
                 </div>
                 <div className="text-muted-foreground text-sm">Seller Positive Response</div>
               </div>
               <div className="flex flex-col items-center justify-center rounded-md border p-4">
                 <div className="text-2xl font-bold">
-                  {ndrResponseSummaryData.buyerPositiveResponse}
+                  {analytics.responseSummary?.buyerPositiveResponse}
                 </div>
                 <div className="text-muted-foreground text-sm">Buyer Positive Response</div>
               </div>
               <div className="flex flex-col items-center justify-center rounded-md border p-4">
                 <div className="text-2xl font-bold">
-                  {ndrResponseSummaryData.sellerPositiveResponseDelivered}
+                  {analytics.responseSummary?.sellerPositiveResponseDelivered}
                 </div>
                 <div className="text-muted-foreground text-sm">
                   Seller Positive Response Delivered
@@ -328,7 +116,7 @@ export default function NDRPage() {
               </div>
               <div className="flex flex-col items-center justify-center rounded-md border p-4">
                 <div className="text-2xl font-bold">
-                  {ndrResponseSummaryData.buyerPositiveResponseDelivered}
+                  {analytics.responseSummary?.buyerPositiveResponseDelivered}
                 </div>
                 <div className="text-muted-foreground text-sm">
                   Buyer Positive Response Delivered
@@ -343,17 +131,17 @@ export default function NDRPage() {
                 <div className="mb-2 text-center font-medium">1st NDR</div>
                 <div className="flex flex-col gap-2">
                   <div className="flex flex-col items-center justify-center rounded-md p-2">
-                    <div className="text-sm font-medium">{ndrFunnelData.firstNDR.total}</div>
+                    <div className="text-sm font-medium">{analytics.funnel?.firstNDR?.total}</div>
                     <div className="text-muted-foreground text-center text-xs">Total Shipments</div>
                   </div>
                   <div className="flex flex-col items-center justify-center rounded-md p-2">
-                    <div className="text-sm font-medium">{ndrFunnelData.firstNDR.pending}</div>
+                    <div className="text-sm font-medium">{analytics.funnel?.firstNDR?.pending}</div>
                     <div className="text-muted-foreground text-center text-xs">
                       Pending Shipments
                     </div>
                   </div>
                   <div className="flex flex-col items-center justify-center rounded-md p-2">
-                    <div className="text-sm font-medium">{ndrFunnelData.firstNDR.delivered}</div>
+                    <div className="text-sm font-medium">{analytics.funnel?.firstNDR?.delivered}</div>
                     <div className="text-muted-foreground text-center text-xs">
                       Delivered Shipments
                     </div>
@@ -364,17 +152,17 @@ export default function NDRPage() {
                 <div className="mb-2 text-center font-medium">2nd NDR</div>
                 <div className="flex flex-col gap-2">
                   <div className="flex flex-col items-center justify-center rounded-md p-2 dark:bg-neutral-900">
-                    <div className="text-sm font-medium">{ndrFunnelData.secondNDR.total}</div>
+                    <div className="text-sm font-medium">{analytics.funnel?.secondNDR?.total}</div>
                     <div className="text-muted-foreground text-center text-xs">Total Shipments</div>
                   </div>
                   <div className="flex flex-col items-center justify-center rounded-md p-2">
-                    <div className="text-sm font-medium">{ndrFunnelData.secondNDR.pending}</div>
+                    <div className="text-sm font-medium">{analytics.funnel?.secondNDR?.pending}</div>
                     <div className="text-muted-foreground text-center text-xs">
                       Pending Shipments
                     </div>
                   </div>
                   <div className="flex flex-col items-center justify-center rounded-md p-2">
-                    <div className="text-sm font-medium">{ndrFunnelData.secondNDR.delivered}</div>
+                    <div className="text-sm font-medium">{analytics.funnel?.secondNDR?.delivered}</div>
                     <div className="text-muted-foreground text-center text-xs">
                       Delivered Shipments
                     </div>
@@ -385,17 +173,17 @@ export default function NDRPage() {
                 <div className="mb-2 text-center font-medium">3rd NDR</div>
                 <div className="flex flex-col gap-2">
                   <div className="flex flex-col items-center justify-center rounded-md p-2 dark:bg-neutral-900">
-                    <div className="text-sm font-medium">{ndrFunnelData.thirdNDR.total}</div>
+                    <div className="text-sm font-medium">{analytics.funnel?.thirdNDR?.total}</div>
                     <div className="text-muted-foreground text-center text-xs">Total Shipments</div>
                   </div>
                   <div className="flex flex-col items-center justify-center rounded-md p-2">
-                    <div className="text-sm font-medium">{ndrFunnelData.thirdNDR.pending}</div>
+                    <div className="text-sm font-medium">{analytics.funnel?.thirdNDR?.pending}</div>
                     <div className="text-muted-foreground text-center text-xs">
                       Pending Shipments
                     </div>
                   </div>
                   <div className="flex flex-col items-center justify-center rounded-md p-2">
-                    <div className="text-sm font-medium">{ndrFunnelData.thirdNDR.delivered}</div>
+                    <div className="text-sm font-medium">{analytics.funnel?.thirdNDR?.delivered}</div>
                     <div className="text-muted-foreground text-center text-xs">
                       Delivered Shipments
                     </div>
@@ -410,7 +198,7 @@ export default function NDRPage() {
         <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
           <ChartCard title="NDR Reason Split">
             <PieChart
-              data={ndrReasonSplitData}
+              data={analytics.reasonSplit}
               // tooltipFormatter={(value) => [`${value}`, "NDRs"]}
               showLegend={true}
               legendPosition="bottom"
@@ -419,7 +207,7 @@ export default function NDRPage() {
 
           <ChartCard title="NDR Status Split">
             <BarChart
-              data={ndrStatusSplitData}
+              data={analytics.statusSplit}
               bars={[
                 { dataKey: 'Delivered', color: '#4ade80' },
                 { dataKey: 'RTO', color: '#818cf8' },
@@ -447,7 +235,7 @@ export default function NDRPage() {
               { header: 'Total RTO', accessorKey: 'totalRTO' },
               { header: 'Lost/ Damaged', accessorKey: 'lostDamaged' },
             ]}
-            data={ndrResponsesByAttemptData}
+            data={analytics.responsesByAttempt}
           />
         </div>
 
@@ -455,7 +243,7 @@ export default function NDRPage() {
         <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-3">
           <ChartCard title="NDR vs Delivery Attempt">
             <ComboChart
-              data={ndrVsDeliveryAttemptData}
+              data={analytics.ndrVsDeliveryAttempt}
               bars={[{ dataKey: 'NDR Raised', color: '#818cf8' }]}
               lines={[{ dataKey: 'Delivery Attempt', color: '#facc15' }]}
               height={300}
@@ -464,7 +252,7 @@ export default function NDRPage() {
 
           <ChartCard title="Seller Response">
             <BarChart
-              data={sellerResponseData}
+              data={analytics.sellerResponse}
               bars={[
                 { dataKey: 'NDR', color: '#facc15' },
                 { dataKey: 'Seller Response', color: '#818cf8' },
@@ -475,7 +263,7 @@ export default function NDRPage() {
 
           <ChartCard title="Buyer Response">
             <BarChart
-              data={buyerResponseData}
+              data={analytics.buyerResponse}
               bars={[
                 { dataKey: 'NDR', color: '#facc15' },
                 { dataKey: 'Buyer Response', color: '#fb923c' },
@@ -498,7 +286,7 @@ export default function NDRPage() {
               { header: 'Zone D', accessorKey: 'zoneD' },
               { header: 'Zone E', accessorKey: 'zoneE' },
             ]}
-            data={successByCourierData}
+            data={analytics.successByCourier}
           />
         </div>
 
@@ -514,7 +302,7 @@ export default function NDRPage() {
               { header: 'RTO', accessorKey: 'rto' },
               { header: 'Lost/ Damaged', accessorKey: 'lostDamaged' },
             ]}
-            data={ndrReasonData}
+            data={analytics.ndrReason}
           />
         </div>
 
