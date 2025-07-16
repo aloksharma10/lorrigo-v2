@@ -15,21 +15,21 @@ import type { ShipmentPerformanceAnalytics } from '@/lib/type/shipment-analysis'
 export default function NDRPage() {
   // Use the unified shipment analysis hook
   const { performance, isTokenReady } = useShipmentAnalysis();
-  const analytics : any = performance.data || {};
+  const analytics = (performance.data || {}) as any;
   const isLoading = performance.isLoading;
 
-  // Map NDR metrics
-  const ndrMetrics = (analytics as any).topIssues || [];
-  // Map other NDR-related analytics as needed
-
-  // Example: NDR summary metrics (replace with real mapping as needed)
-  const metrics = (analytics as any).ndrMetrics || {};
-  const responseSummary = (analytics as any).ndrResponseSummary || {};
-  const funnel = (analytics as any).ndrFunnel || {};
-  const reasonSplit = (analytics as any).ndrReasonSplit || [];
-  const statusSplit = (analytics as any).ndrStatusSplit || [];
-  const responsesByAttempt = (analytics as any).ndrResponsesByAttempt || [];
-  const ndrVsDeliveryAttempt = (analytics as any).ndrVsDeliveryAttempt || [];
+  // Map NDR analytics
+  const metrics = analytics?.ndrMetrics || {};
+  const responseSummary = analytics?.ndrResponseSummary || {};
+  const funnel = analytics?.ndrFunnel || {};
+  const reasonSplit = analytics?.ndrReasonSplit || [];
+  const statusSplit = analytics?.ndrStatusSplit || [];
+  const responsesByAttempt = analytics?.ndrResponsesByAttempt || [];
+  const ndrVsDeliveryAttempt = analytics?.ndrVsDeliveryAttempt || [];
+  const sellerResponse = analytics?.sellerResponse || [];
+  const buyerResponse = analytics?.buyerResponse || [];
+  const successByCourier = analytics?.successByCourier || [];
+  const ndrReason = analytics?.ndrReason || [];
 
   return (
     <div className="mx-auto space-y-6 p-4">
@@ -229,6 +229,7 @@ export default function NDRPage() {
                 { dataKey: 'Pending', color: '#fb923c' },
               ]}
               height={300}
+              // isLoading={isLoading}
             />
           </ChartCard>
         </div>
@@ -251,6 +252,7 @@ export default function NDRPage() {
               { header: 'Lost/ Damaged', accessorKey: 'lostDamaged' },
             ]}
             data={responsesByAttempt}
+            // isLoading={isLoading}
           />
         </div>
 
@@ -262,28 +264,31 @@ export default function NDRPage() {
               bars={[{ dataKey: 'NDR Raised', color: '#818cf8' }]}
               lines={[{ dataKey: 'Delivery Attempt', color: '#facc15' }]}
               height={300}
+              // isLoading={isLoading}
             />
           </ChartCard>
 
           <ChartCard title="Seller Response">
             <BarChart
-              data={analytics.sellerResponse}
+              data={sellerResponse}
               bars={[
                 { dataKey: 'NDR', color: '#facc15' },
                 { dataKey: 'Seller Response', color: '#818cf8' },
               ]}
               height={300}
+              // isLoading={isLoading}
             />
           </ChartCard>
 
           <ChartCard title="Buyer Response">
             <BarChart
-              data={analytics.buyerResponse}
+              data={buyerResponse}
               bars={[
                 { dataKey: 'NDR', color: '#facc15' },
                 { dataKey: 'Buyer Response', color: '#fb923c' },
               ]}
               height={300}
+              // isLoading={isLoading}
             />
           </ChartCard>
         </div>
@@ -301,7 +306,8 @@ export default function NDRPage() {
               { header: 'Zone D', accessorKey: 'zoneD' },
               { header: 'Zone E', accessorKey: 'zoneE' },
             ]}
-            data={analytics.successByCourier}
+            data={successByCourier}
+            // isLoading={isLoading}
           />
         </div>
 
@@ -317,7 +323,8 @@ export default function NDRPage() {
               { header: 'RTO', accessorKey: 'rto' },
               { header: 'Lost/ Damaged', accessorKey: 'lostDamaged' },
             ]}
-            data={analytics.ndrReason}
+            data={ndrReason}
+            // isLoading={isLoading}
           />
         </div>
 

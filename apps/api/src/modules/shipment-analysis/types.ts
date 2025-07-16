@@ -101,8 +101,8 @@ export interface ShipmentOverviewMetrics {
   lostDamaged: number;
   onTimeDelivery: number;
   delayedDelivery: number;
-  averageDeliveryTime: number;
-  successRate: number;
+  averageDeliveryTime: string;
+  successRate: string;
 }
 
 export interface CourierPerformanceItem {

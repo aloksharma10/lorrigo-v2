@@ -71,7 +71,7 @@ export function PieChart({
   showDataLabels = false,
   activeIndex: externalActiveIndex,
   setActiveIndex: externalSetActiveIndex,
-  showLegend = false,
+  showLegend = true,
   legendPosition = 'bottom',
 }: PieChartProps) {
   const [internalActiveIndex, setInternalActiveIndex] = useState<number | undefined>(undefined);
@@ -95,6 +95,7 @@ export function PieChart({
         <ResponsiveContainer width="100%" height="100%">
           <RechartsChart>
             <Pie
+             
               data={data}
               cx="50%"
               cy="50%"

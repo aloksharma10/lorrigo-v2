@@ -40,42 +40,77 @@ import { redis } from '@/lib/redis';
 export class AnalyticsService {
   constructor(private fastify: FastifyInstance) {}
 
-  // Example: Fetch overview analytics data (stub)
   async getOverviewAnalytics(userId: string): Promise<OverviewAnalytics> {
-    // TODO: Implement efficient data aggregation using Prisma, Redis, BullMQ, etc.
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+
+    // Orders today
+    const ordersToday = await prisma.order.count({
+      where: {
+        user_id: userId,
+        created_at: { gte: today, lte: tomorrow },
+      },
+    });
+
+    // Revenue today
+    const revenueTodayAgg = await prisma.order.aggregate({
+      where: {
+        user_id: userId,
+        created_at: { gte: today, lte: tomorrow },
+      },
+      _sum: { total_amount: true },
+    });
+    const revenueToday = revenueTodayAgg._sum.total_amount || 0;
+
+    // Shipments
+    const shipments = await prisma.shipment.findMany({
+      where: { user_id: userId },
+      select: { status: true },
+    });
+    const shipmentStats = {
+      total: shipments.length,
+      pending: shipments.filter(s => s.status === 'PICKUP_SCHEDULED').length,
+      inTransit: shipments.filter(s => s.status === 'IN_TRANSIT').length,
+      delivered: shipments.filter(s => s.status === 'DELIVERED').length,
+      rto: shipments.filter(s => ['RTO_INITIATED', 'RTO_IN_TRANSIT', 'RTO_DELIVERED'].includes(s.status)).length,
+    };
+
+    // NDR
+    const ndrOrders = await prisma.nDROrder.findMany({
+      where: { customer: { orders: { some: { user_id: userId } } } },
+      select: { action_taken: true, delivered_date: true },
+    });
+    const ndrStats = {
+      total: ndrOrders.length,
+      reattempts: ndrOrders.filter(o => o.action_taken).length,
+      delivered: ndrOrders.filter(o => o.delivered_date).length,
+    };
+
     return {
-      ordersToday: 0,
-      revenueToday: 0,
-      shipments: {
-        total: 0,
-        pending: 0,
-        inTransit: 0,
-        delivered: 0,
-        rto: 0,
-      },
-      ndr: {
-        total: 0,
-        reattempts: 0,
-        delivered: 0,
-      },
-      // Add more fields as needed
+      ordersToday,
+      revenueToday,
+      shipments: shipmentStats,
+      ndr: ndrStats,
     };
   }
 
-  // Orders analytics (full implementation)
   async getOrdersAnalytics(userId: string, filters: any): Promise<OrdersAnalytics> {
     const cacheKey = `analytics:orders:full:${userId}`;
     const cached = await redis.get(cacheKey);
     if (cached) {
+      this.fastify.log.info({ userId, cacheKey }, 'Cache hit for orders analytics');
       return JSON.parse(cached);
     }
+    this.fastify.log.info({ userId, cacheKey }, 'Cache miss for orders analytics');
 
     // Default: last 7 days
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(endDate.getDate() - 6);
 
-    // Fetch orders with customer and address, and items
+    // Fetch orders with related data
     const orders = await prisma.order.findMany({
       where: {
         user_id: userId,
@@ -85,8 +120,8 @@ export class AnalyticsService {
         },
       },
       select: {
-        created_at: true,
         id: true,
+        created_at: true,
         payment_method: true,
         total_amount: true,
         customer: {
@@ -95,7 +130,18 @@ export class AnalyticsService {
             address: { select: { state: true } },
           },
         },
-        items: { select: { name: true, units: true, selling_price: true } },
+        items: {
+          select: {
+            name: true,
+            units: true,
+            selling_price: true,
+          },
+        },
+        shipment: {
+          select: {
+            status: true,
+          },
+        },
       },
     });
 
@@ -154,7 +200,7 @@ export class AnalyticsService {
         const name = item.name || 'Unknown';
         productMap[name] = productMap[name] || { unitSold: 0, revenue: 0 };
         productMap[name].unitSold += item.units || 1;
-        productMap[name].revenue += item.selling_price || 0;
+        productMap[name].revenue += (item.selling_price || 0) * (item.units || 1);
       }
     }
     const topProducts: TopProductItem[] = Object.entries(productMap)
@@ -185,7 +231,15 @@ export class AnalyticsService {
       const key = order.created_at.toISOString().slice(0, 10);
       if (summaryMap[key]) {
         summaryMap[key].totalOrders++;
-        // TODO: Add logic for pickupScheduled, inTransit, delivered, etc. by joining with shipments
+        const status = order.shipment?.status;
+        if (status === 'NEW' || status === 'COURIER_ASSIGNED') summaryMap[key].pickupUnscheduled++;
+        if (status === 'PICKUP_SCHEDULED' || status === 'OUT_FOR_PICKUP') summaryMap[key].pickupScheduled++;
+        if (status === 'IN_TRANSIT' || status === 'OUT_FOR_DELIVERY') summaryMap[key].inTransit++;
+        if (status === 'DELIVERED') summaryMap[key].delivered++;
+        if (status === 'NDR') summaryMap[key].undelivered++;
+        if (['RTO_INITIATED', 'RTO_IN_TRANSIT', 'RTO_DELIVERED'].includes(status || '')) summaryMap[key].rto++;
+        if (status === 'EXCEPTION') summaryMap[key].lostDamaged++;
+        if (['CANCELLED_SHIPMENT', 'CANCELLED_ORDER'].includes(status || '')) summaryMap[key].cancelled++;
       }
     }
     const summary = Object.values(summaryMap);
@@ -197,7 +251,7 @@ export class AnalyticsService {
       topCustomers,
       topProducts,
     };
-    await redis.set(cacheKey, JSON.stringify(result), 'EX', 120); // 2 min cache
+    await redis.set(cacheKey, JSON.stringify(result), 'EX', 120);
     return result;
   }
 
@@ -205,15 +259,17 @@ export class AnalyticsService {
     const cacheKey = `analytics:shipments:full:${userId}`;
     const cached = await redis.get(cacheKey);
     if (cached) {
+      this.fastify.log.info({ userId, cacheKey }, 'Cache hit for shipments analytics');
       return JSON.parse(cached);
     }
+    this.fastify.log.info({ userId, cacheKey }, 'Cache miss for shipments analytics');
 
     // Default: last 30 days
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(endDate.getDate() - 29);
 
-    // Fetch shipments with courier, zone, channel, and weight
+    // Fetch shipments with related data
     const shipments = await prisma.shipment.findMany({
       where: {
         user_id: userId,
@@ -224,16 +280,19 @@ export class AnalyticsService {
       },
       select: {
         id: true,
-        courier: { select: { name: true } },
         status: true,
         order_zone: true,
         created_at: true,
+        pickup_date: true,
+        edd: true,
+        courier: { select: { name: true } },
         order: {
           select: {
             order_channel_config: { select: { channel: true } },
             package: { select: { weight: true } },
           },
         },
+        ndr: { select: { id: true, delivered_date: true } },
       },
     });
 
@@ -254,11 +313,24 @@ export class AnalyticsService {
           ndrDelivered: '0',
         };
       }
-      // For demo, just count total shipments
-      courierMap[courier].totalShipments = String(
-        Number(courierMap[courier].totalShipments) + 1
-      );
-      // TODO: Add real aggregation for delivered, rto, etc.
+      courierMap[courier].totalShipments = String(Number(courierMap[courier].totalShipments) + 1);
+      if (s.status === 'DELIVERED') courierMap[courier].delivered = String(Number(courierMap[courier].delivered) + 1);
+      if (['RTO_INITIATED', 'RTO_IN_TRANSIT', 'RTO_DELIVERED'].includes(s.status)) {
+        courierMap[courier].rto = String(Number(courierMap[courier].rto) + 1);
+      }
+      if (s.status === 'EXCEPTION') courierMap[courier].lostDamaged = String(Number(courierMap[courier].lostDamaged) + 1);
+      if (s.pickup_date && s.created_at) {
+        const pickupDiff = (s.pickup_date.getTime() - s.created_at.getTime()) / (1000 * 3600);
+        if (pickupDiff <= 24) courierMap[courier].pickupWithinSLA = String(Number(courierMap[courier].pickupWithinSLA) + 1);
+      }
+      if (s.status === 'DELIVERED' && s.edd) {
+        const deliveryDate = s.created_at; // Assuming created_at as delivery date for simplicity
+        if (deliveryDate <= s.edd) {
+          courierMap[courier].deliveredWithinSLA = String(Number(courierMap[courier].deliveredWithinSLA) + 1);
+        }
+      }
+      if (s.ndr?.id) courierMap[courier].ndrRaised = String(Number(courierMap[courier].ndrRaised) + 1);
+      if (s.ndr?.delivered_date) courierMap[courier].ndrDelivered = String(Number(courierMap[courier].ndrDelivered) + 1);
     }
     const courierWise = Object.values(courierMap);
 
@@ -269,8 +341,9 @@ export class AnalyticsService {
       if (!zoneMap[zone]) {
         zoneMap[zone] = { name: zone, Delivered: 0, RTO: 0, 'Lost/Damage': 0 };
       }
-      // TODO: Add real aggregation for Delivered, RTO, Lost/Damage
-      zoneMap[zone].Delivered += 1;
+      if (s.status === 'DELIVERED') zoneMap[zone].Delivered++;
+      if (['RTO_INITIATED', 'RTO_IN_TRANSIT', 'RTO_DELIVERED'].includes(s.status)) zoneMap[zone].RTO++;
+      if (s.status === 'EXCEPTION') zoneMap[zone]['Lost/Damage']++;
     }
     const zoneWise = Object.values(zoneMap);
 
@@ -326,7 +399,7 @@ export class AnalyticsService {
       })
     );
 
-    // Shipment Status (counts by status)
+    // Shipment Status
     const statusMap: Record<string, number> = {};
     for (const s of shipments) {
       const status = s.status || 'Unknown';
@@ -334,18 +407,21 @@ export class AnalyticsService {
     }
     const shipmentStatus = Object.entries(statusMap).map(([name, value]) => ({ name, value }));
 
-    // Delivery Performance (stub: random split for demo)
+    // Delivery Performance
     let onTime = 0, late = 0;
     for (const s of shipments) {
-      // TODO: Replace with real logic based on delivery date vs EDD
-      if (Math.random() > 0.2) onTime++; else late++;
+      if (s.status === 'DELIVERED' && s.edd && s.created_at) {
+        const deliveryDate = s.created_at; // Using created_at as proxy; update to actual delivery date if available
+        if (deliveryDate <= s.edd) onTime++;
+        else late++;
+      }
     }
     const deliveryPerformance = [
       { name: 'On Time', value: onTime },
       { name: 'Late', value: late },
     ];
 
-    // Shipment Overview (aggregate by courier)
+    // Shipment Overview
     const overviewMap: Record<string, any> = {};
     for (const s of shipments) {
       const courierName = s.courier?.name || 'Others';
@@ -362,13 +438,12 @@ export class AnalyticsService {
         };
       }
       overviewMap[courierName].totalShipment++;
-      // Demo: increment random fields
-      if (s.status === 'PICKUP_SCHEDULED') overviewMap[courierName].pickupScheduled++;
-      if (s.status === 'IN_TRANSIT') overviewMap[courierName].inTransit++;
+      if (['NEW', 'COURIER_ASSIGNED'].includes(s.status)) overviewMap[courierName].pickupUnscheduled++;
+      if (['PICKUP_SCHEDULED', 'OUT_FOR_PICKUP'].includes(s.status)) overviewMap[courierName].pickupScheduled++;
+      if (['IN_TRANSIT', 'OUT_FOR_DELIVERY'].includes(s.status)) overviewMap[courierName].inTransit++;
       if (s.status === 'DELIVERED') overviewMap[courierName].delivered++;
-      if (s.status === 'RTO_INITIATED' || s.status === 'RTO_IN_TRANSIT' || s.status === 'RTO_DELIVERED') overviewMap[courierName].rto++;
+      if (['RTO_INITIATED', 'RTO_IN_TRANSIT', 'RTO_DELIVERED'].includes(s.status)) overviewMap[courierName].rto++;
       if (s.status === 'EXCEPTION') overviewMap[courierName].lostDamaged++;
-      if (s.status === 'CANCELLED_SHIPMENT' || s.status === 'CANCELLED_ORDER') overviewMap[courierName].pickupUnscheduled++;
     }
     const shipmentOverview = Object.values(overviewMap);
 
@@ -382,7 +457,7 @@ export class AnalyticsService {
       deliveryPerformance,
       shipmentOverview,
     };
-    await redis.set(cacheKey, JSON.stringify(result), 'EX', 120); // 2 min cache
+    await redis.set(cacheKey, JSON.stringify(result), 'EX', 120);
     return result;
   }
 
@@ -390,15 +465,17 @@ export class AnalyticsService {
     const cacheKey = `analytics:ndr:full:${userId}`;
     const cached = await redis.get(cacheKey);
     if (cached) {
+      this.fastify.log.info({ userId, cacheKey }, 'Cache hit for NDR analytics');
       return JSON.parse(cached);
     }
+    this.fastify.log.info({ userId, cacheKey }, 'Cache miss for NDR analytics');
 
     // Default: last 30 days
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(endDate.getDate() - 29);
 
-    // Fetch NDR orders with related data
+    // Fetch NDR orders
     const ndrOrders = await prisma.nDROrder.findMany({
       where: {
         customer: { orders: { some: { user_id: userId } } },
@@ -414,61 +491,211 @@ export class AnalyticsService {
         attempts: true,
         courier: { select: { name: true } },
         order: { select: { id: true, user_id: true } },
-        ndr_history: true,
-        product_items: true,
-        created_at: true,
+        ndr_history: {
+          select: {
+            ndr_reason: true,
+            action_by: true,
+            ndr_attempt: true,
+            comment: true,
+            created_at: true,
+          },
+        },
       },
     });
 
-    // Metrics (stubbed for now)
+    // Metrics
+    const totalShipments = await prisma.shipment.count({
+      where: { user_id: userId, created_at: { gte: startDate, lte: endDate } },
+    });
     const metrics: NdrMetrics = {
       raised: String(ndrOrders.length),
-      percentage: '34.33%',
-      actionRequired: '0',
-      delivered: '0',
-      rto: '0',
+      percentage: totalShipments ? `${((ndrOrders.length / totalShipments) * 100).toFixed(2)}%` : '0%',
+      actionRequired: String(ndrOrders.filter(o => !o.action_taken).length),
+      delivered: String(ndrOrders.filter(o => o.delivered_date).length),
+      rto: String(ndrOrders.filter(o => o.cancellation_reason?.includes('RTO')).length),
     };
 
-    // Response Summary (stubbed)
+    // Response Summary
     const responseSummary: NdrResponseSummary = {
-      sellerResponse: 0,
-      buyerResponse: 0,
-      sellerPositiveResponse: 0,
-      buyerPositiveResponse: 0,
-      sellerPositiveResponseDelivered: 0,
-      buyerPositiveResponseDelivered: 0,
+      sellerResponse: ndrOrders.filter(o => o.ndr_history.some(h => h.action_by === 1)).length,
+      buyerResponse: ndrOrders.filter(o => o.ndr_history.some(h => h.action_by === 2)).length,
+      sellerPositiveResponse: ndrOrders.filter(o => o.ndr_history.some(h => h.action_by === 1 && h.comment?.includes('ACCEPT'))).length,
+      buyerPositiveResponse: ndrOrders.filter(o => o.ndr_history.some(h => h.action_by === 2 && h.comment?.includes('ACCEPT'))).length,
+      sellerPositiveResponseDelivered: ndrOrders.filter(o => o.ndr_history.some(h => h.action_by === 1 && h.comment?.includes('ACCEPT')) && o.delivered_date).length,
+      buyerPositiveResponseDelivered: ndrOrders.filter(o => o.ndr_history.some(h => h.action_by === 2 && h.comment?.includes('ACCEPT')) && o.delivered_date).length,
     };
 
-    // Funnel (stubbed)
+    // Funnel
     const funnel: NdrFunnel = {
-      firstNDR: { total: '0', pending: 0, delivered: '0' },
-      secondNDR: { total: '0', pending: 0, delivered: 0 },
-      thirdNDR: { total: '0', pending: 0, delivered: 0 },
+      firstNDR: {
+        total: String(ndrOrders.filter(o => o.attempts === 1).length),
+        pending: ndrOrders.filter(o => o.attempts === 1 && !o.delivered_date && !o.cancellation_reason).length,
+        delivered: String(ndrOrders.filter(o => o.attempts === 1 && o.delivered_date).length),
+      },
+      secondNDR: {
+        total: String(ndrOrders.filter(o => o.attempts === 2).length),
+        pending: ndrOrders.filter(o => o.attempts === 2 && !o.delivered_date && !o.cancellation_reason).length,
+        delivered: ndrOrders.filter(o => o.attempts === 2 && o.delivered_date).length,
+      },
+      thirdNDR: {
+        total: String(ndrOrders.filter(o => o.attempts >= 3).length),
+        pending: ndrOrders.filter(o => o.attempts >= 3 && !o.delivered_date && !o.cancellation_reason).length,
+        delivered: ndrOrders.filter(o => o.attempts >= 3 && o.delivered_date).length,
+      },
     };
 
-    // Reason Split (stubbed)
-    const reasonSplit: NdrReasonSplitItem[] = [];
+    // Reason Split
+    const reasonMap: Record<string, number> = {};
+    for (const o of ndrOrders) {
+      const reason = o.ndr_history[0]?.ndr_reason || 'Unknown';
+      reasonMap[reason] = (reasonMap[reason] || 0) + 1;
+    }
+    const reasonSplit: NdrReasonSplitItem[] = Object.entries(reasonMap).map(([name, value]) => ({
+      name,
+      value,
+      percentage: ndrOrders.length ? `${((value / ndrOrders.length) * 100).toFixed(2)}%` : '0%',
+    }));
 
-    // Status Split (stubbed)
-    const statusSplit: NdrStatusSplitItem[] = [];
+    // Status Split
+    // NdrStatusSplitItem: { name, Delivered, RTO, Pending }
+    const statusCounts: Record<string, { Delivered: number; RTO: number; Pending: number }> = {};
+    for (const o of ndrOrders) {
+      const status = o.delivered_date ? 'Delivered' : o.cancellation_reason ? 'RTO' : 'Pending';
+      if (!statusCounts[status]) statusCounts[status] = { Delivered: 0, RTO: 0, Pending: 0 };
+      if (status === 'Delivered' || status === 'RTO' || status === 'Pending') {
+        statusCounts[status][status]++;
+      }
+    }
+    const statusSplit: NdrStatusSplitItem[] = Object.entries(statusCounts).map(([name, counts]) => ({
+      name,
+      Delivered: counts.Delivered,
+      RTO: counts.RTO,
+      Pending: counts.Pending,
+    }));
 
-    // Responses By Attempt (stubbed)
-    const responsesByAttempt: NdrResponsesByAttemptItem[] = [];
+    // Responses By Attempt
+    // NdrResponsesByAttemptItem: { category, ndrShipments, firstNDRAttempt, firstNDRDelivered, secondNDRAttempt, secondNDRDelivered, thirdNDRAttempt, thirdNDRDelivered, totalDelivered, totalRTO, lostDamaged }
+    const responsesByAttempt: NdrResponsesByAttemptItem[] = [
+      {
+        category: 'First Attempt',
+        ndrShipments: ndrOrders.filter(o => o.attempts === 1).length,
+        firstNDRAttempt: ndrOrders.filter(o => o.attempts === 1).length,
+        firstNDRDelivered: ndrOrders.filter(o => o.attempts === 1 && o.delivered_date).length,
+        secondNDRAttempt: 0,
+        secondNDRDelivered: 0,
+        thirdNDRAttempt: 0,
+        thirdNDRDelivered: 0,
+        totalDelivered: ndrOrders.filter(o => o.delivered_date).length,
+        totalRTO: ndrOrders.filter(o => o.cancellation_reason).length,
+        lostDamaged: 0,
+      },
+      {
+        category: 'Second Attempt',
+        ndrShipments: ndrOrders.filter(o => o.attempts === 2).length,
+        firstNDRAttempt: 0,
+        firstNDRDelivered: 0,
+        secondNDRAttempt: ndrOrders.filter(o => o.attempts === 2).length,
+        secondNDRDelivered: ndrOrders.filter(o => o.attempts === 2 && o.delivered_date).length,
+        thirdNDRAttempt: 0,
+        thirdNDRDelivered: 0,
+        totalDelivered: ndrOrders.filter(o => o.delivered_date).length,
+        totalRTO: ndrOrders.filter(o => o.cancellation_reason).length,
+        lostDamaged: 0,
+      },
+      {
+        category: 'Third+ Attempt',
+        ndrShipments: ndrOrders.filter(o => o.attempts >= 3).length,
+        firstNDRAttempt: 0,
+        firstNDRDelivered: 0,
+        secondNDRAttempt: 0,
+        secondNDRDelivered: 0,
+        thirdNDRAttempt: ndrOrders.filter(o => o.attempts >= 3).length,
+        thirdNDRDelivered: ndrOrders.filter(o => o.attempts >= 3 && o.delivered_date).length,
+        totalDelivered: ndrOrders.filter(o => o.delivered_date).length,
+        totalRTO: ndrOrders.filter(o => o.cancellation_reason).length,
+        lostDamaged: 0,
+      },
+    ];
 
-    // Vs Delivery Attempt (stubbed)
-    const vsDeliveryAttempt: NdrVsDeliveryAttemptItem[] = [];
+    // Vs Delivery Attempt
+    // NdrVsDeliveryAttemptItem: { name, ndrRaised, deliveryAttempt }
+    const vsDeliveryAttempt: NdrVsDeliveryAttemptItem[] = [
+      {
+        name: 'First Attempt',
+        ndrRaised: ndrOrders.filter(o => o.attempts === 1).length,
+        deliveryAttempt: ndrOrders.filter(o => o.attempts === 1 && o.delivered_date).length,
+      },
+      {
+        name: 'Second Attempt',
+        ndrRaised: ndrOrders.filter(o => o.attempts === 2).length,
+        deliveryAttempt: ndrOrders.filter(o => o.attempts === 2 && o.delivered_date).length,
+      },
+      {
+        name: 'Third+ Attempt',
+        ndrRaised: ndrOrders.filter(o => o.attempts >= 3).length,
+        deliveryAttempt: ndrOrders.filter(o => o.attempts >= 3 && o.delivered_date).length,
+      },
+    ];
 
-    // Seller Response (stubbed)
-    const sellerResponse: NdrSellerBuyerResponseItem[] = [];
+    // Seller/Buyer Response
+    // NdrSellerBuyerResponseItem: { name, ndr, sellerResponse?, buyerResponse? }
+    const sellerResponse: NdrSellerBuyerResponseItem[] = [
+      {
+        name: 'Seller',
+        ndr: ndrOrders.filter(o => o.ndr_history.some(h => h.action_by === 1)).length,
+        sellerResponse: ndrOrders.filter(o => o.ndr_history.some(h => h.action_by === 1)).length,
+      },
+    ];
+    const buyerResponse: NdrSellerBuyerResponseItem[] = [
+      {
+        name: 'Buyer',
+        ndr: ndrOrders.filter(o => o.ndr_history.some(h => h.action_by === 2)).length,
+        buyerResponse: ndrOrders.filter(o => o.ndr_history.some(h => h.action_by === 2)).length,
+      },
+    ];
 
-    // Buyer Response (stubbed)
-    const buyerResponse: NdrSellerBuyerResponseItem[] = [];
+    // Success By Courier
+    // NdrSuccessByCourierItem: { name, total, zoneA, zoneB, zoneC, zoneD, zoneE }
+    const successByCourierMap: Record<string, NdrSuccessByCourierItem> = {};
+    for (const o of ndrOrders) {
+      const courier = o.courier?.name || 'Others';
+      if (!successByCourierMap[courier]) {
+        successByCourierMap[courier] = {
+          name: courier,
+          total: 0,
+          zoneA: 0,
+          zoneB: 0,
+          zoneC: 0,
+          zoneD: 0,
+          zoneE: 0,
+        };
+      }
+      successByCourierMap[courier].total++;
+      // You can add logic to increment zoneA-E based on order_zone if available
+    }
+    const successByCourier: NdrSuccessByCourierItem[] = Object.values(successByCourierMap);
 
-    // Success By Courier (stubbed)
-    const successByCourier: NdrSuccessByCourierItem[] = [];
-
-    // Reason Table (stubbed)
-    const reasonTable: NdrReasonTableItem[] = [];
+    // Reason Table
+    // NdrReasonTableItem: { reason, total, pending, delivered, rto, lostDamaged }
+    const reasonTableMap: Record<string, NdrReasonTableItem> = {};
+    for (const o of ndrOrders) {
+      const reason = o.ndr_history[0]?.ndr_reason || 'Unknown';
+      if (!reasonTableMap[reason]) {
+        reasonTableMap[reason] = {
+          reason,
+          total: 0,
+          pending: 0,
+          delivered: 0,
+          rto: 0,
+          lostDamaged: 0,
+        };
+      }
+      reasonTableMap[reason].total++;
+      if (o.delivered_date) reasonTableMap[reason].delivered++;
+      else if (o.cancellation_reason) reasonTableMap[reason].rto++;
+      else reasonTableMap[reason].pending++;
+    }
+    const reasonTable: NdrReasonTableItem[] = Object.values(reasonTableMap);
 
     const result: NdrAnalytics = {
       metrics,
@@ -483,7 +710,7 @@ export class AnalyticsService {
       successByCourier,
       reasonTable,
     };
-    await redis.set(cacheKey, JSON.stringify(result), 'EX', 120); // 2 min cache
+    await redis.set(cacheKey, JSON.stringify(result), 'EX', 120);
     return result;
   }
 
@@ -491,15 +718,17 @@ export class AnalyticsService {
     const cacheKey = `analytics:rto:full:${userId}`;
     const cached = await redis.get(cacheKey);
     if (cached) {
+      this.fastify.log.info({ userId, cacheKey }, 'Cache hit for RTO analytics');
       return JSON.parse(cached);
     }
+    this.fastify.log.info({ userId, cacheKey }, 'Cache miss for RTO analytics');
 
     // Default: last 30 days
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(endDate.getDate() - 29);
 
-    // Fetch RTO shipments with related data
+    // Fetch RTO shipments
     const rtoShipments = await prisma.shipment.findMany({
       where: {
         user_id: userId,
@@ -509,46 +738,139 @@ export class AnalyticsService {
       select: {
         id: true,
         status: true,
+        created_at: true,
+        cancel_reason: true,
+        courier: { select: { name: true } },
         order: {
           select: {
             customer: { select: { name: true, address: { select: { city: true, pincode: true } } } },
             order_channel_config: { select: { channel: true } },
           },
         },
-        courier: { select: { name: true } },
-        created_at: true,
       },
     });
 
-    // Metrics (stubbed for now)
+    // Metrics
+    const totalShipments = await prisma.shipment.count({
+      where: { user_id: userId, created_at: { gte: startDate, lte: endDate } },
+    });
     const metrics: RtoMetrics = {
       total: rtoShipments.length,
-      percentage: '16.7%',
-      initiated: 0,
-      undelivered: 0,
-      delivered: 0,
+      percentage: totalShipments ? `${((rtoShipments.length / totalShipments) * 100).toFixed(2)}%` : '0%',
+      initiated: rtoShipments.filter(s => s.status === 'RTO_INITIATED').length,
+      undelivered: rtoShipments.filter(s => s.status === 'RTO_IN_TRANSIT').length,
+      delivered: rtoShipments.filter(s => s.status === 'RTO_DELIVERED').length,
     };
 
-    // Count Over Time (stubbed)
-    const countOverTime: RtoCountOverTimeItem[] = [];
+    // Count Over Time
+    const countOverTimeMap: Record<string, number> = {};
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(startDate);
+      d.setDate(startDate.getDate() + i);
+      countOverTimeMap[d.toISOString().slice(0, 10)] = 0;
+    }
+    for (const s of rtoShipments) {
+      const key = s.created_at.toISOString().slice(0, 10);
+      if (typeof countOverTimeMap[key] === 'number') {
+        countOverTimeMap[key]++;
+      } else {
+        countOverTimeMap[key] = 1;
+      }
+    }
+    // RTO Analytics
+    // RtoCountOverTimeItem: { name, rtoCount }
+    const countOverTime: RtoCountOverTimeItem[] = Object.entries(countOverTimeMap).map(([date, count]) => ({
+      name: date,
+      rtoCount: count ?? 0,
+    }));
 
-    // Status (stubbed)
-    const status: RtoStatusItem[] = [];
+    // Status
+    const statusMap: Record<string, number> = {};
+    for (const s of rtoShipments) {
+      const status = s.status;
+      statusMap[status] = (statusMap[status] || 0) + 1;
+    }
+    const status: RtoStatusItem[] = Object.entries(statusMap).map(([name, count]) => ({
+      name,
+      rtoInitiated: name === 'RTO_INITIATED' ? count : 0,
+      rtoDelivered: name === 'RTO_DELIVERED' ? count : 0,
+      rtoUndelivered: name === 'RTO_IN_TRANSIT' ? count : 0,
+    }));
 
-    // Reasons (stubbed)
-    const reasons: RtoReasonItem[] = [];
+    // Reasons
+    const reasonMap: Record<string, number> = {};
+    for (const s of rtoShipments) {
+      const reason = s.cancel_reason || 'Unknown';
+      reasonMap[reason] = (reasonMap[reason] || 0) + 1;
+    }
+    const reasons: RtoReasonItem[] = Object.entries(reasonMap).map(([reason, count]) => ({
+      name: reason,
+      value: count,
+      percentage: rtoShipments.length ? `${((count / rtoShipments.length) * 100).toFixed(2)}%` : '0%',
+    }));
 
-    // Top By Pincode (stubbed)
-    const topByPincode: RtoTopByPincodeItem[] = [];
+    // Top By Pincode
+    const pincodeMap: Record<string, { count: number; city: string }> = {};
+    for (const s of rtoShipments) {
+      const pincode = s.order?.customer?.address?.pincode || 'Unknown';
+      const city = s.order?.customer?.address?.city || 'Unknown';
+      pincodeMap[pincode] = pincodeMap[pincode] || { count: 0, city };
+      pincodeMap[pincode].count++;
+    }
+    const topByPincode: RtoTopByPincodeItem[] = Object.entries(pincodeMap)
+      .map(([pincode, { count }]) => ({
+        pincode,
+        rtoCount: count,
+        percentage: rtoShipments.length ? `${((count / rtoShipments.length) * 100).toFixed(2)}%` : '0%',
+      }))
+      .sort((a, b) => b.rtoCount - a.rtoCount)
+      .slice(0, 5);
 
-    // Top By City (stubbed)
-    const topByCity: RtoTopByCityItem[] = [];
+    // Top By City
+    const cityMap: Record<string, number> = {};
+    for (const s of rtoShipments) {
+      const city = s.order?.customer?.address?.city || 'Unknown';
+      cityMap[city] = (cityMap[city] || 0) + 1;
+    }
+    const topByCity: RtoTopByCityItem[] = Object.entries(cityMap)
+      .map(([city, count]) => ({
+        city,
+        rtoCount: count,
+        percentage: rtoShipments.length ? `${((count / rtoShipments.length) * 100).toFixed(2)}%` : '0%',
+      }))
+      .sort((a, b) => b.rtoCount - a.rtoCount)
+      .slice(0, 5);
 
-    // Top By Courier (stubbed)
-    const topByCourier: RtoTopByCourierItem[] = [];
+    // Top By Courier
+    const courierMap: Record<string, number> = {};
+    for (const s of rtoShipments) {
+      const courier = s.courier?.name || 'Others';
+      courierMap[courier] = (courierMap[courier] || 0) + 1;
+    }
+    const topByCourier: RtoTopByCourierItem[] = Object.entries(courierMap)
+      .map(([courier, count]) => ({
+        name: courier,
+        rtoCount: count,
+        percentage: rtoShipments.length ? `${((count / rtoShipments.length) * 100).toFixed(2)}%` : '0%',
+      }))
+      .sort((a, b) => b.rtoCount - a.rtoCount)
+      .slice(0, 5);
 
-    // Top By Customer (stubbed)
-    const topByCustomer: RtoTopByCustomerItem[] = [];
+    // Top By Customer
+    const customerMap: Record<string, { count: number; name: string }> = {};
+    for (const s of rtoShipments) {
+      const customerName = s.order?.customer?.name || 'Unknown';
+      customerMap[customerName] = customerMap[customerName] || { count: 0, name: customerName };
+      customerMap[customerName].count++;
+    }
+    const topByCustomer: RtoTopByCustomerItem[] = Object.entries(customerMap)
+      .map(([_, entry = { count: 0, name: '' }]) => ({
+        name: entry.name ?? '',
+        rtoCount: entry.count ?? 0,
+        percentage: rtoShipments.length ? `${((entry.count ?? 0) / rtoShipments.length * 100).toFixed(2)}%` : '0%',
+      }))
+      .sort((a, b) => b.rtoCount - a.rtoCount)
+      .slice(0, 5);
 
     const result: RtoAnalytics = {
       metrics,
@@ -560,7 +882,7 @@ export class AnalyticsService {
       topByCourier,
       topByCustomer,
     };
-    await redis.set(cacheKey, JSON.stringify(result), 'EX', 120); // 2 min cache
+    await redis.set(cacheKey, JSON.stringify(result), 'EX', 120);
     return result;
   }
-} 
+}

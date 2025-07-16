@@ -16,7 +16,6 @@ export default function SellerDashboardOverview() {
   // Extract summary data
   const summary = home.data?.summary || [];
   const shipmentsOverview: Partial<{ totalShipments: number }> = performance.data?.overview || {};
-  const courierPerformance = performance.data?.courierPerformance || [];
   const ndrMetrics = performance.data?.topIssues || [];
   // Add more mappings as needed for your UI
 
@@ -33,6 +32,39 @@ export default function SellerDashboardOverview() {
   const ndrTotal = ndrMetrics.length;
   const ndrReattempts = 0; // Map from real API if available
   const ndrDelivered = 0; // Map from real API if available
+
+  // Shipments Details
+  const shipmentOverview = performance.data?.overview;
+  // Overall Shipment Status
+  const statusDistribution = performance.data?.statusDistribution || [];
+  // Delivery Performance
+  const deliveryTimeline = performance.data?.deliveryTimeline || [];
+  // Only declare courierPerformance once at the top
+  const courierPerformance = performance.data?.courierPerformance || [];
+
+  // Map for ShipmentStatusChart
+  const shipmentStatusChartData = statusDistribution.map((item) => ({
+    name: item.status,
+    value: item.count,
+  }));
+
+  // Map for DeliveryPerformanceChart
+  const deliveryPerformanceChartData = deliveryTimeline.map((item) => ({
+    name: item.date,
+    value: item.delivered,
+  }));
+
+  // Map for ShipmentOverviewTable
+  const shipmentOverviewTableData = (performance.data?.courierPerformance || []).map((item) => ({
+    courierName: item.courierName,
+    pickupUnscheduled: 0, // Not available in API, set to 0
+    pickupScheduled: 0, // Not available in API, set to 0
+    inTransit: 0, // Not available in API, set to 0
+    delivered: item.delivered,
+    rto: item.rto,
+    lostDamaged: item.lostDamaged,
+    totalShipment: item.totalShipments,
+  }));
 
   return (
     <div className="mx-auto space-y-6 p-4">
@@ -106,10 +138,45 @@ export default function SellerDashboardOverview() {
           <CardContent>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
               <div className="flex flex-col items-center justify-center rounded-md border p-3">
-                <div className="text-sm font-medium">{shipmentsTotal}</div>
+                <div className="text-sm font-medium">{shipmentOverview?.totalShipments ?? '-'}</div>
                 <div className="text-muted-foreground text-xs">Total Shipments</div>
               </div>
-              {/* Add more shipment stats here if available in API */}
+              <div className="flex flex-col items-center justify-center rounded-md border p-3">
+                <div className="text-sm font-medium">{shipmentOverview?.delivered ?? '-'}</div>
+                <div className="text-muted-foreground text-xs">Delivered</div>
+              </div>
+              <div className="flex flex-col items-center justify-center rounded-md border p-3">
+                <div className="text-sm font-medium">{shipmentOverview?.inTransit ?? '-'}</div>
+                <div className="text-muted-foreground text-xs">In Transit</div>
+              </div>
+              <div className="flex flex-col items-center justify-center rounded-md border p-3">
+                <div className="text-sm font-medium">{shipmentOverview?.pending ?? '-'}</div>
+                <div className="text-muted-foreground text-xs">Pending</div>
+              </div>
+              <div className="flex flex-col items-center justify-center rounded-md border p-3">
+                <div className="text-sm font-medium">{shipmentOverview?.rto ?? '-'}</div>
+                <div className="text-muted-foreground text-xs">RTO</div>
+              </div>
+              <div className="flex flex-col items-center justify-center rounded-md border p-3">
+                <div className="text-sm font-medium">{shipmentOverview?.lostDamaged ?? '-'}</div>
+                <div className="text-muted-foreground text-xs">Lost/Damaged</div>
+              </div>
+              <div className="flex flex-col items-center justify-center rounded-md border p-3">
+                <div className="text-sm font-medium">{shipmentOverview?.onTimeDelivery ?? '-'}</div>
+                <div className="text-muted-foreground text-xs">On Time Delivery</div>
+              </div>
+              <div className="flex flex-col items-center justify-center rounded-md border p-3">
+                <div className="text-sm font-medium">{shipmentOverview?.delayedDelivery ?? '-'}</div>
+                <div className="text-muted-foreground text-xs">Delayed Delivery</div>
+              </div>
+              <div className="flex flex-col items-center justify-center rounded-md border p-3">
+                <div className="text-sm font-medium">{shipmentOverview?.averageDeliveryTime ?? '-'}</div>
+                <div className="text-muted-foreground text-xs">Avg Delivery Time</div>
+              </div>
+              <div className="flex flex-col items-center justify-center rounded-md border p-3">
+                <div className="text-sm font-medium">{shipmentOverview?.successRate ?? '-'}</div>
+                <div className="text-muted-foreground text-xs">Success Rate</div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -155,16 +222,16 @@ export default function SellerDashboardOverview() {
           isLoading={performance.isLoading}
         />
         <ShipmentStatusChart
-          data={[]}
+          data={shipmentStatusChartData}
           isLoading={performance.isLoading}
         />
         <DeliveryPerformanceChart
-          data={[]}
+          data={deliveryPerformanceChartData}
           isLoading={performance.isLoading}
         />
       </div>
       {/* Sixth row: Shipment Overview Table */}
-      <ShipmentOverviewTable data={[]} isLoading={performance.isLoading} />
+      <ShipmentOverviewTable data={shipmentOverviewTableData} isLoading={performance.isLoading} />
     </div>
   );
 }

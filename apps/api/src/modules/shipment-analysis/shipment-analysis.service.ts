@@ -562,7 +562,7 @@ export class ShipmentAnalysisService {
       },
       {
         title: 'Delayed Delivery',
-        value: delayedDelivery.toString(),
+        value: delayedDelivery.toFixed(2),
         percentage: percent(delayedDelivery, totalShipments),
         description: 'Shipments past EDD',
         icon: 'truck-return',
@@ -695,8 +695,8 @@ export class ShipmentAnalysisService {
       lostDamaged,
       onTimeDelivery,
       delayedDelivery,
-      averageDeliveryTime,
-      successRate,
+      averageDeliveryTime: `${averageDeliveryTime.toFixed(2)} days`,
+      successRate: `${successRate.toFixed(2)}%`,
     };
   }
 
