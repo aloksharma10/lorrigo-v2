@@ -12,6 +12,7 @@ import { WeightDisputesTable } from '@/components/tables/billing/weight-disputes
 import { useModalStore } from '@/modal/modal-store';
 import { useUserOperations } from '@/lib/apis/users';
 import { UserProfileForm } from '@/components/user-profile-form';
+import SettingsPage from '@/components/settings';
 
 export default function UserDetailPage() {
   const { id } = useParams();
@@ -124,11 +125,12 @@ export default function UserDetailPage() {
         </TabsList>
         
         <TabsContent value="profile" className="mt-6">
-          <UserProfileForm 
+          {/* <UserProfileForm 
             userId={id as string} 
             profile={user.profile} 
             onSuccess={handleProfileUpdated}
-          />
+          /> */}
+          <SettingsPage />
         </TabsContent>
         
         <TabsContent value="transactions" className="mt-6">

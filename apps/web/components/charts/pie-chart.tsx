@@ -1,15 +1,80 @@
 'use client';
 
-import {
-  PieChart as RechartsChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  Label,
-  Sector,
-} from 'recharts';
-import { useState } from 'react';
+import dynamic from 'next/dynamic';
+import { useState, useEffect } from 'react';
+
+// Import all recharts components in a single dynamic import
+const DynamicPieChart = dynamic(
+  () => import('recharts').then((mod) => {
+    const { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Label, Sector } = mod;
+    return {
+      default: function Chart({ data, tooltipFormatter, innerRadius, outerRadius, paddingAngle, showDataLabels, activeIndex, setActiveIndex }: any) {
+        const colors = data.map((item: any, i: number) => item.color || COLORS[i % COLORS.length]);
+
+        const renderActiveShape = (props: any) => {
+          const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
+          return (
+            <g>
+              <Sector
+                cx={cx}
+                cy={cy}
+                innerRadius={innerRadius}
+                outerRadius={outerRadius + 6}
+                startAngle={startAngle}
+                endAngle={endAngle}
+                fill={fill}
+              />
+            </g>
+          );
+        };
+
+        return (
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={data}
+                cx="50%"
+                cy="50%"
+                innerRadius={innerRadius}
+                outerRadius={outerRadius}
+                paddingAngle={paddingAngle}
+                dataKey="value"
+                activeIndex={activeIndex}
+                activeShape={renderActiveShape}
+                onMouseEnter={(_, index) => setActiveIndex(index)}
+                onMouseLeave={() => setActiveIndex(-1)}
+              >
+                {data.map((_: any, i: number) => <Cell key={i} fill={colors[i]} />)}
+                {showDataLabels && (
+                  <Label
+                    value={`Total: ${data.reduce((sum: number, item: any) => sum + item.value, 0)}`}
+                    position="center"
+                    fill="#111"
+                  />
+                )}
+              </Pie>
+              <Tooltip
+                formatter={tooltipFormatter}
+                contentStyle={{
+                  backgroundColor: 'white',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '0.375rem',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        );
+      }
+    };
+  }),
+  { 
+    ssr: false,
+    loading: () => <div className="flex items-center justify-center h-full">Loading chart...</div>
+  }
+);
+
+const COLORS = ['#818cf8', '#6366f1', '#4ade80', '#fb923c', '#f87171', '#facc15', '#a78bfa', '#fb7185', '#60a5fa', '#34d399'];
 
 export interface PieChartData {
   name: string;
@@ -31,37 +96,6 @@ interface PieChartProps {
   legendPosition?: 'bottom' | 'right';
 }
 
-const COLORS = [
-  '#818cf8', // indigo-400
-  '#6366f1', // indigo-500
-  '#4ade80', // green-400
-  '#fb923c', // orange-400
-  '#f87171', // red-400
-  '#facc15', // yellow-400
-  '#a78bfa', // violet-400
-  '#fb7185', // rose-400
-  '#60a5fa', // blue-400
-  '#34d399', // emerald-400
-];
-
-const renderActiveShape = (props: any) => {
-  const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
-
-  return (
-    <g>
-      <Sector
-        cx={cx}
-        cy={cy}
-        innerRadius={innerRadius}
-        outerRadius={outerRadius + 6}
-        startAngle={startAngle}
-        endAngle={endAngle}
-        fill={fill}
-      />
-    </g>
-  );
-};
-
 export function PieChart({
   data = [],
   tooltipFormatter = (value) => [`${value}`, 'Value'],
@@ -74,76 +108,40 @@ export function PieChart({
   showLegend = true,
   legendPosition = 'bottom',
 }: PieChartProps) {
+  const [mounted, setMounted] = useState(false);
   const [internalActiveIndex, setInternalActiveIndex] = useState<number | undefined>(undefined);
 
-  const activeIndex = externalActiveIndex !== undefined ? externalActiveIndex : internalActiveIndex;
-  const setActiveIndex = externalSetActiveIndex || setInternalActiveIndex;
+  const activeIndex = externalActiveIndex ?? internalActiveIndex;
+  const setActiveIndex = externalSetActiveIndex ?? setInternalActiveIndex;
 
-  const colors = data?.map((item, index) => item.color || COLORS[index % COLORS.length]) || [];
+  const colors = data.map((item, i) => item.color || COLORS[i % COLORS.length]);
 
-  const onPieEnter = (_: any, index: number) => {
-    setActiveIndex(index);
-  };
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  const onPieLeave = () => {
-    setActiveIndex(-1);
-  };
+  if (!mounted) return <div className="flex items-center justify-center h-[300px]">Loading...</div>;
 
   return (
     <div className="w-full">
-      <div className="h-[200px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <RechartsChart>
-            <Pie
-             
-              data={data}
-              cx="50%"
-              cy="50%"
-              innerRadius={innerRadius}
-              outerRadius={outerRadius}
-              paddingAngle={paddingAngle}
-              dataKey="value"
-              activeIndex={activeIndex}
-              activeShape={renderActiveShape}
-              onMouseEnter={onPieEnter}
-              onMouseLeave={onPieLeave}
-            >
-              {data?.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={colors[index]} />
-              ))}
-              {showDataLabels && (
-                <Label
-                  position="center"
-                  value={data?.reduce((sum, item) => sum + item.value, 0)}
-                  className="text-lg font-semibold"
-                />
-              )}
-            </Pie>
-            <Tooltip
-              formatter={tooltipFormatter}
-              contentStyle={{
-                backgroundColor: 'white',
-                border: '1px solid #e2e8f0',
-                borderRadius: '0.375rem',
-                boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-              }}
-            />
-          </RechartsChart>
-        </ResponsiveContainer>
+      <div style={{ height: 300, width: '100%' }}>
+        <DynamicPieChart
+          data={data}
+          tooltipFormatter={tooltipFormatter}
+          innerRadius={innerRadius}
+          outerRadius={outerRadius}
+          paddingAngle={paddingAngle}
+          showDataLabels={showDataLabels}
+          activeIndex={activeIndex}
+          setActiveIndex={setActiveIndex}
+        />
       </div>
 
       {showLegend && (
-        <div
-          className={`mt-4 grid ${legendPosition === 'bottom' ? 'grid-cols-2 gap-2 md:grid-cols-3' : 'grid-cols-1 gap-1'}`}
-        >
-          {data?.map((item, index) => (
-            <div
-              key={`legend-${index}`}
-              className="flex items-center gap-2"
-              onMouseEnter={() => setActiveIndex(index)}
-              onMouseLeave={() => setActiveIndex(-1)}
-            >
-              <div className="h-3 w-3 rounded-full" style={{ backgroundColor: colors[index] }} />
+        <div className={`mt-4 grid ${legendPosition === 'bottom' ? 'grid-cols-2 gap-2 md:grid-cols-3' : 'grid-cols-1 gap-1'}`}>
+          {data.map((item, i) => (
+            <div key={i} className="flex items-center gap-2" onMouseEnter={() => setActiveIndex(i)} onMouseLeave={() => setActiveIndex(-1)}>
+              <div className="h-3 w-3 rounded-full" style={{ backgroundColor: colors[i] }} />
               <span className="truncate text-xs">
                 {item.name} {item.percentage && `(${item.percentage})`}
               </span>
