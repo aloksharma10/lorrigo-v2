@@ -47,19 +47,19 @@ export default function OrderFormPage() {
       formRef.current?.submitForm();
     };
 
-    const handleShipNow = () => {
-      setRedirectPath(`/seller/orders/${(order as any)?.id}`);
-      formRef.current?.submitForm();
-    };
+    // const handleShipNow = () => {
+    //   setRedirectPath(`/seller/orders/${(order as any)?.id}`);
+    //   formRef.current?.submitForm();
+    // };
 
     return (
       <div className="flex gap-4">
-        <Button isLoading={isCreatingOrder} onClick={handleCreateOrder} variant="secondary">
+        <Button isLoading={isCreatingOrder} onClick={handleCreateOrder}>
           Create Order
         </Button>
-        <Button isLoading={isCreatingOrder} onClick={handleShipNow}>
+        {/* <Button isLoading={isCreatingOrder} onClick={handleShipNow}>
           Ship Now
-        </Button>
+        </Button> */}
       </div>
     );
   };

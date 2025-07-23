@@ -239,7 +239,7 @@ export class DelhiveryVendor extends BaseVendor {
 
       const { order, hub, orderItems, paymentMethod, dimensions } = shipmentData;
 
-      const isReversed = order.type === 'RETURNED';
+      const isReversed = order.type === 'RETURNED' || order.is_reverse_order;
       const isCOD = paymentMethod === 'COD';
 
       // Calculate COD amount if applicable

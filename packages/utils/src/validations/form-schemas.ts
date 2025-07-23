@@ -169,6 +169,7 @@ export const packageDetailsSchema = z.object({
 // Complete Order Schema
 export const orderFormSchema = z
   .object({
+    is_reverse_order: z.boolean().default(false),
     orderId: z.string().min(1, 'Order ID is required'),
     orderChannel: z.string().min(1, 'Order Channel is required'),
     orderType: z.enum(['domestic', 'international']),

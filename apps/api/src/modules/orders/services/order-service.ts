@@ -617,6 +617,7 @@ export class OrderService {
             // OPTIMIZATION 5: Create order
             const order = await tx.order.create({
               data: {
+                is_reverse_order: data.is_reverse_order,
                 code: orderCode,
                 order_number: orderNumber,
                 type: data.orderType === 'domestic' ? 'B2C' : 'B2B',

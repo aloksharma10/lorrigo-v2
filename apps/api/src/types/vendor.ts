@@ -88,6 +88,7 @@ export interface VendorShipmentData {
   seller_gst?: string;
   isSchedulePickup?: boolean;
   pickupDate?: string;
+  isReverseOrder?: boolean; // Added for reverse shipment support
 }
 
 export interface ShipmentPickupData {

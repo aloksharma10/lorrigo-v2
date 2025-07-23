@@ -21,11 +21,11 @@ export const ADMIN_ROUTES = [
     items: [
       {
         title: 'Forward Shipment',
-        url: '/admin/orders/forward-shipments',
+        url: '/admin/orders/forward-shipments/all',
       },
       {
         title: 'Reverse Shipment',
-        url: '/admin/orders/reverse-shipments',
+        url: '/admin/orders/reverse-shipments/all',
       },
       {
         title: 'NDR',

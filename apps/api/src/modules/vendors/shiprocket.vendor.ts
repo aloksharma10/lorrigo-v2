@@ -100,7 +100,7 @@ export class ShiprocketVendor extends BaseVendor {
     paymentType: 0 | 1,
     collectableAmount?: number,
     couriers?: string[],
-    isReverseOrder?: boolean
+    isReverseOrder: boolean = false
   ): Promise<VendorServiceabilityResult> {
     try {
       const token = await this.getAuthToken();
@@ -118,7 +118,7 @@ export class ShiprocketVendor extends BaseVendor {
       };
 
       // Construct API endpoint with query parameters
-      const endpoint = `${APIs.SHIPROCKET.ORDER_COURIER}?pickup_postcode=${pickupPincode}&delivery_postcode=${deliveryPincode}&weight=${dimensions.weight}&cod=${paymentType}`;
+      const endpoint = `${APIs.SHIPROCKET.ORDER_COURIER}?pickup_postcode=${pickupPincode}&delivery_postcode=${deliveryPincode}&weight=${dimensions.weight}&cod=${paymentType}&is_return=${isReverseOrder ? 1 : 0}`;
 
       const response = await this.makeRequest(endpoint, 'GET', null, apiConfig);
 
@@ -261,9 +261,127 @@ export class ShiprocketVendor extends BaseVendor {
         Authorization: token,
       };
 
-      const { order, hub, orderItems, paymentMethod, dimensions, isSchedulePickup, pickupDate } =
+      const { order, hub, orderItems, paymentMethod, dimensions, isSchedulePickup, pickupDate, isReverseOrder } =
         shipmentData;
 
+      if (isReverseOrder) {
+        // --- Shiprocket Return Shipment API ---
+        // Extract seller (return destination) info from hub, customer (pickup) from order.customer
+        const pickupCustomerName = order.customer?.name?.split(' ')[0] || 'Customer';
+        const pickupLastName = order.customer?.name?.split(' ').slice(1).join(' ') || '';
+        const shippingCustomerName = hub?.contact_person_name || hub?.name || 'Seller';
+        const shippingLastName = '';
+        // Pickup (customer) address
+        let pickupAddress = formatShiprocketAddress(order.customer?.address?.address || '');
+        let pickupAddress2 = '';
+        if (pickupAddress.length > 170) {
+          pickupAddress2 = pickupAddress.slice(170);
+          pickupAddress = pickupAddress.slice(0, 170);
+        }
+        // Shipping (hub/seller) address
+        let shippingAddress = formatShiprocketAddress(hub?.address?.address || '');
+        let shippingAddress2 = '';
+        if (shippingAddress.length > 170) {
+          shippingAddress2 = shippingAddress.slice(170);
+          shippingAddress = shippingAddress.slice(0, 170);
+        }
+        // Prepare order items for payload
+        const shiprocketOrderItems = orderItems.map((item: any) => ({
+          name: item.name || 'Product',
+          sku: item.sku || `sku-${item.code || Math.random().toString(36).substring(2, 15)}`,
+          units: item.units || 1,
+          selling_price: item.selling_price || 0,
+          discount: item.discount || 0,
+          hsn: item.hsn || '',
+          // Add QC fields if present
+          ...(item.qc_enable !== undefined ? { qc_enable: item.qc_enable } : {}),
+          ...(item.qc_product_name ? { qc_product_name: item.qc_product_name } : {}),
+          ...(item.qc_product_image ? { qc_product_image: item.qc_product_image } : {}),
+          ...(item.qc_brand ? { qc_brand: item.qc_brand } : {}),
+          ...(item.qc_color ? { qc_color: item.qc_color } : {}),
+          ...(item.qc_serial_no ? { qc_serial_no: item.qc_serial_no } : {}),
+          ...(item.qc_ean_barcode ? { qc_ean_barcode: item.qc_ean_barcode } : {}),
+          ...(item.qc_size ? { qc_size: item.qc_size } : {}),
+          ...(item.qc_product_imei ? { qc_product_imei: item.qc_product_imei } : {}),
+        }));
+        // Payment method
+        const isCOD = paymentMethod === 'COD';
+        // Build payload for return shipment
+        const returnPayload: any = {
+          order_id: order.code,
+          order_date: new Date().toISOString().split('T')[0],
+          channel_id: order.channel_id || undefined,
+          pickup_customer_name: pickupCustomerName,
+          pickup_last_name: pickupLastName,
+          company_name: order.customer?.company_name || undefined,
+          pickup_address: pickupAddress,
+          pickup_address_2: pickupAddress2,
+          pickup_city: order.customer?.address?.city || '',
+          pickup_state: order.customer?.address?.state || '',
+          pickup_country: 'India',
+          pickup_pincode: order.customer?.address?.pincode || '',
+          pickup_email: order.customer?.email || 'customer@example.com',
+          pickup_phone: formatPhoneNumber(order.customer?.phone),
+          pickup_isd_code: '91',
+          shipping_customer_name: shippingCustomerName,
+          shipping_last_name: shippingLastName,
+          shipping_address: shippingAddress,
+          shipping_address_2: shippingAddress2,
+          shipping_city: hub?.address?.city || '',
+          shipping_country: 'India',
+          shipping_pincode: hub?.address?.pincode || '',
+          shipping_state: hub?.address?.state || '',
+          shipping_email: hub?.email || 'noreply@lorrigo.com',
+          shipping_isd_code: '91',
+          shipping_phone: formatPhoneNumber(hub?.phone),
+          order_items: shiprocketOrderItems,
+          payment_method: isCOD ? 'COD' : 'Prepaid',
+          total_discount: order.total_discount || '0',
+          sub_total: order.total_amount || 0,
+          length: dimensions?.length || 10,
+          breadth: dimensions?.width || 10,
+          height: dimensions?.height || 10,
+          weight: dimensions?.weight || 0.5,
+          request_pickup: isSchedulePickup,
+        };
+        if (pickupDate) {
+          returnPayload.pickup_scheduled_date = new Date(pickupDate).toISOString().split('T')[0];
+        }
+        // Remove undefined fields
+        Object.keys(returnPayload).forEach(
+          (k) => returnPayload[k] === undefined && delete returnPayload[k]
+        );
+        // Call Shiprocket return shipment API
+        const returnResponse = await this.makeRequest(
+          APIs.SHIPROCKET.CREATE_RETURN_SHIPMENT,
+          'POST',
+          returnPayload,
+          apiConfig
+        );
+        const returnData = returnResponse.data;
+        if (!returnData?.payload?.order_id || !returnData?.payload?.shipment_id) {
+          return {
+            success: false,
+            message: returnData?.error_message || returnData?.message || 'Failed to create return shipment',
+            data: returnData,
+          };
+        }
+        return {
+          success: true,
+          message: isSchedulePickup
+            ? 'Return shipment created and scheduled successfully'
+            : 'Return shipment created successfully',
+          awb: returnData.payload.awb_code || '',
+          routingCode: returnData.payload.routing_code || '',
+          pickup_date: returnData.payload.pickup_scheduled_date ?? '',
+          data: {
+            sr_order_id: returnData.payload.order_id,
+            sr_shipment_id: returnData.payload.shipment_id,
+            ...returnData,
+          },
+        };
+      }
+      // --- Forward shipment logic (existing) ---
       // Extract customer name components safely
       const customerName = order.customer?.name || 'Customer';
       const nameParts = customerName.split(' ');

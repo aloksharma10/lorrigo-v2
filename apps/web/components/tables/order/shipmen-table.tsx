@@ -19,7 +19,7 @@ import { Shipment, ShipmentParams } from '@/lib/type/response-types';
 import { useAuthToken } from '@/components/providers/token-provider';
 import { CopyBtn } from '@/components/copy-btn';
 import { useBulkOperations } from '@/components/providers/bulk-operations-provider';
-import { ShipmentActionButton } from './shipment-action-button';
+import ShipmentActionButton from './shipment-action-button';
 import { useShippingOperations } from '@/lib/apis/shipment';
 import { useCSVUpload } from '@/components/providers/csv-upload-provider';
 

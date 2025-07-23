@@ -28,7 +28,7 @@ export const SELLER_ROUTES = [
       },
       {
         title: 'Reverse Shipments',
-        url: '/seller/orders/reverse-shipments',
+        url: '/seller/orders/reverse-shipments/all',
       },
       {
         title: 'NDR',

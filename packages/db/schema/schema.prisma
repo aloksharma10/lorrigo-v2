@@ -747,6 +747,14 @@ model Billing {
   is_forward_applicable Boolean
   is_rto_applicable     Boolean
 
+  is_fw_billed Boolean @default(true)
+  is_rto_billed Boolean @default(false)
+  is_cod_billed Boolean @default(false)
+  is_cod_reversal_billed Boolean @default(false)
+  is_rto_billed_reversal Boolean @default(false)
+  is_fw_excess_billed Boolean @default(false)
+  is_rto_excess_billed Boolean @default(false)
+
   // Amount
   pending_amount  Float @default(0)
   disputed_amount Float @default(0)

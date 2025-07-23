@@ -39,6 +39,7 @@ export const APIs = {
     GENRATE_AWB: '/courier/assign/awb',
 
     CREATE_FORWARD_SHIPMENT_WRAPPER: '/shipments/create/forward-shipment',
+    CREATE_RETURN_SHIPMENT: '/shipments/create/return-shipment',
   },
 
   // Shiprocket B2B API endpoints
