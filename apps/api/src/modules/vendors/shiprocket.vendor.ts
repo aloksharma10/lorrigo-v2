@@ -93,14 +93,15 @@ export class ShiprocketVendor extends BaseVendor {
    * @returns Promise resolving to serviceability result
    */
   public async checkServiceability(
+    isReverseOrder: boolean,
     pickupPincode: string,
     deliveryPincode: string,
     volumetricWeight: number,
     dimensions: { length: number; width: number; height: number; weight: number },
     paymentType: 0 | 1,
+    orderValue: number,
     collectableAmount?: number,
     couriers?: string[],
-    isReverseOrder: boolean = false
   ): Promise<VendorServiceabilityResult> {
     try {
       const token = await this.getAuthToken();
@@ -118,10 +119,11 @@ export class ShiprocketVendor extends BaseVendor {
       };
 
       // Construct API endpoint with query parameters
-      const endpoint = `${APIs.SHIPROCKET.ORDER_COURIER}?pickup_postcode=${pickupPincode}&delivery_postcode=${deliveryPincode}&weight=${dimensions.weight}&cod=${paymentType}&is_return=${isReverseOrder ? 1 : 0}`;
+      const endpoint = `${APIs.SHIPROCKET.ORDER_COURIER}?pickup_postcode=${pickupPincode}&delivery_postcode=${deliveryPincode}&weight=${dimensions.weight}&cod=${paymentType}&declared_value=${orderValue}&is_return=${isReverseOrder ? 1 : 0}`;
 
       const response = await this.makeRequest(endpoint, 'GET', null, apiConfig);
 
+      console.log(response.data, "response.data")
       if (
         !response.data ||
         !response.data.data ||
@@ -1193,11 +1195,13 @@ export class ShiprocketB2BVendor extends BaseVendor {
    * This is a placeholder implementation
    */
   public async checkServiceability(
+    isReverseOrder: boolean,
     pickupPincode: string,
     deliveryPincode: string,
-    weight: number,
-    dimensions: { length: number; width: number; height: number },
+    volumetricWeight: number,
+    dimensions: { length: number; width: number; height: number; weight: number },
     paymentType: 0 | 1,
+    orderValue: number,
     collectableAmount?: number,
     couriers?: string[]
   ): Promise<VendorServiceabilityResult> {

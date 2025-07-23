@@ -91,14 +91,15 @@ export class SmartShipVendor extends BaseVendor {
    * @returns Promise resolving to serviceability result
    */
   public async checkServiceability(
+    isReverseOrder: boolean,
     pickupPincode: string,
     deliveryPincode: string,
     volumeWeight: number,
     dimensions: { length: number; width: number; height: number; weight: number },
     paymentType: 0 | 1,
+    orderValue: number,
     collectableAmount: number = 0,
     couriers: string[] = [],
-    isReverseOrder: boolean = false
   ): Promise<VendorServiceabilityResult> {
     try {
       const token = await this.getAuthToken();
@@ -343,10 +344,10 @@ export class SmartShipVendor extends BaseVendor {
       const isHeavyCouier = courier.weight_slab >= 10;
 
       const hubCode = isHeavyCouier
-        ? hub.hub_config.smart_ship_hub_code_heavy
+        ? hub.smart_ship_codes.heavy
         : isExpressCourier
-          ? hub.hub_config.smart_ship_hub_code_express
-          : hub.hub_config.smart_ship_hub_code_surface;
+          ? hub.smart_ship_codes.express
+          : hub.smart_ship_codes.surface;
 
       const productValueWithTax = orderItems.reduce((acc: number, item: any) => {
         return (

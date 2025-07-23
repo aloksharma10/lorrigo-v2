@@ -67,6 +67,7 @@ export default function ShipOrderPage() {
   const {
     getShippingRates,
     shipOrder: {
+      data: shipmentData,
       mutateAsync: createShipment,
       isPending: isCreatingShipment,
       isSuccess: isShipmentCreated,
@@ -97,7 +98,7 @@ export default function ShipOrderPage() {
 
   useEffect(() => {
     if (isShipmentCreated) {
-      router.push(`/seller/orders/forward-shipments/all`);
+      router.push(`/seller/orders/${shipmentData?.shipment?.is_reverse_order ? 'reverse' : 'forward'}-shipments/all`);
     }
   }, [isShipmentCreated]);
 

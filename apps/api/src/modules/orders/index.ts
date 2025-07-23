@@ -178,6 +178,22 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
     handler: (request, reply) => orderController.getAllOrders(request, reply),
   });
 
+  fastify.get('/reverse-orders', {
+    preHandler: [authorizeRoles([Role.SELLER, Role.ADMIN])],
+    schema: {
+      tags: ['Orders'],
+      summary: 'Get all reverse orders',
+      security: [{ bearerAuth: [] }],
+      querystring: {
+        type: 'object',
+        properties: {
+          page: { type: 'integer', default: 1 },
+          limit: { type: 'integer', default: 10 },
+        },
+      },
+    },
+    handler: (request, reply) => orderController.getReverseOrders(request, reply),
+  });
   // Get a single order by ID
   fastify.get('/:id', {
     schema: {

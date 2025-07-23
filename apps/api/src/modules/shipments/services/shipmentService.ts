@@ -74,7 +74,7 @@ export class ShipmentService {
    /**
    * Check if user can create shipment based on wallet balance
    */
-   async canCreateShipment(userId: string): Promise<{ canCreate: boolean; reason?: string }> {
+   async canCreateShipment(userId: string, shipmentAmount: number): Promise<{ canCreate: boolean; reason?: string, message?: string }> {
     const wallet = await this.fastify.prisma.userWallet.findUnique({
       where: { user_id: userId },
     });
@@ -82,13 +82,14 @@ export class ShipmentService {
     if (!wallet) {
       return { canCreate: false, reason: 'Wallet not found' };
     }
-    
-    const availableAmount = wallet.balance + wallet.max_negative_amount;
+
+    const availableAmount = wallet.balance + wallet.max_negative_amount - shipmentAmount;
     
     if (availableAmount <= 0) {
       return { 
         canCreate: false, 
-        reason: `Insufficient balance. Available: ${wallet.balance}, Max negative: ${wallet.max_negative_amount}` 
+        reason: `Insufficient balance. Available: ${wallet.balance.toFixed(2)}, Max negative: ${wallet.max_negative_amount.toFixed(2)}`,
+        message: `Insufficient balance. Available: ${wallet.balance.toFixed(2)}, Required: ${shipmentAmount.toFixed(2)}, Please recharge your wallet` 
       };
     }
     
@@ -179,6 +180,7 @@ export class ShipmentService {
         weight: params.weight,
       },
       params.paymentType,
+      order.total_amount,      
       params.collectableAmount,
       order?.is_reverse_order
     );
@@ -321,6 +323,8 @@ export class ShipmentService {
       return { error: 'Order not found' };
     }
 
+    const isReverseOrder = order.is_reverse_order;
+
     // Get rates from cache
     const dimensionsStr = `${order?.package?.length || 0}x${order?.package?.breadth || 0}x${order?.package?.height || 0}x${order?.package?.dead_weight || 0}`;
     const ratesKey = `rates-${userId}-${order?.is_reverse_order ? 'reverse' : 'forward'}-${order?.hub?.address?.pincode}-${order?.customer?.address?.pincode}-${order?.applicable_weight}-${dimensionsStr}-${order?.payment_method}-${order.amount_to_collect}`;
@@ -346,8 +350,13 @@ export class ShipmentService {
     }
 
     try {
+      const canCreateShipment = await this.canCreateShipment(userId, shippingCost);
+      if (!canCreateShipment.canCreate) {
+        return { error: canCreateShipment.message || canCreateShipment.reason };
+      }
+
       // Prepare data outside of transaction to minimize transaction time
-      const [lastShipment, shipmentCount, courier, canCreateShipment] = await Promise.all([
+      const [lastShipment, shipmentCount, courier] = await Promise.all([
         this.fastify.prisma.shipment.findFirst({
           orderBy: { created_at: 'desc' },
         }),
@@ -360,13 +369,8 @@ export class ShipmentService {
         this.fastify.prisma.courier.findUnique({
           where: { id: data.courier_id },
           include: { channel_config: true },
-        }),
-        this.canCreateShipment(userId)
+        })
       ]);
-
-      if (!canCreateShipment.canCreate) {
-        return { error: canCreateShipment.reason };
-      }
 
       if (!courier || !courier.channel_config) {
         return { error: 'Selected courier not found or not properly configured' };
@@ -420,7 +424,9 @@ export class ShipmentService {
                 data: {
                   awb,
                   bucket: ShipmentBucketManager.getBucketFromStatus(
-                    ShipmentStatus.COURIER_ASSIGNED
+                    isSchedulePickup
+                      ? ShipmentStatus.PICKUP_SCHEDULED
+                      : ShipmentStatus.COURIER_ASSIGNED
                   ),
                   sr_shipment_id: vendorResult.data?.sr_shipment_id?.toString() || '',
                   status: isSchedulePickup
@@ -520,6 +526,7 @@ export class ShipmentService {
               shipment: {
                 ...shipment,
                 awb,
+                is_reverse_order: isReverseOrder,
                 courier: courier?.name || 'Unknown',
               },
             };
@@ -536,7 +543,7 @@ export class ShipmentService {
               userId: userId,
               amount: fwCharges,
               type: TransactionType.DEBIT,
-              description: `FW charge for AWB: ${awb}`,
+              description: `${isReverseOrder ? 'Reverse' : 'Forward'} charge for AWB: ${awb}`,
               awb: awb,
               charge_type: ChargeType.FORWARD_CHARGE,
             });
@@ -861,6 +868,7 @@ export class ShipmentService {
             await prisma.shipment.update({
               where: { id: shipment.id }, // Use shipment.id, not the input id
               data: {
+                bucket: ShipmentBucketManager.getBucketFromStatus(shipmentStatus),
                 status: shipmentStatus,
                 cancel_reason: reason,
                 ...(cancelType === 'shipment' &&

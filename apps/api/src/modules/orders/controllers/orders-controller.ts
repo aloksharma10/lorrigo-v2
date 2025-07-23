@@ -43,6 +43,28 @@ export class OrderController {
     }
   }
 
+  async getReverseOrders(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const userId = request.userPayload!.id;
+      const result = await this.orderService.getAllOrders(userId, request.query, true);
+      return result;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return reply.code(400).send({
+          message: 'Validation error',
+          errors: error.errors,
+        });
+      }
+
+      request.log.error(error);
+      captureException(error as Error);
+
+      return reply.code(500).send({
+        message: 'Internal server error',
+      });
+    }
+  }
+
   /**
    * Get a specific order by ID
    */

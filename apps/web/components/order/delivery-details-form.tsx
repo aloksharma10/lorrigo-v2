@@ -10,7 +10,7 @@ import {
   FormMessage,
   Badge,
 } from '@lorrigo/ui/components';
-import { OrderFormValues } from '@lorrigo/utils';
+import { OrderFormValues } from '@lorrigo/utils/validations';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Control, UseFormWatch, useFormContext } from 'react-hook-form';
 import { searchCustomers, Customer } from '@/lib/apis/customers';

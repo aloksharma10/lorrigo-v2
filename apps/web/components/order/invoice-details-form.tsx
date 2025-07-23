@@ -18,7 +18,7 @@ import {
 } from '@lorrigo/ui/components';
 
 import { Control, UseFormWatch } from 'react-hook-form';
-import { OrderFormValues } from '@lorrigo/utils';
+import { OrderFormValues } from '@lorrigo/utils/validations';
 import { cn } from '@lorrigo/ui/lib/utils';
 import { formatDate } from '@lorrigo/utils';
 

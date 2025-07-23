@@ -79,14 +79,15 @@ export class DelhiveryVendor extends BaseVendor {
    * @returns Promise resolving to serviceability result
    */
   public async checkServiceability(
+    isReverseOrder: boolean,
     pickupPincode: string,
     deliveryPincode: string,
     weight: number,
     dimensions: { length: number; width: number; height: number },
     paymentType: 0 | 1,
+    orderValue: number,
     collectableAmount?: number,
     couriers?: string[],
-    isReverseOrder?: boolean,
     couriersData?: any
   ): Promise<VendorServiceabilityResult> {
     try {
@@ -106,7 +107,6 @@ export class DelhiveryVendor extends BaseVendor {
       const response = await this.makeRequest(endpoint, 'GET', null, {
         Authorization: token,
       });
-
       // Check if pincode is serviceable
       const deliveryData = response.data?.delivery_codes?.[0];
       if (!deliveryData) {
@@ -311,6 +311,14 @@ export class DelhiveryVendor extends BaseVendor {
 
       const delhiveryResponse = response.data?.packages?.[0];
 
+      if (delhiveryResponse?.status === 'Fail' && delhiveryResponse?.remarks?.[0]?.includes('waybill')) {
+        return {
+          success: false,
+          message: 'Failed to create shipment with Delhivery. Unable to consume waybill, please try again with correct waybill number.',
+          data: response.data,
+        };
+      }
+
       if (!delhiveryResponse?.status) {
         return {
           success: false,
@@ -382,7 +390,7 @@ export class DelhiveryVendor extends BaseVendor {
 
       // Make the API request
       const response = await this.makeRequest(APIs.DELHIVERY.MANIFEST_ORDER, 'POST', requestBody, {
-        Authorization: `Token ${token}`,
+        Authorization: token,
       });
 
       // Check for errors in the response

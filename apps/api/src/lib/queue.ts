@@ -17,6 +17,7 @@ export enum QueueNames {
   DISPUTE_NOTIFICATIONS = 'dispute-notifications',
   DISPUTE_RESOLUTION = 'dispute-resolution',
   BILLING_AUTOMATION = 'billing-automation',
+  TRANSACTION_QUEUE = 'transaction-queue',
 }
 
 // Define job types
@@ -92,6 +93,7 @@ export const queues = {
       ...queueConfig.defaultJobOptions,
       // Financial operations need more retries
       attempts: 5,
+      priority: 5,
     },
   }),
   [QueueNames.NDR_PROCESSING]: new Queue(QueueNames.NDR_PROCESSING, {
@@ -99,7 +101,7 @@ export const queues = {
     defaultJobOptions: {
       ...queueConfig.defaultJobOptions,
       // NDR actions should be processed with high priority and retries
-      priority: 1,
+      priority: 5,
       attempts: 3,
     },
   }),
@@ -135,7 +137,7 @@ export const queues = {
     defaultJobOptions: {
       ...queueConfig.defaultJobOptions,
       // Dispute resolution needs careful handling
-      priority: 2,
+      priority: 3,
       attempts: 3,
     },
   }),
@@ -144,8 +146,17 @@ export const queues = {
     defaultJobOptions: {
       ...queueConfig.defaultJobOptions,
       // Billing automation is critical
-      priority: 1,
+      priority: 2,
       attempts: 5,
+    },
+  }),
+  [QueueNames.TRANSACTION_QUEUE]: new Queue(QueueNames.TRANSACTION_QUEUE, {
+    ...connectionOptions,
+    defaultJobOptions: {
+      ...queueConfig.defaultJobOptions,
+      // Transactions need more retries
+      attempts: 5,
+      priority: 1,
     },
   }),
 };

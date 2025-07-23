@@ -16,6 +16,7 @@ import {
   Input,
   FormControl,
   toast,
+  Switch,
 } from '@lorrigo/ui/components';
 
 import { PickupAddressSelector } from './pickup-address-selector';
@@ -63,23 +64,28 @@ export const OrderForm = forwardRef<OrderFormRef, OrderFormProps>(
     const isCloneMode = mode === 'clone';
 
     // Initialize the form with default values or provided initialValues
-    const form = useForm<OrderFormValues>({
+    const form = useForm<OrderFormValues, any, OrderFormValues>({
+      // @ts-ignore TODO: Fix this
       resolver: zodResolver(orderFormSchema),
       defaultValues: {
+        is_reverse_order: false,
         orderId: '',
         orderChannel: ORDER_CHANNELS[0]?.name ?? 'Custom',
         orderType: 'domestic',
         pickupAddressId: '',
+        status: '',
+        order_invoice_number: '',
+        order_invoice_date: new Date(),
         sellerDetails: {
           name: '',
           gstNo: '',
+          isAddressAvailable: false,
           address: '',
           contactNumber: '',
           pincode: '',
           city: '',
           state: '',
           country: 'India',
-          isAddressAvailable: false,
         },
         deliveryDetails: {
           isBusiness: false,
@@ -111,14 +117,12 @@ export const OrderForm = forwardRef<OrderFormRef, OrderFormProps>(
               hsnCode: '',
             },
           ],
-          taxableValue: 0,
+          taxableValue: 1,
         },
         paymentMethod: {
           paymentMethod: 'prepaid',
         },
         amountToCollect: 0,
-        order_invoice_date: new Date(),
-        order_invoice_number: '',
         ewaybill: '',
         packageDetails: {
           deadWeight: '0.00',
@@ -155,6 +159,7 @@ export const OrderForm = forwardRef<OrderFormRef, OrderFormProps>(
       if (initialValues) {
         // Map the initialValues to the form structure
         const mappedValues: Partial<OrderFormValues> = {
+          is_reverse_order: initialValues.is_reverse_order || false,
           orderId: initialValues.orderNumber || initialValues.orderId || '',
           orderChannel: initialValues.orderChannel || ORDER_CHANNELS[0]?.name || 'Custom',
           orderType: initialValues.orderType || 'domestic',
@@ -275,6 +280,22 @@ export const OrderForm = forwardRef<OrderFormRef, OrderFormProps>(
               <CardTitle>Order Details</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
+              <FormField
+                control={form.control}
+                name="is_reverse_order"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      <span className="text-black">Reverse Order</span>
+                      <span className="text-muted-foreground text-xs">(Reverse order)</span>
+                    </FormLabel>
+                    <div className="flex flex-wrap gap-2">
+                      <Switch id="is_reverse_order" checked={field.value} onCheckedChange={field.onChange} />
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="orderChannel"

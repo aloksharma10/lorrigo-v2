@@ -73,6 +73,7 @@ export const useOrderOperations = (queryParams: OrderQueryParams = {}, orderId?:
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['reverse-orders'] });
       return data;
     },
   });
@@ -83,6 +84,7 @@ export const useOrderOperations = (queryParams: OrderQueryParams = {}, orderId?:
       api.patch(`/orders/${orderData.id}`, orderData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['reverse-orders'] });
     },
   });
 
@@ -92,6 +94,7 @@ export const useOrderOperations = (queryParams: OrderQueryParams = {}, orderId?:
       api.post(`/orders/${id}/cancel`, { reason }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['reverse-orders'] });
     },
   });
   const bulkCancelOrders = useMutation({
@@ -193,7 +196,7 @@ export const useOrderOperations = (queryParams: OrderQueryParams = {}, orderId?:
 };
 
 // Client-side fetch function for React Query
-export async function fetchOrders(params: any) {
+export async function fetchOrders(params: any, is_reverse_order: boolean = false) {
   try {
     const queryParams = new URLSearchParams();
     if (params.page !== undefined) queryParams.append('page', (params.page + 1).toString()); // Convert 0-based to 1-based
@@ -224,7 +227,9 @@ export async function fetchOrders(params: any) {
       queryParams.append('sort_order', sortOrder);
     }
 
-    const response = await api.get<OrdersApiResponse>(`/orders?${queryParams.toString()}`);
+    const response = await api.get<OrdersApiResponse>(
+      `/orders${is_reverse_order ? '/reverse-orders' : ''}?${queryParams.toString()}`
+    );
     // Response structure: { data: OrdersApiResponse }
     const responseData = response;
 
@@ -232,6 +237,7 @@ export async function fetchOrders(params: any) {
     return {
       data: responseData.orders.map((order: BackendOrder) => ({
         id: order.id,
+        is_reverse_order: order.is_reverse_order,
         orderNumber: order.orderNumber,
         amount: order.totalAmount,
         courier: order?.courier || '',
@@ -312,6 +318,10 @@ export async function fetchOrders(params: any) {
 // React Query compatible fetch function
 export async function fetchShipments(params: ShipmentParams): Promise<ApiResponse> {
   return fetchOrders(params);
+}
+
+export async function fetchReverseShipments(params: ShipmentParams): Promise<ApiResponse> {
+  return fetchOrders(params, true);
 }
 
 export async function downloadManifest(shipmentIds: string[]) {

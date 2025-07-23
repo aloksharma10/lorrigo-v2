@@ -80,16 +80,20 @@ export class VendorService {
    * @param volumeWeight Volume weight in kg
    * @param dimensions Package dimensions
    * @param paymentType Payment type (0 for prepaid, 1 for COD)
+   * @param orderValue Order value
    * @param collectableAmount Collectable amount for COD
+   * @param isReverseOrder Whether the order is a reverse order
    * @param vendorNames List of vendor names to check
    * @returns Promise resolving to combined serviceability results
    */
   public async checkServiceability(
+    isReverseOrder: boolean = false,
     pickupPincode: string,
     deliveryPincode: string,
     volumeWeight: number,
     dimensions: { length: number; width: number; height: number; weight: number },
     paymentType: 0 | 1,
+    orderValue: number = 0,
     collectableAmount: number = 0,
     vendorNames?: string[]
   ): Promise<{
@@ -119,12 +123,14 @@ export class VendorService {
         const vendorName = vendor.getName();
         try {
           const result = await vendor.checkServiceability(
+            isReverseOrder,
             pickupPincode,
             deliveryPincode,
             volumeWeight,
             dimensions,
             paymentType,
-            collectableAmount
+            orderValue,
+            collectableAmount,
           );
           return { vendorName, result };
         } catch (error) {
@@ -179,7 +185,9 @@ export class VendorService {
    * @param volumeWeight Volume weight in kg
    * @param dimensions Package dimensions
    * @param paymentType Payment type (0 for prepaid, 1 for COD)
+   * @param orderValue Order value
    * @param collectableAmount Collectable amount for COD
+   * @param isReverseOrder Whether the order is a reverse order
    * @returns Promise resolving to serviceable couriers
    */
   public async checkServiceabilityForPlan(
@@ -189,6 +197,7 @@ export class VendorService {
     volumeWeight: number,
     dimensions: { length: number; width: number; height: number; weight: number },
     paymentType: 0 | 1,
+    orderValue: number = 0,
     collectableAmount: number = 0,
     isReverseOrder: boolean = false
   ): Promise<{
@@ -310,26 +319,29 @@ export class VendorService {
               // Use type assertion to call with the extended parameter list
               const delhiveryVendor = vendor as DelhiveryVendor;
               result = await delhiveryVendor.checkServiceability(
+                isReverseOrder,
                 pickupPincode,
                 deliveryPincode,
                 volumeWeight,
                 dimensions,
                 paymentType,
+                orderValue,
                 collectableAmount,
                 courierIds,
-                isReverseOrder,
                 couriers
               );
             } else {
               // Default call for other vendors that follow the base interface
               result = await vendor.checkServiceability(
+                isReverseOrder,
                 pickupPincode,
                 deliveryPincode,
                 volumeWeight,
                 dimensions,
                 paymentType,
+                orderValue,
                 collectableAmount,
-                courierIds
+                courierIds,
               );
             }
 

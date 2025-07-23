@@ -5,6 +5,7 @@ import { Button, Card, CardContent, CardHeader, CardTitle } from '@lorrigo/ui/co
 import { IndianRupee, Plus, ArrowDownCircle, ArrowUpCircle, History, Loader2 } from 'lucide-react';
 import { useModalStore } from '@/modal/modal-store';
 import { format } from 'date-fns';
+import { currencyFormatter } from '@lorrigo/utils';
 
 export default function WalletPage() {
   const {
@@ -155,7 +156,9 @@ export default function WalletPage() {
                     <th className="px-4 py-2 text-left">Transaction ID</th>
                     <th className="px-4 py-2 text-left">Type</th>
                     <th className="px-4 py-2 text-left">Description</th>
-                    <th className="px-4 py-2 text-right">Amount</th>
+                    <th className="px-4 py-2 text-left">Before Balance</th>
+                    <th className="px-4 py-2 text-left">Amount</th>
+                    <th className="px-4 py-2 text-left">After Balance</th>
                     <th className="px-4 py-2 text-center">Status</th>
                   </tr>
                 </thead>
@@ -170,11 +173,14 @@ export default function WalletPage() {
                         {formatTransactionType(transaction.type)}
                       </td>
                       <td className="px-4 py-3 text-sm">{transaction.description}</td>
-                      <td className="px-4 py-3 text-right text-sm font-semibold">
-                        <div className="flex items-center justify-end">
-                          <IndianRupee className="mr-1 h-3 w-3" />
-                          {transaction.amount.toLocaleString('en-IN')}
-                        </div>
+                      <td className="px-4 py-3 text-sm font-semibold">
+                        {currencyFormatter(transaction.before_balance)}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-semibold">
+                        {currencyFormatter(transaction.amount)}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-semibold">
+                        {currencyFormatter(transaction.after_balance)}
                       </td>
                       <td className="px-4 py-3 text-center text-sm">
                         {formatTransactionStatus(transaction.status)}

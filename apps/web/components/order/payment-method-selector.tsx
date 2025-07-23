@@ -14,7 +14,7 @@ import {
 } from '@lorrigo/ui/components';
 import { Info } from 'lucide-react';
 import { Control, UseFormWatch } from 'react-hook-form';
-import { OrderFormValues } from '@lorrigo/utils';
+import { OrderFormValues } from '@lorrigo/utils/validations';
 
 // Create explicit interface for form values
 interface PaymentFormValues {
@@ -38,8 +38,9 @@ export function PaymentMethodSelector({ control, watch }: PaymentMethodSelectorP
               <RadioGroup
                 onValueChange={field.onChange}
                 defaultValue={field.value}
-                value={field.value || 'prepaid'}
+                value={watch('is_reverse_order') ? 'prepaid' : (field.value || 'prepaid')}
                 className="flex gap-4"
+                disabled={watch('is_reverse_order')}
               >
                 <div className="flex items-center space-x-2 rounded-md border p-2">
                   <RadioGroupItem value="prepaid" id="prepaid" />

@@ -205,13 +205,13 @@ model UserProfile {
   acc_type        String? @db.VarChar(20)
 
   // Seller Config
-  is_d2c               Boolean @default(true)
-  is_b2b               Boolean @default(true)
-  is_prepaid           Boolean @default(true)
-  is_fw                Boolean @default(true)
-  is_rto               Boolean @default(true)
-  is_cod               Boolean @default(true)
-  is_cod_reversal      Boolean @default(true)
+  is_d2c          Boolean @default(true)
+  is_b2b          Boolean @default(true)
+  is_prepaid      Boolean @default(true)
+  is_fw           Boolean @default(true)
+  is_rto          Boolean @default(true)
+  is_cod          Boolean @default(true)
+  is_cod_reversal Boolean @default(true)
 
   // Notification Settings
   notification_settings Json // { whatsapp: true, email: true, system: true }
@@ -376,7 +376,7 @@ model Order {
   order_invoice_number String?   @db.VarChar(50)
 
   // Remittance and dispute tracking
-  remittanceId   String?
+  remittanceId String?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -402,9 +402,9 @@ model Order {
   billings       Billing[]
   ndr            NDROrder?      @relation("OrderNDR")
 
-  freight_type   Int?    @default(0)
-  pickup_type    Int?    @default(0)
-  insurance_type Int?    @default(0)
+  freight_type   Int? @default(0)
+  pickup_type    Int? @default(0)
+  insurance_type Int? @default(0)
 
   @@unique([order_number, user_id])
   @@index([user_id, customer_id])
@@ -591,7 +591,9 @@ model UserWallet {
 model ShipmentTransaction {
   id                      String            @id @default(cuid())
   code                    String            @unique // Format: ST-YYMM-XXXXX
-  amount                  Float
+  before_balance          Float             @default(0)
+  after_balance           Float             @default(0)
+  amount                  Float             @default(0)
   type                    String            @db.VarChar(20) // CREDIT, DEBIT
   description             String            @db.VarChar(255)
   status                  TransactionStatus @default(PENDING)
@@ -616,7 +618,7 @@ model ShipmentTransaction {
 
   charge_type ChargeType @default(FORWARD_CHARGE)
 
-  @@unique([shipment_id, awb, charge_type])
+  @@unique([shipment_id, awb, charge_type, type])
   @@index([wallet_id, user_id, status, created_at])
   @@index([merchant_transaction_id])
   @@index([awb])
@@ -627,7 +629,9 @@ model ShipmentTransaction {
 model InvoiceTransaction {
   id                      String            @id @default(cuid())
   code                    String            @unique // Format: IT-YYMM-XXXXX
-  amount                  Float
+  before_balance          Float             @default(0)
+  after_balance           Float             @default(0)
+  amount                  Float             @default(0)
   type                    String            @db.VarChar(20) // CREDIT, DEBIT
   description             String            @db.VarChar(255)
   status                  TransactionStatus @default(PENDING)
@@ -658,7 +662,9 @@ model InvoiceTransaction {
 model WalletRechargeTransaction {
   id                      String            @id @default(cuid())
   code                    String            @unique // Format: WT-YYMM-XXXXX
-  amount                  Float
+  before_balance          Float             @default(0)
+  after_balance           Float             @default(0)
+  amount                  Float             @default(0)
   type                    String            @db.VarChar(20) // CREDIT, DEBIT
   description             String            @db.VarChar(255)
   status                  TransactionStatus @default(PENDING)
@@ -747,13 +753,13 @@ model Billing {
   is_forward_applicable Boolean
   is_rto_applicable     Boolean
 
-  is_fw_billed Boolean @default(true)
-  is_rto_billed Boolean @default(false)
-  is_cod_billed Boolean @default(false)
+  is_fw_billed           Boolean @default(true)
+  is_rto_billed          Boolean @default(false)
+  is_cod_billed          Boolean @default(false)
   is_cod_reversal_billed Boolean @default(false)
   is_rto_billed_reversal Boolean @default(false)
-  is_fw_excess_billed Boolean @default(false)
-  is_rto_excess_billed Boolean @default(false)
+  is_fw_excess_billed    Boolean @default(false)
+  is_rto_excess_billed   Boolean @default(false)
 
   // Amount
   pending_amount  Float @default(0)
@@ -819,7 +825,7 @@ model Remittance {
   failed_at          DateTime?
 
   // Bank transaction details
-  bank_transaction_id String? // External bank transaction ID
+  bank_transaction_id   String? // External bank transaction ID
   bank_transaction_date DateTime?
 
   created_by String
@@ -1261,23 +1267,23 @@ model UserBilling {
 }
 
 model UserBankAccount {
-  id             String    @id @default(cuid())
-  user_id        String
-  user           User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  account_number String // Masked for display, full for processing
-  ifsc           String
-  bank_name      String
-  account_holder String
-  is_verified    Boolean   @default(false)
-  verified_by    String?
-  verified_at    DateTime?
-  is_selected_for_remittance Boolean @default(false) // User selected this account for remittance
-  created_at     DateTime  @default(now())
-  updated_at     DateTime  @updatedAt
+  id                         String    @id @default(cuid())
+  user_id                    String
+  user                       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  account_number             String // Masked for display, full for processing
+  ifsc                       String
+  bank_name                  String
+  account_holder             String
+  is_verified                Boolean   @default(false)
+  verified_by                String?
+  verified_at                DateTime?
+  is_selected_for_remittance Boolean   @default(false) // User selected this account for remittance
+  created_at                 DateTime  @default(now())
+  updated_at                 DateTime  @updatedAt
 
-  remittances   Remittance[]
+  remittances     Remittance[]
   // Enforce max 10 accounts per user at application level
-  user_profile   UserProfile? @relation(fields: [user_profile_id], references: [id])
+  user_profile    UserProfile? @relation(fields: [user_profile_id], references: [id])
   user_profile_id String?
 
   @@unique([user_id, account_number])

@@ -141,7 +141,7 @@ export const productSchema = z.object({
   id: z.string(),
   name: z.string().min(1, 'Product name is required'),
   price: z.number().min(0, 'Price must be greater than or equal to 0'),
-  sku: z.string().optional(),
+  sku: z.string().optional().nullable(),
   quantity: z.number().min(1, 'Quantity must be at least 1'),
   taxRate: z.number().min(0, 'Tax rate must be greater than or equal to 0'),
   hsnCode: z.string(),

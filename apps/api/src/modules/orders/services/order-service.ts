@@ -26,7 +26,7 @@ export class OrderService {
   /**
    * Get all orders with pagination and filters
    */
-  async getAllOrders(userId: string, queryParams: any) {
+  async getAllOrders(userId: string, queryParams: any, is_reverse_order: boolean = false) {
     const {
       page = 1,
       limit = 10,
@@ -43,6 +43,7 @@ export class OrderService {
     // Build the where clause
     let where: any = {
       user_id: userId,
+      is_reverse_order,
     };
 
     // Add status filter using bucket mapping
@@ -224,6 +225,7 @@ export class OrderService {
     // Format orders for response
     const formatted_orders = orders.map((order) => ({
       id: order.id,
+      is_reverse_order: order.is_reverse_order,
       orderNumber: order.order_number,
       status:
         order.shipment?.bucket !== null && order.shipment?.bucket !== undefined
@@ -441,7 +443,7 @@ export class OrderService {
                 }),
                 // Get hub for seller
                 tx.hub.findFirst({
-                  where: { user_id: userId, is_active: true },
+                  where: { id: data.pickupAddressId, user_id: userId, is_active: true },
                   include: { address: true },
                 }),
               ]);
@@ -612,7 +614,7 @@ export class OrderService {
 
             // Calculate COD amount
             const codAmount =
-              data.paymentMethod.paymentMethod === 'cod' ? data.productDetails.taxableValue : 0;
+              data.paymentMethod.paymentMethod === 'cod' ? data.amountToCollect : 0;
 
             // OPTIMIZATION 5: Create order
             const order = await tx.order.create({
@@ -621,8 +623,7 @@ export class OrderService {
                 code: orderCode,
                 order_number: orderNumber,
                 type: data.orderType === 'domestic' ? 'B2C' : 'B2B',
-                payment_method:
-                  (data.paymentMethod.paymentMethod?.toUpperCase() as PaymentMethod) || 'COD',
+                payment_method: data.is_reverse_order ? 'PREPAID' : (data.paymentMethod.paymentMethod?.toUpperCase() as PaymentMethod) || 'COD',
                 order_channel_config_id: orderChannelConfig.id,
                 total_amount: data.productDetails.taxableValue,
                 amount_to_collect: codAmount,
@@ -675,7 +676,7 @@ export class OrderService {
                   }).id
                 }`,
                 name: item.name,
-                sku: item.sku,
+                sku: item.sku ?? `${item.name}-${idx}`,
                 units: item.quantity || 1,
                 selling_price: item.price || 0,
                 // discount: item.discount || 0,

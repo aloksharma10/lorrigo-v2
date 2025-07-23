@@ -86,7 +86,6 @@ export interface BulkOperationsListResponse {
 }
 
 export const useShippingOperations = () => {
-  const router = useRouter();
   const { isTokenReady } = useAuthToken();
   const queryClient = useQueryClient();
 
@@ -112,12 +111,13 @@ export const useShippingOperations = () => {
       order_id: string;
       courier_id: string;
       is_schedule_pickup: boolean;
-    }) => api.post(`/shipments`, { order_id, courier_id, is_schedule_pickup }),
-    onSuccess: () => {
+    }) => api.post<any>(`/shipments`, { order_id, courier_id, is_schedule_pickup }),
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['reverse-orders'] });
       queryClient.invalidateQueries({ queryKey: ['shipments'] });
       queryClient.invalidateQueries({ queryKey: ['wallet', 'balance'] });
-      router.push(`/seller/orders/forward-shipments/all`);
+      return data;
     },
     onError: (error: any) => {
       toast.error(error.response.data.error);
@@ -130,6 +130,7 @@ export const useShippingOperations = () => {
       api.post(`/shipments/${shipmentId}/schedule-pickup`, { pickupDate }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['reverse-orders'] });
       queryClient.invalidateQueries({ queryKey: ['shipments'] });
       toast.success('Pickup scheduled successfully');
     },
@@ -151,6 +152,7 @@ export const useShippingOperations = () => {
     }) => api.post(`/shipments/${shipmentId}/cancel`, { reason, cancelType }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['reverse-orders'] });
       queryClient.invalidateQueries({ queryKey: ['shipments'] });
       queryClient.invalidateQueries({ queryKey: ['wallet', 'balance'] });
       toast.success('Shipment cancelled successfully');

@@ -1,6 +1,7 @@
 export interface BackendOrder {
   id: string;
   orderNumber: string;
+  is_reverse_order: boolean;
   status: string;
   bucket: number;
   totalAmount: number;

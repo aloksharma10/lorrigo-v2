@@ -522,6 +522,7 @@ function transformCsvToOrders(csvData: any[], mapping: Record<string, string>): 
   return csvData.map((row, index) => {
     try {
       const order: OrderFormValues = {
+        is_reverse_order: false,
         orderId: row[mapping.orderId || ''] || `ORDER_${Date.now()}_${index}`,
         orderChannel: row[mapping.orderChannel || ''] || 'CUSTOM',
         orderType: (row[mapping.orderType || ''] || 'domestic') as 'domestic' | 'international',

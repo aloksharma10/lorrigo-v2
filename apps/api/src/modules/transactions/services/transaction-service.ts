@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { PrismaClient, TransactionStatus, ChargeType } from '@lorrigo/db';
 import { generateId, getFinancialYear } from '@lorrigo/utils';
 import { Queue } from 'bullmq';
-import { addJob, QueueNames } from '@/lib/queue';
+import { QueueNames } from '@/lib/queue';
 
 /**
  * Type definitions for transaction service
@@ -87,13 +87,14 @@ export class TransactionService {
           where: {
             shipment_id: data.shipmentId,
             awb: data.awb,
+            type: data.type,
             charge_type: data.charge_type,
           },
         });
 
         if (existingTransaction) {
           this.fastify.log.info(
-            `Transaction already exists for shipment ${data.shipmentId}, AWB ${data.awb}, charge type ${data.charge_type}`
+            `Transaction already exists for shipment ${data.shipmentId}, AWB ${data.awb}, charge type ${data.charge_type}, type ${data.type}`
           );
           return { success: true, transaction: existingTransaction };
         }
@@ -136,6 +137,8 @@ export class TransactionService {
       // Create transaction record
       const transaction = await this.prisma.shipmentTransaction.create({
         data: {
+          before_balance: walletResult.balance,
+          after_balance: walletUpdateResult.balance,
           code: transactionCode,
           amount: data.amount,
           type: data.type,
@@ -208,6 +211,8 @@ export class TransactionService {
       // Create transaction record
       const transaction = await this.prisma.invoiceTransaction.create({
         data: {
+          before_balance: walletResult.balance,
+          after_balance: walletUpdateResult.balance,
           code: transactionCode,
           amount: data.amount,
           type: data.type,
@@ -316,6 +321,8 @@ export class TransactionService {
       // Create transaction record
       const transaction = await this.prisma.walletRechargeTransaction.create({
         data: {
+          before_balance: walletResult.balance,
+          after_balance: walletUpdateResult.balance,
           code: transactionCode,
           amount: data.amount,
           type: data.type,
@@ -443,6 +450,8 @@ export class TransactionService {
             const shipmentData = data as ShipmentTransactionData;
             transaction = await prisma.shipmentTransaction.create({
               data: {
+                before_balance: wallet.balance,
+                after_balance: newBalance,
                 code: transactionCode,
                 amount: data.amount,
                 type: data.type,
@@ -466,6 +475,8 @@ export class TransactionService {
             const invoiceData = data as InvoiceTransactionData;
             transaction = await prisma.invoiceTransaction.create({
               data: {
+                before_balance: wallet.balance,
+                after_balance: newBalance,
                 code: transactionCode,
                 amount: data.amount,
                 type: data.type,
@@ -487,6 +498,8 @@ export class TransactionService {
             const walletData = data as WalletRechargeTransactionData;
             transaction = await prisma.walletRechargeTransaction.create({
               data: {
+                before_balance: wallet.balance,
+                after_balance: newBalance,
                 code: transactionCode,
                 amount: data.amount,
                 type: data.type,
@@ -545,6 +558,8 @@ export class TransactionService {
       // Create a pending transaction
       const transaction = await this.prisma.walletRechargeTransaction.create({
         data: {
+          before_balance: walletResult.balance,
+          after_balance: (walletResult.balance || 0) + amount,
           code: await this.generateTransactionCode('wallet'),
           amount,
           type: TransactionType.CREDIT,
@@ -864,52 +879,89 @@ export class TransactionService {
    * @param entityType Type of entity (shipment, invoice, wallet)
    * @returns Job ID for tracking
    */
-  async processBulkTransactions(
-    transactions: (
-      | ShipmentTransactionData
-      | InvoiceTransactionData
-      | WalletRechargeTransactionData
-    )[],
-    entityType: TransactionEntityType
-  ) {
-    // try {
-    //   // Generate operation code
-    //   const operationCode = `BO-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-    //   // Create bulk operation record
-    //   const bulkOperation = await this.prisma.bulkOperation.create({
-    //     data: {
-    //       code: operationCode,
-    //       type: 'PROCESS_TRANSACTIONS',
-    //       status: 'PENDING',
-    //       total_count: transactions.length,
-    //       processed_count: 0,
-    //       success_count: 0,
-    //       failed_count: 0,
-    //       user_id: transactions[0]?.userId, // Use the first transaction's user ID
-    //     },
-    //   });
-    //   // Add job to queue
-    //   await addJob(
-    //     QueueNames.BULK_OPERATION,
-    //     'bulk-process-transactions',
-    //     {
-    //       operationId: bulkOperation.id,
-    //       transactions,
-    //       entityType,
-    //     },
-    //     {
-    //       attempts: 3,
-    //     }
-    //   );
-    //   return {
-    //     success: true,
-    //     operationId: bulkOperation.id,
-    //     operationCode,
-    //   };
-    // } catch (error) {
-    //   this.fastify.log.error(`Error processing bulk transactions: ${error}`);
-    //   return { success: false, error: 'Failed to process bulk transactions' };
-    // }
+ async processBulkTransactions(transactions: any[], entityType: TransactionEntityType) {
+
+    try {
+      // Process transactions in batches
+      const batchSize = 10;
+      const results = [];
+      let successCount = 0;
+      let failedCount = 0;
+
+      for (let i = 0; i < transactions.length; i += batchSize) {
+        // Process batch
+        const batch = transactions.slice(i, i + batchSize);
+        const batchResults = await Promise.all(
+          batch.map(async (transaction: any, index: number) => {
+            try {
+              let result;
+
+              // Process based on entity type
+              switch (entityType) {
+                case TransactionEntityType.SHIPMENT:
+                  result = await this.createShipmentTransaction(transaction);
+                  break;
+                case TransactionEntityType.INVOICE:
+                  result = await this.createInvoiceTransaction(transaction);
+                  break;
+                case TransactionEntityType.WALLET:
+                  result =
+                    await this.createWalletRechargeTransaction(transaction);
+                  break;
+                default:
+                  result = { success: false, error: 'Invalid entity type' };
+              }
+
+              if (result.success && result.transaction) {
+                successCount++;
+                return {
+                  index: i + index,
+                  success: true,
+                  transactionId: result.transaction.id,
+                  amount: transaction.amount,
+                  type: transaction.type,
+                };
+              } else {
+                failedCount++;
+                return {
+                  index: i + index,
+                  success: false,
+                  error: result.error || 'Transaction failed',
+                  amount: transaction.amount,
+                  type: transaction.type,
+                };
+              }
+            } catch (error) {
+              failedCount++;
+              return {
+                index: i + index,
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error',
+                amount: transaction.amount,
+                type: transaction.type,
+              };
+            }
+          })
+        );
+
+        results.push(...batchResults);
+      }
+
+      return {
+        success: true,
+        results,
+        successCount,
+        failedCount,
+        totalProcessed: transactions.length,
+      };
+    } catch (error) {
+      this.fastify.log.error(`Error processing bulk transactions: ${error}`);
+
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
   }
 
   /**

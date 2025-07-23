@@ -45,6 +45,7 @@ export enum JobType {
   PROCESS_NDR_DETAILS = 'process-ndr-details',
   PROCESS_BULK_TRACKING_EVENTS = 'process-bulk-tracking-events',
   PROCESS_DISPUTE_ACTIONS_CSV = 'process-dispute-actions-csv',
+  BULK_PROCESS_TRANSACTIONS = 'bulk-process-transactions',
 }
 
 /**

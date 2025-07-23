@@ -273,13 +273,15 @@ export abstract class BaseVendor {
    * @returns Promise resolving to serviceability result
    */
   public abstract checkServiceability(
+    isReverseOrder: boolean,
     pickupPincode: string,
     deliveryPincode: string,
-    weight: number,
-    dimensions: { length: number; width: number; height: number },
+    volumetricWeight: number,
+    dimensions: { length: number; width: number; height: number,  weight: number, },
     paymentType: 0 | 1,
+    orderValue: number,
     collectableAmount?: number,
-    couriers?: string[]
+    couriers?: string[],
   ): Promise<VendorServiceabilityResult>;
 
   /**

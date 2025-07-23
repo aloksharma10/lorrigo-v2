@@ -6,9 +6,9 @@ import { SHIPMENT_TAB_ROUTES } from '@/lib/routes/nested-shipments';
 import { useParams, useSearchParams } from 'next/navigation';
 
 import ScrollableTabsProps from '@/components/client-tabs';
-import ShipmentsTable from '@/components/tables/order/shipmen-table';
 
 import { Badge, Button } from '@lorrigo/ui/components';
+import ReverseShipmentsTable from '@/components/tables/order/reverse-shipmen-table';
 
 interface PageProps {
   params: {
@@ -51,7 +51,7 @@ export default function ShipmentsPage() {
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h1 className="text-base font-bold capitalize lg:text-2xl">{tab || 'All'} Orders</h1>
+        <h1 className="text-base font-bold capitalize lg:text-2xl">{tab || 'All'} Reverse Orders</h1>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="px-3 py-1">
             Domestic
@@ -73,7 +73,7 @@ export default function ShipmentsPage() {
         </div>
       </div>
 
-      <ShipmentsTable initialParams={parsedParams} />
+      <ReverseShipmentsTable initialParams={parsedParams} />
     </div>
   );
 }
