@@ -37,10 +37,10 @@ export class RemittanceService {
    */
   private async processUserRemittance(user: any) {
     // Allow remittance calculation even if user has no bank account
-    if (user.user_bank_accounts && user.user_bank_accounts.length > 10) {
-      console.log(`User ${user.id} has more than 10 bank accounts, skipping`);
-      return;
-    }
+    // if (user.user_bank_accounts && user.user_bank_accounts.length > 10) {
+    //   console.log(`User ${user.id} has more than 10 bank accounts, skipping`);
+    //   return;
+    // }
     const eligibleBankAccounts = user.user_bank_accounts ? user.user_bank_accounts.filter((acc: any) => this.isBankAccountEligible(acc)) : [];
     // Select eligible bank account if available, else null
     const selectedBankAccount = eligibleBankAccounts.find((acc: any) => acc.is_selected_for_remittance) || eligibleBankAccounts[eligibleBankAccounts.length - 1] || null;
@@ -54,6 +54,7 @@ export class RemittanceService {
       return;
     }
     const ordersGroupedByRemittanceDate = this.groupOrdersByRemittanceDate(eligibleOrders, remittanceDelay, remittanceDays);
+    console.log(ordersGroupedByRemittanceDate, 'ordersGroupedByRemittanceDate-----')
     const today = startOfDay(new Date());
     const cutoffDate = new Date('2025-06-10');
     for (const [remittanceDateStr, ordersForRemittance] of Object.entries(ordersGroupedByRemittanceDate)) {
@@ -92,21 +93,24 @@ export class RemittanceService {
    */
   private async findEligibleOrders(userId: string, remittanceDelay: number) {
     const cutoffDate = addDays(new Date(), -remittanceDelay);
-    return await this.fastify.prisma.order.findMany({
+    const orders = await this.fastify.prisma.order.findMany({
       where: {
         user_id: userId,
         remittanceId: null,
         shipment: { 
           status: 'DELIVERED',
+          bucket: ShipmentBucket.DELIVERED,
+          // delivered_date: { lte: cutoffDate },
         },
         payment_method: 'COD',
       },
-      include: { shipment: {
+      include: {
+       shipment: {
         include: { 
           tracking_events: {
             where: {
               bucket: ShipmentBucket.DELIVERED,
-              timestamp: { lte: cutoffDate },
+              // timestamp: { lte: cutoffDate },
             },
             orderBy: {
               created_at: 'desc',
@@ -114,8 +118,11 @@ export class RemittanceService {
             take: 1,
           }
         }
-      }, billings: true },
+      }, 
+      billings: true 
+      },
     });
+    return orders;
   }
 
   /**
@@ -221,6 +228,7 @@ export class RemittanceService {
         where: { id: { in: orders.map((o) => o.id) } },
         data: { remittanceId: remittance.id },
       });
+
 
       await tx.userWallet.update({
         where: { id: user.wallet.id },
@@ -328,7 +336,7 @@ export class RemittanceService {
     }
     const ageMs = Date.now() - new Date(bankAccount.verified_at).getTime();
     const hoursOld = ageMs / (1000 * 60 * 60);
-    return hoursOld > 72;
+    return hoursOld > 24;
   }
 
   /**
@@ -349,33 +357,35 @@ export class RemittanceService {
         { transaction_id: { contains: search, mode: 'insensitive' } },
       ];
     }
+
+    let warn_message = '';
+
+    if (Number.isNaN(Number(limit))) {
+      limit = 20;
+      warn_message = 'Invalid limit, using default limit of 20';
+    }
+    if (Number.isNaN(Number(page))) {
+      page = 1;
+      warn_message = 'Invalid page, using default page of 1';
+    }
+
     const [total, remittanceOrders] = await Promise.all([
       this.fastify.prisma.remittance.count({ where }),
       this.fastify.prisma.remittance.findMany({
         where,
-        include: {
-          orders: {
-            select: {
-              id: true,
-              code: true,
-              order_number: true,
-              total_amount: true,
-              amount_to_collect: true,
-              payment_method: true,
-              shipment: { select: { id: true, awb: true, status: true } },
-            },
-          },
-          bank_account: {
-            select: {
-              id: true,
-              account_number: true,
-              bank_name: true,
-              account_holder: true,
-            },
-          },
+        select: {
+          id: true,
+          code: true,
+          remittance_date: true,
+          early_remittance_charge_amount: true,
+          wallet_transfer_amount: true,
+          status: true,
+          amount: true,
+          bank_account_id: true,
+          orders_count: true,
         },
         skip,
-        take: limit,
+        take: parseInt(limit),
         orderBy: { remittance_date: 'desc' },
       }),
     ]);
@@ -383,6 +393,7 @@ export class RemittanceService {
       valid: !!remittanceOrders.length,
       remittanceOrders,
       pagination: { total, page, limit, pages: Math.ceil(total / limit) },
+      warn_message,
     };
   }
 
@@ -441,6 +452,7 @@ export class RemittanceService {
       valid: !!remittanceOrders.length,
       remittanceOrders,
       pagination: { total, page, limit, pages: Math.ceil(total / limit) },
+      message: total ? 'Remittances fetched successfully' : 'No remittances found',
     };
   }
 
@@ -544,12 +556,22 @@ export class RemittanceService {
   /**
    * Get user bank accounts (SELLER)
    */
-  async getUserBankAccounts(userId: string, { page = 1, limit = 20 }: any) {
+  async getUserBankAccounts(userId: string, { page = 1, limit = 20, search }: any) {
     const skip = (page - 1) * limit;
+
+    const where: any = { user_id: userId };
+    if(search){
+      where.OR = [
+        { account_number: { contains: search, mode: 'insensitive' } },
+        { ifsc: { contains: search, mode: 'insensitive' } },
+        { bank_name: { contains: search, mode: 'insensitive' } },
+        { account_holder: { contains: search, mode: 'insensitive' } },
+      ];
+    }
     const [total, bankAccounts] = await Promise.all([
-      this.fastify.prisma.userBankAccount.count({ where: { user_id: userId } }),
+      this.fastify.prisma.userBankAccount.count({ where }),
       this.fastify.prisma.userBankAccount.findMany({
-        where: { user_id: userId },
+        where,
         select: {
           id: true,
           account_number: true,
@@ -559,43 +581,65 @@ export class RemittanceService {
           is_verified: true,
           is_selected_for_remittance: true,
           created_at: true,
+          user: { select: { role: true } },
         },
         skip,
         take: limit,
         orderBy: { created_at: 'desc' },
       }),
     ]);
+
+    const formattedBankAccounts = bankAccounts.map((bankAccount: any) => ({
+      ...bankAccount,
+      account_number: bankAccount.account_number?.slice(-6),
+    }));
+
     return {
       valid: true,
-      bankAccounts,
+      bankAccounts: formattedBankAccounts,
       pagination: { total, page, limit, pages: Math.ceil(total / limit) },
+      message: total ? 'Bank accounts fetched successfully' : 'No bank accounts found',
     };
   }
 
   /**
    * Get all bank accounts (ADMIN/SUBADMIN)
    */
-  async getAllBankAccounts({ page = 1, limit = 20, userId, is_verified }: any) {
+  async getAllBankAccounts({ search, page = 1, limit = 20, userId, is_verified }: any) {
     const skip = (page - 1) * limit;
     const where: any = {};
     if (userId) where.user_id = userId;
     if (is_verified !== undefined) where.is_verified = is_verified;
+
+    if(search){
+      where.OR = [
+        { user: { name: { contains: search, mode: 'insensitive' } } },
+        { user: { email: { contains: search, mode: 'insensitive' } } },
+        { user: { phone: { contains: search, mode: 'insensitive' } } },
+        { account_number: { contains: search, mode: 'insensitive' } },
+        { ifsc: { contains: search, mode: 'insensitive' } },
+        { bank_name: { contains: search, mode: 'insensitive' } },
+        { account_holder: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
     const [total, bankAccounts] = await Promise.all([
       this.fastify.prisma.userBankAccount.count({ where }),
       this.fastify.prisma.userBankAccount.findMany({
         where,
         include: {
-          user: { select: { id: true, name: true, email: true } },
+          user: { select: { id: true, name: true, email: true, phone: true, role: true } },
         },
         skip,
         take: limit,
-        orderBy: { created_at: 'desc' },
+        orderBy: { created_at: 'desc'},
       }),
     ]);
     return {
       valid: true,
       bankAccounts,
       pagination: { total, page, limit, pages: Math.ceil(total / limit) },
+      message: total ? 'Bank accounts fetched successfully' : 'No bank accounts found',
     };
   }
 
@@ -628,25 +672,41 @@ export class RemittanceService {
   /**
    * Select bank account for remittance
    */
-  async selectBankAccountForRemittance(userId: string, bankAccountId: string) {
-    const bankAccount = await this.fastify.prisma.userBankAccount.findFirst({
-      where: { id: bankAccountId, user_id: userId },
-    });
-    if (!bankAccount) {
-      return { valid: false, message: 'Bank account not found' };
+  async selectBankAccountForRemittance(userId: string, bankAccountId: string, remittanceId: string) {
+    try {
+      const bankAccount = await this.fastify.prisma.userBankAccount.findFirst({
+        where: { id: bankAccountId, user_id: userId },
+      });
+      if (!bankAccount) {
+        throw new Error('Bank account not found');
+      }
+      if (!this.isBankAccountEligible(bankAccount)) {
+        throw new Error('Bank account is not eligible for remittance');
+      }
+  
+      const existingRemittance = await this.fastify.prisma.remittance.findFirst({
+        where: { id: remittanceId, status: 'PENDING' },
+      });
+      if (!existingRemittance) {
+        throw new Error('Cannot select bank account for completed remittance');
+      }
+  
+      if (
+        existingRemittance.remittance_date.toDateString() <= new Date().toDateString() &&
+        existingRemittance.bank_account_id
+      ) {
+        throw new Error('Cannot change bank account for remittance with today\'s date when a bank account is already assigned');
+      }
+  
+      await this.fastify.prisma.remittance.update({
+        where: { id: remittanceId },
+        data: { bank_account_id: bankAccountId },
+      });
+  
+      return { valid: true, message: 'Bank account selected for remittance' };
+    } catch (error) {
+      return { valid: false, message: (error as Error).message };
     }
-    if (!this.isBankAccountEligible(bankAccount)) {
-      return { valid: false, message: 'Bank account is not eligible for remittance' };
-    }
-    await this.fastify.prisma.userBankAccount.updateMany({
-      where: { user_id: userId },
-      data: { is_selected_for_remittance: false },
-    });
-    await this.fastify.prisma.userBankAccount.update({
-      where: { id: bankAccountId },
-      data: { is_selected_for_remittance: true },
-    });
-    return { valid: true, message: 'Bank account selected for remittance' };
   }
 
   /**
@@ -692,13 +752,14 @@ export class RemittanceService {
     if (!remittanceOrder) {
       return { csvBuffer: Buffer.from('', 'utf-8'), filename: `remittance-${id}.csv` };
     }
+    console.log(remittanceOrder.orders, 'remittanceOrder.orders')
     const orders = (remittanceOrder.orders || []).map((order: any) => ({
       remittance_id: remittanceOrder.id,
       remittance_code: remittanceOrder.code,
       ...order,
     }));
     const fields = [
-      'remittance_id', 'remittance_code', 'id', 'code', 'order_number', 'total_amount', 'amount_to_collect', 'payment_method',
+      'remittance_code', 'order_number', 'total_amount', 'amount_to_collect', 'payment_method', 'awb', 'status', 'delivered date'
     ];
     return exportData(fields, orders, 'csv', `remittance-${id}-${Date.now()}.csv`);
   }

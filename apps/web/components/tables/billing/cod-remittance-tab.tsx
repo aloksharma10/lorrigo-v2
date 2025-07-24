@@ -1,152 +1,87 @@
 'use client';
-import {
-  Button,
-  DataTable,
-  Badge,
-  DataTableColumnHeader,
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from '@lorrigo/ui/components';
-import { Info, Download } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { Button, DataTable, Badge, DataTableColumnHeader } from '@lorrigo/ui/components';
+import { Download, Settings, PlusCircleIcon } from 'lucide-react';
+import { useState, useMemo } from 'react';
 import {
   useAdminRemittances,
   useSellerRemittances,
   exportAdminRemittances,
   exportSellerRemittances,
+  useUserBankAccounts,
+  useSelectUserBankAccount,
 } from '@/lib/apis/remittance';
 import { downloadBlob } from '@/lib/utils/downloadBlob';
-import { useAuthToken } from '@/components/providers/token-provider';
-import type { AxiosResponse } from 'axios';
 import { useModalStore } from '@/modal/modal-store';
+import { useDebounce } from '@/lib/hooks/use-debounce';
+import { usePathname } from 'next/navigation';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@lorrigo/ui/components';
 
 export default function CODRemittanceTab() {
-  const { data: session } = useSession();
-  const role = session?.user?.role;
-  const isAdmin = role === 'ADMIN' || role === 'SUBADMIN';
-  const { isTokenReady } = useAuthToken();
+  const pathname = usePathname();
+  const isAdmin = pathname.includes('admin');
   const openModal = useModalStore((state) => state.openModal);
 
-  // Table state
-  const [params, setParams] = useState({
-    page: 1,
-    limit: 20,
-    search: '',
-    status: '',
-    remittanceMethod: '',
-    from: '',
-    to: '',
-    // Add more filters as needed
+  // DataTable state (like ShipmentsTable)
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 20 });
+  const [sorting, setSorting] = useState<{ id: string; desc: boolean }[]>([]);
+  const [filters, setFilters] = useState<{ id: string; value: any }[]>([]);
+  const [globalFilter, setGlobalFilter] = useState('');
+  const debouncedGlobalFilter = useDebounce(globalFilter, 500);
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
+    from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    to: new Date(new Date().getFullYear(), new Date().getMonth() + 10, 0),
   });
 
-  // Advanced filters state
-  const [search, setSearch] = useState('');
-  const [remittanceId, setRemittanceId] = useState('');
-  const [name, setName] = useState('');
-  const [amount, setAmount] = useState('');
-  const [status, setStatus] = useState('');
-  const [dateRange, setDateRange] = useState<{ from: string; to: string }>({ from: '', to: '' });
+  // Modal state for Add Bank Account
+  const { mutate: selectUserBankAccount } = useSelectUserBankAccount();
 
-  // Update params when filters change
-  useEffect(() => {
-    setParams((prev) => ({
-      ...prev,
-      search,
-      remittanceId,
-      name,
-      amount,
-      status,
-      from: dateRange.from,
-      to: dateRange.to,
-      page: 1, // Reset to first page on filter change
-    }));
-  }, [search, remittanceId, name, amount, status, dateRange]);
+  // Fetch remittance data
+  const params = {
+    page: pagination.pageIndex + 1,
+    limit: pagination.pageSize,
+    sort: sorting,
+    filters,
+    search: debouncedGlobalFilter,
+    from: dateRange.from ? dateRange.from.toISOString().split('T')[0] : '',
+    to: dateRange.to ? dateRange.to.toISOString().split('T')[0] : '',
+  };
+  const { data, isLoading, isError, refetch: refetchRemittances } = isAdmin ? useAdminRemittances(params) : useSellerRemittances(params);
 
-  // Modal state
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedRemittanceId, setSelectedRemittanceId] = useState<string | null>(null);
+  // Fetch user bank accounts (for sellers)
+  const { data: bankAccountsData, isLoading: isBankLoading, refetch: refetchBankAccounts } = useUserBankAccounts();
+  const bankAccounts = bankAccountsData?.data?.bankAccounts || bankAccountsData?.bankAccounts || [];
 
-  // Fetch data
-  const {
-    data,
-    isLoading,
-    isError,
-  } = isAdmin
-    ? useAdminRemittances(params)
-    : useSellerRemittances(params);
-
-  // Export handler
-  const handleExport = async (type: 'csv' | 'xlsx') => {
-    const exportFn: (params: any) => Promise<import('axios').AxiosResponse<Blob>> = isAdmin ? exportAdminRemittances : exportSellerRemittances;
-    const res = await exportFn({ ...params, type });
-    const disposition = res.headers['content-disposition'] || '';
-    const match = disposition.match(/filename="?([^";]+)"?/);
-    const filename = match ? match[1] : `remittances.${type}`;
-    downloadBlob(res.data, filename);
+  // Handler for selecting a bank account
+  const handleSelectBankAccount = async (bankAccountId: string, remittanceId: string) => {
+    selectUserBankAccount({ bankAccountId, remittanceId });
   };
 
-  // Columns definition (add tooltips for charges/amounts)
+  // DataTable columns
   const columns = useMemo(
     () => [
       {
         accessorKey: 'code',
-        header: ({ column }: any) => (
-          <DataTableColumnHeader column={column} title="Remittance ID" />
-        ),
+        header: ({ column }: any) => <DataTableColumnHeader column={column} title="Remittance ID" />,
         cell: ({ row }: any) => row.getValue('code'),
       },
       {
         accessorKey: 'remittance_date',
-        header: ({ column }: any) => (
-          <DataTableColumnHeader column={column} title="Date" />
-        ),
+        header: ({ column }: any) => <DataTableColumnHeader column={column} title="Date" />,
         cell: ({ row }: any) => new Date(row.getValue('remittance_date')).toLocaleDateString(),
       },
       {
         accessorKey: 'amount',
-        header: ({ column }: any) => (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <DataTableColumnHeader column={column} title="Remittance Amount" />
-                <Info className="inline h-4 w-4 text-gray-400 ml-1" />
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>Total remittance amount after all deductions.</TooltipContent>
-          </Tooltip>
-        ),
+        header: ({ column }: any) => <DataTableColumnHeader column={column} title="Remittance Amount" />,
         cell: ({ row }: any) => `₹ ${row.getValue('amount')?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,
       },
       {
-        accessorKey: 'early_remittance_charge',
-        header: ({ column }: any) => (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <DataTableColumnHeader column={column} title="Early COD Charges" />
-                <Info className="inline h-4 w-4 text-gray-400 ml-1" />
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>Fee for early remittance before standard cycle.</TooltipContent>
-          </Tooltip>
-        ),
-        cell: ({ row }: any) => `₹ ${row.getValue('early_remittance_charge')?.toFixed(2)}`,
+        accessorKey: 'early_remittance_charge_amount',
+        header: ({ column }: any) => <DataTableColumnHeader column={column} title="Early COD Charges" />,
+        cell: ({ row }: any) => `₹ ${row.getValue('early_remittance_charge_amount')?.toFixed(2)}`,
       },
       {
         accessorKey: 'wallet_transfer_amount',
-        header: ({ column }: any) => (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <DataTableColumnHeader column={column} title="Total Deductions" />
-                <Info className="inline h-4 w-4 text-gray-400 ml-1" />
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>Total deductions from COD (FW, RTO, etc.)</TooltipContent>
-          </Tooltip>
-        ),
+        header: ({ column }: any) => <DataTableColumnHeader column={column} title="Wallet Transfer Amount" />,
         cell: ({ row }: any) => `₹ ${row.getValue('wallet_transfer_amount')?.toFixed(2)}`,
       },
       {
@@ -159,6 +94,37 @@ export default function CODRemittanceTab() {
         ),
       },
       {
+        id: 'bank_account',
+        header: 'Bank Account',
+        cell: ({ row }: any) => {
+          const remittance = row.original;
+          const selectedBankId = remittance.bank_account_id;
+          return (
+            <Select value={selectedBankId || ''} onValueChange={(value) => handleSelectBankAccount(value, remittance.id)} disabled={isBankLoading}>
+              <SelectTrigger disabled={isBankLoading || remittance.status !== 'PENDING' || isAdmin} className="border-none">
+                <SelectValue placeholder="Select Bank Account" defaultValue={selectedBankId} />
+              </SelectTrigger>
+              <SelectContent>
+                {bankAccounts.map((acc: any) => (
+                  <SelectItem key={acc.id} value={acc.id} className="flex w-full items-center justify-between gap-2">
+                    {acc.is_verified ? (
+                      <Badge variant={'status_success'} className="ml-auto">
+                        Verified
+                      </Badge>
+                    ) : (
+                      <Badge variant={'status_warning'} className="ml-auto">
+                        Unverified
+                      </Badge>
+                    )}
+                    {acc.bank_name} ({acc.account_number})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          );
+        },
+      },
+      {
         id: 'actions',
         header: 'Action',
         cell: ({ row }: any) => (
@@ -166,8 +132,6 @@ export default function CODRemittanceTab() {
             size="sm"
             variant="ghost"
             onClick={() => {
-              setSelectedRemittanceId(row.original.id);
-              setModalOpen(true);
               openModal('remittance-detail', { id: row.original.id });
             }}
           >
@@ -176,120 +140,91 @@ export default function CODRemittanceTab() {
         ),
       },
     ],
-    [isAdmin]
+    [isAdmin, bankAccounts, isBankLoading]
   );
 
-  // Type guards for data
-  const remittanceOrders = Array.isArray(data?.remittanceOrders) ? data.remittanceOrders : [];
-  const pagination = data?.pagination || { total: 0, page: 0, pages: 1 };
+  // DataTable filterable/searchable columns
+  const filterableColumns = [
+    {
+      id: 'status',
+      title: 'Status',
+      options: [
+        { label: 'Pending', value: 'PENDING' },
+        { label: 'Completed', value: 'COMPLETED' },
+        { label: 'Failed', value: 'FAILED' },
+      ],
+    },
+  ];
+  const searchableColumns = [
+    { id: 'code', title: 'Remittance ID' },
+    { id: 'name', title: 'Name' },
+  ];
 
-  // Pagination handler for DataTable
-  const handlePaginationChange = ({ pageIndex, pageSize }: { pageIndex: number; pageSize: number }) => {
-    setParams((prev) => ({ ...prev, page: pageIndex + 1, limit: pageSize }));
+  // Export handler (unchanged)
+  const handleExport = async (type: 'csv' | 'xlsx') => {
+    const exportFn: (params: any) => Promise<import('axios').AxiosResponse<Blob>> = isAdmin ? exportAdminRemittances : exportSellerRemittances;
+    const res = await exportFn({ ...params, type });
+    const disposition = res.headers['content-disposition'] || '';
+    const match = disposition.match(/filename="?([^";]+)"?/);
+    const filename = match ? match[1] : `remittances.${type}`;
+    downloadBlob(res.data, filename);
   };
 
-  // Filters, search, and table handlers
-  // ... implement filter/search UI and handlers here
+  // DataTable handlers
+  const handlePaginationChange = ({ pageIndex, pageSize }: { pageIndex: number; pageSize: number }) => {
+    setPagination({ pageIndex, pageSize });
+  };
+  const handleSortingChange = (newSorting: any) => setSorting(newSorting);
+  const handleFiltersChange = (newFilters: any) => setFilters(newFilters);
+  const handleGlobalFilterChange = (newGlobalFilter: string) => setGlobalFilter(newGlobalFilter);
+  const handleDateRangeChange = (newDateRange: { from: Date; to: Date }) => setDateRange(newDateRange);
+
+  // Remittance data normalization
+  const remittanceOrders = Array.isArray(data?.remittanceOrders) ? data.remittanceOrders : [];
+  const paginationMeta = data?.pagination || { total: 0, page: 0, pages: 1 };
 
   return (
     <div className="space-y-6">
-      {/* Advanced Filters */}
-      <div className="flex flex-wrap gap-2 mb-4 items-end">
-        <div>
-          <label className="block text-xs font-medium mb-1">Search</label>
-          <input
-            type="text"
-            className="input input-bordered"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="AWB, Remittance ID, Name, etc."
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium mb-1">Remittance ID</label>
-          <input
-            type="text"
-            className="input input-bordered"
-            value={remittanceId}
-            onChange={(e) => setRemittanceId(e.target.value)}
-            placeholder="Remittance ID"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium mb-1">Name</label>
-          <input
-            type="text"
-            className="input input-bordered"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Name"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium mb-1">Amount</label>
-          <input
-            type="number"
-            className="input input-bordered"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="Amount"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium mb-1">Status</label>
-          <select
-            className="input input-bordered"
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-          >
-            <option value="">All</option>
-            <option value="PENDING">Pending</option>
-            <option value="COMPLETED">Completed</option>
-            <option value="FAILED">Failed</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs font-medium mb-1">From</label>
-          <input
-            type="date"
-            className="input input-bordered"
-            value={dateRange.from}
-            onChange={(e) => setDateRange((prev) => ({ ...prev, from: e.target.value }))}
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium mb-1">To</label>
-          <input
-            type="date"
-            className="input input-bordered"
-            value={dateRange.to}
-            onChange={(e) => setDateRange((prev) => ({ ...prev, to: e.target.value }))}
-          />
-        </div>
-      </div>
       {/* Export buttons */}
-      <div className="flex gap-2 mb-4">
+      <div className="mb-4 flex flex-col gap-2 lg:flex-row">
         <Button onClick={() => handleExport('csv')} variant="outline">
-          <Download className="h-4 w-4 mr-2" /> Export CSV
+          <Download className="mr-2 h-4 w-4" /> Export CSV
         </Button>
         <Button onClick={() => handleExport('xlsx')} variant="outline">
-          <Download className="h-4 w-4 mr-2" /> Export XLSX
+          <Download className="mr-2 h-4 w-4" /> Export XLSX
+        </Button>
+        {!isAdmin && (
+          <Button icon={PlusCircleIcon} className="lg:ml-auto" onClick={() => openModal('add-bank-account')}>
+            Add Bank Account
+          </Button>
+        )}
+        <Button icon={Settings} onClick={() => openModal('manage-bank-accounts')}>
+          Manage Bank Accounts
         </Button>
       </div>
       {/* Data Table */}
       <DataTable
         columns={columns}
         data={remittanceOrders}
-        count={pagination.total}
-        page={params.page - 1}
-        pageSize={params.limit}
-        pageCount={pagination.pages}
-        onPaginationChange={handlePaginationChange}
+        count={paginationMeta.total}
+        page={pagination.pageIndex}
+        pageSize={pagination.pageSize}
+        pageCount={paginationMeta.pages}
+        filterableColumns={filterableColumns}
+        searchableColumns={searchableColumns}
+        searchPlaceholder="Search Remittance ID, Name, etc."
         isLoading={isLoading}
         isError={isError}
+        onPaginationChange={handlePaginationChange}
+        onSortingChange={handleSortingChange}
+        onFiltersChange={handleFiltersChange}
+        onGlobalFilterChange={handleGlobalFilterChange}
+        onDateRangeChange={handleDateRangeChange}
+        defaultDateRange={dateRange}
+        manualPagination={true}
+        manualSorting={true}
+        manualFiltering={true}
       />
-      {/* Modal for remittance detail, registered via modal provider */}
-      {/* The modal is now opened via openModal('remittance-detail', { id }) */}
     </div>
   );
 }

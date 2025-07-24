@@ -1,7 +1,8 @@
 import { api, apiDownload } from './axios';
 import type { AxiosResponse } from 'axios';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthToken } from '@/components/providers/token-provider';
+import { toast } from '@lorrigo/ui/components/sonner';
 
 /**
  * Seller: Fetch own remittances with filters
@@ -68,6 +69,33 @@ export const exportAdminRemittanceDetail = (id: string, type: 'csv' | 'xlsx' = '
 export const exportSellerRemittanceDetail = (id: string, type: 'csv' | 'xlsx' = 'csv'): Promise<AxiosResponse<Blob>> =>
   apiDownload.get(`/remittance/${id}/export`, { params: { type } });
 
+/**
+ * Seller: Fetch own bank accounts
+ */
+export const fetchUserBankAccounts = (params: { search?: string, page?: number; limit?: number } = {}) =>
+  api.get('/remittance/bank-accounts', { params });
+
+/**
+ * Seller: Select a bank account for remittance
+ */
+export const useSelectUserBankAccount = () =>{
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: any) => api.post('/remittance/bank-accounts/select', data).then((res: any) => res),
+    onSuccess: (data: any) => {
+      if (data.valid) {
+        toast.success(data.message);
+      } else {
+        toast.error(data.message);
+      }
+      queryClient.invalidateQueries({ queryKey: ['seller-remittances'] });
+      queryClient.invalidateQueries({ queryKey: ['user-bank-accounts'] });
+    },
+    onError: (error: any) => {
+      toast.error((error as Error).message);
+    },
+  });
+}
 // React Query hooks for remittance list/detail (admin & seller)
 export function useSellerRemittances(params: any) {
   const { isTokenReady } = useAuthToken();
@@ -87,6 +115,24 @@ export function useAdminRemittances(params: any) {
   });
 }
 
+export function useAddBankAccount() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: any) => api.post('/remittance/bank-accounts', data).then((res: any) => res),
+    onSuccess: (data: any) => {
+      if (data.valid) {
+        toast.success(data.message);
+      } else {
+        toast.error(data.message);
+      }
+      queryClient.invalidateQueries({ queryKey: ['user-bank-accounts'] });
+    },
+    onError: (error: any) => {
+      toast.error((error as Error).message);
+    },
+  });
+}
+
 export function useSellerRemittanceDetail(id: string) {
   const { isTokenReady } = useAuthToken();
   return useQuery({
@@ -103,4 +149,22 @@ export function useAdminRemittanceDetail(id: string) {
     queryFn: () => fetchAdminRemittanceById(id).then((res: any) => res),
     enabled: !!id && isTokenReady,
   });
+}
+
+/**
+ * React Query hook: Fetch user bank accounts
+ */
+export function useUserBankAccounts(params: { search?: string, page?: number; limit?: number } = {}) {
+  const { isTokenReady } = useAuthToken();
+  return useQuery({
+    queryKey: ['user-bank-accounts', params],
+    queryFn: () => fetchUserBankAccounts(params).then((res: any) => res),
+    enabled: isTokenReady,
+  });
 } 
+
+export function useVerifyBankAccount() {
+  return useMutation({
+    mutationFn: (data: any) => api.put(`/remittance/bank-accounts/${data.bankAccountId}/verify`, data).then((res: any) => res),
+  });
+}

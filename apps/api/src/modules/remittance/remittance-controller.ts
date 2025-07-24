@@ -55,13 +55,13 @@ export class RemittanceController {
   async getBankAccounts(req: FastifyRequest, reply: FastifyReply) {
     const userId = req.userPayload!.id;
     const userRole = req.userPayload!.role;
-    const { page = 1, limit = 20, userId: queryUserId, is_verified } = req.query as any;
+    const { page = 1, limit = 10, userId: queryUserId, is_verified, search } = req.query as any;
 
     if (userRole === Role.SELLER) {
-      const result = await this.remittanceService.getUserBankAccounts(userId, { page, limit });
+      const result = await this.remittanceService.getUserBankAccounts(userId, { page, limit, search });
       return reply.send(result);
     } else {
-      const result = await this.remittanceService.getAllBankAccounts({ page, limit, userId: queryUserId, is_verified });
+      const result = await this.remittanceService.getAllBankAccounts({ search, page, limit, userId: queryUserId, is_verified });
       return reply.send(result);
     }
   }
@@ -81,8 +81,8 @@ export class RemittanceController {
    */
   async selectBankAccountForRemittance(req: FastifyRequest, reply: FastifyReply) {
     const userId = req.userPayload!.id;
-    const { bankAccountId } = req.body as any;
-    const result = await this.remittanceService.selectBankAccountForRemittance(userId, bankAccountId);
+    const { bankAccountId, remittanceId } = req.body as any;
+    const result = await this.remittanceService.selectBankAccountForRemittance(userId, bankAccountId, remittanceId);
     return reply.send(result);
   }
 

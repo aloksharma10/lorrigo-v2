@@ -41,12 +41,12 @@ export const ADMIN_ROUTES = [
     items: [
       {
         title: 'Weight Discrepancy',
-        url: '/admin/weight-management/weight-discrepancy',
+        url: '/admin/billing/weight-disputes',
       },
-      {
-        title: 'Weight Freeze',
-        url: '/admin/weight-management/weight-freeze',
-      },
+      // {
+      //   title: 'Weight Freeze',
+      //   url: '/admin/weight-management/weight-freeze',
+      // },
       // {
       //    title: "All Shipment",
       //    url: "/admin/all-shipment",
@@ -125,6 +125,10 @@ export const ADMIN_ROUTES = [
     icon: Command,
     isActive: false,
     items: [
+      {
+        title: 'Billing Cycles',
+        url: '/admin/billing/cycles',
+      },
       {
         title: 'Shipping Charges',
         url: '/admin/billing/shipping-charges',

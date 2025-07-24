@@ -44,12 +44,12 @@ export const SELLER_ROUTES = [
     items: [
       {
         title: 'Weight Discrepancy',
-        url: '/seller/weight-discrepancy',
+        url: '/seller/billing/weight-disputes',
       },
-      {
-        title: 'Weight Freeze',
-        url: '/seller/weight-freeze',
-      },
+      // {
+      //   title: 'Weight Freeze',
+      //   url: '/seller/weight-freeze',
+      // },
       // {
       //    title: "All Shipment",
       //    url: "/seller/all-shipment",

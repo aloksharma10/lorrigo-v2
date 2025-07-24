@@ -21,6 +21,8 @@ import { WeightDisputeCSVModal } from '@/components/modals/weight-dispute-csv-mo
 import { DisputeActionsCSVModal } from '@/components/modals/dispute-actions-csv-modal';
 import { ManualBillingModal } from '@/components/modals/manual-billing-modal';
 import { RemittanceDetailModal } from '@/components/modals/remittance-detail-modal';
+import ManageBankAccountsModal from '@/components/modals/manage-bank-accounts';
+import AddBankAccountModal from '@/components/modals/add-bank-account-modal';
 
 // Store to track registered modals
 interface ModalRegistryState {
@@ -57,6 +59,8 @@ export function ModalRegistry() {
       registerModal('dispute-actions-csv', DisputeActionsCSVModal);
       registerModal('manual-billing', ManualBillingModal);
       registerModal('remittance-detail', RemittanceDetailModal);
+      registerModal('manage-bank-accounts', ManageBankAccountsModal);
+      registerModal('add-bank-account', AddBankAccountModal);
 
       setRegistered(true);
       console.log('Modal components registered successfully');

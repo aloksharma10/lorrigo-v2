@@ -1,25 +1,26 @@
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Modal } from '@lorrigo/ui/components';
 import { Button, Badge } from '@lorrigo/ui/components';
-import { Download, Calendar, CreditCard, Building2, User, FileText, Eye, DollarSign, X } from 'lucide-react';
+import { Calendar, CreditCard, Building2, User, FileText, Eye, DollarSign, X, XIcon } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { fetchAdminRemittanceById, fetchSellerRemittanceById, exportAdminRemittanceDetail, exportSellerRemittanceDetail } from '@/lib/apis/remittance';
 import { downloadBlob } from '@/lib/utils/downloadBlob';
 import { useAuthToken } from '@/components/providers/token-provider';
 import type { AxiosResponse } from 'axios';
+import { currencyFormatter } from '@lorrigo/utils';
+import { useModalStore } from '@/modal/modal-store';
 
-interface RemittanceDetailModalProps {
-  id: string;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
 
-export function RemittanceDetailModal({ id, open, onOpenChange }: RemittanceDetailModalProps) {
+export function RemittanceDetailModal() {
   const { data: session } = useSession();
   const role = session?.user?.role;
   const isAdmin = role === 'ADMIN' || role === 'SUBADMIN';
   const { isTokenReady } = useAuthToken();
+
+  const { modals, closeModal } = useModalStore();
+  const modal_props = modals.filter((modal) => modal.type === 'remittance-detail')[0];
+  const modal_id = modal_props!.id;
+  const id = modal_props!.props.id;
 
   const {
     data,
@@ -31,7 +32,7 @@ export function RemittanceDetailModal({ id, open, onOpenChange }: RemittanceDeta
       isAdmin
         ? fetchAdminRemittanceById(id).then((res) => res)
         : fetchSellerRemittanceById(id).then((res) => res),
-    enabled: open && isTokenReady,
+    enabled: isTokenReady,
   });
 
   const handleExport = async (type: 'csv' | 'xlsx') => {
@@ -68,19 +69,18 @@ export function RemittanceDetailModal({ id, open, onOpenChange }: RemittanceDeta
   // if (!open) return null;
 
   return (
-    // <Modal showModal={open} setShowModal={()=>{}} className="max-w-5xl max-h-[90vh] overflow-hidden">
       <div className="bg-white rounded-lg shadow-xl">
         {/* Header */}
-        <div className="px-6 py-4 border-b bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-lg">
+        <div className="p-4 border-b bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <FileText className="h-6 w-6 text-blue-600" />
-              <h2 className="text-2xl font-bold text-gray-900">Remittance Details</h2>
+              <FileText className="h-4 w-4 text-blue-600" />
+              <h2 className="lg:text-xl text-lg font-bold text-gray-900">Remittance Details</h2>
             </div>
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onOpenChange(false)}
+              onClick={() => closeModal(modal_id)}
               className="h-8 w-8 p-0 hover:bg-gray-200"
             >
               <X className="h-4 w-4" />
@@ -116,7 +116,7 @@ export function RemittanceDetailModal({ id, open, onOpenChange }: RemittanceDeta
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-600">Remittance ID</p>
-                      <p className="text-lg font-semibold text-gray-900">{remittance.code}</p>
+                      <p className="text-sm font-semibold  tracking-wide text-gray-900">{remittance.code}</p>
                     </div>
                   </div>
                   
@@ -126,7 +126,7 @@ export function RemittanceDetailModal({ id, open, onOpenChange }: RemittanceDeta
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-600">Remittance Date</p>
-                      <p className="text-lg font-semibold text-gray-900">
+                      <p className="text-sm font-semibold text-gray-900">
                         {new Date(remittance.remittance_date).toLocaleDateString('en-IN', {
                           year: 'numeric',
                           month: 'long',
@@ -144,7 +144,7 @@ export function RemittanceDetailModal({ id, open, onOpenChange }: RemittanceDeta
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-600">Status</p>
-                      <Badge className={`${getStatusColor(remittance.status)} px-3 py-1 text-sm font-medium rounded-full border`}>
+                      <Badge className={`${getStatusColor(remittance.status)} px-3 py-1 text-xs font-medium rounded-full border`}>
                         {remittance.status?.toUpperCase()}
                       </Badge>
                     </div>
@@ -156,7 +156,7 @@ export function RemittanceDetailModal({ id, open, onOpenChange }: RemittanceDeta
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-600">Bank Account</p>
-                      <p className="text-lg font-semibold text-gray-900">
+                      <p className="text-sm font-semibold text-gray-900">
                         {remittance.bank_account?.account_number || 'N/A'}
                       </p>
                       <p className="text-sm text-gray-500">{remittance.bank_account?.bank_name || 'N/A'}</p>
@@ -177,11 +177,11 @@ export function RemittanceDetailModal({ id, open, onOpenChange }: RemittanceDeta
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="p-3 bg-white rounded-lg border border-blue-100">
                       <p className="text-sm font-medium text-gray-600">Name</p>
-                      <p className="text-lg font-semibold text-gray-900">{remittance.user.name}</p>
+                      <p className="text-sm font-semibold text-gray-900">{remittance.user.name}</p>
                     </div>
                     <div className="p-3 bg-white rounded-lg border border-blue-100">
                       <p className="text-sm font-medium text-gray-600">Email</p>
-                      <p className="text-lg font-semibold text-gray-900">{remittance.user.email}</p>
+                      <p className="text-sm font-semibold text-gray-900">{remittance.user.email}</p>
                     </div>
                   </div>
                 </div>
@@ -197,20 +197,21 @@ export function RemittanceDetailModal({ id, open, onOpenChange }: RemittanceDeta
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="text-center p-4 bg-white rounded-lg border border-green-100 hover:shadow-md transition-shadow">
-                    <div className="text-3xl font-bold text-green-600 mb-2">
-                      ₹ {remittance.amount?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}
+                    <div className="text-xl font-bold text-green-600 mb-2">
+                      {/* ₹ {remittance.amount?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'} */}
+                      {currencyFormatter(remittance.amount || 0)}
                     </div>
                     <p className="text-sm font-medium text-gray-600">Total Amount</p>
                   </div>
                   <div className="text-center p-4 bg-white rounded-lg border border-orange-100 hover:shadow-md transition-shadow">
-                    <div className="text-3xl font-bold text-orange-600 mb-2">
-                      ₹ {remittance.early_remittance_charge?.toFixed(2) || '0.00'}
+                    <div className="text-xl font-bold text-orange-600 mb-2">
+                      {currencyFormatter(remittance.early_remittance_charge || 0 )}
                     </div>
                     <p className="text-sm font-medium text-gray-600">Early Remittance Charge</p>
                   </div>
                   <div className="text-center p-4 bg-white rounded-lg border border-red-100 hover:shadow-md transition-shadow">
-                    <div className="text-3xl font-bold text-red-600 mb-2">
-                      ₹ {remittance.wallet_transfer_amount?.toFixed(2) || '0.00'}
+                    <div className="text-xl font-bold text-red-600 mb-2">
+                      {currencyFormatter(remittance.wallet_transfer_amount || 0 )}
                     </div>
                     <p className="text-sm font-medium text-gray-600">Total Deductions</p>
                   </div>
@@ -259,7 +260,7 @@ export function RemittanceDetailModal({ id, open, onOpenChange }: RemittanceDeta
                               {order.shipment?.awb || 'N/A'}
                             </td>
                             <td className="px-4 py-3 text-sm font-semibold text-green-600">
-                              ₹ {order.amount_to_collect?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}
+                              {currencyFormatter(order.amount_to_collect || 0 )}
                             </td>
                             <td className="px-4 py-3 text-sm">
                               <Badge variant="outline" className="text-xs px-2 py-1">
@@ -291,16 +292,17 @@ export function RemittanceDetailModal({ id, open, onOpenChange }: RemittanceDeta
         
         {/* Footer */}
         <div className="px-6 py-4 border-t bg-gray-50 rounded-b-lg">
-          <div className="flex gap-3 justify-end">
+          <div className="flex flex-col lg:flex-row gap-3 justify-end">
             <Button 
-              onClick={() => onOpenChange(false)} 
+              icon={XIcon}
+              onClick={() => closeModal(modal_id)} 
               variant="outline" 
               className="px-6 hover:bg-gray-100"
             >
               Close
             </Button>
-            {remittance && (
-              <>
+            {/* {remittance && (
+              <div className='flex gap-3'>
                 <Button 
                   onClick={() => handleExport('csv')} 
                   variant="outline"
@@ -316,11 +318,10 @@ export function RemittanceDetailModal({ id, open, onOpenChange }: RemittanceDeta
                   <Download className="h-4 w-4 mr-2" /> 
                   Export XLSX
                 </Button>
-              </>
-            )}
+              </div>
+            )} */}
           </div>
         </div>
       </div>
-    // </Modal>
   );
 }
