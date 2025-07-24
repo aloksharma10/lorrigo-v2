@@ -14,7 +14,7 @@ import { useDebounce } from '@/lib/hooks/use-debounce';
 import { fetchShipments } from '@/lib/apis/order';
 import ActionTooltip from '@/components/action-tooltip';
 import HoverCardToolTip from '@/components/hover-card-tooltip';
-import { currencyFormatter, formatDateTimeSmart } from '@lorrigo/utils';
+import { currencyFormatter, formatDateTimeSmart, ShipmentBucket } from '@lorrigo/utils';
 import { Shipment, ShipmentParams } from '@/lib/type/response-types';
 import { useAuthToken } from '@/components/providers/token-provider';
 import { CopyBtn } from '@/components/copy-btn';
@@ -227,7 +227,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
       enableHiding: true,
     },
     {
-      id: 'total_amount',
+      id: 'shipment.paymentType',
       accessorKey: 'amount',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Payment" />,
       cell: ({ row }) => {
@@ -256,7 +256,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
       id: 'hub.name',
       accessorKey: 'pickupAddress',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Pickup / RTO Addresses" />
+        <DataTableColumnHeader column={column} title="Warehouse Address" />
       ),
       cell: ({ row }) => {
         const shipment = row.original;
@@ -414,21 +414,32 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
     },
   ];
 
-  // Define filterable columns
   const filterableColumns = [
     {
       id: 'status',
       title: 'Status',
       options: [
-        { label: 'New', value: 'New' },
-        { label: 'Pickup Scheduled', value: 'Pickup Scheduled' },
-        { label: 'In Transit', value: 'In Transit' },
-        { label: 'Delivered', value: 'Delivered' },
-        { label: 'RTO', value: 'RTO' },
+        { label: 'New', value: ShipmentBucket.NEW.toString() },
+        { label: 'Courier Assigned', value: ShipmentBucket.COURIER_ASSIGNED.toString() },
+        { label: 'Pickup Scheduled', value: ShipmentBucket.PICKUP_SCHEDULED.toString() },
+        { label: 'Picked Up', value: ShipmentBucket.PICKED_UP.toString() },
+        { label: 'In Transit', value: ShipmentBucket.IN_TRANSIT.toString() },
+        { label: 'Out For Delivery', value: ShipmentBucket.OUT_FOR_DELIVERY.toString() },
+        { label: 'Delivered', value: ShipmentBucket.DELIVERED.toString() },
+        { label: 'NDR', value: ShipmentBucket.NDR.toString() },
+        { label: 'Cancelled Order', value: ShipmentBucket.CANCELLED_ORDER.toString() },
+        { label: 'Cancelled Shipment', value: ShipmentBucket.CANCELLED_SHIPMENT.toString() },
+        { label: 'RTO Initiated', value: ShipmentBucket.RTO_INITIATED.toString() },
+        { label: 'RTO In Transit', value: ShipmentBucket.RTO_IN_TRANSIT.toString() },
+        { label: 'RTO Delivered', value: ShipmentBucket.RTO_DELIVERED.toString() },
+        { label: 'Lost Damaged', value: ShipmentBucket.LOST_DAMAGED.toString() },
+        { label: 'Disposed', value: ShipmentBucket.DISPOSED.toString() },
+        { label: 'Exception', value: ShipmentBucket.EXCEPTION.toString() },
+        { label: 'Awaiting', value: ShipmentBucket.AWAITING.toString() },
       ],
     },
     {
-      id: 'paymentType',
+      id: 'shipment.paymentType',
       title: 'Payment Type',
       options: [
         { label: 'Prepaid', value: 'Prepaid' },

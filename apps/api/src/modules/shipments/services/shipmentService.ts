@@ -1766,12 +1766,47 @@ export class ShipmentService {
 
       // Update shipment if status changed
       if (statusUpdated) {
+        // Prepare date fields to update
+        const updateData: any = {
+          status: status_code as ShipmentStatus,
+          bucket: bucket !== undefined && bucket !== null ? bucket : undefined,
+        };
+
+        // Use the timestamp from the latest event if available, else now
+        const eventTimestamp = latestEvent?.timestamp ? new Date(latestEvent.timestamp) : new Date();
+
+        // Fetch current shipment date fields
+        const currentShipment = await this.fastify.prisma.shipment.findUnique({
+          where: { id: shipmentId },
+          select: { delivered_date: true, rto_delivered_date: true, picked_up_date: true },
+        });
+
+        // Set delivered_date if moving to DELIVERED and not already set
+        if (
+          (status_code === ShipmentStatus.DELIVERED || newStatus === 'DELIVERED') &&
+          !currentShipment?.delivered_date
+        ) {
+          updateData.delivered_date = eventTimestamp;
+        }
+        // Set rto_delivered_date if moving to RTO_DELIVERED and not already set
+        if (
+          (status_code === ShipmentStatus.RTO_DELIVERED || newStatus === 'RTO_DELIVERED') &&
+          !currentShipment?.rto_delivered_date
+        ) {
+          updateData.rto_delivered_date = eventTimestamp;
+        }
+        // Set picked_up_date if moving to PICKED_UP or IN_TRANSIT for the first time and not already set
+        if (
+          ((status_code === ShipmentStatus.PICKED_UP || newStatus === 'PICKED_UP' ||
+            status_code === ShipmentStatus.IN_TRANSIT || newStatus === 'IN_TRANSIT') &&
+            !currentShipment?.picked_up_date)
+        ) {
+          updateData.picked_up_date = eventTimestamp;
+        }
+
         await this.fastify.prisma.shipment.update({
           where: { id: shipmentId },
-          data: {
-            status: status_code as ShipmentStatus,
-            bucket: bucket !== undefined && bucket !== null ? bucket : undefined,
-          },
+          data: updateData,
         });
 
         // If status changed to RTO, schedule RTO charges processing

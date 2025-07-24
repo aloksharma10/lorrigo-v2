@@ -169,9 +169,8 @@ export const ShipmentActionButton: React.FC<ShipmentActionButtonProps> = ({ ship
           size="sm"
           onClick={() => {
             openModal('ndr-action', {
-              shipmentId: shipment.id,
-              orderNumber: shipment.orderNumber,
-              awb: shipment.awb,
+              selectedOrders: [shipment],
+              isBulkAction: false,
             });
           }}
         >
@@ -182,10 +181,8 @@ export const ShipmentActionButton: React.FC<ShipmentActionButtonProps> = ({ ship
             key="rto"
             onClick={() => {
               openModal('ndr-action', {
-                shipmentId: shipment.id,
-                orderNumber: shipment.orderNumber,
-                awb: shipment.awb,
-                action: 'rto',
+                selectedOrders: [shipment],
+                isBulkAction: false,
               });
             }}
           >

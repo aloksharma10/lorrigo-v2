@@ -202,15 +202,15 @@ export function initShipmentQueue(fastify: FastifyInstance, shipmentService: Shi
 
       try {
         switch (job.name) {
-          // case JobType.TRACK_SHIPMENTS:
-          //   const { batchSize, config } = job.data as TrackingJobData;
+          case JobType.TRACK_SHIPMENTS:
+            const { batchSize, config } = job.data as TrackingJobData;
             // return await processShipmentTracking(
             //   fastify,
             //   shipmentService,
             //   { batchSize: batchSize || 50, ...config },
             //   job // Pass the job as the fourth argument
             // );
-            // return processOptimizedBulkStatusUpdates(fastify);
+            return processOptimizedBulkStatusUpdates(fastify);
 
           case JobType.RETRY_TRACK_SHIPMENT:
             const { shipmentId } = job.data as TrackingJobData;

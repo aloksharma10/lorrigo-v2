@@ -4,7 +4,7 @@ import * as React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { CalendarIcon, Loader2, AlertTriangle } from 'lucide-react';
+import { CalendarIcon, Loader2, AlertTriangle, X } from 'lucide-react';
 import { format } from 'date-fns';
 
 import {
@@ -39,6 +39,7 @@ import { Badge } from '@lorrigo/ui/components';
 import { Separator } from '@lorrigo/ui/components';
 import { toast } from '@lorrigo/ui/components';
 import { useNDROperations, type NDROrder } from '@/lib/apis/ndr';
+import { useModalStore } from '@/modal/modal-store';
 
 // Helper function for conditional classes
 function cn(...classes: (string | undefined | null | false)[]): string {
@@ -93,12 +94,17 @@ const actionTypeConfig = {
   },
 } as const;
 
-export function NDRActionModal({
-  isOpen,
-  onOpenChange,
-  selectedOrders,
-  isBulkAction = false,
-}: NDRActionModalProps) {
+export function NDRActionModal() {
+  const { modals, closeModal } = useModalStore();
+
+  const modal_props = modals.filter((modal) => modal.type === 'ndr-action')[0];
+  const modal_id = modal_props!.id;
+  const { selectedOrders, isBulkAction } = modal_props?.props as {
+    selectedOrders: NDROrder[];
+    isBulkAction: boolean;
+  };
+
+
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const { takeNDRAction, takeBulkNDRAction } = useNDROperations();
 
@@ -116,12 +122,6 @@ export function NDRActionModal({
     ? actionTypeConfig[selectedActionType]?.requiresDate || false
     : false;
 
-  // Reset form when modal opens/closes
-  React.useEffect(() => {
-    if (!isOpen) {
-      form.reset();
-    }
-  }, [isOpen, form]);
 
   const onSubmit = async (values: NDRActionFormValues) => {
     if (selectedOrders.length === 0) {
@@ -147,7 +147,7 @@ export function NDRActionModal({
           toast.success(
             `Bulk NDR action queued for ${selectedOrders.length} orders. Operation ID: ${result.operationId}`
           );
-          onOpenChange(false);
+          closeModal(modal_id);
         } else {
           toast.error(result.message || 'Failed to queue bulk action');
         }
@@ -168,7 +168,7 @@ export function NDRActionModal({
         if (result && typeof result === 'object' && 'success' in result) {
           if (result.success) {
             toast.success('NDR action completed successfully');
-            onOpenChange(false);
+            closeModal(modal_id);
           } else {
             toast.error((result as any).message || 'Failed to take NDR action');
           }
@@ -187,18 +187,23 @@ export function NDRActionModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>
+      <div className="flex flex-col p-4">
+      <div className="max-w-2xl">
+
+        <div className="flex items-center justify-between py-4">
+          <div className="flex flex-col gap-1">
+          <h2 className="text-xl font-semibold">
             {isBulkAction || selectedOrders.length > 1 ? 'Bulk NDR Action' : 'NDR Action'}
-          </DialogTitle>
-          <DialogDescription>
-            {isBulkAction || selectedOrders.length > 1
-              ? `Take action on ${selectedOrders.length} selected NDR orders`
-              : 'Take action on the selected NDR order'}
-          </DialogDescription>
-        </DialogHeader>
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {isBulkAction || selectedOrders.length > 1 ? `Take action on ${selectedOrders.length} selected NDR orders` : 'Take action on the selected NDR order'}
+          </p>
+          </div>
+          <button onClick={() => closeModal(modal_id)} className="rounded-full p-1 hover:bg-neutral-100">
+            <X className="h-5 w-5 text-neutral-500" />
+          </button>
+         
+        </div>
 
         <div className="space-y-4">
           {/* Selected Orders Summary */}
@@ -261,8 +266,8 @@ export function NDRActionModal({
                     <FormLabel>Action Type</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select an action type" />
+                        <SelectTrigger className="w-full">
+                          <SelectValue className="text-sm w-full" placeholder="Select an action type" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -279,10 +284,7 @@ export function NDRActionModal({
                                 )}
                               />
                               <div>
-                                <div className="font-medium">{config.label}</div>
-                                <div className="text-muted-foreground text-xs">
-                                  {config.description}
-                                </div>
+                                <div className="font-medium">{config.label} -  <span className="text-muted-foreground text-xs">{config.description}</span></div>
                               </div>
                             </div>
                           </SelectItem>
@@ -359,26 +361,26 @@ export function NDRActionModal({
                 )}
               />
 
-              <DialogFooter>
+              <div className="flex items-center justify-end gap-2">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => onOpenChange(false)}
+                  onClick={() => closeModal(modal_id)}
                   disabled={isSubmitting}
+                  isLoading={isSubmitting}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button type="submit" disabled={isSubmitting} isLoading={isSubmitting}>
                   {isBulkAction || selectedOrders.length > 1
                     ? `Process ${selectedOrders.length} Orders`
                     : 'Process Order'}
                 </Button>
-              </DialogFooter>
+              </div>
             </form>
           </Form>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }

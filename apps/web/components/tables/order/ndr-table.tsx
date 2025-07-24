@@ -21,6 +21,7 @@ import { useDebounce } from '@/lib/hooks/use-debounce';
 import { useNDROperations, type NDROrder, type NDRQueryParams } from '@/lib/apis/ndr';
 import { NDRActionModal } from '@/components/modals/ndr-action-modal';
 import HoverCardToolTip from '@/components/hover-card-tooltip';
+import { useModalStore } from '@/modal/modal-store';
 
 interface NDRTableProps {
   initialParams?: NDRQueryParams;
@@ -39,11 +40,12 @@ export default function NDRTable({ initialParams = {} }: NDRTableProps) {
     from: new Date(new Date().setDate(new Date().getDate() - 30)),
     to: new Date(),
   });
+  const { openModal } = useModalStore();
 
   // Modal state
-  const [isNDRModalOpen, setIsNDRModalOpen] = React.useState(false);
-  const [selectedNDROrders, setSelectedNDROrders] = React.useState<NDROrder[]>([]);
-  const [isBulkAction, setIsBulkAction] = React.useState(false);
+  // const [isNDRModalOpen, setIsNDRModalOpen] = React.useState(false);
+  // const [selectedNDROrders, setSelectedNDROrders] = React.useState<NDROrder[]>([]);
+  // const [isBulkAction, setIsBulkAction] = React.useState(false);
 
   // API hooks
   const { ndrOrdersQuery, ndrStatsQuery } = useNDROperations({
@@ -60,9 +62,13 @@ export default function NDRTable({ initialParams = {} }: NDRTableProps) {
 
   // Handle single NDR action
   const handleNDRAction = (ndrOrder: NDROrder) => {
-    setSelectedNDROrders([ndrOrder]);
-    setIsBulkAction(false);
-    setIsNDRModalOpen(true);
+    openModal('ndr-action', {
+      selectedOrders: [ndrOrder],
+      isBulkAction: false,
+    });
+    // setSelectedNDROrders([ndrOrder]);
+    // setIsBulkAction(false);
+    // setIsNDRModalOpen(true);
   };
 
   // Handle bulk NDR action
@@ -71,9 +77,13 @@ export default function NDRTable({ initialParams = {} }: NDRTableProps) {
       toast.error('Please select at least one order');
       return;
     }
-    setSelectedNDROrders(selectedRows);
-    setIsBulkAction(true);
-    setIsNDRModalOpen(true);
+    openModal('ndr-action', {
+      selectedOrders: selectedRows,
+      isBulkAction: true,
+    });
+    // setSelectedNDROrders(selectedRows);
+    // setIsBulkAction(true);
+    // setIsNDRModalOpen(true);
   };
 
   // Define the columns for the data table
@@ -357,13 +367,6 @@ export default function NDRTable({ initialParams = {} }: NDRTableProps) {
         onFiltersChange={setFilters}
         onGlobalFilterChange={setGlobalFilter}
         onDateRangeChange={setDateRange}
-      />
-
-      <NDRActionModal
-        isOpen={isNDRModalOpen}
-        onOpenChange={setIsNDRModalOpen}
-        selectedOrders={selectedNDROrders}
-        isBulkAction={isBulkAction}
       />
     </>
   );

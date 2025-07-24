@@ -40,20 +40,16 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
           page: { type: 'integer', default: 1 },
           limit: { type: 'integer', default: 10 },
           status: {
-            type: 'string',
-            // enum: [
-            //   'NEW',
-            //   'CONFIRMED',
-            //   'PROCESSING',
-            //   'SHIPPED',
-            //   'DELIVERED',
-            //   'CANCELLED',
-            //   'RETURNED',
-            // ],
+            type: ['string', 'array'],
+          
+            items: {
+              type: ['string', 'number'],
+            },
           },
           search: { type: 'string' },
           from_date: { type: 'string', format: 'date' },
           to_date: { type: 'string', format: 'date' },
+          payment_method: { type: 'string' },
         },
       },
       response: {

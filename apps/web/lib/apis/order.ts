@@ -227,11 +227,19 @@ export async function fetchOrders(params: any, is_reverse_order: boolean = false
       queryParams.append('sort_order', sortOrder);
     }
 
-    const response = await api.get<OrdersApiResponse>(
+    // payment type
+    if (params.filters.find((f: any) => f.id === 'shipment.paymentType')) {
+      queryParams.append('payment_method', params.filters.find((f: any) => f.id === 'shipment.paymentType')?.value.join(','));
+    }
+
+    if (params.filters.find((f: any) => f.id === 'status')) {
+      queryParams.append('status', params.filters.find((f: any) => f.id === 'status')?.value.join(','));
+    }
+
+    const responseData= await api.get<OrdersApiResponse>(
       `/orders${is_reverse_order ? '/reverse-orders' : ''}?${queryParams.toString()}`
     );
     // Response structure: { data: OrdersApiResponse }
-    const responseData = response;
 
     // Transform backend response to match frontend expectations
     return {

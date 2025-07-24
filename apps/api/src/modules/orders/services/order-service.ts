@@ -36,6 +36,7 @@ export class OrderService {
       to_date,
       sort = 'created_at',
       sort_order = 'desc',
+      payment_method,
     } = queryParams;
 
     const skip = (page - 1) * limit;
@@ -45,26 +46,38 @@ export class OrderService {
       user_id: userId,
       is_reverse_order,
     };
-
     // Add status filter using bucket mapping
-    if (status && status !== 'all') {
-      const buckets = getStatusBuckets(status);
-      if (buckets.length > 0) {
-        // Merge with existing shipment filter if it exists
-        if (where.shipment?.is) {
-          where.shipment.is.bucket = { in: buckets };
-        } else {
-          where.shipment = {
-            is: {
-              bucket: {
-                in: buckets,
+    if (status && status !== 'all' && typeof status === 'string') {
+      // Check if status contains numeric values (e.g., "0,1,2")
+      const isNumericStatus = status.split(',').every((s: string) => !Number.isNaN(Number(s.trim())));
+      
+      if (isNumericStatus) {
+        // Handle numeric status values
+        where.shipment = {
+          is: {
+            bucket: {in: status.split(',').map((bucket: string) => Number(bucket.trim()))}
+          },
+        };
+      } else {
+        // Handle string status values (e.g., "NEW,COURIER_ASSIGNED")
+        const buckets = getStatusBuckets(status);
+        if (buckets.length > 0) {
+          // Merge with existing shipment filter if it exists
+          if (where.shipment?.is) {
+            where.shipment.is.bucket = { in: buckets };
+          } else {
+            where.shipment = {
+              is: {
+                bucket: {
+                  in: buckets,
+                },
               },
-            },
-          };
+            };
+          }
         }
       }
     }
-
+    
     // Date filters
     if (from_date || to_date) {
       where.created_at = {};
@@ -78,6 +91,11 @@ export class OrderService {
         endOfDay.setHours(23, 59, 59, 999);
         where.created_at.lte = endOfDay;
       }
+    }
+
+    // payment mode filter
+    if (payment_method) {
+      where.payment_method = { in: payment_method.toUpperCase().split(',') };
     }
 
     // Search filter

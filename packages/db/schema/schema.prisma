@@ -480,6 +480,10 @@ model Shipment {
   is_reshipped    Boolean    @default(false)
   sr_shipment_id  String?    @db.VarChar(50)
 
+  delivered_date     DateTime?
+  rto_delivered_date DateTime?
+  picked_up_date     DateTime?
+
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
