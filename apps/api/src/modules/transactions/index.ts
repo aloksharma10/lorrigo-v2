@@ -6,6 +6,7 @@ import {
   TransactionEntityType,
 } from './services/transaction-service';
 import { Role } from '@lorrigo/db';
+import { initTransactionWorker } from './queues/transaction-worker';
 
 /**
  * Register the transactions module with the Fastify instance
@@ -13,6 +14,7 @@ import { Role } from '@lorrigo/db';
  */
 export default async function transactionRoutes(fastify: FastifyInstance): Promise<void> {
   // Create controller instance
+  initTransactionWorker(fastify);
   const transactionController = new TransactionController(fastify);
 
   // Create shipment transaction

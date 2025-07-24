@@ -8,6 +8,7 @@ export interface GenerateIdOptions {
   prefix?: string; // Custom prefix per table
   baseNumber?: number; // Starting number for sequence
   suffixLength?: number; // Length of padded sequence number
+  suffix?: string; // Suffix to add to the id
 }
 
 export interface GeneratedIdResult {
@@ -25,6 +26,7 @@ export function generateId({
   prefix = 'LS',
   baseNumber = 1,
   suffixLength = 7,
+  suffix = "",
 }: GenerateIdOptions): GeneratedIdResult {
   const today = new Date();
 
@@ -40,7 +42,7 @@ export function generateId({
     .map((word) => word[0]?.toUpperCase())
     .join('');
 
-  const suffix = String(sequenceNumber).padStart(suffixLength, '0');
+  const paddedNumber = String(sequenceNumber).padStart(suffixLength, '0');
 
   const effectivePrefix = prefix || tableName.slice(0, 2).toUpperCase();
 
@@ -48,7 +50,7 @@ export function generateId({
   const timeCode = generate3LetterTimestamp(istDate);
 
   // Construct final ID
-  const id = `${effectivePrefix}${financialYear}${initials}${suffix}${timeCode}`;
+  const id = `${effectivePrefix}${financialYear}${initials}${paddedNumber}${timeCode}${suffix}`;
 
   return {
     id,
@@ -67,10 +69,11 @@ function generate3LetterTimestamp(date: Date): string {
   const h = date.getHours();
   const m = date.getMinutes();
   const s = date.getSeconds();
+  const ms = date.getMilliseconds();
 
-  const compact = `${h.toString(36)}${m.toString(36)}${s.toString(36)}`.toUpperCase();
+  const compact = `${h.toString(36)}${m.toString(36)}${s.toString(36)}${ms.toString(36)}`.toUpperCase();
 
-  return compact.padEnd(3, 'X').slice(0, 3);
+  return compact.padEnd(4, 'X').slice(0, 4);
 }
 
 

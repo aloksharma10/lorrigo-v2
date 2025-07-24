@@ -249,7 +249,7 @@ export class BulkOperationsController {
     try {
       const userId = request.userPayload!.id;
 
-      const data = request.body as { pickups: any[] };
+      const data = request.body as { shipment_ids: any[], pickup_date: string };
 
       const result = await this.bulkOperationsService.scheduleBulkPickups(data, userId);
 
@@ -275,7 +275,7 @@ export class BulkOperationsController {
     try {
       const userId = request.userPayload!.id;
 
-      const data = request.body as { shipments: any[] };
+      const data = request.body as { shipment_ids: any[], reason: string };
 
       const result = await this.bulkOperationsService.cancelBulkShipments(data, userId);
 

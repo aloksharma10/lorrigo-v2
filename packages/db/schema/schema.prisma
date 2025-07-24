@@ -590,7 +590,7 @@ model UserWallet {
 
 model ShipmentTransaction {
   id                      String            @id @default(cuid())
-  code                    String            @unique // Format: ST-YYMM-XXXXX
+  code                    String             // Format: ST-YYMM-XXXXX
   before_balance          Float             @default(0)
   after_balance           Float             @default(0)
   amount                  Float             @default(0)

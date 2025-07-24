@@ -879,74 +879,74 @@ export class TransactionService {
    * @param entityType Type of entity (shipment, invoice, wallet)
    * @returns Job ID for tracking
    */
- async processBulkTransactions(transactions: any[], entityType: TransactionEntityType) {
-
+  async processBulkTransactions(transactions: any[], entityType: TransactionEntityType) {
     try {
       // Process transactions in batches
-      const batchSize = 10;
+      const batchSize = 100;
       const results = [];
       let successCount = 0;
       let failedCount = 0;
-
+  
       for (let i = 0; i < transactions.length; i += batchSize) {
-        // Process batch
         const batch = transactions.slice(i, i + batchSize);
-        const batchResults = await Promise.all(
-          batch.map(async (transaction: any, index: number) => {
-            try {
-              let result;
-
-              // Process based on entity type
-              switch (entityType) {
-                case TransactionEntityType.SHIPMENT:
-                  result = await this.createShipmentTransaction(transaction);
-                  break;
-                case TransactionEntityType.INVOICE:
-                  result = await this.createInvoiceTransaction(transaction);
-                  break;
-                case TransactionEntityType.WALLET:
-                  result =
-                    await this.createWalletRechargeTransaction(transaction);
-                  break;
-                default:
-                  result = { success: false, error: 'Invalid entity type' };
-              }
-
-              if (result.success && result.transaction) {
-                successCount++;
-                return {
-                  index: i + index,
-                  success: true,
-                  transactionId: result.transaction.id,
-                  amount: transaction.amount,
-                  type: transaction.type,
-                };
-              } else {
-                failedCount++;
-                return {
-                  index: i + index,
-                  success: false,
-                  error: result.error || 'Transaction failed',
-                  amount: transaction.amount,
-                  type: transaction.type,
-                };
-              }
-            } catch (error) {
-              failedCount++;
-              return {
+        
+        // Process batch sequentially to maintain wallet balance consistency
+        const batchResults = [];
+        for (let j = 0; j < batch.length; j++) {
+          const transaction = batch[j];
+          const index = j;
+          
+          try {
+            let result;
+            switch (entityType) {
+              case TransactionEntityType.SHIPMENT:
+                result = await this.createShipmentTransaction(transaction);
+                break;
+              case TransactionEntityType.INVOICE:
+                result = await this.createInvoiceTransaction(transaction);
+                break;
+              case TransactionEntityType.WALLET:
+                result = await this.createWalletRechargeTransaction(transaction);
+                break;
+              default:
+                result = { success: false, error: 'Invalid entity type' };
+            }
+  
+            if (result.success && result.transaction) {
+              successCount++;
+              batchResults.push({
                 index: i + index,
-                success: false,
-                error: error instanceof Error ? error.message : 'Unknown error',
+                success: true,
+                transactionId: result.transaction.id,
                 amount: transaction.amount,
                 type: transaction.type,
-              };
+                walletBalance: result.walletBalance,
+              });
+            } else {
+              failedCount++;
+              batchResults.push({
+                index: i + index,
+                success: false,
+                error: result.error || 'Transaction failed',
+                amount: transaction.amount,
+                type: transaction.type,
+              });
             }
-          })
-        );
-
+          } catch (error) {
+            failedCount++;
+            batchResults.push({
+              index: i + index,
+              success: false,
+              error: error instanceof Error ? error.message : 'Unknown error',
+              amount: transaction.amount,
+              type: transaction.type,
+            });
+          }
+        }
+        
         results.push(...batchResults);
       }
-
+  
       return {
         success: true,
         results,
@@ -956,7 +956,6 @@ export class TransactionService {
       };
     } catch (error) {
       this.fastify.log.error(`Error processing bulk transactions: ${error}`);
-
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',

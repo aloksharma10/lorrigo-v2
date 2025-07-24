@@ -204,10 +204,10 @@ export class BulkOperationsService {
   /**
    * Schedule bulk pickups
    */
-  async scheduleBulkPickups(data: { pickups: any[] }, userId: string) {
+  async scheduleBulkPickups(data: { shipment_ids: any[], pickup_date: string }, userId: string) {
     try {
       // Validate input
-      if (!data.pickups || !Array.isArray(data.pickups) || data.pickups.length === 0) {
+      if (!data.shipment_ids || !Array.isArray(data.shipment_ids) || data.shipment_ids.length === 0) {
         throw new Error('Invalid pickup data');
       }
 
@@ -219,7 +219,7 @@ export class BulkOperationsService {
           status: 'PENDING',
           code: operationCode,
           user_id: userId,
-          total_count: data.pickups.length,
+          total_count: data.shipment_ids.length,
           processed_count: 0,
           success_count: 0,
           failed_count: 0,
@@ -231,7 +231,8 @@ export class BulkOperationsService {
         QueueNames.BULK_OPERATION,
         JobType.BULK_SCHEDULE_PICKUP,
         {
-          data: data.pickups,
+          data: data.shipment_ids,
+          pickup_date: data.pickup_date,
           userId,
           operationId: operation.id,
         },
@@ -253,10 +254,10 @@ export class BulkOperationsService {
   /**
    * Cancel bulk shipments
    */
-  async cancelBulkShipments(data: { shipments: any[] }, userId: string) {
+  async cancelBulkShipments(data: { shipment_ids: any[], reason: string }, userId: string) {
     try {
       // Validate input
-      if (!data.shipments || !Array.isArray(data.shipments) || data.shipments.length === 0) {
+      if (!data.shipment_ids || !Array.isArray(data.shipment_ids) || data.shipment_ids.length === 0) {
         throw new Error('Invalid shipment data');
       }
 
@@ -268,7 +269,7 @@ export class BulkOperationsService {
           status: 'PENDING',
           code: operationCode,
           user_id: userId,
-          total_count: data.shipments.length,
+          total_count: data.shipment_ids.length,
           processed_count: 0,
           success_count: 0,
           failed_count: 0,
@@ -280,7 +281,8 @@ export class BulkOperationsService {
         QueueNames.BULK_OPERATION,
         JobType.BULK_CANCEL_SHIPMENT,
         {
-          data: data.shipments,
+          data: data.shipment_ids,
+          reason: data.reason,
           userId,
           operationId: operation.id,
         },

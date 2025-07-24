@@ -8,6 +8,7 @@ import { ShipmentService } from './services/shipmentService';
 import { initShipmentQueue, JobType } from './queues/shipmentQueue';
 // import { initTrackingScheduler } from './batch/scheduler';
 import { addJob, QueueNames, addRecurringJob } from '@/lib/queue';
+import { VendorService } from '../vendors/vendor.service';
 
 /**
  * Setup optimized tracking automation cron jobs
@@ -66,9 +67,10 @@ export async function shipmentRoutes(fastify: FastifyInstance) {
   // Initialize services
   const orderService = new OrderService(fastify);
   const shipmentService = new ShipmentService(fastify, orderService);
+  const vendorService = new VendorService(fastify);
 
   // Initialize the shipment queue
-  initShipmentQueue(fastify, shipmentService);
+  initShipmentQueue(fastify, shipmentService, vendorService);
 
   // Initialize optimized tracking system with cron scheduling
   await setupOptimizedTrackingCron(fastify);

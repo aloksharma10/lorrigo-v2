@@ -1,8 +1,8 @@
 import { Worker, Job } from 'bullmq';
 import { FastifyInstance } from 'fastify';
 import { ShipmentService } from '../services/shipmentService';
-import { CreateShipmentSchema } from '@lorrigo/utils';
-import { QueueNames, initQueueEvents } from '@/lib/queue';
+import { CreateShipmentSchema, ShipmentBucketManager } from '@lorrigo/utils';
+import { QueueNames, addJob, initQueueEvents } from '@/lib/queue';
 import { APP_CONFIG } from '@/config/app';
 import { redis } from '@/lib/redis';
 import {
@@ -12,7 +12,7 @@ import {
 } from '@/modules/bulk-operations/utils/file-utils';
 import pLimit from 'p-limit';
 import csv from 'csvtojson';
-import { TransactionType } from '@/modules/transactions/services/transaction-service';
+import { TransactionEntityType, TransactionType } from '@/modules/transactions/services/transaction-service';
 import { mapShipmentToBilling } from '@/modules/billing/utils/billing-mapper';
 import {
   processShipmentTracking,
@@ -22,8 +22,10 @@ import {
   processBulkShipmentTracking,
 } from '../batch/processor';
 import { ChargeType, ShipmentStatus } from '@lorrigo/db';
-import { calculateExcessCharges } from '@/utils/calculate-order-price';
+import { calculateExcessCharges, getOrderZoneFromCourierZone } from '@/utils/calculate-order-price';
 import { TransactionService } from '@/modules/transactions/services/transaction-service';
+import { TransactionJobType } from '@/modules/transactions/queues/transaction-worker';
+import { VendorService } from '@/modules/vendors/vendor.service';
 
 // Job types for the shipment queue
 export enum JobType {
@@ -53,9 +55,11 @@ export enum JobType {
  */
 interface BulkOperationJobData {
   type: string;
+  reason: string;
   data: any[];
   userId: string;
   operationId: string;
+  pickup_date: string;
 }
 
 /**
@@ -90,7 +94,7 @@ interface NdrDetailsJobData {
  * @param fastify Fastify instance
  * @param shipmentService Shipment service instance
  */
-export function initShipmentQueue(fastify: FastifyInstance, shipmentService: ShipmentService) {
+export function initShipmentQueue(fastify: FastifyInstance, shipmentService: ShipmentService, vendorService: VendorService) {
   // Initialize the bulk operation queue
   const bulkOperationQueue = fastify.queues[QueueNames.BULK_OPERATION];
 
@@ -130,6 +134,8 @@ export function initShipmentQueue(fastify: FastifyInstance, shipmentService: Shi
 
       try {
         switch (job.name) {
+          case JobType.CREATE_SHIPMENT:
+            return await processVendorShipmentCreation(job.data, fastify, shipmentService, vendorService);
           case JobType.BULK_CREATE_SHIPMENT:
             return await processBulkCreateShipment(job, fastify, shipmentService);
           case JobType.BULK_SCHEDULE_PICKUP:
@@ -371,6 +377,142 @@ export function initShipmentQueue(fastify: FastifyInstance, shipmentService: Shi
   };
 }
 
+async function processVendorShipmentCreation(jobData: any, fastify: FastifyInstance, shipmentService: ShipmentService, vendorService: VendorService) {
+  const {
+    shipmentId,
+    order,
+    courier,
+    shipmentCode,
+    isSchedulePickup,
+    selectedCourierRate,
+    courier_curr_zone_pricing,
+    fwCharges,
+    codCharges,
+    userId,
+    isReverseOrder,
+    vendorResult
+  } = jobData;
+
+  try {
+    // Step 1: Create shipment on vendor's platform
+   
+    const awb = vendorResult.awb;
+    const hubCity = order.hub?.address?.city || 'Unknown';
+    const orderZone = getOrderZoneFromCourierZone(selectedCourierRate.zoneName);
+
+    // Step 2: Update shipment with vendor details in a single transaction
+    await fastify.prisma.$transaction(async (prisma) => {
+      // Update main shipment record
+      await prisma.shipment.update({
+        where: { id: shipmentId },
+        data: {
+          awb,
+          sr_shipment_id: vendorResult.data?.sr_shipment_id?.toString() || '',
+          status: isSchedulePickup ? ShipmentStatus.PICKUP_SCHEDULED : ShipmentStatus.COURIER_ASSIGNED,
+          bucket: ShipmentBucketManager.getBucketFromStatus(
+            isSchedulePickup ? ShipmentStatus.PICKUP_SCHEDULED : ShipmentStatus.COURIER_ASSIGNED
+          ),
+          pickup_date: isSchedulePickup && vendorResult.pickup_date ? new Date(vendorResult.pickup_date) : null,
+          routing_code: vendorResult.routingCode,
+        },
+      });
+
+      // Create tracking event
+      await prisma.trackingEvent.create({
+        data: {
+          shipment_id: shipmentId,
+          status: isSchedulePickup ? ShipmentStatus.PICKUP_SCHEDULED : ShipmentStatus.COURIER_ASSIGNED,
+          location: hubCity,
+          description: isSchedulePickup
+            ? 'Shipment created and pickup scheduled'
+            : 'Shipment created and ready for pickup',
+        },
+      });
+
+      // Create shipment pricing
+      await prisma.shipmentPricing.create({
+        data: {
+          shipment_id: shipmentId,
+          cod_charge_hard: selectedCourierRate.cod.hardCharge,
+          cod_charge_percent: selectedCourierRate.cod.percentCharge,
+          is_fw_applicable: selectedCourierRate.pricing.pricing.is_fw_applicable,
+          is_rto_applicable: selectedCourierRate.pricing.pricing.is_rto_applicable,
+          is_cod_applicable: selectedCourierRate.pricing.pricing.is_cod_applicable,
+          is_cod_reversal_applicable: selectedCourierRate.pricing.pricing.is_cod_reversal_applicable,
+          weight_slab: selectedCourierRate.pricing.pricing.weight_slab,
+          increment_weight: selectedCourierRate.pricing.pricing.increment_weight,
+          zone: orderZone,
+          is_rto_same_as_fw: courier_curr_zone_pricing.is_rto_same_as_fw,
+          increment_price: courier_curr_zone_pricing.increment_price,
+          base_price: courier_curr_zone_pricing.base_price,
+          rto_base_price: courier_curr_zone_pricing.rto_base_price,
+          rto_increment_price: courier_curr_zone_pricing.rto_increment_price,
+          flat_rto_charge: courier_curr_zone_pricing.flat_rto_charge,
+          courier_other_zone_pricing: {
+            createMany: {
+              data: selectedCourierRate.pricing.pricing.zone_pricing.map((zone: any) => {
+                const { id, plan_courier_pricing_id, created_at, updated_at, ...rest } = zone;
+                return { ...rest };
+              }),
+            },
+          },
+        },
+      });
+    });
+
+    // Step 3: Queue transaction processing
+    await addJob(QueueNames.TRANSACTION_QUEUE, TransactionJobType.BULK_PROCESS_TRANSACTIONS, {
+      transactions: [
+        {
+          shipmentId: shipmentId,
+          userId: userId,
+          amount: fwCharges,
+          type: TransactionType.DEBIT,
+          description: `${isReverseOrder ? 'Reverse' : 'Forward'} charge for AWB: ${awb}`,
+          awb: awb,
+          charge_type: ChargeType.FORWARD_CHARGE,
+        },
+        {
+          shipmentId: shipmentId,
+          userId: userId,
+          awb: awb,
+          amount: codCharges,
+          type: TransactionType.DEBIT,
+          description: `COD charge for AWB: ${awb}`,
+          charge_type: ChargeType.COD_CHARGE,
+        },
+      ],
+      entityType: TransactionEntityType.SHIPMENT,
+    });
+
+    // Step 4: Emit real-time update to frontend
+    // fastify.io.to(`user-${userId}`).emit('shipment-updated', {
+    //   shipmentId,
+    //   awb,
+    //   status: isSchedulePickup ? ShipmentStatus.PICKUP_SCHEDULED : ShipmentStatus.COURIER_ASSIGNED,
+    //   pickup_date: isSchedulePickup && vendorResult.pickup_date ? vendorResult.pickup_date : null,
+    // });
+
+  } catch (error) {
+    fastify.log.error(`Error in background vendor shipment creation for shipment ${shipmentId}:`, error);
+    
+    // Update shipment status to indicate failure
+    await fastify.prisma.shipment.update({
+      where: { id: shipmentId },
+      data: {
+        status: 'AWAITING',
+        bucket: ShipmentBucketManager.getBucketFromStatus(ShipmentStatus.AWAITING),
+      },
+    });
+
+    // Emit error to frontend
+    // fastify.io.to(`user-${userId}`).emit('shipment-error', {
+    //   shipmentId,
+    //   error: 'Failed to create shipment with vendor',
+    // });
+  }
+}
+
 /**
  * Process bulk shipment creation with parallel processing and multiple courier fallbacks
  * @param job Job data
@@ -557,7 +699,7 @@ async function processBulkSchedulePickup(
   fastify: FastifyInstance,
   shipmentService: ShipmentService
 ) {
-  const { data, userId, operationId } = job.data;
+  const { data, userId, operationId, pickup_date } = job.data;
   const results: BulkOperationResult[] = [];
   let successCount = 0;
   let failedCount = 0;
@@ -581,7 +723,7 @@ async function processBulkSchedulePickup(
         const result = await shipmentService.schedulePickup(
           item.shipment_id,
           userId,
-          item.pickup_date
+          pickup_date
         );
 
         if (result.error) {
@@ -658,7 +800,7 @@ async function processBulkCancelShipment(
   fastify: FastifyInstance,
   shipmentService: ShipmentService
 ) {
-  const { data, userId, operationId } = job.data;
+  const { data, userId, operationId, reason } = job.data;
   const results: BulkOperationResult[] = [];
   let successCount = 0;
   let failedCount = 0;
@@ -683,7 +825,7 @@ async function processBulkCancelShipment(
           item.shipment_id,
           'shipment',
           userId,
-          item.reason
+          reason
         );
 
         if (result.error) {
@@ -934,13 +1076,7 @@ async function processBulkEditPickupAddress(
           where: {
             id: shipment_id,
             user_id: userId,
-            status: {
-              in: [
-                ShipmentStatus.NEW,
-                ShipmentStatus.COURIER_ASSIGNED,
-                ShipmentStatus.PICKUP_SCHEDULED,
-              ],
-            },
+            status: ShipmentStatus.NEW,
           },
           include: {
             order: true,

@@ -22,7 +22,12 @@ export class TransactionWorker {
     this.worker = new Worker(
       QueueNames.TRANSACTION_QUEUE,
       async (job: Job) => {
-        return this.transactionService.processBulkTransactions(job.data.transactions, job.data.entityType);
+        switch(job.name) {
+          case TransactionJobType.BULK_PROCESS_TRANSACTIONS:
+            return this.transactionService.processBulkTransactions(job.data.transactions, job.data.entityType);
+          default:
+            return { success: false, error: 'Unknown job type' };
+        }
       },
       {
         connection: redis,
