@@ -32,58 +32,37 @@ export default function ProductsPage() {
   const debouncedGlobalFilter = useDebounce(globalFilter, 500);
 
   // API hooks
-  const { getProductsQuery, createProduct, updateProduct, deleteProduct } = useProductOperations();
+  const { getProductsQuery } = useProductOperations();
 
   const productsQuery = getProductsQuery(pagination.pageIndex + 1, pagination.pageSize, debouncedGlobalFilter);
 
   const { data, isLoading, isError } = productsQuery;
 
-  // Handle create product
-  const handleCreateProduct = () => {
-    // TODO: Open create product modal
-    toast.info('Create product functionality coming soon');
-  };
-
-  // Handle edit product
-  const handleEditProduct = (product: Product) => {
-    // TODO: Open edit product modal
-    toast.info('Edit product functionality coming soon');
-  };
-
-  // Handle delete product
-  const handleDeleteProduct = async (productId: string) => {
-    try {
-      await deleteProduct.mutateAsync(productId);
-      toast.success('Product deleted successfully');
-    } catch (error) {
-      toast.error('Failed to delete product');
-    }
-  };
 
   // Define the columns for the data table
   const columns: ColumnDef<Product>[] = [
-    {
-      id: 'select',
-      header: ({ table }) => (
-        <Checkbox
-          checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-          disabled={isLoading}
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
-          onClick={(e) => e.stopPropagation()}
-          disabled={isLoading}
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
+    // {
+    //   id: 'select',
+    //   header: ({ table }) => (
+    //     <Checkbox
+    //       checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
+    //       onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+    //       aria-label="Select all"
+    //       disabled={isLoading}
+    //     />
+    //   ),
+    //   cell: ({ row }) => (
+    //     <Checkbox
+    //       checked={row.getIsSelected()}
+    //       onCheckedChange={(value) => row.toggleSelected(!!value)}
+    //       aria-label="Select row"
+    //       onClick={(e) => e.stopPropagation()}
+    //       disabled={isLoading}
+    //     />
+    //   ),
+    //   enableSorting: false,
+    //   enableHiding: false,
+    // },
     {
       accessorKey: 'name',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Product Details" />,
@@ -105,14 +84,13 @@ export default function ProductsPage() {
       enableHiding: true,
     },
     {
-      accessorKey: 'price',
+      accessorKey: 'selling_price',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Price" />,
       cell: ({ row }) => {
         const product = row.original;
         return (
           <div className="flex items-center space-x-2">
-            <DollarSign className="h-3 w-3 text-green-600" />
-            <span className="font-medium">{currencyFormatter(product.selling_price || product.price)}</span>
+            <span className="font-medium">{currencyFormatter(product.selling_price || 0)}</span>
           </div>
         );
       },
@@ -141,7 +119,7 @@ export default function ProductsPage() {
         const product = row.original;
         return (
           <div className="text-sm">
-            {product.length} × {product.width} × {product.height} cm
+            {product.dimensions}
           </div>
         );
       },
@@ -149,13 +127,13 @@ export default function ProductsPage() {
       enableHiding: true,
     },
     {
-      accessorKey: 'tax_rate',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Tax Rate" />,
+      accessorKey: 'order_count',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Orders" />,
       cell: ({ row }) => {
         const product = row.original;
         return (
           <Badge variant="outline" className="w-fit">
-            {product.tax_rate}% GST
+            {product.order_count}
           </Badge>
         );
       },
@@ -163,67 +141,22 @@ export default function ProductsPage() {
       enableHiding: true,
     },
     {
-      accessorKey: 'category',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Category" />,
+      accessorKey: 'created_at',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Created At" />,
       cell: ({ row }) => {
         const product = row.original;
-        return product.category ? (
-          <Badge variant="secondary" className="w-fit">
-            {product.category}
-          </Badge>
-        ) : (
-          <span className="text-muted-foreground text-sm">No category</span>
-        );
+        return <div className="text-muted-foreground text-sm">{product.created_at.split("T")[0]}</div>;
       },
       enableSorting: true,
       enableHiding: true,
-    },
-    {
-      id: 'actions',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Actions" />,
-      cell: ({ row }) => {
-        const product = row.original;
-
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleEditProduct(product)}>
-                <Edit className="mr-2 h-4 w-4" />
-                Edit Product
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Package className="mr-2 h-4 w-4" />
-                View Orders
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => handleDeleteProduct(product.id)} className="text-red-600 hover:text-red-500">
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete Product
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
     },
   ];
 
   return (
     <div className="container mx-auto py-6">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
+      <div className="mb-6">
           <h1 className="text-2xl font-bold">Products</h1>
           <p className="text-muted-foreground">Manage your product catalog and inventory</p>
-        </div>
-        <Button onClick={handleCreateProduct} className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Add Product
-        </Button>
       </div>
 
       <DataTable

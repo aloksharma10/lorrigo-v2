@@ -18,6 +18,9 @@ export class ProductController {
 
   async getAllProducts(request: FastifyRequest, reply: FastifyReply) {
     try {
+      const userId = request.userPayload?.id;
+      const isAdmin = request.userPayload?.role === 'ADMIN';
+
       const {
         page = 1,
         limit = 10,
@@ -28,7 +31,7 @@ export class ProductController {
         search?: string;
       };
 
-      const result = await this.productService.getAllProducts(page, limit, search);
+      const result = await this.productService.getAllProducts(page, limit, search, isAdmin, userId);
       return result;
     } catch (error) {
       request.log.error(error);

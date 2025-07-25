@@ -16,9 +16,9 @@ interface ErrorResponse {
 export class ProductService {
   constructor(private fastify: FastifyInstance) {}
 
-  async getAllProducts(page: number, limit: number, search: string) {
+  async getAllProducts(page: number, limit: number, search: string, isAdmin: boolean, userId: string) {
     const skip = (page - 1) * limit;
-
+  
     // Search condition
     const searchFilter = search
       ? {
@@ -28,44 +28,74 @@ export class ProductService {
           },
         }
       : {};
-
-    // Group by 'name' and pick first product with that name
-    const groupedProducts = await this.fastify.prisma.orderItem.groupBy({
-      by: ['name'],
-      where: searchFilter,
-      _min: {
-        id: true,
-        selling_price: true,
-        hsn: true,
-        created_at: true,
+  
+    const whereCondition = isAdmin ? searchFilter : {
+      name: {
+        contains: search,
+        mode: 'insensitive' as const,
       },
-      orderBy: {
+      order: {
+        user_id: userId,
+      },
+    };
+  
+    // Parallel execution of queries
+    const [groupedProducts, allUnique, orderCounts] = await Promise.all([
+      this.fastify.prisma.orderItem.groupBy({
+        by: ['name'],
+        where: whereCondition,
         _min: {
-          created_at: 'desc',
+          id: true,
+          selling_price: true,
+          hsn: true,
+          weight: true,
+          length: true,
+          breadth: true,
+          height: true,
+          created_at: true,
         },
-      },
-      skip,
-      take: limit,
-    });
-
-    // Count total unique names for pagination
-    const allUnique = await this.fastify.prisma.orderItem.groupBy({
-      by: ['name'],
-      where: searchFilter,
-    });
-
+        orderBy: {
+          _min: {
+            created_at: 'desc',
+          },
+        },
+        skip,
+        take: limit,
+      }),
+      this.fastify.prisma.orderItem.groupBy({
+        by: ['name'],
+        where: whereCondition,
+      }),
+      this.fastify.prisma.orderItem.groupBy({
+        by: ['name'],
+        where: whereCondition,
+        _count: {
+          order_id: true,
+        },
+      }),
+    ]);
+  
     const total = allUnique.length;
     const totalPages = Math.ceil(total / limit);
-
-    // Map to return simplified product structure
+  
+    // Create order count map efficiently
+    const orderCountMap = new Map(orderCounts.map(item => [item.name, item._count.order_id]));
+  
+    // Map products with a single pass and default values
     const products = groupedProducts.map((item) => ({
       name: item.name,
       id: item._min.id,
-      selling_price: item._min.selling_price,
-      hsn: item._min.hsn,
+      selling_price: item._min.selling_price ?? 0,
+      weight: item._min.weight ?? 0,
+      dimensions: item._min.length && item._min.breadth && item._min.height
+        ? `${item._min.length}×${item._min.breadth}×${item._min.height} cm`
+        : '×× cm',
+      tax_rate: item._min.hsn ? `${item._min.hsn}% GST` : 'No category',
+      category: item._min.hsn ? 'GST' : 'No category',
+      order_count: orderCountMap.get(item.name) ?? 0,
       created_at: item._min.created_at,
     }));
-
+  
     return {
       products,
       total,
@@ -74,7 +104,6 @@ export class ProductService {
       totalPages,
     };
   }
-
   async getProductById(id: string): Promise<any | ErrorResponse> {
     const product = await this.fastify.prisma.orderItem.findUnique({
       where: { id },

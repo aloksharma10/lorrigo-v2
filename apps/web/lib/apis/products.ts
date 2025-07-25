@@ -15,7 +15,9 @@ export interface Product {
   height?: number;
   tax_rate?: number;
   category?: string;
-  created_at?: string;
+  created_at: string;
+  order_count?: number;
+  dimensions?: string;
 }
 
 export interface ProductsResponse {
