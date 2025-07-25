@@ -14,9 +14,8 @@ import { Button } from '@lorrigo/ui/components';
 import { Card, CardContent, CardHeader, CardTitle } from '@lorrigo/ui/components';
 import { Badge } from '@lorrigo/ui/components';
 import { format } from 'date-fns';
-import { Download, FileText, FileCheck, AlertCircle, Loader2 } from 'lucide-react';
+import { Download, FileText, AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from '@lorrigo/ui/components';
-import { AxiosResponse } from 'axios';
 // import { DataTableDateRangePicker  } from '@lorrigo/ui/components';
 
 // Define TypeScript interface for bulk operation
@@ -64,8 +63,6 @@ export default function BulkLogPage() {
 
       // Get the filename from the Content-Disposition header if available
       const contentDisposition = response.headers['content-disposition'];
-
-      console.log(response.headers);
 
       let filename = `bulk_operation_${type === 'report' ? 'report.csv' : 'file.pdf'}`;
 

@@ -13,3 +13,11 @@ export const NDR_TAB_ROUTES = [
   { name: 'Delivered', path: '/seller/orders/ndr/delivered' },
   { name: 'RTO', path: '/seller/orders/ndr/rto' },
 ];
+
+export const WEIGHT_DISPUTE_TAB_ROUTES = [
+  { name: 'Pending', path: '/seller/billing/weight-disputes/pending' },
+  { name: 'Raised by You', path: '/seller/billing/weight-disputes/raised-by-you' },
+  { name: 'Resolved', path: '/seller/billing/weight-disputes/resolved' },
+  { name: 'Rejected', path: '/seller/billing/weight-disputes/rejected' },
+  { name: 'All', path: '/seller/billing/weight-disputes/all' },
+];

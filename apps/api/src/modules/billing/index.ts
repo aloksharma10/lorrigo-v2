@@ -77,4 +77,11 @@ export async function billingRoutes(fastify: FastifyInstance) {
     { preHandler: authorizeRoles([Role.SELLER, Role.ADMIN]) },
     controller.actOnDispute.bind(controller)
   );
+
+  // Dispute export
+  fastify.get(
+    '/disputes/export',
+    { preHandler: authorizeRoles([Role.SELLER, Role.ADMIN]) },
+    controller.exportDisputes.bind(controller)
+  );
 } 

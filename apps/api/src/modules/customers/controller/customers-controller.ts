@@ -26,6 +26,8 @@ export class CustomerController {
 
   async getAllCustomers(request: FastifyRequest, reply: FastifyReply) {
     try {
+      const userId = request.userPayload!.id;
+      const isAdmin = request.userPayload?.role === 'ADMIN';
       const {
         page = 1,
         limit = 10,
@@ -36,7 +38,7 @@ export class CustomerController {
         search?: string;
       };
 
-      const result = await this.customerService.getAllCustomers(page, limit, search);
+      const result = await this.customerService.getAllCustomers(page, limit, search, isAdmin, userId);
       return result;
     } catch (error) {
       request.log.error(error);

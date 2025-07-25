@@ -7,7 +7,7 @@ import { Input } from '../input';
 // import { DataTableViewOptions } from "./data-table-view-options"
 import { DataTableFacetedFilter } from './data-table-faceted-filter';
 import { DataTableDateRangePicker } from './data-table-date-range-picker';
-import { Download, Filter, Search, X, Loader2 } from 'lucide-react';
+import { Download, Filter, Search, X, Loader2, Upload } from 'lucide-react';
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>;
@@ -32,6 +32,11 @@ interface DataTableToolbarProps<TData> {
   globalFilter: string;
   setGlobalFilter: (value: string) => void;
   isLoading?: boolean;
+  showDownload?: boolean;
+  handleDownload?: () => void;
+  isDownloading?: boolean;
+  handleUpload?: () => void;
+  isUploading?: boolean;
 }
 
 export function DataTableToolbar<TData>({
@@ -46,6 +51,11 @@ export function DataTableToolbar<TData>({
   globalFilter,
   setGlobalFilter,
   isLoading = false,
+  showDownload = true,
+  handleDownload,
+  isDownloading = false,
+  handleUpload,
+  isUploading = false,
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0 || globalFilter !== '';
   const [showFilters, setShowFilters] = React.useState(false);
@@ -116,10 +126,16 @@ export function DataTableToolbar<TData>({
               </Button>
             )}
 
-            <Button variant="outline" size="sm" className="h-9" disabled={isLoading}>
-              <Download className="h-4 w-4" />
-            </Button>
+            {showDownload && handleDownload && (
+              <Button icon={Download} variant="outline" size="sm" className="h-9" onClick={handleDownload} isLoading={isDownloading} disabled={isLoading || isDownloading}/>
+            )}
           </div>
+
+          {handleUpload && (
+            <div className="flex items-center gap-2">
+              <Button icon={Upload} variant="outline" size="sm" className="h-9" onClick={handleUpload} isLoading={isUploading} disabled={isLoading || isUploading} />
+            </div>
+          )}
         </div>
 
         {/* <DataTableViewOptions table={table} disabled={isLoading} /> */}

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@lorrigo/ui/components';
 import { ApiResponse } from '@/lib/type/response-types';
-import { api as axios } from './axios';
+import { api as axios,apiDownload } from './axios';
 import { useAuthToken } from '@/components/providers/token-provider';
 import { useDebounce } from '../hooks/use-debounce';
 
@@ -151,6 +151,9 @@ export interface WeightDispute {
       courier?: {
         id: string;
         name: string;
+        channel_config: {
+          nickname: string;
+        };
       };
     };
     product?: {
@@ -353,6 +356,14 @@ const billingAPI = {
     });
   },
 
+  // Export disputes as CSV or XLSX
+  exportDisputes: async (params: { status?: string; userId?: string; format?: string }) => {
+    return await apiDownload.get('/billing/disputes/export', {
+      params,
+      responseType: 'blob',
+    });
+  },
+
   // Get billing records for a specific user and month
   getUserBillingByMonth: async (userId: string, month: string, params?: PaginationParams): Promise<BillingRecordsResponse> => {
     return await axios.get(`/billing/history`, { 
@@ -414,7 +425,7 @@ export function useBillingOperations({
     }),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
-    enabled: isTokenReady && !!billingCycles.page, // Only fetch if page is defined and token is ready
+    enabled: isTokenReady, // Only fetch if page is defined and token is ready
   });
 
   // Fetch billing history
@@ -427,10 +438,9 @@ export function useBillingOperations({
     }),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
-    enabled: isTokenReady && !!billingHistory.page, // Only fetch if page is defined and token is ready
+    enabled: isTokenReady, // Only fetch if page is defined and token is ready
   });
 
-  // Fetch disputes
   const disputesQuery = useQuery({
     queryKey: ['disputes', debouncedDisputes.page, debouncedDisputes.pageSize, debouncedDisputes.userId, debouncedDisputes.status, debouncedDisputes.search],
     queryFn: () => billingAPI.getDisputes({
@@ -441,7 +451,7 @@ export function useBillingOperations({
     }),
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 5 * 60 * 1000, // 5 minutes
-    enabled: isTokenReady && !!debouncedDisputes.page, // Only fetch if page is defined and token is ready
+    enabled: isTokenReady // Only fetch if page is defined and token is ready
   });
 
   // Fetch billing summary by month
@@ -592,6 +602,18 @@ export function useBillingOperations({
     },
   });
 
+  // Export disputes as CSV or XLSX
+  const exportDisputes = useMutation({
+    mutationFn: (params: { status?: string; userId?: string; format?: string }) => billingAPI.exportDisputes(params),
+    onSuccess: (data) => {
+      toast.success('Disputes exported successfully');
+      return data;
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to export disputes');
+    },
+  });
+
   // Fetch billing records for a specific user by month
   const getUserBillingByMonthQuery = (userId: string, month: string, options: any = {}) => {
     return useQuery({
@@ -636,6 +658,7 @@ export function useBillingOperations({
     resolveWeightDispute,
     uploadWeightDisputeCSV,
     uploadDisputeActionsCSV,
+    exportDisputes,
   };
 }
 

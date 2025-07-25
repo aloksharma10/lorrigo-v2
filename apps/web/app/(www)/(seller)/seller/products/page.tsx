@@ -7,13 +7,7 @@ import { DataTableColumnHeader } from '@lorrigo/ui/components';
 import { Badge } from '@lorrigo/ui/components';
 import { Button } from '@lorrigo/ui/components';
 import { MoreHorizontal, Plus, Edit, Trash2, Package, DollarSign, Weight } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from '@lorrigo/ui/components';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@lorrigo/ui/components';
 import { toast } from '@lorrigo/ui/components';
 import type { ColumnDef } from '@lorrigo/ui/components';
 import { useDebounce } from '@/lib/hooks/use-debounce';
@@ -40,11 +34,7 @@ export default function ProductsPage() {
   // API hooks
   const { getProductsQuery, createProduct, updateProduct, deleteProduct } = useProductOperations();
 
-  const productsQuery = getProductsQuery(
-    pagination.pageIndex + 1,
-    pagination.pageSize,
-    debouncedGlobalFilter
-  );
+  const productsQuery = getProductsQuery(pagination.pageIndex + 1, pagination.pageSize, debouncedGlobalFilter);
 
   const { data, isLoading, isError } = productsQuery;
 
@@ -76,10 +66,7 @@ export default function ProductsPage() {
       id: 'select',
       header: ({ table }) => (
         <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && 'indeterminate')
-          }
+          checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all"
           disabled={isLoading}
@@ -125,9 +112,7 @@ export default function ProductsPage() {
         return (
           <div className="flex items-center space-x-2">
             <DollarSign className="h-3 w-3 text-green-600" />
-            <span className="font-medium">
-              {currencyFormatter(product.selling_price || product.price)}
-            </span>
+            <span className="font-medium">{currencyFormatter(product.selling_price || product.price)}</span>
           </div>
         );
       },
@@ -217,10 +202,7 @@ export default function ProductsPage() {
                 View Orders
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => handleDeleteProduct(product.id)}
-                className="text-red-600 hover:text-red-500"
-              >
+              <DropdownMenuItem onClick={() => handleDeleteProduct(product.id)} className="text-red-600 hover:text-red-500">
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete Product
               </DropdownMenuItem>
@@ -245,6 +227,9 @@ export default function ProductsPage() {
       </div>
 
       <DataTable
+        showDownload={false}
+        advancedFilter={false}
+        dateRangeFilter={false}
         columns={columns}
         data={data?.products || []}
         count={data?.total || 0}

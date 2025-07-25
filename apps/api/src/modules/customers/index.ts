@@ -3,6 +3,8 @@ import { CustomerController } from './controller/customers-controller';
 import { CustomerService } from './services/customer-services';
 
 export default async function customerRoutes(fastify: FastifyInstance) {
+
+  fastify.addHook('onRequest', fastify.authenticate);
   // Initialize services and controllers
   const customerService = new CustomerService(fastify);
   const customerController = new CustomerController(customerService);
@@ -34,7 +36,24 @@ export default async function customerRoutes(fastify: FastifyInstance) {
                   name: { type: 'string' },
                   email: { type: 'string' },
                   phone: { type: 'string' },
-                  createdAt: { type: 'string', format: 'date-time' },
+                  address: {
+                    type: 'object',
+                    properties: {
+                      address: { type: 'string' },
+                      address_2: { type: 'string' },
+                      city: { type: 'string' },
+                      state: { type: 'string' },
+                      pincode: { type: 'string' },
+                    },
+                    nullable: true,
+                  },
+                  created_at: { type: 'string', format: 'date-time' },
+                  _count: {
+                    type: 'object',
+                    properties: {
+                      orders: { type: 'integer' },
+                    },
+                  },
                 },
               },
             },
@@ -46,7 +65,6 @@ export default async function customerRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    preHandler: fastify.authenticate,
     handler: (request, reply) => customerController.getAllCustomers(request, reply),
   });
 
@@ -92,7 +110,6 @@ export default async function customerRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    preHandler: fastify.authenticate,
     handler: (request, reply) => customerController.searchCustomers(request, reply),
   });
 
@@ -139,7 +156,6 @@ export default async function customerRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    preHandler: fastify.authenticate,
     handler: (request, reply) => customerController.getCustomerById(request, reply),
   });
 
@@ -187,7 +203,6 @@ export default async function customerRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    preHandler: fastify.authenticate,
     handler: (request, reply) => customerController.createCustomer(request, reply),
   });
 
@@ -226,7 +241,6 @@ export default async function customerRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    preHandler: fastify.authenticate,
     handler: (request, reply) => customerController.updateCustomer(request, reply),
   });
 
@@ -252,7 +266,6 @@ export default async function customerRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    preHandler: fastify.authenticate,
     handler: (request, reply) => customerController.deleteCustomer(request, reply),
   });
 
@@ -298,7 +311,6 @@ export default async function customerRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    preHandler: fastify.authenticate,
     handler: (request, reply) => customerController.addAddress(request, reply),
   });
 }

@@ -6,20 +6,12 @@ import { DataTable } from '@lorrigo/ui/components';
 import { DataTableColumnHeader } from '@lorrigo/ui/components';
 import { Badge } from '@lorrigo/ui/components';
 import { Button } from '@lorrigo/ui/components';
-import { MoreHorizontal, Calendar, Eye, Download, Clock, AlertCircle } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from '@lorrigo/ui/components';
+import { Clock } from 'lucide-react';
 import { toast } from '@lorrigo/ui/components';
 import type { ColumnDef } from '@lorrigo/ui/components';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 
 import { useNDROperations, type NDROrder, type NDRQueryParams } from '@/lib/apis/ndr';
-import { NDRActionModal } from '@/components/modals/ndr-action-modal';
 import HoverCardToolTip from '@/components/hover-card-tooltip';
 import { useModalStore } from '@/modal/modal-store';
 
@@ -316,31 +308,6 @@ export default function NDRTable({ initialParams = {} }: NDRTableProps) {
                 {ndr.otp_verified ? 'OTP Verified' : 'Take Action'}
               </Button>
             )}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 p-0">
-                  <span className="sr-only">Open menu</span>
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem>
-                  <Eye className="mr-2 h-4 w-4" />
-                  View History
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Download className="mr-2 h-4 w-4" />
-                  Download Label
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                {!ndr.action_taken && (
-                  <DropdownMenuItem onClick={() => handleNDRAction(ndr)}>
-                    <AlertCircle className="mr-2 h-4 w-4" />
-                    Take NDR Action
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
         );
       },

@@ -78,6 +78,11 @@ interface DataTableProps<TData, TValue> {
   manualPagination?: boolean;
   manualSorting?: boolean;
   manualFiltering?: boolean;
+  showDownload?: boolean;
+  handleDownload?: () => void;
+  isDownloading?: boolean;
+  handleUpload?: () => void;
+  isUploading?: boolean;
 }
 
 export function DataTable<TData, TValue>({
@@ -116,6 +121,11 @@ export function DataTable<TData, TValue>({
   manualPagination = true,
   manualSorting = true,
   manualFiltering = true,
+  showDownload = true,
+  handleDownload,
+  isDownloading = false,
+  handleUpload,
+  isUploading = false,
 }: DataTableProps<TData, TValue>) {
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] =
@@ -277,7 +287,12 @@ export function DataTable<TData, TValue>({
             globalFilter={globalFilter}
             setGlobalFilter={handleGlobalFilterChange}
             isLoading={isLoading}
-          />
+            showDownload={showDownload}
+            handleDownload={handleDownload}
+            isDownloading={isDownloading}
+            handleUpload={handleUpload}
+            isUploading={isUploading}
+            />
         )}
 
         {selectable && Object.keys(rowSelection).length > 0 && (

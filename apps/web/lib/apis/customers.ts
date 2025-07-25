@@ -7,6 +7,10 @@ export interface Customer {
   name: string;
   email: string | null;
   phone: string;
+  _count: {
+    orders: number;
+  };
+  created_at: string;
   address: {
     id: string;
     address: string;

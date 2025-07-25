@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { BillingService } from '../services/billing-service';
 import { WeightDisputeStatus } from '@lorrigo/db';
+import { exportData } from '@/utils/exportData';
 
 export class BillingController {
   constructor(private billingService: BillingService) {}
@@ -161,7 +162,8 @@ export class BillingController {
             order: {
               select: { 
                 code: true,
-                customer: { select: { name: true } }
+                customer: { select: { name: true } },
+                shipment: { select: { awb: true, courier: { select: { name: true, channel_config: { select: { nickname: true } } } } } }
               }
             },
             user: { select: { name: true, email: true } }
@@ -307,6 +309,83 @@ export class BillingController {
         error: 'Failed to process dispute action',
         message: error instanceof Error ? error.message : 'Unknown error',
       });
+    }
+  }
+
+  /**
+   * Export disputes as CSV or XLSX
+   */
+  async exportDisputes(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const { status, userId, format = 'csv' } = request.query as any;
+      const currentUserId = request.userPayload?.id;
+      const isAdmin = request.userPayload?.role === 'ADMIN';
+      const where: any = {};
+      if (!isAdmin) {
+        where.user_id = currentUserId;
+      } else if (userId) {
+        where.user_id = userId;
+      }
+      if (status) {
+        where.status = status;
+      }
+      // Fetch all disputes (limit to 10k for safety)
+      const disputes = await this.billingService['fastify'].prisma.weightDispute.findMany({
+        where,
+        include: {
+          order: {
+            select: {
+              code: true,
+              customer: { select: { name: true } },
+              shipment: { select: { awb: true } },
+              // product: { select: { name: true, sku: true, id: true } }, // Removed, not a valid field
+              // dimensions: true, // Removed, not a valid field
+              // volumetric_weight: true, // Removed, not a valid field
+            },
+          },
+          user: { select: { name: true, email: true } },
+        },
+        orderBy: { dispute_raised_at: 'desc' },
+        take: 10000,
+      });
+      // Map disputes to flat objects for CSV
+      const mapped = disputes.map((d: any) => ({
+        dispute_id: d.dispute_id,
+        awb: d.order?.shipment?.awb,
+        customer: d.order?.customer?.name,
+        // product_name: d.order?.product?.name, // Removed
+        // product_sku: d.order?.product?.sku,   // Removed
+        // product_id: d.order?.product?.id,     // Removed
+        original_weight: d.original_weight,
+        disputed_weight: d.disputed_weight,
+        forward_excess_amount: d.forward_excess_amount,
+        rto_excess_amount: d.rto_excess_amount,
+        total_disputed_amount: d.total_disputed_amount,
+        status: d.status,
+        deadline_date: d.deadline_date,
+        created_at: d.created_at,
+        user_name: d.user?.name,
+        user_email: d.user?.email,
+        evidence_urls: (d.evidence_urls || []).join(';'),
+        seller_evidence_urls: (d.seller_evidence_urls || []).join(';'),
+        resolution: d.resolution,
+        resolution_date: d.resolution_date,
+      }));
+      const fields = [
+        'dispute_id','awb','customer','original_weight','disputed_weight','forward_excess_amount','rto_excess_amount','total_disputed_amount','status','deadline_date','created_at','user_name','user_email','evidence_urls','seller_evidence_urls','resolution','resolution_date'
+      ];
+      const fileName = `weight-disputes-${status || 'all'}-${new Date().toISOString().split('T')[0]}.${format}`;
+      const { csvBuffer, filename } = exportData(fields, mapped, format, fileName);
+      if (format === 'xlsx') {
+        reply.header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      } else {
+        reply.header('Content-Type', 'text/csv');
+      }
+      reply.header('Content-Disposition', `attachment; filename=${fileName}`);
+      return reply.send(csvBuffer);
+    } catch (error) {
+      request.log.error(`Error exporting disputes: ${error}`);
+      return reply.code(500).send({ error: 'Failed to export disputes', message: error instanceof Error ? error.message : 'Unknown error' });
     }
   }
 

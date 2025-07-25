@@ -9,12 +9,6 @@ import ScrollableTabsProps from '@/components/client-tabs';
 import { NDR_TAB_ROUTES } from '@/lib/routes/nested-shipments';
 import { Badge, Button } from '@lorrigo/ui/components';
 
-interface PageProps {
-  params: {
-    stage: string;
-  };
-}
-
 export default function NDRPage() {
   const { stage } = useParams<{ stage: string }>();
   const searchParams = useSearchParams();

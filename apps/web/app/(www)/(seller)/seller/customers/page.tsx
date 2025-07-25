@@ -40,13 +40,13 @@ export default function CustomersPage() {
     pageIndex: initialParams.page || 0,
     pageSize: initialParams.limit || 15,
   });
-  const [sorting, setSorting] = React.useState<{ id: string; desc: boolean }[]>([]);
-  const [filters, setFilters] = React.useState<{ id: string; value: any }[]>([]);
+  // const [sorting, setSorting] = React.useState<{ id: string; desc: boolean }[]>([]);
+  // const [filters, setFilters] = React.useState<{ id: string; value: any }[]>([]);
   const [globalFilter, setGlobalFilter] = React.useState(initialParams.search || '');
   const debouncedGlobalFilter = useDebounce(globalFilter, 500);
 
   // API hooks
-  const { getCustomersQuery, createCustomer, updateCustomer, deleteCustomer } =
+  const { getCustomersQuery } =
     useCustomerOperations();
 
   const customersQuery = getCustomersQuery(
@@ -57,55 +57,43 @@ export default function CustomersPage() {
 
   const { data, isLoading, isError } = customersQuery;
 
-  // Handle create customer
-  const handleCreateCustomer = () => {
-    // TODO: Open create customer modal
-    toast.info('Create customer functionality coming soon');
-  };
-
-  // Handle edit customer
-  const handleEditCustomer = (customer: Customer) => {
-    // TODO: Open edit customer modal
-    toast.info('Edit customer functionality coming soon');
-  };
-
   // Handle delete customer
-  const handleDeleteCustomer = async (customerId: string) => {
-    try {
-      await deleteCustomer.mutateAsync(customerId);
-      toast.success('Customer deleted successfully');
-    } catch (error) {
-      toast.error('Failed to delete customer');
-    }
-  };
+  // const handleDeleteCustomer = async (customerId: string) => {
+  //   try {
+  //     await deleteCustomer.mutateAsync(customerId);
+  //     toast.success('Customer deleted successfully');
+  //   } catch (error) {
+  //     toast.error('Failed to delete customer');
+  //   }
+  // };
 
   // Define the columns for the data table
   const columns: ColumnDef<Customer>[] = [
-    {
-      id: 'select',
-      header: ({ table }) => (
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && 'indeterminate')
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-          disabled={isLoading}
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
-          onClick={(e) => e.stopPropagation()}
-          disabled={isLoading}
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
+    // {
+    //   id: 'select',
+    //   header: ({ table }) => (
+    //     <Checkbox
+    //       checked={
+    //         table.getIsAllPageRowsSelected() ||
+    //         (table.getIsSomePageRowsSelected() && 'indeterminate')
+    //       }
+    //       onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+    //       aria-label="Select all"
+    //       disabled={isLoading}
+    //     />
+    //   ),
+    //   cell: ({ row }) => (
+    //     <Checkbox
+    //       checked={row.getIsSelected()}
+    //       onCheckedChange={(value) => row.toggleSelected(!!value)}
+    //       aria-label="Select row"
+    //       onClick={(e) => e.stopPropagation()}
+    //       disabled={isLoading}
+    //     />
+    //   ),
+    //   enableSorting: false,
+    //   enableHiding: false,
+    // },
     {
       accessorKey: 'name',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Customer Details" />,
@@ -165,13 +153,13 @@ export default function CustomersPage() {
           return <span className="text-muted-foreground text-sm">No address</span>;
         }
 
-        const fullAddress = `${address.address}, ${address.city}, ${address.state} - ${address.pincode}`;
+        const fullAddress = `${address.address}, ${address.city}`;
 
         return (
           <div className="flex max-w-xs items-start space-x-2">
             <MapPin className="mt-1 h-3 w-3 flex-shrink-0 text-gray-500" />
-            <HoverCardToolTip label="Customer Address">
-              <span className="truncate text-sm">{fullAddress}</span>
+            <HoverCardToolTip label="Customer Address" side='bottom' className='text-wrap w-80 max-w-xs'>
+              <div>{fullAddress}</div>
             </HoverCardToolTip>
           </div>
         );
@@ -180,50 +168,23 @@ export default function CustomersPage() {
       enableHiding: true,
     },
     {
+      accessorKey: 'orders',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Orders" />,
+      cell: ({ row }) => {
+        const customer = row.original;
+        return <div className="text-muted-foreground text-sm">{customer._count.orders}</div>;
+      },
+      enableSorting: true,
+    },
+    {
       accessorKey: 'created_at',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Created" />,
       cell: ({ row }) => {
-        // Note: The Customer interface doesn't have created_at, this is for future enhancement
-        return <div className="text-muted-foreground text-sm">N/A</div>;
+        const customer = row.original;
+        return <div className="text-muted-foreground text-sm">{customer.created_at.split("T")[0]}</div>;
       },
       enableSorting: true,
       enableHiding: true,
-    },
-    {
-      id: 'actions',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Actions" />,
-      cell: ({ row }) => {
-        const customer = row.original;
-
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleEditCustomer(customer)}>
-                <Edit className="mr-2 h-4 w-4" />
-                Edit Customer
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                View Orders
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => handleDeleteCustomer(customer.id)}
-                className="text-red-600 hover:text-red-500"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete Customer
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
     },
   ];
 
@@ -236,13 +197,12 @@ export default function CustomersPage() {
             Manage your customer database and contact information
           </p>
         </div>
-        <Button onClick={handleCreateCustomer} className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Add Customer
-        </Button>
       </div>
 
       <DataTable
+        showDownload={false}
+        dateRangeFilter={false}
+        advancedFilter={false}
         columns={columns}
         data={data?.customers || []}
         count={data?.total || 0}
@@ -253,11 +213,11 @@ export default function CustomersPage() {
         isError={isError}
         errorMessage="Failed to fetch customers. Please try again."
         onPaginationChange={setPagination}
-        onSortingChange={setSorting}
+        // onSortingChange={setSorting}
         manualPagination={true}
         manualSorting={true}
         manualFiltering={true}
-        onFiltersChange={setFilters}
+        // onFiltersChange={setFilters}
         onGlobalFilterChange={setGlobalFilter}
       />
     </div>

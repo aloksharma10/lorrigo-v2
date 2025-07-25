@@ -32,24 +32,32 @@ interface ErrorResponse {
 export class CustomerService {
   constructor(private fastify: FastifyInstance) {}
 
-  async getAllCustomers(page: number, limit: number, search: string) {
+  async getAllCustomers(page: number, limit: number, search: string, isAdmin: boolean, userId: string) {
     const skip = (page - 1) * limit;
-
-    // Build the where clause based on search parameter
+  
+    // Build search filter
     const searchCondition: Prisma.CustomerWhereInput = search
       ? {
           OR: [
-            { name: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
-            { email: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
-            { phone: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
+            { name: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search, mode: 'insensitive' } },
+            { phone: { contains: search, mode: 'insensitive' } },
           ],
         }
       : {};
-
-    // Get customers with pagination
+  
+    // Add user-based filtering if not admin
+    const whereCondition = isAdmin
+      ? searchCondition
+      : {
+          ...searchCondition,
+          orders: { some: { user_id: userId } },
+        };
+  
+    // Parallel query for customers and count
     const [customers, total] = await Promise.all([
       this.fastify.prisma.customer.findMany({
-        where: searchCondition,
+        where: whereCondition,
         skip,
         take: limit,
         orderBy: { created_at: 'desc' },
@@ -58,14 +66,28 @@ export class CustomerService {
           name: true,
           email: true,
           phone: true,
+          address: {
+            select: {
+              address: true,
+              address_2: true,
+              city: true,
+            },
+          },
           created_at: true,
+          _count: {
+            select: {
+              orders: true,
+            },
+          },
         },
       }),
-      this.fastify.prisma.customer.count({ where: searchCondition }),
+      this.fastify.prisma.customer.count({ where: whereCondition }),
     ]);
 
+    console.log(customers, 'customers')
+  
     const totalPages = Math.ceil(total / limit);
-
+  
     return {
       customers,
       total,
