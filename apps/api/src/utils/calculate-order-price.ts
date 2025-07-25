@@ -60,6 +60,7 @@ export interface CourierInfo {
   pickup_performance?: number;
   rto_performance?: number;
   delivery_performance?: number;
+  recommended: boolean; // Added key to indicate if this courier is recommended
 }
 
 export interface PincodeDetails {
@@ -529,13 +530,13 @@ export function calculatePricesForCouriers(
   const results: PriceCalculationResult[] = [];
 
   for (const { courier, pricing } of couriers) {
-    const result = calculatePrice(params, courier, pricing, pickupDetails, deliveryDetails);
+    const result = (calculatePrice(params, courier, pricing, pickupDetails, deliveryDetails));
     if (result) {
       results.push(result);
     }
   }
 
-  return results;
+  return sortByRecommendedAndPrice(results);
 }
 
 // ================================
@@ -706,4 +707,18 @@ export function getCouriersInPriceRange(
   maxPrice: number
 ): PriceCalculationResult[] {
   return filterResults(results, { minPrice, maxPrice });
+}
+
+/**
+ * Sort results by recommended couriers first, then by price (ascending)
+ */
+export function sortByRecommendedAndPrice(
+  results: PriceCalculationResult[]
+): PriceCalculationResult[] {
+  return [...results].sort((a, b) => {
+    if (a.courier.recommended === b.courier.recommended) {
+      return a.total_price - b.total_price;
+    }
+    return a.courier.recommended ? -1 : 1;
+  });
 }

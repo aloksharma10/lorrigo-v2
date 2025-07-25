@@ -189,6 +189,7 @@ export class ShipmentService {
       params as PriceCalculationParams,
       serviceabilityResult.serviceableCouriers.map((courier) => ({
         courier: {
+          recommended: courier.recommended || false, 
           estimated_delivery_days: courier.data.estimated_delivery_days ?? 5,
           etd: courier.data.etd || formatDateAddDays(5),
           rating: courier.data.rating,
@@ -220,7 +221,6 @@ export class ShipmentService {
       pickupDetails,
       deliveryDetails
     );
-
     // Format rates for response
     const formattedRates = rates.map((rate) => ({
       // Core courier identification
@@ -249,10 +249,8 @@ export class ShipmentService {
       rto_charges: rate.rto_charges,
       total_price: rate.total_price,
       breakdown: rate.breakdown,
+      recommended: rate.courier.recommended,
     }));
-
-    // Sort rates by total price (ascending - cheapest first)
-    formattedRates.sort((a, b) => a.total_price - b.total_price);
 
     // Prepare cache data
     const cacheData = {
@@ -386,6 +384,7 @@ export class ShipmentService {
       params,
       serviceabilityResult.serviceableCouriers.map((courier) => ({
         courier: {
+          recommended: courier.recommended || false, 
           estimated_delivery_days: courier.data.estimated_delivery_days ?? 5,
           etd: courier.data.etd || formatDateAddDays(5),
           rating: courier.data.rating,
@@ -457,6 +456,7 @@ export class ShipmentService {
 
       // Additional details
       breakdown: rate.breakdown,
+      recommended: rate.courier.recommended,
     }));
 
     // Sort rates by total price (ascending - cheapest first)

@@ -548,6 +548,7 @@ model Courier {
 
   is_active           Boolean @default(true)
   is_reversed_courier Boolean @default(false)
+  is_recommended      Boolean @default(false)
 
   weight_slab      Float?
   weight_unit      String? @db.VarChar(10)

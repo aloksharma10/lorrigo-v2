@@ -211,6 +211,7 @@ export class VendorService {
       pricing?: any;
       vendor?: string;
       data?: any;
+      recommended?: boolean;
     }>;
   }> {
     try {
@@ -251,6 +252,7 @@ export class VendorService {
                       is_active: true,
                       weight_unit: true,
                       weight_slab: true,
+                      is_recommended: true,
                       increment_weight: true,
                       cod_charge_hard: true,
                       cod_charge_percent: true,
@@ -377,6 +379,7 @@ export class VendorService {
                     },
                     pricing: pricing || null,
                     vendor: vendorName,
+                    recommended: courierInfo?.courier.is_recommended,
                   };
                 }),
               },

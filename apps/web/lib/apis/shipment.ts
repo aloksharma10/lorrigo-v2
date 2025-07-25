@@ -44,6 +44,7 @@ export interface CourierRate {
   volumetric_weight: number;
   expected_pickup: string;
   nickname: string;
+  recommended: boolean;
   breakdown: {
     actual_weight: number;
     volumetric_weight: number;
