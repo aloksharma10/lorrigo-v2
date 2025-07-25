@@ -70,6 +70,7 @@ export interface RateCalculationParams {
   paymentType: number; // 0 for prepaid, 1 for COD
   collectableAmount?: number;
   isReversedOrder?: boolean;
+  orderValue?: number;
 }
 
 export interface RateCalculationResult {
@@ -599,7 +600,7 @@ export class PlanService {
       ]);
 
       if (!pickupDetails || !deliveryDetails) {
-        return [{ message: 'Invalid pincode' }];
+        return [{ message: 'Invalid or not serviceable pincode' }];
       }
 
       // Get user's plan with courier pricing

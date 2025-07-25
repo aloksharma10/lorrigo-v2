@@ -125,6 +125,15 @@ export async function shipmentRoutes(fastify: FastifyInstance) {
     shipmentController.getRates.bind(shipmentController)
   );
 
+  fastify.post(
+    '/serviceable-couriers',
+    {
+      preHandler: authorizeRoles([Role.SELLER]),
+    },
+    // Fix type error by specifying the expected request body type
+    shipmentController.getServiceableCouriers.bind(shipmentController)
+  );
+
   fastify.get<{ Params: { id: string } }>(
     '/:id',
     {

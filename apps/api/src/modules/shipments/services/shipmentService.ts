@@ -33,6 +33,8 @@ import {
 import { JobType } from '../queues/shipmentQueue';
 import { ChargeProcessingService } from './charge-processing.service';
 import { TransactionJobType } from '@/modules/transactions/queues/transaction-worker';
+import { RateCalculationParams } from '@/modules/plan/services/plan.service';
+import { getPincodeDetails } from '@/utils/pincode';
 
 // Define the interface for the extended FastifyInstance
 interface ExtendedFastifyInstance extends FastifyInstance {
@@ -95,6 +97,176 @@ export class ShipmentService {
     return { canCreate: true };
   }
 
+  async getServiceableCouriers(userId : string, params : RateCalculationParams){
+    console.log(params, 'params')
+
+    const dimensionsStr = `${params.boxLength || 0}x${params.boxWidth || 0}x${params.boxHeight || 0}x${params.weight || 0}`;
+    const ratesKey = `rates-${userId}-${params.isReversedOrder ? 'reverse' : 'forward'}-${params.pickupPincode}-${params.deliveryPincode}-${params.weight}-${dimensionsStr}-${params.paymentType}-${params.collectableAmount}`;
+
+    // Try to get rates from cache first
+    const cachedRates = await this.fastify.redis.get(ratesKey);
+    if (cachedRates) {
+      const parsedCache = JSON.parse(cachedRates);
+      return {
+        rates: parsedCache.rates,
+        cached: true,
+      };
+    }
+
+    const pickupPincodeDetails = await getPincodeDetails(params.pickupPincode);
+    const deliveryPincodeDetails = await getPincodeDetails(params.deliveryPincode);
+    console.log(pickupPincodeDetails, deliveryPincodeDetails)
+
+    if (!pickupPincodeDetails || !deliveryPincodeDetails) {
+      return {
+        rates: [],
+
+        message: 'Invalid or not serviceable pincode',
+      };
+    }
+
+    const pickupDetails: PincodeDetails = {
+      city: pickupPincodeDetails?.city || '',
+      state: pickupPincodeDetails?.state || '',
+    };
+  
+    const deliveryDetails: PincodeDetails = {
+      city: deliveryPincodeDetails?.city || '',
+      state: deliveryPincodeDetails?.state || '',
+    };
+
+    const volumetricWeight = calculateVolumetricWeight(
+      params.boxLength,
+      params.boxWidth,
+      params.boxHeight,
+      params.sizeUnit as 'cm' | 'inch'
+    );
+
+    // Check serviceability for the user's plan (this will use its own cache)
+    const serviceabilityResult = await this.vendorService.checkServiceabilityForPlan(
+      userId,
+      params.pickupPincode,
+      params.deliveryPincode,
+      volumetricWeight,
+      {
+        length: params.boxLength,
+        width: params.boxWidth,
+        height: params.boxHeight,
+        weight: params.weight,
+      },
+      params.paymentType as 0 | 1,
+      params.orderValue || 0,      
+      params.collectableAmount || 0,
+      params.isReversedOrder || false
+    );
+
+    let rates: PriceCalculationResult[] = [];
+
+    // If no serviceability, return empty rates with message
+    if (!serviceabilityResult.success || serviceabilityResult.serviceableCouriers.length === 0) {
+      const emptyResult = {
+        rates: [],
+        message: serviceabilityResult.message || 'No courier is serviceable for this order',
+      };
+
+      // Cache empty rates for shorter duration (1 hour)
+      await this.fastify.redis.set(
+        ratesKey,
+        JSON.stringify({
+          rates: [],
+          message: emptyResult.message,
+          timestamp: Date.now(),
+        }),
+        'EX',
+        3600
+      );
+
+      return emptyResult;
+    }
+
+    // Calculate rates for serviceable couriers using utility function
+    rates = calculatePricesForCouriers(
+      params as PriceCalculationParams,
+      serviceabilityResult.serviceableCouriers.map((courier) => ({
+        courier: {
+          estimated_delivery_days: courier.data.estimated_delivery_days ?? 5,
+          etd: courier.data.etd || formatDateAddDays(5),
+          rating: courier.data.rating,
+          pickup_performance: courier.data.pickup_performance,
+          rto_performance: courier.data.rto_performance,
+          delivery_performance: courier.data.delivery_performance,
+          id: courier.id,
+          name: courier.name,
+          courier_code: courier.code,
+          type: courier.pricing?.courier?.type || '', // Safe access
+          is_active: true,
+          is_reversed_courier: !!params.isReversedOrder,
+          pickup_time: undefined,
+          weight_slab: courier.pricing?.weight_slab || 0.5,
+          nickname: courier.pricing?.courier?.channel_config?.nickname || courier.name,
+        },
+        pricing: {
+          weight_slab: courier.pricing?.weight_slab || 0.5,
+          increment_weight: courier.pricing?.increment_weight || 0.5,
+          cod_charge_hard: courier.pricing?.cod_charge_hard || 0,
+          cod_charge_percent: courier.pricing?.cod_charge_percent || 0,
+          is_cod_applicable: true,
+          is_rto_applicable: true,
+          is_fw_applicable: true,
+          is_cod_reversal_applicable: true,
+          zone_pricing: courier.pricing?.zone_pricing || [],
+        },
+      })),
+      pickupDetails,
+      deliveryDetails
+    );
+
+    // Format rates for response
+    const formattedRates = rates.map((rate) => ({
+      // Core courier identification
+      id: rate.courier.id,
+      name: rate.courier.name,
+      nickname: rate.courier.nickname,
+      courier_code: rate.courier.courier_code,
+      type: rate.courier.type,
+      is_active: rate.courier.is_active,
+      is_reversed_courier: rate.courier.is_reversed_courier,
+      estimated_delivery_days: rate.courier.estimated_delivery_days,
+      etd: rate.courier.etd,
+      pickup_time: rate.courier.pickup_time,
+      expected_pickup: rate.expected_pickup,
+      rating: rate.courier.rating,
+      pickup_performance: rate.courier.pickup_performance,
+      delivery_performance: rate.courier.delivery_performance,
+      rto_performance: rate.courier.rto_performance,
+      zone: rate.zoneName,
+      weight_slab: rate.courier.weight_slab,
+      final_weight: rate.final_weight,
+      volumetric_weight: rate.volumetric_weight,
+      base_price: rate.base_price,
+      weight_charges: rate.weight_charges,
+      cod_charges: rate.cod_charges,
+      rto_charges: rate.rto_charges,
+      total_price: rate.total_price,
+      breakdown: rate.breakdown,
+    }));
+
+    // Sort rates by total price (ascending - cheapest first)
+    formattedRates.sort((a, b) => a.total_price - b.total_price);
+
+    // Prepare cache data
+    const cacheData = {
+      rates: formattedRates,
+      internalRates: rates,
+      serviceableCount: serviceabilityResult.serviceableCouriers.length,
+      timestamp: Date.now(),
+    };
+
+    // Cache the rates for 24 hours
+    await this.fastify.redis.set(ratesKey, JSON.stringify(cacheData), 'EX', 86400);
+
+    return { rates: formattedRates };
+  }
 
   /**
    * Calculate shipping rates for an order

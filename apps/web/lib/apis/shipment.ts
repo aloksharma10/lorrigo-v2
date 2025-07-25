@@ -5,6 +5,21 @@ import { toast } from '@lorrigo/ui/components';
 import { AxiosResponse } from 'axios';
 import { useRouter } from 'next/navigation';
 
+export interface RateCalculationParams {
+  pickupPincode: string;
+  deliveryPincode: string;
+  weight: number;
+  weightUnit: 'kg' | 'g';
+  boxLength: number;
+  boxWidth: number;
+  boxHeight: number;
+  sizeUnit: 'cm' | 'in';
+  paymentType: number; // 0 for prepaid, 1 for COD
+  collectableAmount?: number;
+  isReversedOrder?: boolean;
+  orderValue?: number;
+}
+
 export interface CourierRate {
   id: string;
   estimated_delivery_days: string;
@@ -344,6 +359,22 @@ export const useShippingOperations = () => {
     },
   });
 
+  // Get serviceable couriers (rate calculator)
+  const getServiceableCouriers = useMutation({
+    mutationFn: async (params: RateCalculationParams) => {
+      const response = await api.post<any>(
+        '/shipments/serviceable-couriers',
+        params
+      );
+      return response;
+    },
+    onError: (error: any) => {
+      toast.error(
+        error.response?.message || error.message || 'Failed to fetch courier rates'
+      );
+    },
+  });
+
   return {
     getShippingRates,
     shipOrder,
@@ -357,5 +388,6 @@ export const useShippingOperations = () => {
     cancelBulkShipments,
     downloadBulkLabels,
     editBulkPickupAddresses,
+    getServiceableCouriers, // <-- add here
   };
 };

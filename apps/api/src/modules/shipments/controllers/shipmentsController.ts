@@ -7,12 +7,32 @@ import { captureException } from '@/lib/sentry';
 import { ShipmentStatus } from '@lorrigo/db';
 import fs from 'fs';
 import { processShipmentTracking } from '../batch/processor';
+import { RateCalculationParams } from '@/modules/plan/services/plan.service';
 
 /**
  * Controller for shipment-related API endpoints
  */
 export class ShipmentController {
   constructor(private shipmentService: ShipmentService) {}
+
+  async getServiceableCouriers(request: FastifyRequest, reply: FastifyReply) {
+   try {
+    const userId = request.userPayload!.id;
+    const params= request.body as RateCalculationParams;
+
+    const rates = await this.shipmentService.getServiceableCouriers(userId, params);
+
+    return reply.send(rates);
+   } catch (error) {
+    request.log.error(error);
+    captureException(error as Error);
+
+    return reply.code(500).send({
+      message: 'Internal server error',
+    });
+   }
+  } 
+
   /**
    * Get rates for an order
    */
@@ -168,9 +188,6 @@ export class ShipmentController {
    */
   async schedulePickup(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
     try {
-      // Check if user is authenticated
-      await checkAuth(request, reply);
-
       const { id } = request.params;
       const { pickupDate } = request.body as { pickupDate: string };
       const user_id = request.userPayload!.id;
@@ -193,9 +210,6 @@ export class ShipmentController {
    */
   async getShipmentStats(request: FastifyRequest, reply: FastifyReply) {
     try {
-      // Check if user is authenticated
-      await checkAuth(request, reply);
-
       const user_id = request.userPayload!.id;
 
       const stats = await this.shipmentService.getShipmentStats(user_id);
