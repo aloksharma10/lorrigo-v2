@@ -618,6 +618,7 @@ export class PlanService {
       // Convert to utility format
       const couriersWithPricing: CourierWithPricing[] = courierPricings.map((courierPricing) => ({
         courier: {
+          recommended: courierPricing.courier.is_recommended,
           id: courierPricing.courier.id,
           name: courierPricing.courier.name,
           courier_code: courierPricing.courier.courier_code ?? '',

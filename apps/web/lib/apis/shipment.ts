@@ -392,3 +392,50 @@ export const useShippingOperations = () => {
     getServiceableCouriers, // <-- add here
   };
 };
+
+// Download bulk labels (PDF)
+export async function downloadBulkLabels({
+  shipmentIds,
+  format,
+}: {
+  shipmentIds: string[];
+  format?: 'A4' | 'THERMAL';
+}): Promise<Blob> {
+  const response: AxiosResponse<Blob> = await api.post(
+    '/shipments/labels/bulk',
+    { shipmentIds, format },
+    { responseType: 'blob' }
+  );
+  return response.data;
+}
+
+// Download bulk manifests (PDF)
+export async function downloadBulkManifests({
+  shipmentIds,
+  format,
+}: {
+  shipmentIds: string[];
+  format?: 'A4' | 'THERMAL';
+}): Promise<Blob> {
+  const response: AxiosResponse<Blob> = await api.post(
+    '/shipments/manifests/bulk',
+    { shipmentIds, format },
+    { responseType: 'blob' }
+  );
+  return response.data;
+}
+
+// Get user label/manifest config
+export async function getLabelManifestConfig(): Promise<any> {
+  const response: AxiosResponse<any> = await api.get('/shipments/user/label-config');
+  return response.data;
+}
+
+// Set user label/manifest config
+export async function setLabelManifestConfig(config: {
+  label_format?: 'A4' | 'THERMAL';
+  manifest_format?: 'A4' | 'THERMAL';
+}): Promise<any> {
+  const response: AxiosResponse<any> = await api.post('/shipments/user/label-config', config);
+  return response.data;
+}

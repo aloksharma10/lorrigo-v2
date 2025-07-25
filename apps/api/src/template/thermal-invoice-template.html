@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Shipping Label</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    /* body {
+      width: 58mm;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      font-size: 10px;
+      background: white;
+    } */
+
+    /* .label {
+      padding: 2px;
+      width: 100%;
+      border-bottom: 1px dashed #000;
+      page-break-inside: avoid;
+    } */
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2px;
+    }
+
+    .title {
+      font-size: 14px;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .text-sm {
+      font-size: 12px;
+      margin: 1px 0;
+    }
+
+    .font-bold {
+      font-weight: bold;
+    }
+
+    .font-semibold {
+      font-weight: 600;
+    }
+
+    .grid-container {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 4px;
+      gap: 4px;
+    }
+
+    .grid-item {
+      width: 48%;
+    }
+
+    .barcode-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 4px;
+    }
+
+    .barcode {
+      max-height: 50px;
+      max-width: 100%;
+      object-fit: contain;
+    }
+
+    .logo-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 4px;
+    }
+
+    .logo {
+      max-width: 60px;
+      max-height: 40px;
+    }
+
+    .separator {
+      height: 1px;
+      background: #ccc;
+      margin: 4px 0;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 500;
+      margin-top: 2px;
+    }
+
+    .info-box {
+      margin-bottom: 2px;
+    }
+
+    .flex-col {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .text-wrap {
+      word-break: break-word;
+    }
+
+    .product-info {
+      margin-top: 2px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="label">
+    <!-- Header -->
+    <div class="header">
+      <div class="title">Ship To</div>
+      <div class="logo-container">
+        <img src="{{lorrigoLogoUrl}}" alt="Lorrigo" class="logo">
+      </div>
+    </div>
+
+    <!-- Customer Info -->
+    <div class="flex-col">
+      <div class="text-sm">{{customerName}}</div>
+      <div class="text-sm text-wrap">{{customerAddress}}</div>
+      <div class="text-sm">{{customerPincode}}</div>
+      <div class="text-sm">{{customerPhone}}</div>
+    </div>
+
+    <div class="separator"></div>
+
+    <!-- Order Info -->
+    <div class="grid-container">
+      <div class="grid-item">
+        <div class="text-sm">Dim: {{orderBoxLength}} x {{orderBoxWidth}} x {{orderBoxHeight}}</div>
+        <div class="text-sm">Weight: {{orderWeight}} {{orderWeightUnit}}</div>
+        <div class="text-sm">Payment: {{paymentMode}}</div>
+        {{#if isCOD}}
+        <div class="text-sm font-bold">(Collect: ₹{{amountToCollect}})</div>
+        {{/if}}
+        <div class="text-sm text-wrap">{{carrierName}}</div>
+        {{#if awb}}<div class="text-sm">AWB: {{awb}}</div>{{/if}}
+        {{#if routingCode}}<div class="text-sm">Route: {{routingCode}}</div>{{/if}}
+        <div class="text-sm">SID: {{orderReferenceId}}</div>
+      </div>
+
+      <div class="grid-item barcode-container">
+        <img src="{{barcodeUrl}}" alt="Barcode" class="barcode">
+      </div>
+    </div>
+
+    <div class="separator"></div>
+
+    <!-- Seller Info -->
+    <div class="section-title">Shipped by:</div>
+    <div class="text-sm text-wrap">{{sellerName}}</div>
+    <div class="text-sm text-wrap">{{sellerAddress}}</div>
+    <div class="text-sm">India</div>
+
+    <div class="section-title">Return Address:</div>
+    <div class="text-sm text-wrap">{{rtoAddress}}</div>
+    <div class="text-sm">{{rtoCity}}, {{rtoState}}</div>
+
+    <div class="logo-container">
+      <img src="{{companyLogoUrl}}" alt="Company Logo" class="logo">
+    </div>
+
+    <div class="separator"></div>
+
+    <!-- Product Info -->
+    <div class="product-info">
+      <div class="text-sm"><span class="font-semibold">Product:</span> {{productName}}</div>
+      <div class="text-sm"><span class="font-semibold">Invoice:</span> {{invoiceNumber}}</div>
+      {{#if sellerGSTIN}}
+      <div class="text-sm"><span class="font-semibold">GST:</span> {{sellerGSTIN}}</div>
+      {{/if}}
+    </div>
+  </div>
+</body>
+
+</html>

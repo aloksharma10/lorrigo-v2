@@ -61,6 +61,8 @@ async function setupOptimizedTrackingCron(fastify: FastifyInstance) {
   }
 }
 
+export * from './utils/label-manifest-generator';
+
 export async function shipmentRoutes(fastify: FastifyInstance) {
   fastify.addHook('onRequest', fastify.authenticate);
 
@@ -301,5 +303,41 @@ export async function shipmentRoutes(fastify: FastifyInstance) {
       onRequest: [fastify.authenticate],
     },
     shipmentController.takeNDRAction.bind(shipmentController)
+  );
+
+  // Bulk label generator (A4/Thermal)
+  fastify.post(
+    '/labels/bulk',
+    {
+      preHandler: authorizeRoles([Role.SELLER, Role.ADMIN]),
+    },
+    shipmentController.generateBulkLabels.bind(shipmentController)
+  );
+
+  // Bulk manifest generator (A4/Thermal)
+  fastify.post(
+    '/manifests/bulk',
+    {
+      preHandler: authorizeRoles([Role.SELLER, Role.ADMIN]),
+    },
+    shipmentController.generateBulkManifests.bind(shipmentController)
+  );
+
+  // Get user label/manifest config
+  fastify.get(
+    '/user/label-config',
+    {
+      preHandler: authorizeRoles([Role.SELLER, Role.ADMIN]),
+    },
+    shipmentController.getLabelManifestConfig.bind(shipmentController)
+  );
+
+  // Set user label/manifest config
+  fastify.post(
+    '/user/label-config',
+    {
+      preHandler: authorizeRoles([Role.SELLER, Role.ADMIN]),
+    },
+    shipmentController.setLabelManifestConfig.bind(shipmentController)
   );
 }

@@ -142,6 +142,11 @@ enum AddressType {
   HUB_RTO
 }
 
+enum LabelFormat {
+  A4
+  THERMAL
+}
+
 model User {
   id          String  @id @default(cuid())
   code        String  @unique // Format: US-YYMM-XXXXX
@@ -215,6 +220,7 @@ model UserProfile {
 
   // Notification Settings
   notification_settings Json // { whatsapp: true, email: true, system: true }
+  
 
   // Company Details
   company      String? @db.VarChar(255)
@@ -235,6 +241,10 @@ model UserProfile {
   billing_cycle_start_date DateTime?
   billing_cycle_end_date   DateTime?
   billing_cycle_type       CycleType @default(MONTHLY)
+
+  // Add label/manifest format config
+  label_format    LabelFormat    @default(THERMAL)
+  manifest_format LabelFormat    @default(THERMAL)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt

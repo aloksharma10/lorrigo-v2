@@ -2299,4 +2299,158 @@ export class ShipmentService {
       };
     }
   }
+
+  /**
+   * Generate bulk labels (A4/Thermal)
+   */
+  async generateBulkLabels(params: {
+    userId: string;
+    shipmentIds?: string[];
+    format?: 'A4' | 'THERMAL';
+  }): Promise<Buffer> {
+    // Fetch user config and logo
+    const userProfile = await this.fastify.prisma.userProfile.findUnique({
+      where: { user_id: params.userId },
+      select: { label_format: true, logo_url: true },
+    });
+    if (!userProfile) throw new Error('User profile not found');
+    const format = params.format || userProfile.label_format || 'THERMAL';
+    const companyLogoUrl = userProfile.logo_url || '';
+
+    // Fetch shipments with all required relations
+    const shipments = await this.fastify.prisma.shipment.findMany({
+      where: {
+        user_id: params.userId,
+        ...(params.shipmentIds ? { id: { in: params.shipmentIds } } : {}),
+        awb: { not: null },
+      },
+      include: {
+        order: {
+          include: {
+            customer: { include: { address: true } },
+            hub: { include: { rto_address: true } },
+            seller_details: { include: { address: true } },
+            items: true,
+            package: true,
+          },
+        },
+        courier: { include: { channel_config: true } },
+      },
+    });
+    if (!shipments.length) throw new Error('No shipments found');
+
+    // Map to utility input type
+    const mapped = shipments.map((s) => ({
+      awb: s.awb!,
+      orderReferenceId: s.order?.order_reference_id || s.order?.order_number || s.order?.code || '',
+      customerName: s.order?.customer?.name || '',
+      customerAddress: s.order?.customer?.address?.address || '',
+      customerPincode: s.order?.customer?.address?.pincode || '',
+      customerPhone: s.order?.customer?.phone || '',
+      orderBoxLength: s.order?.package?.length || 0,
+      orderBoxWidth: s.order?.package?.breadth || 0,
+      orderBoxHeight: s.order?.package?.height || 0,
+      orderWeight: s.order?.package?.weight || 0,
+      orderWeightUnit: 'kg',
+      paymentMode: s.order?.payment_method === 'COD' ? 'COD' : 'Prepaid',
+      isCOD: s.order?.payment_method === 'COD',
+      amountToCollect: s.order?.amount_to_collect || 0,
+      carrierName: s.courier?.name || '',
+      routingCode: s.routing_code || '',
+      sellerName: s.order?.seller_details?.seller_name || '',
+      sellerAddress: s.order?.seller_details?.address?.address || '',
+      rtoAddress: s.order?.hub?.rto_address?.address || '',
+      rtoCity: s.order?.hub?.rto_address?.city || '',
+      rtoState: s.order?.hub?.rto_address?.state || '',
+      companyLogoUrl,
+      lorrigoLogoUrl: 'https://lorrigo.in/_next/static/media/lorrigologo.e54a51f3.svg',
+      productName: s.order?.items?.[0]?.name || '',
+      invoiceNumber: s.order?.order_invoice_number || '',
+      sellerGSTIN: s.order?.seller_details?.gst_no || '',
+    }));
+
+    // Import PDF utility dynamically
+    const { generateBulkLabels } = await import('../utils/label-manifest-generator');
+    return generateBulkLabels({ shipments: mapped, format });
+  }
+
+  /**
+   * Generate bulk manifests (A4/Thermal)
+   */
+  async generateBulkManifests(params: {
+    userId: string;
+    shipmentIds?: string[];
+    format?: 'A4' | 'THERMAL';
+  }): Promise<Buffer> {
+    // Fetch user config and logo
+    const userProfile = await this.fastify.prisma.userProfile.findUnique({
+      where: { user_id: params.userId },
+      select: { manifest_format: true, logo_url: true },
+    });
+    if (!userProfile) throw new Error('User profile not found');
+    const format = params.format || userProfile.manifest_format || 'THERMAL';
+    const companyLogoUrl = userProfile.logo_url || '';
+
+    // Fetch shipments with all required relations
+    const shipments = await this.fastify.prisma.shipment.findMany({
+      where: {
+        user_id: params.userId,
+        ...(params.shipmentIds ? { id: { in: params.shipmentIds } } : {}),
+        awb: { not: null },
+      },
+      include: {
+        order: {
+          include: {
+            customer: { include: { address: true } },
+            hub: { include: { rto_address: true } },
+            seller_details: { include: { address: true } },
+            items: true,
+            package: true,
+          },
+        },
+        courier: { include: { channel_config: true } },
+      },
+    });
+    if (!shipments.length) throw new Error('No shipments found');
+
+    // Map to utility input type
+    const mapped = shipments.map((s) => ({
+      awb: s.awb!,
+      order_reference_id: s.order?.order_reference_id || s.order?.order_number || s.order?.code || '',
+      productName: s.order?.items?.[0]?.name || '',
+      barcodeUrl: '', // Will be generated in utility
+      companyLogoUrl,
+    }));
+
+    // Import PDF utility dynamically
+    const { generateBulkManifests } = await import('../utils/label-manifest-generator');
+    return generateBulkManifests({ orders: mapped, format });
+  }
+
+  /**
+   * Get user label/manifest config
+   */
+  async getLabelManifestConfig(userId: string): Promise<{ label_format: 'A4' | 'THERMAL'; manifest_format: 'A4' | 'THERMAL' } | null> {
+    const userProfile = await this.fastify.prisma.userProfile.findUnique({
+      where: { user_id: userId },
+      select: { label_format: true, manifest_format: true },
+    });
+    if (!userProfile) return null;
+    return { label_format: userProfile.label_format, manifest_format: userProfile.manifest_format };
+  }
+
+  /**
+   * Set user label/manifest config
+   */
+  async setLabelManifestConfig(userId: string, config: { label_format?: 'A4' | 'THERMAL'; manifest_format?: 'A4' | 'THERMAL' }): Promise<{ label_format: 'A4' | 'THERMAL'; manifest_format: 'A4' | 'THERMAL' }> {
+    const updated = await this.fastify.prisma.userProfile.update({
+      where: { user_id: userId },
+      data: {
+        ...(config.label_format ? { label_format: config.label_format } : {}),
+        ...(config.manifest_format ? { manifest_format: config.manifest_format } : {}),
+      },
+      select: { label_format: true, manifest_format: true },
+    });
+    return { label_format: updated.label_format, manifest_format: updated.manifest_format };
+  }
 }

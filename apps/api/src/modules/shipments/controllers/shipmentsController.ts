@@ -679,4 +679,73 @@ export class ShipmentController {
       });
     }
   }
+
+  /**
+   * Bulk label generator endpoint (A4/Thermal, uses user config by default)
+   */
+  async generateBulkLabels(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const userId = request.userPayload?.id;
+      if (!userId) return reply.code(401).send({ error: 'Unauthorized' });
+      const { shipmentIds, format } = request.body as { shipmentIds?: string[]; format?: 'A4' | 'THERMAL' };
+      const pdfBuffer = await this.shipmentService.generateBulkLabels({ userId, shipmentIds, format });
+      reply.header('Content-Type', 'application/pdf');
+      reply.header('Content-Disposition', 'attachment; filename="labels.pdf"');
+      return reply.send(pdfBuffer);
+    } catch (error: any) {
+      request.log.error('Error generating bulk labels:', error);
+      return reply.code(500).send({ error: error.message || 'Failed to generate labels' });
+    }
+  }
+
+  /**
+   * Bulk manifest generator endpoint (A4/Thermal, uses user config by default)
+   */
+  async generateBulkManifests(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const userId = request.userPayload?.id;
+      if (!userId) return reply.code(401).send({ error: 'Unauthorized' });
+      const { shipmentIds, format } = request.body as { shipmentIds?: string[]; format?: 'A4' | 'THERMAL' };
+      const pdfBuffer = await this.shipmentService.generateBulkManifests({ userId, shipmentIds, format });
+      reply.header('Content-Type', 'application/pdf');
+      reply.header('Content-Disposition', 'attachment; filename="manifests.pdf"');
+      return reply.send(pdfBuffer);
+    } catch (error: any) {
+      request.log.error('Error generating bulk manifests:', error);
+      return reply.code(500).send({ error: error.message || 'Failed to generate manifests' });
+    }
+  }
+
+  /**
+   * Get user label/manifest config
+   */
+  async getLabelManifestConfig(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const userId = request.userPayload?.id;
+      if (!userId) return reply.code(401).send({ error: 'Unauthorized' });
+      const config = await this.shipmentService.getLabelManifestConfig(userId);
+      if (!config) return reply.code(404).send({ error: 'User profile not found' });
+      return reply.send(config);
+    } catch (error: any) {
+      request.log.error('Error fetching label/manifest config:', error);
+      return reply.code(500).send({ error: error.message || 'Failed to fetch config' });
+    }
+  }
+
+  /**
+   * Set user label/manifest config
+   */
+  async setLabelManifestConfig(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const userId = request.userPayload?.id;
+      if (!userId) return reply.code(401).send({ error: 'Unauthorized' });
+      const { label_format, manifest_format } = request.body as { label_format?: 'A4' | 'THERMAL'; manifest_format?: 'A4' | 'THERMAL' };
+      if (!label_format && !manifest_format) return reply.code(400).send({ error: 'No config provided' });
+      const updated = await this.shipmentService.setLabelManifestConfig(userId, { label_format, manifest_format });
+      return reply.send(updated);
+    } catch (error: any) {
+      request.log.error('Error updating label/manifest config:', error);
+      return reply.code(500).send({ error: error.message || 'Failed to update config' });
+    }
+  }
 }
