@@ -18,7 +18,7 @@ export class ProductController {
 
   async getAllProducts(request: FastifyRequest, reply: FastifyReply) {
     try {
-      const userId = request.userPayload?.id;
+      const userId = request.userPayload!.id;
       const isAdmin = request.userPayload?.role === 'ADMIN';
 
       const {
