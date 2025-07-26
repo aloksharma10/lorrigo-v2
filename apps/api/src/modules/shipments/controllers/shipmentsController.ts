@@ -687,8 +687,8 @@ export class ShipmentController {
     try {
       const userId = request.userPayload?.id;
       if (!userId) return reply.code(401).send({ error: 'Unauthorized' });
-      const { shipmentIds, format } = request.body as { shipmentIds?: string[]; format?: 'A4' | 'THERMAL' };
-      const pdfBuffer = await this.shipmentService.generateBulkLabels({ userId, shipmentIds, format });
+      const { awbs, format } = request.body as { awbs: string[]; format?: 'A4' | 'THERMAL' };
+      const pdfBuffer = await this.shipmentService.generateBulkLabels({ userId, awbs, format });
       reply.header('Content-Type', 'application/pdf');
       reply.header('Content-Disposition', 'attachment; filename="labels.pdf"');
       return reply.send(pdfBuffer);
@@ -705,8 +705,8 @@ export class ShipmentController {
     try {
       const userId = request.userPayload?.id;
       if (!userId) return reply.code(401).send({ error: 'Unauthorized' });
-      const { shipmentIds, format } = request.body as { shipmentIds?: string[]; format?: 'A4' | 'THERMAL' };
-      const pdfBuffer = await this.shipmentService.generateBulkManifests({ userId, shipmentIds, format });
+      const { awbs, format } = request.body as { awbs: string[]; format?: 'A4' | 'THERMAL' };
+      const pdfBuffer = await this.shipmentService.generateBulkManifests({ userId, awbs, format });
       reply.header('Content-Type', 'application/pdf');
       reply.header('Content-Disposition', 'attachment; filename="manifests.pdf"');
       return reply.send(pdfBuffer);

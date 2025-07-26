@@ -410,9 +410,10 @@ export function useBillingOperations({
   const queryClient = useQueryClient();
 
   // Debounce the search param for disputes to avoid excessive API calls during typing
+  const debouncedSearch = useDebounce(disputes.search || '', 300);
   const debouncedDisputes = {
     ...disputes,
-    search: disputes.search ? useDebounce(disputes.search, 300) : undefined,
+    search: disputes.search ? debouncedSearch : undefined,
   };
 
   // Fetch billing cycles

@@ -2305,7 +2305,7 @@ export class ShipmentService {
    */
   async generateBulkLabels(params: {
     userId: string;
-    shipmentIds?: string[];
+    awbs?: string[];
     format?: 'A4' | 'THERMAL';
   }): Promise<Buffer> {
     // Fetch user config and logo
@@ -2321,8 +2321,9 @@ export class ShipmentService {
     const shipments = await this.fastify.prisma.shipment.findMany({
       where: {
         user_id: params.userId,
-        ...(params.shipmentIds ? { id: { in: params.shipmentIds } } : {}),
-        awb: { not: null },
+        // ...(params.awbs ? { awb: { in: params.awbs } } : {}),
+        awb: { in: params.awbs },
+        // awb: { not: null },
       },
       include: {
         order: {
@@ -2379,7 +2380,7 @@ export class ShipmentService {
    */
   async generateBulkManifests(params: {
     userId: string;
-    shipmentIds?: string[];
+    awbs?: string[];
     format?: 'A4' | 'THERMAL';
   }): Promise<Buffer> {
     // Fetch user config and logo
@@ -2395,8 +2396,7 @@ export class ShipmentService {
     const shipments = await this.fastify.prisma.shipment.findMany({
       where: {
         user_id: params.userId,
-        ...(params.shipmentIds ? { id: { in: params.shipmentIds } } : {}),
-        awb: { not: null },
+        awb: { in: params.awbs },
       },
       include: {
         order: {
@@ -2424,6 +2424,7 @@ export class ShipmentService {
 
     // Import PDF utility dynamically
     const { generateBulkManifests } = await import('../utils/label-manifest-generator');
+    // @ts-ignore
     return generateBulkManifests({ orders: mapped, format });
   }
 

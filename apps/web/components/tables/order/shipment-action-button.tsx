@@ -17,6 +17,7 @@ import { Shipment } from '@/lib/type/response-types';
 import { useDrawer } from '@/components/providers/drawer-provider';
 import { useModalStore } from '@/modal/modal-store';
 import { ShipmentBucket, ShipmentBucketManager } from '@lorrigo/utils';
+import { useShippingOperations } from '@/lib/apis/shipment';
 
 // Main ShipmentActionButton Component
 interface ShipmentActionButtonProps {
@@ -316,15 +317,33 @@ export const ShipmentEditButton: React.FC<{ shipment: Shipment }> = ({ shipment 
 };
 
 export const DownloadLabelButton: React.FC<{ shipment: Shipment }> = ({ shipment }) => {
-  const handleDownloadLabel = (thermal: boolean = false) => {
-    console.log(`Download ${thermal ? 'thermal ' : ''}label for shipment:`, shipment.id);
-    toast.success(`${thermal ? 'Thermal ' : ''}Label download initiated`);
+  const { downloadLabels } = useShippingOperations();
+
+  const handleDownloadLabel = async (thermal: boolean = false) => {
+    try {
+      const pdfBlob = await downloadLabels.mutateAsync({
+        awbs: [shipment.awb],
+        format: thermal ? 'THERMAL' : 'A4',
+      });
+      const url = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', thermal ? 'label-thermal.pdf' : 'label.pdf');
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      toast.success(`${thermal ? 'Thermal ' : ''}Label downloaded`);
+    } catch (error) {
+      toast.error('Failed to download label');
+    }
   };
 
   return (
     <>
-      <DropdownMenuItem onClick={() => handleDownloadLabel(false)}>Download Label</DropdownMenuItem>
-      <DropdownMenuItem onClick={() => handleDownloadLabel(true)}>
+      <DropdownMenuItem onClick={() => handleDownloadLabel(false)} disabled={downloadLabels.isPending}>
+        Download Label
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => handleDownloadLabel(true)} disabled={downloadLabels.isPending}>
         Download Thermal Label
       </DropdownMenuItem>
     </>

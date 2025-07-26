@@ -49,8 +49,9 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
   );
   const { isTokenReady } = useAuthToken();
   const { openBulkOperation } = useBulkOperations();
-  const { downloadBulkLabels } = useShippingOperations();
+  const { downloadLabels, downloadManifests } = useShippingOperations();
   const csvUploadContext = useCSVUpload();
+  const [isBulkDownloading, setIsBulkDownloading] = React.useState(false);
 
   if (!csvUploadContext) {
     throw new Error('ShipmentsTable must be used within a CSVUploadProvider');
@@ -387,30 +388,101 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
       isLoading: false,
     },
     {
-      label: 'Download Manifest',
-      action: (selectedRows: Shipment[]) => {
-        console.log('Download Manifest for:', selectedRows);
-        toast.success(`Preparing manifest for ${selectedRows.length} orders`);
-      },
-      isLoading: false,
-    },
-    {
-      label: 'Generate Labels',
+      label: 'Download Labels (A4)',
       action: async (selectedRows: Shipment[]) => {
+        setIsBulkDownloading(true);
         try {
-          const shipmentIds = selectedRows.map((row) => row.id);
-          const result = await downloadBulkLabels.mutateAsync({ shipment_ids: shipmentIds });
-
-          if (result.operation?.id) {
-            // Show the bulk operation status modal
-            showBulkOperationStatus(result.operation.id, false);
-          }
+          const pdfBlob = await downloadLabels.mutateAsync({
+            awbs: selectedRows.map((row) => row.awb),
+            format: 'A4',
+          });
+          const url = window.URL.createObjectURL(pdfBlob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.setAttribute('download', 'labels.pdf');
+          document.body.appendChild(link);
+          link.click();
+          link.parentNode?.removeChild(link);
         } catch (error) {
-          console.error('Error generating labels:', error);
-          toast.error('Failed to start label generation');
+          toast.error('Failed to download labels');
+        } finally {
+          setIsBulkDownloading(false);
         }
       },
-      isLoading: false,
+      isLoading: isBulkDownloading,
+    },
+    {
+      label: 'Download Labels (Thermal)',
+      action: async (selectedRows: Shipment[]) => {
+        setIsBulkDownloading(true);
+        try {
+          const pdfBlob = await downloadLabels.mutateAsync({
+            awbs: selectedRows.map((row) => row.awb),
+            format: 'THERMAL',
+          });
+          const url = window.URL.createObjectURL(pdfBlob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.setAttribute('download', 'labels-thermal.pdf');
+          document.body.appendChild(link);
+          link.click();
+          link.parentNode?.removeChild(link);
+        } catch (error) {
+          toast.error('Failed to download thermal labels');
+        } finally {
+          setIsBulkDownloading(false);
+        }
+      },
+      isLoading: isBulkDownloading,
+    },
+    {
+      label: 'Download Manifest (A4)',
+      action: async (selectedRows: Shipment[]) => {
+        setIsBulkDownloading(true);
+        try {
+          const pdfBlob = await downloadManifests.mutateAsync({
+            awbs: selectedRows.map((row) => row.awb),
+            format: 'A4',
+          });
+          const url = window.URL.createObjectURL(pdfBlob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.setAttribute('download', 'manifest.pdf');
+          document.body.appendChild(link);
+          link.click();
+          link.parentNode?.removeChild(link);
+        } catch (error) {
+          toast.error('Failed to download manifest');
+        } finally {
+          setIsBulkDownloading(false);
+        }
+      },
+      isLoading: isBulkDownloading,
+    },
+    {
+      label: 'Download Manifest (Thermal)',
+      action: async (selectedRows: Shipment[]) => {
+        setIsBulkDownloading(true);
+        try {
+          const pdfBlob = await downloadManifests.mutateAsync({
+            awbs: selectedRows.map((row) => row.awb),
+            format: 'THERMAL',
+          });
+          const url = window.URL.createObjectURL(pdfBlob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.setAttribute('download', 'manifest-thermal.pdf');
+          document.body.appendChild(link);
+          link.click();
+          link.parentNode?.removeChild(link);
+        } catch (error) {
+          console.log(error, 'error')
+          toast.error('Failed to download thermal manifest');
+        } finally {
+          setIsBulkDownloading(false);
+        }
+      },
+      isLoading: isBulkDownloading,
     },
   ];
 

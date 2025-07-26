@@ -141,7 +141,7 @@ export class BillingController {
 
   async getDisputes(request: FastifyRequest, reply: FastifyReply) {
     try {
-      const { page = 1, limit = 10, status } = request.query as any;
+      const { page = 1, limit = 10, status, awb } = request.query as any;
       const currentUserId = request.userPayload?.id;
       const isAdmin = request.userPayload?.role === 'ADMIN';
 
@@ -151,6 +151,14 @@ export class BillingController {
       }
       if (status) {
         where.status = status;
+      }
+
+      if (awb) {
+        where.order = {
+          shipment: {
+            awb: awb
+          }
+        }
       }
 
       const skip = (page - 1) * limit;

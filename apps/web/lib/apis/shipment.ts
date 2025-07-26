@@ -376,6 +376,22 @@ export const useShippingOperations = () => {
     },
   });
 
+  // Download bulk labels
+  const downloadLabels = useMutation({
+    mutationFn: async (data: { awbs: string[]; format: 'A4' | 'THERMAL' }) => {
+      const response = await apiDownload.post<any>('/shipments/labels/bulk', data, { responseType: 'blob' });
+      return response.data ;
+    },
+  });
+
+  // Download bulk manifests
+  const downloadManifests = useMutation({
+    mutationFn: async (data: { awbs: string[]; format: 'A4' | 'THERMAL' }) => {
+      const response = await apiDownload.post<any>('/shipments/manifests/bulk', data, { responseType: 'blob' });
+      return response.data;
+    },
+  });
+
   return {
     getShippingRates,
     shipOrder,
@@ -389,47 +405,49 @@ export const useShippingOperations = () => {
     cancelBulkShipments,
     downloadBulkLabels,
     editBulkPickupAddresses,
-    getServiceableCouriers, // <-- add here
+    getServiceableCouriers,
+    downloadLabels,
+    downloadManifests,
   };
 };
 
 // Download bulk labels (PDF)
-export async function downloadBulkLabels({
-  shipmentIds,
-  format,
-}: {
-  shipmentIds: string[];
-  format?: 'A4' | 'THERMAL';
-}): Promise<Blob> {
-  const response: AxiosResponse<Blob> = await api.post(
-    '/shipments/labels/bulk',
-    { shipmentIds, format },
-    { responseType: 'blob' }
-  );
-  return response.data;
-}
+// export async function downloadBulkLabels({
+//   shipmentIds,
+//   format,
+// }: {
+//   shipmentIds: string[];
+//   format?: 'A4' | 'THERMAL';
+// }): Promise<Blob> {
+//   const response: AxiosResponse<Blob> = await api.post(
+//     '/shipments/labels/bulk',
+//     { shipmentIds, format },
+//     { responseType: 'blob' }
+//   );
+//   return response.data;
+// }
 
-// Download bulk manifests (PDF)
-export async function downloadBulkManifests({
-  shipmentIds,
-  format,
-}: {
-  shipmentIds: string[];
-  format?: 'A4' | 'THERMAL';
-}): Promise<Blob> {
-  const response: AxiosResponse<Blob> = await api.post(
-    '/shipments/manifests/bulk',
-    { shipmentIds, format },
-    { responseType: 'blob' }
-  );
-  return response.data;
-}
+// // Download bulk manifests (PDF)
+// export async function downloadBulkManifests({
+//   shipmentIds,
+//   format,
+// }: {
+//   shipmentIds: string[];
+//   format?: 'A4' | 'THERMAL';
+// }): Promise<Blob> {
+//   const response: AxiosResponse<Blob> = await api.post(
+//     '/shipments/manifests/bulk',
+//     { shipmentIds, format },
+//     { responseType: 'blob' }
+//   );
+//   return response.data;
+// }
 
-// Get user label/manifest config
-export async function getLabelManifestConfig(): Promise<any> {
-  const response: AxiosResponse<any> = await api.get('/shipments/user/label-config');
-  return response.data;
-}
+// // Get user label/manifest config
+// export async function getLabelManifestConfig(): Promise<any> {
+//   const response: AxiosResponse<any> = await api.get('/shipments/user/label-config');
+//   return response.data;
+// }
 
 // Set user label/manifest config
 export async function setLabelManifestConfig(config: {

@@ -34,6 +34,7 @@ export const fileDownloadRequest = async <T>(
 
 export const apiDownload = {
   get: <T>(url: string, config?: any) => fileDownloadRequest<T>('GET', url, undefined, config),
+  post: <T>(url: string, data?: any, config?: any) => fileDownloadRequest<T>('POST', url, data, config),
 };
 
 // Specific API methods

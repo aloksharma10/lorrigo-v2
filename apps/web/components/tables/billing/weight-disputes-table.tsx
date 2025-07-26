@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { DataTable, DataTableColumnHeader, type ColumnDef, Badge, Button, Alert, AlertDescription } from '@lorrigo/ui/components';
-import { useDebounce } from '@/lib/hooks/use-debounce';
 import { useBillingOperations, type WeightDispute } from '@/lib/apis/billing';
 import { CopyBtn } from '@/components/copy-btn';
 import { useDrawerStore } from '@/drawer/drawer-store';
@@ -24,7 +23,6 @@ export function WeightDisputesTable({ className, userRole = 'ADMIN', userId, sta
   const openDrawer = useDrawerStore((state) => state.openDrawer);
   const openModal = useModalStore((state) => state.openModal);
   const [globalFilter, setGlobalFilter] = useState('');
-  const debouncedGlobalFilter = useDebounce(globalFilter, 500);
 
   // Use the new disputes hook with all params
   const { disputesQuery, actOnDispute, exportDisputes } = useBillingOperations({
@@ -32,7 +30,7 @@ export function WeightDisputesTable({ className, userRole = 'ADMIN', userId, sta
       page: pagination.pageIndex + 1, // API uses 1-based pagination
       pageSize: pagination.pageSize,
       status: status, // Use the status prop directly
-      search: debouncedGlobalFilter || undefined,
+      search: globalFilter || undefined,
       userId: userId,
     },
   });
