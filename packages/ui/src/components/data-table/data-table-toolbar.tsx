@@ -7,7 +7,7 @@ import { Input } from '../input';
 // import { DataTableViewOptions } from "./data-table-view-options"
 import { DataTableFacetedFilter } from './data-table-faceted-filter';
 import { DataTableDateRangePicker } from './data-table-date-range-picker';
-import { Download, Filter, Search, X, Loader2, Upload } from 'lucide-react';
+import { Download, Filter, X, Loader2, Upload } from 'lucide-react';
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>;
@@ -81,25 +81,15 @@ export function DataTableToolbar<TData>({
     <div className="flex flex-col gap-4">
       <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex-1 items-center space-y-2 lg:flex lg:space-x-2 lg:space-y-0">
-          <div className="relative w-full flex-1 sm:max-w-xl">
-            <Search className="text-muted-foreground absolute left-2.5 top-2.5 h-4 w-4" />
+          <div className="relative max-w-lg flex-1">
             <Input
               placeholder={searchPlaceholder}
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
-              className="placeholder:text-muted-foreground w-full pl-8 placeholder:text-xs sm:max-w-xl"
+              isLoading={isLoading}
               disabled={isLoading}
+              type="search"
             />
-            {searchValue && (
-              <Button
-                variant="ghost"
-                onClick={() => setSearchValue('')}
-                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                disabled={isLoading}
-              >
-                <X className="text-muted-foreground h-4 w-4" />
-              </Button>
-            )}
           </div>
 
           <div className="flex items-center gap-2">

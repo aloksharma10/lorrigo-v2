@@ -20,7 +20,13 @@ export default async function SellerLayout({ children }: { children: React.React
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col px-4 md:p-8">{children}</div>
+        {/* <div className="flex flex-1 flex-col"> */}
+          <div className="@container/main flex flex-1 flex-col gap-2">
+            <div className="flex flex-col gap-4 px-4 md:p-8">
+             {children}
+            </div>
+          </div>
+        {/* </div> */}
       </SidebarInset>
     </SidebarProvider>
   );

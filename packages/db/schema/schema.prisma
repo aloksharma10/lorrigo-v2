@@ -147,6 +147,13 @@ enum LabelFormat {
   THERMAL
 }
 
+
+enum WalletType {
+  WALLET
+  REMITTANCE_WALLET
+  POSTPAID
+}
+
 model User {
   id          String  @id @default(cuid())
   code        String  @unique // Format: US-YYMM-XXXXX
@@ -194,6 +201,8 @@ model UserProfile {
   id      String @id @default(cuid())
   user_id String @unique
   user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  wallet_type WalletType @default(WALLET)
 
   // KYC Details
   business_type String? @db.VarChar(50)
@@ -619,6 +628,8 @@ model ShipmentTransaction {
   created_at              DateTime          @default(now())
   updated_at              DateTime          @updatedAt
 
+  wallet_type WalletType @default(WALLET)
+
   wallet_id String
   wallet    UserWallet @relation(fields: [wallet_id], references: [id], onDelete: Cascade)
 
@@ -656,6 +667,8 @@ model InvoiceTransaction {
   created_at              DateTime          @default(now())
   updated_at              DateTime          @updatedAt
 
+  wallet_type WalletType @default(WALLET)
+
   wallet_id String
   wallet    UserWallet @relation(fields: [wallet_id], references: [id], onDelete: Cascade)
 
@@ -687,6 +700,8 @@ model WalletRechargeTransaction {
   currency                String            @default("INR") @db.VarChar(3)
   created_at              DateTime          @default(now())
   updated_at              DateTime          @updatedAt
+
+  wallet_type WalletType @default(WALLET)
 
   wallet_id String
   wallet    UserWallet @relation(fields: [wallet_id], references: [id], onDelete: Cascade)

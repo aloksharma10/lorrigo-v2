@@ -1,3 +1,2 @@
-brew install pkg-config cairo pango libpng jpeg giflib librsvg
-
+pnpm install puppeteer --filter api
 npx puppeteer browsers install chrome

@@ -33,8 +33,9 @@ interface RechargeWalletModalProps {
 const formSchema = z.object({
   amount: z
     .number()
-    .min(100, 'Minimum recharge amount is ₹100')
-    .max(100000, 'Maximum recharge amount is ₹100,000'),
+    .min(500, 'Minimum recharge amount is ₹500')
+    .max(100000, 'Maximum recharge amount is ₹100,000')
+    .refine((val) => val % 100 === 0, 'Amount must be a multiple of 100'),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -324,7 +325,7 @@ export function RechargeWalletModal({ onClose, onSuccess }: RechargeWalletModalP
   };
 
   return (
-    <Card className="mx-auto flex w-full flex-col">
+    <Card className="flex w-full flex-col">
       <CardHeader className="flex-shrink-0 border-b">
         <div className="flex items-center justify-between">
           <div>
@@ -349,7 +350,7 @@ export function RechargeWalletModal({ onClose, onSuccess }: RechargeWalletModalP
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 overflow-y-auto pt-6">
+      <CardContent className="flex-1 overflow-y-auto">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)}>
             <FormField

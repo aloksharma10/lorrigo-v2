@@ -273,7 +273,7 @@ export function DataTable<TData, TValue>({
 
   return (
     <Card>
-      <CardContent className="space-y-4 p-1">
+      <CardContent className="space-y-4">
         {showToolbar && (
           <DataTableToolbar
             table={table}
@@ -299,8 +299,8 @@ export function DataTable<TData, TValue>({
           <DataTableSelectedActions table={table} bulkActions={bulkActions} />
         )}
 
-        <Card className="rounded-sm border-0 p-0">
-          <CardContent className="rounded-sm border-0 p-1 w-full overflow-x-auto">
+        <Card className="rounded-lg border-none">
+          <CardContent className="rounded-sm border-none p-0 w-full overflow-x-auto">
             <Table className={className}>
               <TableHeader className="border-b">
                 {table.getHeaderGroups().map((headerGroup) => (

@@ -56,7 +56,6 @@ export const ShipmentActionButton: React.FC<ShipmentActionButtonProps> = ({ ship
     return (
       <div className="flex items-center gap-2">
         <Button
-          className="w-fit bg-indigo-600 hover:bg-indigo-700"
           size="sm"
           onClick={() => {
             toast.success('Redirecting to ship now page...');

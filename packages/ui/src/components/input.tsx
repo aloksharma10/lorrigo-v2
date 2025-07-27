@@ -1,15 +1,20 @@
-import * as React from 'react';
+import type * as React from "react"
+import { cn } from "@lorrigo/ui/lib/utils"
+import { Search } from "lucide-react"
 
-import { cn } from '@lorrigo/ui/lib/utils';
+interface InputProps extends Omit<React.ComponentProps<"input">, "size"> {
+  isLoading?: boolean
+  size?: "sm" | "md" | "lg"
+}
 
-function Input({
-  className,
-  isLoading,
-  type,
-  ...props
-}: React.ComponentProps<'input'> & { isLoading?: boolean }) {
+function Input({ className, isLoading, type, size = "md", ...props }: InputProps) {
   return (
     <div className="relative w-full">
+       {type === "search" && (
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+          <Search className="h-4 w-4 text-muted-foreground" />
+        </div>
+      )}
       <input
         type={type}
         data-slot="input"
@@ -18,6 +23,10 @@ function Input({
           'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]',
           'aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive',
           isLoading && 'pr-10', // Add padding for spinner
+          type === "search" && "pl-9",
+          size === "sm" && "h-8 text-sm",
+          size === "md" && "h-9 text-sm",
+          size === "lg" && "h-10 text-sm",
           className
         )}
         disabled={isLoading || props.disabled}

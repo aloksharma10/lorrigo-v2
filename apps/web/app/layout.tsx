@@ -22,7 +22,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`${fontSans.variable} ${fontMono.variable} bg-background theme-scaled theme-blue-scaled overflow-x-hidden overscroll-none font-sans antialiased transition-all duration-300`}
+        className={`${fontSans.variable} ${fontMono.variable} bg-background theme-scaled overflow-x-hidden overscroll-none font-sans antialiased transition-all duration-300`}
       >
         <Providers>{children}</Providers>
       </body>
