@@ -20,6 +20,7 @@ import { NavSecondary } from './nav-secondary';
 import { NavUser } from './nav-user';
 import { SELLER_ROUTES } from '@/lib/routes/seller';
 import { ADMIN_ROUTES } from '@/lib/routes/admin';
+import { useSession } from 'next-auth/react';
 
 const data = {
   user: {
@@ -49,6 +50,9 @@ const data = {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const session = useSession();
+  const user = session.data?.user;
+  const isAdmin = user?.role === 'ADMIN';
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -66,7 +70,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <ScrollArea className="h-[calc(100vh-8rem)]">
           <NavMain items={data.seller} group="seller" />
-          <NavMain items={data.admin} group="admin" />
+          {isAdmin && <NavMain items={data.admin} group="admin" />}
           <NavSecondary items={data.navSecondary} className="mt-auto" />
         </ScrollArea>
       </SidebarContent>
