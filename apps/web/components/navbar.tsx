@@ -32,7 +32,7 @@ export function Navbar() {
           {isAuthenticated && (
             <>
               <Link
-                href={role === 'admin' ? '/admin/dashboard' : '/seller/dashboard'}
+                href={role === 'ADMIN' ? '/admin/dashboard' : '/seller/dashboard'}
                 className={`text-sm font-medium ${
                   pathname === '/dashboard'
                     ? 'text-blue-600 dark:text-blue-500'

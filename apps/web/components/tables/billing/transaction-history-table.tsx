@@ -222,7 +222,7 @@ export function TransactionHistoryTable({
   }
 
   return (
-    <div className={className}>
+    <>
       <DataTable
         showToolbar={false}
         columns={columns}
@@ -253,6 +253,6 @@ export function TransactionHistoryTable({
         manualSorting={false}
         manualFiltering={false}
       />
-    </div>
+    </>
   );
 } 

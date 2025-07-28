@@ -1,105 +1,141 @@
-'use client';
+"use client"
 
-import { useRef, useState, useEffect, ForwardRefExoticComponent, RefAttributes } from 'react';
-import { ChevronLeft, ChevronRight, LucideProps } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger, Button } from '@lorrigo/ui/components';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRef, useState, useEffect, type ForwardRefExoticComponent, type RefAttributes, useMemo } from "react"
+import { ChevronLeft, ChevronRight, type LucideProps } from "lucide-react"
+import { Tabs, TabsList, TabsTrigger, Button } from "@lorrigo/ui/components"
+import { useRouter, usePathname } from "next/navigation"
+import {
+  Bell,
+  Menu,
+  Home,
+  Palette,
+  MessageSquare,
+  Globe,
+  Grid3X3,
+  Check,
+  Video,
+  LinkIcon,
+  Lock,
+  Settings,
+  BadgeIndianRupee,
+} from "lucide-react"
+
+// Icon mapping to convert string names to components
+const iconMap = {
+  Home,
+  BadgeIndianRupee,
+  Bell,
+  Menu,
+  Palette,
+  MessageSquare,
+  Globe,
+  Grid3X3,
+  Check,
+  Video,
+  Link: LinkIcon,
+  Lock,
+  Settings,
+} as const
 
 interface ClientTabsProps {
   menuItems: {
-    name: string;
-    path?: string;
-    icon?: ForwardRefExoticComponent<Omit<LucideProps, 'ref'> & RefAttributes<SVGSVGElement>>;
-  }[];
-  onValueChange?: (value: string) => void;
+    name: string
+    path?: string
+    iconName?: string // Changed from icon to iconName
+    icon?: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>
+  }[]
+  onValueChange?: (value: string) => void
 }
 
 export default function ClientTabs({ menuItems, onValueChange }: ClientTabsProps) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const tabsListRef = useRef<HTMLDivElement>(null);
-  const [showLeftArrow, setShowLeftArrow] = useState(false);
-  const [showRightArrow, setShowRightArrow] = useState(false);
+  const router = useRouter()
+  const pathname = usePathname()
+  const tabsListRef = useRef<HTMLDivElement>(null)
+  const [showLeftArrow, setShowLeftArrow] = useState(false)
+  const [showRightArrow, setShowRightArrow] = useState(false)
 
-  // Find the current path in menuItems, fallback to first item if not found
+  // Memoized mapping of iconName to icon component
+  const processedMenuItems = useMemo(
+    () =>
+      menuItems.map((item) => ({
+        ...item,
+        icon: item.iconName ? iconMap[item.iconName as keyof typeof iconMap] : item.icon,
+      })),
+    [menuItems]
+  )
+
+  // Active tab value
   const currentPath =
-    menuItems.find((item) => item.path === pathname)?.path || menuItems[0]?.path || '';
+    processedMenuItems.find((item) => item.path === pathname)?.path ||
+    processedMenuItems[0]?.path ||
+    ''
 
+  // Route/tab change
   const handleValueChange = (value: string) => {
     if (value.includes('/')) {
-      router.push(value, { scroll: false });
+      router.push(value, { scroll: false })
     } else {
-      onValueChange?.(value);
+      onValueChange?.(value)
     }
-  };
+  }
 
   const checkScroll = () => {
-    if (!tabsListRef.current) return;
-
-    const { scrollLeft, scrollWidth, clientWidth } = tabsListRef.current;
-    setShowLeftArrow(scrollLeft > 0);
-    setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 1); // -1 for rounding errors
-  };
+    if (!tabsListRef.current) return
+    const { scrollLeft, scrollWidth, clientWidth } = tabsListRef.current
+    setShowLeftArrow(scrollLeft > 0)
+    setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 1)
+  }
 
   const scroll = (direction: 'left' | 'right') => {
-    if (!tabsListRef.current) return;
-
-    const scrollAmount = 200; // Adjust scroll amount as needed
+    if (!tabsListRef.current) return
+    const scrollAmount = 200
     const newScrollLeft =
       direction === 'left'
         ? tabsListRef.current.scrollLeft - scrollAmount
-        : tabsListRef.current.scrollLeft + scrollAmount;
+        : tabsListRef.current.scrollLeft + scrollAmount
 
     tabsListRef.current.scrollTo({
       left: newScrollLeft,
       behavior: 'smooth',
-    });
-  };
+    })
+  }
 
-  // Check scroll on mount and when window resizes
   useEffect(() => {
-    checkScroll();
-    window.addEventListener('resize', checkScroll);
-    return () => window.removeEventListener('resize', checkScroll);
-  }, []);
+    checkScroll()
+    window.addEventListener('resize', checkScroll)
+    return () => window.removeEventListener('resize', checkScroll)
+  }, [])
 
-  // Check scroll when tabs list is scrolled
   useEffect(() => {
-    const tabsList = tabsListRef.current;
+    const tabsList = tabsListRef.current
     if (tabsList) {
-      tabsList.addEventListener('scroll', checkScroll);
-      return () => tabsList.removeEventListener('scroll', checkScroll);
+      tabsList.addEventListener('scroll', checkScroll)
+      return () => tabsList.removeEventListener('scroll', checkScroll)
     }
-  }, []);
+  }, [])
 
-  // Scroll active tab into view on mount and ensure first tab is visible on mobile
   useEffect(() => {
     if (tabsListRef.current) {
-      // First ensure the scroll position is at the beginning
-      tabsListRef.current.scrollLeft = 0;
-
-      // Then scroll the active tab into view if it's not the first one
-      const activeTab = tabsListRef.current.querySelector('[data-state="active"]');
-      if (activeTab && !pathname.includes(menuItems[0]?.path || '')) {
+      tabsListRef.current.scrollLeft = 0
+      const activeTab = tabsListRef.current.querySelector('[data-state="active"]')
+      if (activeTab && !pathname.includes(processedMenuItems[0]?.path || '')) {
         setTimeout(() => {
           activeTab.scrollIntoView({
             behavior: 'smooth',
             block: 'nearest',
             inline: 'center',
-          });
-        }, 100);
+          })
+        }, 100)
       }
-
-      // Check scroll after scrolling
-      setTimeout(checkScroll, 200);
+      setTimeout(checkScroll, 200)
     }
-  }, [currentPath, pathname, menuItems]);
+  }, [currentPath, pathname, processedMenuItems])
 
   return (
     <header className="dark:border-gray-800">
       <div className="flex items-center justify-between py-3">
         <div className="relative flex w-full items-center md:w-auto">
-          {/* Left scroll button for mobile */}
+          {/* Left scroll button */}
           {showLeftArrow && (
             <>
               <Button
@@ -110,25 +146,22 @@ export default function ClientTabs({ menuItems, onValueChange }: ClientTabsProps
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <div className="from-background pointer-events-none absolute left-0 top-0 z-10 h-full w-8 bg-gradient-to-r to-transparent" />
+              <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-8 bg-gradient-to-r from-background to-transparent" />
             </>
           )}
 
-          <div
-            ref={tabsListRef}
-            className="scrollbar-hide w-full overflow-x-auto md:w-auto"
-            onScroll={checkScroll}
-          >
-            <Tabs defaultValue={currentPath} onValueChange={handleValueChange} className="w-full">
-              <TabsList className="scrollbar-hide flex w-max min-w-full overflow-x-auto">
-                {menuItems.map((item, index) => (
+          {/* Scrollable tab list */}
+          <div ref={tabsListRef} className="scrollbar-hide w-full overflow-x-auto md:w-auto" onScroll={checkScroll}>
+            <Tabs value={currentPath} onValueChange={handleValueChange} className="w-full">
+              <TabsList className="scrollbar-hide inline-flex w-max whitespace-nowrap gap-1 px-1 overflow-x-auto">
+                {processedMenuItems.map((item, index) => (
                   <TabsTrigger
                     key={index}
                     value={item.path || ''}
                     onClick={() => handleValueChange(item.path?.toLowerCase() || '')}
-                    className={'whitespace-nowrap'}
+                    className="whitespace-nowrap"
                   >
-                    {item.icon && <item.icon className="h-4 w-4" />}
+                    {item.icon && <item.icon className="h-4 w-4 mr-1" />}
                     {item.name}
                   </TabsTrigger>
                 ))}
@@ -136,7 +169,7 @@ export default function ClientTabs({ menuItems, onValueChange }: ClientTabsProps
             </Tabs>
           </div>
 
-          {/* Right scroll button for mobile */}
+          {/* Right scroll button */}
           {showRightArrow && (
             <>
               <Button
@@ -147,11 +180,11 @@ export default function ClientTabs({ menuItems, onValueChange }: ClientTabsProps
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
-              <div className="from-background pointer-events-none absolute right-0 top-0 z-10 h-full w-8 bg-gradient-to-l to-transparent" />
+              <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-8 bg-gradient-to-l from-background to-transparent" />
             </>
           )}
         </div>
       </div>
     </header>
-  );
+  )
 }

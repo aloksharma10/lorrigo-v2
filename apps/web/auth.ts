@@ -1,3 +1,4 @@
+import { Role } from '@lorrigo/db';
 import NextAuth, { NextAuthResult } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 
@@ -9,7 +10,7 @@ declare module 'next-auth' {
       name?: string | null;
       email?: string | null;
       image?: string | null;
-      role?: "ADMIN" | "SELLER" | "STAFF";
+      role?: Role;
       token?: string;
     };
   }
@@ -74,7 +75,7 @@ export const result = NextAuth({
     session: ({ session, token }) => {
       if (token && session.user) {
         session.user.id = token.sub || '';
-        session.user.role = token.role as string;
+        session.user.role = token.role as Role;
         session.user.token = token.token as string;
       }
       return session;

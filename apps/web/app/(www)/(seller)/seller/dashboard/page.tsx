@@ -79,7 +79,7 @@ export default function SellerDashboardOverview() {
         </div>
       </div>
       {/* First row */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card className="border-none">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Today's Orders</CardTitle>

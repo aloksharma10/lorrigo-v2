@@ -12,10 +12,10 @@ import {
 import { cn } from '@lorrigo/ui/lib/utils';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LucideIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-export const Header = ({ menuItems }: { menuItems: { name: string; path: string }[] }) => {
+export const Header = ({ menuItems }: { menuItems: { name: string; path: string, icon?: LucideIcon }[] }) => {
   const pathname = usePathname();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftShadow, setShowLeftShadow] = useState(false);
@@ -100,6 +100,7 @@ export const Header = ({ menuItems }: { menuItems: { name: string; path: string 
                       )}
                       data-active={pathname === item.path}
                     >
+                      {item.icon && <item.icon className="h-4 w-4" />}
                       <span>{item.name}</span>
                     </Link>
                   </NavigationMenuItem>

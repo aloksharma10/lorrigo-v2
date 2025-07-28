@@ -130,7 +130,7 @@ export function AssignPlanModal({ planId, userId, onClose, onSuccess }: AssignPl
   const selectedUser = users.find((user: User) => user.id === form.watch('userId'));
 
   return (
-    <Card className="mx-auto flex w-full max-w-md flex-col">
+    <Card className="flex-col">
       <CardHeader className="flex-shrink-0 border-b">
         <div className="flex items-center justify-between">
           <div>
