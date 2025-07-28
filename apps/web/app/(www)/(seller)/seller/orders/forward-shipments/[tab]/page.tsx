@@ -53,25 +53,19 @@ export default function ShipmentsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-base font-bold capitalize lg:text-2xl">{tab || 'All'} Orders</h1>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="px-3 py-1">
-            Domestic
-          </Badge>
-        </div>
-      </div>
-
-      <ScrollableTabsProps menuItems={SHIPMENT_TAB_ROUTES} />
-
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Link href="/seller/orders/new" scroll={false}>
-            Add Order
-          </Link>
+          <Button size="sm" className="gap-2">
+            <Link href="/seller/orders/new" scroll={false}>
+              Add Order
+            </Link>
+          </Button>
           <Button variant="outline" size="sm" className="gap-2">
             <RefreshCw className="h-4 w-4" />
             <span>Sync Orders</span>
           </Button>
         </div>
       </div>
+
+      <ScrollableTabsProps menuItems={SHIPMENT_TAB_ROUTES} />
 
       <ShipmentsTable initialParams={parsedParams} />
     </div>
