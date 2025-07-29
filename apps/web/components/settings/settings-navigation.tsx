@@ -17,6 +17,7 @@ import {
   Lock,
   Settings,
   BadgeIndianRupee,
+  HandCoins,
 } from "lucide-react"
 import type { UserSettingsTab } from "@/lib/routes/user-settings"
 
@@ -35,6 +36,7 @@ const iconMap = {
   Link: LinkIcon,
   Lock,
   Settings,
+  HandCoins,
 } as const
 
 interface SettingsNavigationProps {

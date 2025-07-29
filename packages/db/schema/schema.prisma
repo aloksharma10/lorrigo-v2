@@ -212,12 +212,6 @@ model UserProfile {
   kyc_submitted Boolean @default(false)
   kyc_verified  Boolean @default(false)
 
-  // Bank Details
-  acc_holder_name String? @db.VarChar(100)
-  acc_number      String? @db.VarChar(20)
-  ifsc_number     String? @db.VarChar(11)
-  acc_type        String? @db.VarChar(20)
-
   // Seller Config
   is_d2c          Boolean @default(true)
   is_b2b          Boolean @default(true)

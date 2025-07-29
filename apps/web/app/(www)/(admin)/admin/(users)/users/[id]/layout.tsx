@@ -9,9 +9,9 @@ export default async function UserProfileLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: Promise<{ id: string }> | { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const { id: userId } = await Promise.resolve(params);
+  const { id: userId } = await params;
 
   return (
     <div className="flex flex-col w-full">
@@ -26,7 +26,7 @@ export default async function UserProfileLayout({
         </aside>
 
         {/* Main content area */}
-        <main className="w-full flex-1 p-4 md:p-6 lg:p-8">
+        <main className="w-full flex-1 pt-4 md:p-6 lg:p-8">
           {/* Mobile Navigation */}
           <div className="mb-6 lg:hidden">
             <ClientTabs menuItems={generateUserSettingsRoutes(userId)} />

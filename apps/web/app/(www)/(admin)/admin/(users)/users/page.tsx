@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@lorrigo/ui/components';
 import { Button, Input, Badge } from '@lorrigo/ui/components';
 import { DataTable, DataTableColumnHeader } from '@lorrigo/ui/components';

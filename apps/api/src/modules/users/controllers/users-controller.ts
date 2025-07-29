@@ -168,37 +168,158 @@ export class UsersController {
         pincode?: string;
       };
 
-      // Update user
-      // const updatedUser = await prisma.user.update({
-      //   where: { id },
-      //   data: {
-      //     name,
-      //     email,
-      //     profile: {
-      //       upsert: {
-      //         create: {
-      //           company_name,
-      //           city,
-      //           state,
-      //           pincode,
-      //         },
-      //         update: {
-      //           company_name,
-                
-      //           city,
-      //           state,
-      //           pincode,
-      //         },
-      //       },
-      //     },
-      //   },
-      // });
+      // Update user basic info
+      const updatedUser = await prisma.user.update({
+        where: { id },
+        data: {
+          name,
+          email,
+        },
+        include: {
+          plan: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          profile: true,
+          _count: {
+            select: {
+              orders: true,
+              shipments: true,
+              invoice_transactions: true,
+              weight_disputes: true,
+              shipment_transactions: true,
+              wallet_recharge_transactions: true,
+            },
+          },
+        },
+      });
 
-      // return reply.send({ success: true, user: updatedUser });
-      return reply.send({ success: true, user: {} });
+      // Get wallet balance
+      const wallet = await prisma.userWallet.findUnique({
+        where: { user_id: id },
+        select: { balance: true },
+      });
+
+      return reply.send({ 
+        success: true, 
+        user: {
+          ...updatedUser,
+          wallet_balance: wallet?.balance || 0,
+        }
+      });
     } catch (error) {
       this.fastify.log.error(error);
       return reply.code(500).send({ success: false, error: 'Failed to update user' });
+    }
+  }
+
+  async updateUserProfile(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const { id } = request.params as { id: string };
+      const profileData = request.body as any;
+
+      // Update or create user profile
+      const updatedProfile = await prisma.userProfile.upsert({
+        where: { user_id: id },
+        update: {
+          // Company Details
+          company: profileData.company,
+          company_name: profileData.company_name,
+          logo_url: profileData.logo_url,
+          
+          // Notification Settings
+          notification_settings: profileData.notification_settings,
+          
+          // KYC Details
+          business_type: profileData.business_type,
+          pan: profileData.pan,
+          adhaar: profileData.adhaar,
+          gst_no: profileData.gst_no,
+          kyc_submitted: profileData.kyc_submitted,
+          kyc_verified: profileData.kyc_verified,
+          
+          // Bank Details
+          acc_holder_name: profileData.acc_holder_name,
+          acc_number: profileData.acc_number,
+          ifsc_number: profileData.ifsc_number,
+          acc_type: profileData.acc_type,
+          
+          // Seller Config
+          is_d2c: profileData.is_d2c,
+          is_b2b: profileData.is_b2b,
+          is_prepaid: profileData.is_prepaid,
+          is_cod: profileData.is_cod,
+          is_fw: profileData.is_fw,
+          is_rto: profileData.is_rto,
+          is_cod_reversal: profileData.is_cod_reversal,
+          
+          // Billing and Remittance
+          payment_method: profileData.payment_method,
+          remittance_cycle: profileData.remittance_cycle,
+          remittance_min_amount: profileData.remittance_min_amount,
+          remittance_days_after_delivery: profileData.remittance_days_after_delivery,
+          early_remittance_charge: profileData.early_remittance_charge,
+          remittance_days_of_week: profileData.remittance_days_of_week,
+          billing_cycle_type: profileData.billing_cycle_type,
+          
+          // Label/Manifest Format
+          label_format: profileData.label_format,
+          manifest_format: profileData.manifest_format,
+        },
+        create: {
+          user_id: id,
+          // Company Details
+          company: profileData.company,
+          company_name: profileData.company_name,
+          logo_url: profileData.logo_url,
+          
+          // Notification Settings
+          notification_settings: profileData.notification_settings || { email: true, whatsapp: true, system: true },
+          
+          // KYC Details
+          business_type: profileData.business_type,
+          pan: profileData.pan,
+          adhaar: profileData.adhaar,
+          gst_no: profileData.gst_no,
+          kyc_submitted: profileData.kyc_submitted || false,
+          kyc_verified: profileData.kyc_verified || false,
+          
+          // Bank Details
+          acc_holder_name: profileData.acc_holder_name,
+          acc_number: profileData.acc_number,
+          ifsc_number: profileData.ifsc_number,
+          acc_type: profileData.acc_type,
+          
+          // Seller Config
+          is_d2c: profileData.is_d2c !== undefined ? profileData.is_d2c : true,
+          is_b2b: profileData.is_b2b !== undefined ? profileData.is_b2b : true,
+          is_prepaid: profileData.is_prepaid !== undefined ? profileData.is_prepaid : true,
+          is_cod: profileData.is_cod !== undefined ? profileData.is_cod : true,
+          is_fw: profileData.is_fw !== undefined ? profileData.is_fw : true,
+          is_rto: profileData.is_rto !== undefined ? profileData.is_rto : true,
+          is_cod_reversal: profileData.is_cod_reversal !== undefined ? profileData.is_cod_reversal : true,
+          
+          // Billing and Remittance
+          payment_method: profileData.payment_method || 'PREPAID',
+          remittance_cycle: profileData.remittance_cycle || 'WEEKLY',
+          remittance_min_amount: profileData.remittance_min_amount || 0,
+          remittance_days_after_delivery: profileData.remittance_days_after_delivery || 7,
+          early_remittance_charge: profileData.early_remittance_charge || 0,
+          remittance_days_of_week: profileData.remittance_days_of_week || [5],
+          billing_cycle_type: profileData.billing_cycle_type || 'MONTHLY',
+          
+          // Label/Manifest Format
+          label_format: profileData.label_format || 'THERMAL',
+          manifest_format: profileData.manifest_format || 'THERMAL',
+        },
+      });
+
+      return reply.send({ success: true, profile: updatedProfile });
+    } catch (error) {
+      this.fastify.log.error(error);
+      return reply.code(500).send({ success: false, error: 'Failed to update user profile' });
     }
   }
 } 

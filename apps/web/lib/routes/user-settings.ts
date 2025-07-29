@@ -1,9 +1,9 @@
 // Keep the same structure but ensure iconName matches the iconMap keys
 export const USER_SETTINGS_TABS: UserSettingsTab[] = [
-  { id: "remittance", name: "Remittance", iconName: "Home" },
+  { id: "home", name: "Home", iconName: "Home" },
+  { id: "remittance", name: "Remittance", iconName: "HandCoins" },
   { id: "billing", name: "Billing", iconName: "BadgeIndianRupee" },
   { id: "notifications", name: "Notifications", iconName: "Bell" },
-  { id: "navigation", name: "Navigation", iconName: "Menu" },
   { id: "appearance", name: "Appearance", iconName: "Palette" },
   { id: "messages", name: "Messages & media", iconName: "MessageSquare" },
   { id: "language", name: "Language & region", iconName: "Globe" },

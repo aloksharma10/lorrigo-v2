@@ -8,6 +8,11 @@ export interface UserProfile {
   id: string;
   user_id: string;
   
+  // Company Details
+  company?: string;
+  company_name?: string;
+  logo_url?: string;
+  
   // KYC Details
   business_type?: string;
   pan?: string;
@@ -23,7 +28,6 @@ export interface UserProfile {
   acc_type?: string;
   
   // Seller Config
-  max_negative_balance?: number;
   is_d2c: boolean;
   is_b2b: boolean;
   is_prepaid: boolean;
@@ -34,11 +38,6 @@ export interface UserProfile {
   
   // Notification Settings
   notification_settings: Record<string, boolean>;
-  
-  // Company Details
-  company?: string;
-  company_name?: string;
-  logo_url?: string;
   
   // Billing and Remittance Configuration
   payment_method: string;
@@ -54,6 +53,10 @@ export interface UserProfile {
   billing_cycle_start_date?: string;
   billing_cycle_end_date?: string;
   billing_cycle_type: string;
+  
+  // Label/Manifest Format
+  label_format: string;
+  manifest_format: string;
   
   created_at: string;
   updated_at: string;
