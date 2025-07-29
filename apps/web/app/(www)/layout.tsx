@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { SidebarInset, SidebarProvider } from '@lorrigo/ui/components';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { SiteHeader } from '@/components/layout/site-header';
+import { BackButton } from '@/components/back-btn';
 
 export default async function SellerLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
@@ -23,6 +24,7 @@ export default async function SellerLayout({ children }: { children: React.React
         {/* <div className="flex flex-1 flex-col"> */}
           <div className="@container/main flex flex-1 flex-col gap-2">
             <div className="flex flex-col gap-4 px-4 md:p-8">
+              <BackButton className="w-min bg-primary/90 text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground" />
              {children}
             </div>
           </div>

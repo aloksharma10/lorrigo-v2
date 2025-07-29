@@ -42,9 +42,9 @@ import { UserProfile, useUserOperations } from '@/lib/apis/users';
 // Zod schema for form validation
 const userProfileSchema = z.object({
   // Company Details
-  company: z.string().min(1, 'Company name is required').max(255),
-  company_name: z.string().min(1, 'Display name is required').max(255),
-  logo_url: z.string().url('Must be a valid URL').max(500).optional().or(z.literal('')),
+  company: z.string().optional(),
+  company_name: z.string().optional(),
+  logo_url: z.string().url('Invalid URL format').optional().or(z.literal('')),
   
   // Notification Settings
   notification_settings: z.object({
@@ -54,10 +54,10 @@ const userProfileSchema = z.object({
   }),
   
   // KYC Details
-  business_type: z.enum(['INDIVIDUAL', 'PROPRIETORSHIP', 'PARTNERSHIP', 'LLP', 'PRIVATE_LIMITED', 'PUBLIC_LIMITED']).optional(),
-  pan: z.string().length(10, 'PAN must be exactly 10 characters').optional().or(z.literal('')),
-  adhaar: z.string().length(12, 'Aadhaar must be exactly 12 characters').optional().or(z.literal('')),
-  gst_no: z.string().length(15, 'GST number must be exactly 15 characters').optional().or(z.literal('')),
+  business_type: z.string().optional(),
+  pan: z.string().optional(),
+  adhaar: z.string().optional(),
+  gst_no: z.string().optional(),
   kyc_submitted: z.boolean(),
   kyc_verified: z.boolean(),
   
@@ -71,17 +71,78 @@ const userProfileSchema = z.object({
   is_cod_reversal: z.boolean(),
   
   // Billing and Remittance
-  payment_method: z.enum(['PREPAID', 'WALLET', 'CARD', 'BANK_TRANSFER', 'COD', 'UPI']),
-  remittance_cycle: z.enum(['DAILY', 'WEEKLY', 'BI_WEEKLY', 'FORTNIGHTLY', 'MONTHLY', 'CUSTOM']),
+  remittance_cycle: z.enum(['DAILY', 'WEEKLY', 'FORTNIGHTLY', 'MONTHLY', 'CUSTOM']),
   remittance_min_amount: z.number().min(0, 'Amount cannot be negative'),
   remittance_days_after_delivery: z.number().min(0, 'Days cannot be negative'),
-  early_remittance_charge: z.number().min(0, 'Charge cannot be negative').max(100, 'Charge cannot exceed 100%'),
+  early_remittance_charge: z.number().min(0, 'Charge cannot be negative'),
   remittance_days_of_week: z.array(z.number().min(0).max(6)),
-  billing_cycle_type: z.enum(['DAILY', 'WEEKLY', 'BI_WEEKLY', 'FORTNIGHTLY', 'MONTHLY', 'CUSTOM']),
+  billing_cycle_type: z.enum(['DAILY', 'WEEKLY', 'FORTNIGHTLY', 'MONTHLY', 'CUSTOM']),
+  billing_days_of_week: z.array(z.number().min(0).max(6)),
+  billing_day_of_month: z.number().min(1).max(31).optional(),
+  billing_week_of_month: z.number().min(1).max(4).optional(),
+  billing_days: z.array(z.number().min(0).max(31)).refine(
+    (days) => days.length > 0,
+    { message: 'At least one billing day must be selected' }
+  ),
   
   // Label/Manifest Format
   label_format: z.enum(['THERMAL', 'A4']),
   manifest_format: z.enum(['THERMAL', 'A4']),
+}).superRefine((data, ctx) => {
+  // Conditional validation based on billing cycle type
+  switch (data.billing_cycle_type) {
+    case 'WEEKLY':
+      // For weekly, billing_days should contain valid weekdays (0-6)
+      const invalidWeekDays = data.billing_days.filter(day => day < 0 || day > 6);
+      if (invalidWeekDays.length > 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Weekly billing days must be between 0 (Sunday) and 6 (Saturday)',
+          path: ['billing_days'],
+        });
+      }
+      if (data.billing_days.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'At least one day of the week must be selected for weekly billing',
+          path: ['billing_days'],
+        });
+      }
+      break;
+      
+    case 'MONTHLY':
+      // For monthly, billing_day_of_month is required
+      if (!data.billing_day_of_month) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Day of month is required for monthly billing',
+          path: ['billing_day_of_month'],
+        });
+      }
+      break;
+      
+    case 'FORTNIGHTLY':
+      // For fortnightly, billing_week_of_month is required
+      if (!data.billing_week_of_month) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Week of month is required for fortnightly billing',
+          path: ['billing_week_of_month'],
+        });
+      }
+      break;
+      
+    case 'CUSTOM':
+      // For custom, at least one billing day is required
+      if (data.billing_days.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'At least one billing day must be selected for custom billing',
+          path: ['billing_days'],
+        });
+      }
+      break;
+  }
 });
 
 type UserProfileFormData = z.infer<typeof userProfileSchema>;
@@ -118,20 +179,76 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
       is_fw: true,
       is_rto: true,
       is_cod_reversal: true,
-      payment_method: 'PREPAID',
       remittance_cycle: 'WEEKLY',
       remittance_min_amount: 0,
       remittance_days_after_delivery: 7,
       early_remittance_charge: 0,
       remittance_days_of_week: [5],
       billing_cycle_type: 'MONTHLY',
+      billing_days_of_week: [1],
+      billing_day_of_month: undefined,
+      billing_week_of_month: undefined,
+      billing_days: [1, 15],
       label_format: 'THERMAL',
       manifest_format: 'THERMAL',
     },
   });
 
+  console.log(form.formState.errors);
+
   // Watch form values for dynamic updates
   const watchedValues = form.watch();
+
+  // Get billing cycle type for conditional rendering
+  const billingCycleType = watchedValues.billing_cycle_type;
+
+  // Helper function to get billing configuration description
+  const getBillingDescription = () => {
+    const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    
+    switch (billingCycleType) {
+      case 'DAILY':
+        return 'Billing will be processed every day for the last 24 hours';
+      case 'WEEKLY':
+        const weekDays = watchedValues.billing_days?.map(day => weekdays[day]).join(', ') || 'No days selected';
+        return `Billing will be processed every ${weekDays} for the period since last billing`;
+      case 'MONTHLY':
+        const dayOfMonth = watchedValues.billing_day_of_month || 'Not set';
+        return `Billing will be processed on the ${dayOfMonth}${getDaySuffix(watchedValues.billing_day_of_month)} of every month`;
+
+      case 'FORTNIGHTLY':
+        const fortnightlyWeek = watchedValues.billing_week_of_month || 'Not set';
+        return `Billing will be processed every 14 days starting from the ${fortnightlyWeek}${getWeekSuffix(watchedValues.billing_week_of_month)} week`;
+      case 'CUSTOM':
+        const customDays = watchedValues.billing_days?.join(', ') || 'No days selected';
+        return `Custom billing will be processed on days: ${customDays}`;
+      default:
+        return 'Select a billing cycle type to see configuration details';
+    }
+  };
+
+  // Helper functions for suffixes
+  const getDaySuffix = (day: number | undefined) => {
+    if (!day) return '';
+    if (day >= 11 && day <= 13) return 'th';
+    switch (day % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+    }
+  };
+
+  const getWeekSuffix = (week: number | undefined) => {
+    if (!week) return '';
+    if (week >= 11 && week <= 13) return 'th';
+    switch (week % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+    }
+  };
 
   // Calculate profile completion percentage
   const calculateCompletion = () => {
@@ -141,7 +258,8 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
       'acc_holder_name', 'acc_number', 'ifsc_number', 'acc_type',
       'is_d2c', 'is_b2b', 'is_prepaid', 'is_cod', 'is_fw', 'is_rto', 'is_cod_reversal',
       'payment_method', 'remittance_cycle', 'remittance_min_amount', 'remittance_days_after_delivery',
-      'early_remittance_charge', 'billing_cycle_type', 'label_format', 'manifest_format',
+      'early_remittance_charge', 'billing_cycle_type', 'billing_days', 'billing_day_of_month',
+      'billing_week_of_month', 'label_format', 'manifest_format',
     ];
     const filledFields = fields.filter(field => {
       const value = watchedValues[field as keyof UserProfileFormData];
@@ -180,13 +298,16 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
         is_fw: profile.is_fw,
         is_rto: profile.is_rto,
         is_cod_reversal: profile.is_cod_reversal,
-        payment_method: profile.payment_method as any,
         remittance_cycle: profile.remittance_cycle as any,
         remittance_min_amount: profile.remittance_min_amount,
         remittance_days_after_delivery: profile.remittance_days_after_delivery,
         early_remittance_charge: profile.early_remittance_charge,
         remittance_days_of_week: profile.remittance_days_of_week || [5],
         billing_cycle_type: profile.billing_cycle_type as any,
+        billing_days_of_week: profile.billing_days_of_week || [1],
+        billing_day_of_month: profile.billing_day_of_month,
+        billing_week_of_month: profile.billing_week_of_month,
+        billing_days: profile.billing_days || [1, 15],
         label_format: (profile.label_format as 'THERMAL' | 'A4') || 'THERMAL',
         manifest_format: (profile.manifest_format as 'THERMAL' | 'A4') || 'THERMAL',
       };
@@ -676,31 +797,6 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
                   <CardContent className="space-y-4">
                     <FormField
                       control={form.control}
-                      name="payment_method"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Default Payment Method</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select payment method" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="PREPAID">Prepaid</SelectItem>
-                              <SelectItem value="WALLET">Wallet</SelectItem>
-                              <SelectItem value="CARD">Card</SelectItem>
-                              <SelectItem value="BANK_TRANSFER">Bank Transfer</SelectItem>
-                              <SelectItem value="COD">COD</SelectItem>
-                              <SelectItem value="UPI">UPI</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
                       name="billing_cycle_type"
                       render={({ field }) => (
                         <FormItem>
@@ -714,7 +810,6 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
                             <SelectContent>
                               <SelectItem value="DAILY">Daily</SelectItem>
                               <SelectItem value="WEEKLY">Weekly</SelectItem>
-                              <SelectItem value="BI_WEEKLY">Bi-Weekly</SelectItem>
                               <SelectItem value="FORTNIGHTLY">Fortnightly</SelectItem>
                               <SelectItem value="MONTHLY">Monthly</SelectItem>
                               <SelectItem value="CUSTOM">Custom</SelectItem>
@@ -724,6 +819,105 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
                         </FormItem>
                       )}
                     />
+                    
+                    {/* Billing Configuration Description */}
+                    {billingCycleType && (
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                        <p className="text-sm text-blue-800">
+                          <strong>Configuration:</strong> {getBillingDescription()}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {/* Conditional billing configuration based on cycle type */}
+                    {watchedValues.billing_cycle_type === 'WEEKLY' && (
+                      <FormField
+                        control={form.control}
+                        name="billing_days"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Billing Days of Week</FormLabel>
+                            <div className="grid grid-cols-7 gap-2">
+                              {weekdays.map((day, index) => (
+                                <div key={day} className="flex flex-col items-center space-y-2">
+                                  <Checkbox
+                                    checked={field.value?.includes(index) || false}
+                                    onCheckedChange={(checked) => {
+                                      const currentDays = [...(field.value || [])];
+                                      if (checked && !currentDays.includes(index)) {
+                                        field.onChange([...currentDays, index].sort());
+                                      } else if (!checked && currentDays.includes(index)) {
+                                        field.onChange(currentDays.filter((d) => d !== index));
+                                      }
+                                    }}
+                                  />
+                                  <Label className="text-xs text-center">{day}</Label>
+                                </div>
+                              ))}
+                            </div>
+                            <FormDescription>Select the day(s) of the week for billing</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+                    
+                    {watchedValues.billing_cycle_type === 'MONTHLY' && (
+                      <FormField
+                        control={form.control}
+                        name="billing_day_of_month"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Billing Day of Month</FormLabel>
+                            <Select onValueChange={(value) => field.onChange(Number(value))} value={field.value?.toString()}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select day of month" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                                  <SelectItem key={day} value={day.toString()}>
+                                    {day}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormDescription>Select the day of the month for billing</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+                    
+                    {watchedValues.billing_cycle_type === 'FORTNIGHTLY' && (
+                      <div className="space-y-4">
+                        <FormField
+                          control={form.control}
+                          name="billing_week_of_month"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Billing Week of Month</FormLabel>
+                              <Select onValueChange={(value) => field.onChange(Number(value))} value={field.value?.toString()}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select week of month" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="1">1st Week</SelectItem>
+                                  <SelectItem value="2">2nd Week</SelectItem>
+                                  <SelectItem value="3">3rd Week</SelectItem>
+                                  <SelectItem value="4">4th Week</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormDescription>Select which week of the month for fortnightly billing</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
                 <Card>
@@ -750,7 +944,6 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
                             <SelectContent>
                               <SelectItem value="DAILY">Daily</SelectItem>
                               <SelectItem value="WEEKLY">Weekly</SelectItem>
-                              <SelectItem value="BI_WEEKLY">Bi-Weekly</SelectItem>
                               <SelectItem value="FORTNIGHTLY">Fortnightly</SelectItem>
                               <SelectItem value="MONTHLY">Monthly</SelectItem>
                               <SelectItem value="CUSTOM">Custom</SelectItem>

@@ -6,18 +6,21 @@ export const ADMIN_ROUTES = [
     url: '/admin/home',
     icon: GalleryVerticalEnd,
     isActive: false,
+    un_dev: true,
   },
   {
     title: 'Dashboard',
     url: '/admin/dashboard',
     icon: GalleryVerticalEnd,
     isActive: false,
+    un_dev: true,
   },
   {
     title: 'Orders',
     url: '/admin/orders',
     icon: Command,
     isActive: true,
+    un_dev: true,
     items: [
       {
         title: 'Forward Shipment',
@@ -43,10 +46,11 @@ export const ADMIN_ROUTES = [
         title: 'Weight Discrepancy',
         url: '/admin/billing/weight-disputes',
       },
-      // {
-      //   title: 'Weight Freeze',
-      //   url: '/admin/weight-management/weight-freeze',
-      // },
+      {
+        title: 'Weight Freeze',
+        url: '/admin/weight-management/weight-freeze',
+        un_dev: true,
+      },
       // {
       //    title: "All Shipment",
       //    url: "/admin/all-shipment",
@@ -100,24 +104,11 @@ export const ADMIN_ROUTES = [
     ],
   },
   {
-    title: 'Tools',
-    url: '/admin/tools',
+    title: 'Bulk Activity Log',
+    url: '/admin/bulk-activity-logs',
     icon: Command,
     isActive: false,
-    items: [
-      {
-        title: 'Rate Calculator',
-        url: '/admin/rate-calculator',
-      },
-      {
-        title: 'Rate Card',
-        url: '/admin/rate-card',
-      },
-      {
-        title: 'Bulk Activity Log',
-        url: '/admin/bulk-activity-logs',
-      },
-    ],
+    un_dev: true,
   },
   {
     title: 'Billing',
@@ -140,6 +131,7 @@ export const ADMIN_ROUTES = [
       {
         title: 'Invoices',
         url: '/admin/billing/invoices',
+        un_dev: true,
       },
     ],
   },
@@ -154,17 +146,20 @@ export const ADMIN_ROUTES = [
     url: '/admin/wallets',
     icon: Command,
     isActive: false,
+    un_dev: true,
   },
   {
     title: 'Pincodes',
     url: '/admin/pincodes',
     icon: Command,
     isActive: false,
+    un_dev: true,
   },
   {
     title: 'Courier Statuses',
     url: '/admin/courier-statuses',
     icon: Command,
     isActive: false,
+    un_dev: true,
   },
 ];

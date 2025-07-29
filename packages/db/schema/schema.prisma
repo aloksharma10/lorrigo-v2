@@ -231,7 +231,6 @@ model UserProfile {
   logo_url     String? @db.VarChar(500)
 
   // Billing and Remittance Configuration
-  payment_method                 PaymentMethod @default(PREPAID)
   remittance_cycle               CycleType     @default(WEEKLY)
   remittance_min_amount          Float         @default(0)
   cod_remittance_pending         Float         @default(0)
@@ -240,10 +239,12 @@ model UserProfile {
   early_remittance_charge        Float         @default(0)
   ndr_boost                      Json?
 
-  // Billing Cycle
-  billing_cycle_start_date DateTime?
-  billing_cycle_end_date   DateTime?
+  // Billing Cycle Configuration
   billing_cycle_type       CycleType @default(MONTHLY)
+  billing_days_of_week     Int[]     @default([1]) // Day of week (0=Sunday, 1=Monday, etc.) for weekly
+  billing_day_of_month     Int?      // Day of month (1-31) for monthly billing
+  billing_week_of_month    Int?      // Week of month (1-4) for fortnightly
+  billing_days             Int[]     @default([1, 15]) // Days for any cycle type (week days 0-6, month days 1-31)
 
   // Add label/manifest format config
   label_format    LabelFormat    @default(THERMAL)

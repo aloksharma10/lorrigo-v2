@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Card,
@@ -12,10 +11,9 @@ import {
   toast,
   Skeleton,
 } from '@lorrigo/ui/components';
-import { Package, ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { usePlanOperations } from '@/lib/apis/plans';
 import { EnhancedCreatePlanForm } from '@/components/plan/enhanced-create-plan';
-import { BackButton } from '@/components/back-btn';
 
 export default function EditPlanPage() {
   const params = useParams();
@@ -87,10 +85,6 @@ export default function EditPlanPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <BackButton />
-
       <EnhancedCreatePlanForm planData={plan} isEditing={true} />
-    </div>
   );
 }

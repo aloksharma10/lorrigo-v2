@@ -5,8 +5,11 @@ import { LoaderCircle, Search } from 'lucide-react';
 import { Input } from './input';
 import { cn } from '../lib/utils';
 
+// Define the expected size prop for the Input component
+type InputSize = 'sm' | 'md' | 'lg' | undefined;
+
 export interface LoadingInputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'size'> {
   isLoading?: boolean;
   icon?: React.ElementType;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -15,6 +18,7 @@ export interface LoadingInputProps
   containerClassName?: string;
   showLoadingWhileTyping?: boolean;
   typingDelay?: number;
+  size?: InputSize; // Override size prop to match Input component
 }
 
 const LoadingInput = React.forwardRef<HTMLInputElement, LoadingInputProps>(
@@ -25,18 +29,19 @@ const LoadingInput = React.forwardRef<HTMLInputElement, LoadingInputProps>(
       isLoading = false,
       onValueChange,
       onChange,
-      icon: Icon,
+      icon: Icon = Search, // Default to Search icon
       iconClassName,
       containerClassName,
       disabled,
       showLoadingWhileTyping = true,
       typingDelay = 300,
+      size, // Include size prop
       ...props
     },
     ref
   ) => {
     const [isTyping, setIsTyping] = React.useState(false);
-    const typingTimeoutRef = React.useRef<NodeJS.Timeout>(null);
+    const typingTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       onChange?.(e);
@@ -80,7 +85,8 @@ const LoadingInput = React.forwardRef<HTMLInputElement, LoadingInputProps>(
           )}
           ref={ref}
           onChange={handleChange}
-          disabled={disabled} // Removed isLoading from disabled condition
+          disabled={disabled}
+          size={size} // Pass size prop to Input
           {...props}
         />
         <div

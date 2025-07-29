@@ -142,7 +142,7 @@ export default function UsersPage() {
               size="sm"
               asChild
             >
-              <Link href={`/admin/users/${user.id}`}>
+              <Link href={`/admin/users/${user.id}/profile`}>
                 View Profile
               </Link>
             </Button>

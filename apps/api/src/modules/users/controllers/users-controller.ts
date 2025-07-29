@@ -220,6 +220,15 @@ export class UsersController {
       const { id } = request.params as { id: string };
       const profileData = request.body as any;
 
+      // Validate billing configuration based on cycle type
+      const billingValidationError = this.validateBillingConfiguration(profileData);
+      if (billingValidationError) {
+        return reply.code(400).send({ 
+          success: false, 
+          error: billingValidationError 
+        });
+      }
+
       // Update or create user profile
       const updatedProfile = await prisma.userProfile.upsert({
         where: { user_id: id },
@@ -240,12 +249,6 @@ export class UsersController {
           kyc_submitted: profileData.kyc_submitted,
           kyc_verified: profileData.kyc_verified,
           
-          // Bank Details
-          acc_holder_name: profileData.acc_holder_name,
-          acc_number: profileData.acc_number,
-          ifsc_number: profileData.ifsc_number,
-          acc_type: profileData.acc_type,
-          
           // Seller Config
           is_d2c: profileData.is_d2c,
           is_b2b: profileData.is_b2b,
@@ -256,13 +259,16 @@ export class UsersController {
           is_cod_reversal: profileData.is_cod_reversal,
           
           // Billing and Remittance
-          payment_method: profileData.payment_method,
           remittance_cycle: profileData.remittance_cycle,
           remittance_min_amount: profileData.remittance_min_amount,
           remittance_days_after_delivery: profileData.remittance_days_after_delivery,
           early_remittance_charge: profileData.early_remittance_charge,
           remittance_days_of_week: profileData.remittance_days_of_week,
           billing_cycle_type: profileData.billing_cycle_type,
+          billing_days_of_week: profileData.billing_days_of_week,
+          billing_day_of_month: profileData.billing_day_of_month,
+          billing_week_of_month: profileData.billing_week_of_month,
+          billing_days: profileData.billing_days,
           
           // Label/Manifest Format
           label_format: profileData.label_format,
@@ -286,11 +292,6 @@ export class UsersController {
           kyc_submitted: profileData.kyc_submitted || false,
           kyc_verified: profileData.kyc_verified || false,
           
-          // Bank Details
-          acc_holder_name: profileData.acc_holder_name,
-          acc_number: profileData.acc_number,
-          ifsc_number: profileData.ifsc_number,
-          acc_type: profileData.acc_type,
           
           // Seller Config
           is_d2c: profileData.is_d2c !== undefined ? profileData.is_d2c : true,
@@ -302,13 +303,16 @@ export class UsersController {
           is_cod_reversal: profileData.is_cod_reversal !== undefined ? profileData.is_cod_reversal : true,
           
           // Billing and Remittance
-          payment_method: profileData.payment_method || 'PREPAID',
           remittance_cycle: profileData.remittance_cycle || 'WEEKLY',
           remittance_min_amount: profileData.remittance_min_amount || 0,
           remittance_days_after_delivery: profileData.remittance_days_after_delivery || 7,
           early_remittance_charge: profileData.early_remittance_charge || 0,
           remittance_days_of_week: profileData.remittance_days_of_week || [5],
           billing_cycle_type: profileData.billing_cycle_type || 'MONTHLY',
+          billing_days_of_week: profileData.billing_days_of_week || [5],
+          billing_day_of_month: profileData.billing_day_of_month || 1,
+          billing_week_of_month: profileData.billing_week_of_month || 1,
+          billing_days: profileData.billing_days || [5],
           
           // Label/Manifest Format
           label_format: profileData.label_format || 'THERMAL',
@@ -321,6 +325,53 @@ export class UsersController {
       this.fastify.log.error(error);
       return reply.code(500).send({ success: false, error: 'Failed to update user profile' });
     }
+  }
+
+  private validateBillingConfiguration(profileData: any): string | null {
+    const { billing_cycle_type, billing_days, billing_day_of_month, billing_week_of_month } = profileData;
+
+    if (!billing_cycle_type) {
+      return 'Billing cycle type is required';
+    }
+
+    switch (billing_cycle_type) {
+      case 'DAILY':
+        // No additional validation needed for daily
+        break;
+
+      case 'WEEKLY':
+        if (!billing_days || !Array.isArray(billing_days) || billing_days.length === 0) {
+          return 'At least one day of the week must be selected for weekly billing';
+        }
+        const invalidWeekDays = billing_days.filter((day: number) => day < 0 || day > 6);
+        if (invalidWeekDays.length > 0) {
+          return 'Weekly billing days must be between 0 (Sunday) and 6 (Saturday)';
+        }
+        break;
+
+      case 'MONTHLY':
+        if (!billing_day_of_month || billing_day_of_month < 1 || billing_day_of_month > 31) {
+          return 'Valid day of month (1-31) is required for monthly billing';
+        }
+        break;
+
+      case 'FORTNIGHTLY':
+        if (!billing_week_of_month || billing_week_of_month < 1 || billing_week_of_month > 4) {
+          return 'Valid week of month (1-4) is required for fortnightly billing';
+        }
+        break;
+
+      case 'CUSTOM':
+        if (!billing_days || !Array.isArray(billing_days) || billing_days.length === 0) {
+          return 'At least one billing day must be selected for custom billing';
+        }
+        break;
+
+      default:
+        return 'Invalid billing cycle type';
+    }
+
+    return null;
   }
 
   async getUserBankAccounts(request: FastifyRequest, reply: FastifyReply) {

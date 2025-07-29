@@ -2,12 +2,12 @@
 
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Checkbox } from '@lorrigo/ui/components';
+import { Checkbox, ScrollArea, Separator } from '@lorrigo/ui/components';
 import { DataTable } from '@lorrigo/ui/components';
 import { DataTableColumnHeader } from '@lorrigo/ui/components';
 import { Badge } from '@lorrigo/ui/components';
 import { Button } from '@lorrigo/ui/components';
-import { Package, Phone, TruckIcon, UserRound } from 'lucide-react';
+import { Hash, IndianRupee, Package, Phone, Tag, TruckIcon, UserRound } from 'lucide-react';
 import { toast } from '@lorrigo/ui/components';
 import type { ColumnDef } from '@lorrigo/ui/components';
 import { useDebounce } from '@/lib/hooks/use-debounce';
@@ -33,12 +33,8 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
     pageIndex: initialParams.page || 0,
     pageSize: initialParams.pageSize || 15,
   });
-  const [sorting, setSorting] = React.useState<{ id: string; desc: boolean }[]>(
-    initialParams.sort || []
-  );
-  const [filters, setFilters] = React.useState<{ id: string; value: any }[]>(
-    initialParams.filters || []
-  );
+  const [sorting, setSorting] = React.useState<{ id: string; desc: boolean }[]>(initialParams.sort || []);
+  const [filters, setFilters] = React.useState<{ id: string; value: any }[]>(initialParams.filters || []);
   const [globalFilter, setGlobalFilter] = React.useState(initialParams.globalFilter || '');
   const debouncedGlobalFilter = useDebounce(globalFilter, 500);
   const [dateRange, setDateRange] = React.useState<{ from: Date; to: Date }>(
@@ -61,16 +57,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
 
   // Fetch shipments with React Query
   const { data, isLoading, isError, isFetching, error } = useQuery({
-    queryKey: [
-      'orders',
-      pagination.pageIndex,
-      pagination.pageSize,
-      sorting,
-      filters,
-      debouncedGlobalFilter,
-      dateRange,
-      activeTab,
-    ],
+    queryKey: ['orders', pagination.pageIndex, pagination.pageSize, sorting, filters, debouncedGlobalFilter, dateRange, activeTab],
     queryFn: () =>
       fetchShipments({
         page: pagination.pageIndex,
@@ -99,10 +86,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
       id: 'select',
       header: ({ table }) => (
         <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && 'indeterminate')
-          }
+          checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all"
           disabled={isLoading}
@@ -146,13 +130,37 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
               <Package className="text-muted-foreground mr-1 h-4 w-4" />
               <span className="text-xs font-medium uppercase">{shipment.channel}</span>
             </div>
-            <Button
-              variant="link"
-              size="sm"
-              className="mt-1 h-auto justify-start p-0 text-blue-600"
+            <HoverCardToolTip
+              className="w-80"
+              label={`${shipment.packageDetails.length} x ${shipment.packageDetails.breadth} x ${shipment.packageDetails.height} cm`}
+              triggerComponent={
+                <Button variant="link" size="sm" className="mt-1 h-auto justify-start p-0 text-blue-600">
+                  Package Details
+                </Button>
+              }
             >
-              Package Details
-            </Button>
+              <ScrollArea className="h-24">
+                {shipment.productDetails.products.map((product) => (
+                  <React.Fragment key={product.id}>
+                    <div key={product.id} className="grid gap-2 grid-cols-2 text-xs text-gray-800">
+                      <div className="col-span-2 flex items-center gap-2">
+                        <Package className="h-3 w-3" />
+                        <span className="font-medium">Name:</span><span className="truncate">{product.name}</span>
+                      </div>
+                      <Badge variant="status_warning" className="flex items-center gap-2">
+                        <Tag className="h-3 w-3" />
+                        <span className="font-medium">Quantity:</span> {product.quantity}
+                      </Badge>
+                      <Badge variant="status_success" className="flex items-center gap-2">
+                        <IndianRupee className="h-3 w-3" />
+                        <span className="font-medium">Price:</span> ₹{product.price}
+                      </Badge>
+                    </div>
+                    <Separator className="my-2" />
+                  </React.Fragment>
+                ))}
+              </ScrollArea>
+            </HoverCardToolTip>
           </div>
         );
       },
@@ -173,16 +181,8 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
               <div className="flex flex-col">
                 <div className="font-medium">{shipment.customer?.name}</div>
                 <div className="text-muted-foreground text-sm">
-                  <CopyBtn
-                    label={shipment.customer?.phone}
-                    tooltipText="Copy Phone"
-                    text={shipment.customer?.phone || ''}
-                  />
-                  <CopyBtn
-                    label={shipment.customer?.email}
-                    tooltipText="Copy Email"
-                    text={shipment.customer?.email || ''}
-                  />
+                  <CopyBtn label={shipment.customer?.phone} tooltipText="Copy Phone" text={shipment.customer?.phone || ''} />
+                  <CopyBtn label={shipment.customer?.email} tooltipText="Copy Email" text={shipment.customer?.email || ''} />
                 </div>
               </div>
             }
@@ -198,8 +198,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
               </div>
             </div>
             <div className="text-muted-foreground text-sm">
-              {shipment.customer?.address}, {shipment.customer?.city}, {shipment.customer?.state},{' '}
-              {shipment.customer?.pincode}
+              {shipment.customer?.address}, {shipment.customer?.city}, {shipment.customer?.state}, {shipment.customer?.pincode}
             </div>
           </HoverCardToolTip>
         );
@@ -216,8 +215,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
         return (
           <div className="mt-1 flex flex-col text-xs">
             <span>
-              {shipment.packageDetails.length} x {shipment.packageDetails.breadth} x{' '}
-              {shipment.packageDetails.height} cm
+              {shipment.packageDetails.length} x {shipment.packageDetails.breadth} x {shipment.packageDetails.height} cm
             </span>
             <span>Dead Weight: {shipment.packageDetails.deadWeight} kg</span>
             <span>Volumetric Weight: {shipment.packageDetails.volumetricWeight} kg</span>
@@ -256,9 +254,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
     {
       id: 'hub.name',
       accessorKey: 'pickupAddress',
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Warehouse Address" />
-      ),
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Warehouse Address" />,
       cell: ({ row }) => {
         const shipment = row.original;
         return (
@@ -275,8 +271,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
                 </div>
               </div>
               <div className="text-muted-foreground mt-1 text-xs">
-                {shipment?.hub?.address}, {shipment?.hub?.city}, {shipment?.hub?.state},{' '}
-                {shipment?.hub?.pincode}
+                {shipment?.hub?.address}, {shipment?.hub?.city}, {shipment?.hub?.state}, {shipment?.hub?.pincode}
               </div>
             </HoverCardToolTip>
           </div>
@@ -294,7 +289,15 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
         return (
           <div className="flex flex-col">
             <div className="text-sm">
-              AWB # <CopyBtn label={shipment.awb} tooltipText="Copy AWB" text={shipment.awb} />
+              AWB #
+              <CopyBtn
+                className="text-blue-600"
+                labelClassName="text-blue-600 hover:underline underline-offset-2"
+                label={shipment.awb}
+                tooltipText="Copy AWB"
+                text={shipment.awb}
+              />
+
               <div className="text-muted-foreground text-xs">
                 {shipment.courier} {shipment.courierNickname}
               </div>
@@ -325,21 +328,13 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
 
         return (
           <div className="flex flex-col">
-            <Badge className={`${statusColorMap[shipment.status]} w-fit`}>
-              {shipment?.trackingEvents[0]?.status?.toUpperCase() || 'AWAITING'}
-            </Badge>
+            <Badge className={`${statusColorMap[shipment.status]} w-fit`}>{shipment?.trackingEvents[0]?.status?.toUpperCase() || 'AWAITING'}</Badge>
 
-            <div className="mt-1 text-xs">
-              {formatDateTimeSmart(shipment.trackingEvents[0]?.timestamp || shipment.updatedAt)}
-            </div>
+            <div className="mt-1 text-xs">{formatDateTimeSmart(shipment.trackingEvents[0]?.timestamp || shipment.updatedAt)}</div>
 
-            {shipment.pickupDate && (
-              <div className="mt-1 text-xs">For: {shipment.pickupDate.split('T')[0]}</div>
-            )}
+            {shipment.pickupDate && <div className="mt-1 text-xs">For: {shipment.pickupDate.split('T')[0]}</div>}
             {shipment.edd && <div className="mt-1 text-xs">EDD: {shipment.edd.split('T')[0]}</div>}
-            {shipment.pickupId && (
-              <div className="mt-1 text-xs">Pickup ID: {shipment.pickupId}</div>
-            )}
+            {shipment.pickupId && <div className="mt-1 text-xs">Pickup ID: {shipment.pickupId}</div>}
           </div>
         );
       },
@@ -476,7 +471,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
           link.click();
           link.parentNode?.removeChild(link);
         } catch (error) {
-          console.log(error, 'error')
+          console.log(error, 'error');
           toast.error('Failed to download thermal manifest');
         } finally {
           setIsBulkDownloading(false);
@@ -527,12 +522,9 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
   };
 
   // Handle pagination change
-  const handlePaginationChange = React.useCallback(
-    (newPagination: { pageIndex: number; pageSize: number }) => {
-      setPagination(newPagination);
-    },
-    []
-  );
+  const handlePaginationChange = React.useCallback((newPagination: { pageIndex: number; pageSize: number }) => {
+    setPagination(newPagination);
+  }, []);
 
   // Handle sorting change
   const handleSortingChange = React.useCallback((newSorting: { id: string; desc: boolean }[]) => {
@@ -583,9 +575,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
         searchPlaceholder="Search for AWB, Order ID, Buyer Mobile Number, Email, SKU, Pickup ID"
         isLoading={isLoading || isFetching}
         isError={isError}
-        errorMessage={
-          error instanceof Error ? error.message : 'Failed to fetch orders. Please try again.'
-        }
+        errorMessage={error instanceof Error ? error.message : 'Failed to fetch orders. Please try again.'}
         onPaginationChange={handlePaginationChange}
         onSortingChange={handleSortingChange}
         onFiltersChange={handleFiltersChange}

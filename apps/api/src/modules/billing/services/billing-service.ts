@@ -86,8 +86,10 @@ export class BillingService {
       // Calculate billing period based on cycle
       const billingPeriod = this.calculateBillingPeriod(
         userProfile.billing_cycle_type,
-        userProfile.billing_cycle_start_date,
-        userProfile.billing_cycle_end_date
+        userProfile.billing_days_of_week || [1],
+        userProfile.billing_day_of_month || 1,
+        userProfile.billing_week_of_month || 1,
+        userProfile.billing_days || [1, 15]
       );
 
       // Get eligible shipments for billing
@@ -533,7 +535,6 @@ export class BillingService {
       throw new Error('Failed to save image');
     }
   }
-
   // Private helper methods
 
   private async getUsersForBilling() {
@@ -556,7 +557,7 @@ export class BillingService {
             // Monthly billing (check if today matches the configured day)
             {
               billing_cycle_type: CycleType.MONTHLY,
-              billing_cycle_start_date: { not: null }
+              // billing_cycle_start_date: { not: null }
             }
           ]
         }
@@ -567,8 +568,10 @@ export class BillingService {
 
   private calculateBillingPeriod(
     cycleType: CycleType,
-    startDate: Date | null,
-    endDate: Date | null
+    billingDaysOfWeek: number[],
+    billingDayOfMonth?: number,
+    billingWeekOfMonth?: number,
+    billingDays?: number[]
   ) {
     const now = new Date();
     let start: Date;
@@ -576,6 +579,7 @@ export class BillingService {
 
     switch (cycleType) {
       case CycleType.DAILY:
+        // Daily billing: last 24 hours
         start = new Date(now);
         start.setDate(start.getDate() - 1);
         start.setHours(0, 0, 0, 0);
@@ -584,25 +588,75 @@ export class BillingService {
         break;
 
       case CycleType.WEEKLY:
+        // Weekly billing: from last billing day to today
+        const today = now.getDay();
+        const lastBillingDay = billingDaysOfWeek
+          .filter(day => day <= today)
+          .sort((a, b) => b - a)[0] ?? billingDaysOfWeek[billingDaysOfWeek.length - 1] ?? 1;
+        
         start = new Date(now);
-        start.setDate(start.getDate() - 7);
+        const daysSinceLastBilling = (today - lastBillingDay + 7) % 7;
+        start.setDate(start.getDate() - daysSinceLastBilling);
+        start.setHours(0, 0, 0, 0);
+        end = new Date(now);
+        end.setHours(23, 59, 59, 999);
+        break;
+
+      case CycleType.FORTNIGHTLY:
+        // Fortnightly billing: every 14 days from configured week
+        start = new Date(now);
+        const currentWeek = Math.ceil(now.getDate() / 7);
+        const targetWeek = billingWeekOfMonth || 1;
+        
+        if (currentWeek >= targetWeek) {
+          // This week or later, go back to target week
+          const daysToSubtract = (currentWeek - targetWeek) * 7;
+          start.setDate(start.getDate() - daysToSubtract);
+        } else {
+          // Earlier this month, go back to last month's target week
+          start.setMonth(start.getMonth() - 1);
+          const daysInLastMonth = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
+          const lastMonthTargetDay = Math.min(targetWeek * 7, daysInLastMonth);
+          start.setDate(lastMonthTargetDay);
+        }
         start.setHours(0, 0, 0, 0);
         end = new Date(now);
         end.setHours(23, 59, 59, 999);
         break;
 
       case CycleType.MONTHLY:
+        // Monthly billing: from last billing day of month to today
+        const currentDay = now.getDate();
+        const billingDay = billingDayOfMonth || 1;
+        
         start = new Date(now);
-        start.setMonth(start.getMonth() - 1);
+        if (currentDay >= billingDay) {
+          // This month's billing day has passed, start from billing day
+          start.setDate(billingDay);
+        } else {
+          // This month's billing day hasn't come yet, start from last month's billing day
+          start.setMonth(start.getMonth() - 1);
+          start.setDate(billingDay);
+        }
         start.setHours(0, 0, 0, 0);
         end = new Date(now);
         end.setHours(23, 59, 59, 999);
         break;
 
-      default:
-        if (startDate && endDate) {
-          start = new Date(startDate);
-          end = new Date(endDate);
+      case CycleType.CUSTOM:
+        // Custom billing: use billing_days array for flexible configuration
+        if (billingDays && billingDays.length > 0) {
+          const todayCustom = now.getDate();
+          const lastCustomDay = billingDays
+            .filter(day => day <= todayCustom)
+            .sort((a, b) => b - a)[0] ?? billingDays[billingDays.length - 1] ?? 1;
+          
+          start = new Date(now);
+          const daysSinceLastCustom = (todayCustom - lastCustomDay + 31) % 31;
+          start.setDate(start.getDate() - daysSinceLastCustom);
+          start.setHours(0, 0, 0, 0);
+          end = new Date(now);
+          end.setHours(23, 59, 59, 999);
         } else {
           // Fallback to last 30 days
           start = new Date(now);
@@ -611,6 +665,15 @@ export class BillingService {
           end = new Date(now);
           end.setHours(23, 59, 59, 999);
         }
+        break;
+
+      default:
+        // Fallback to last 30 days
+        start = new Date(now);
+        start.setDate(start.getDate() - 30);
+        start.setHours(0, 0, 0, 0);
+        end = new Date(now);
+        end.setHours(23, 59, 59, 999);
     }
 
     return { start, end };

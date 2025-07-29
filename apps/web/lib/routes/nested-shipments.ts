@@ -1,10 +1,11 @@
 export const SHIPMENT_TAB_ROUTES = [
-  { name: 'New', path: '/seller/orders/forward-shipments/new' },
-  { name: 'Ready To Ship', path: '/seller/orders/forward-shipments/ready-to-ship' },
-  { name: 'In Transit', path: '/seller/orders/forward-shipments/transit' },
-  { name: 'Delivered', path: '/seller/orders/forward-shipments/delivered' },
-  { name: 'RTO', path: '/seller/orders/forward-shipments/rto' },
-  { name: 'All', path: '/seller/orders/forward-shipments/all' },
+  { name: 'New', path: '/seller/orders/forward-shipments/new', iconName: 'FilePlus' },
+  { name: 'Ready To Ship', path: '/seller/orders/forward-shipments/ready-to-ship', iconName: 'PackageCheck' },
+  { name: 'In Transit', path: '/seller/orders/forward-shipments/transit', iconName: 'Truck' },
+  { name: 'Delivered', path: '/seller/orders/forward-shipments/delivered', iconName: 'CheckCircle' },
+  { name : "NDR", path: '/seller/orders/ndr/action-required', iconName: 'AlertTriangle' },
+  { name: 'RTO', path: '/seller/orders/forward-shipments/rto', iconName: 'RotateCcw' },
+  { name: 'All', path: '/seller/orders/forward-shipments/all', iconName: 'List' },
 ];
 
 export const NDR_TAB_ROUTES = [

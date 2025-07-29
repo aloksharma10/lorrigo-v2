@@ -401,22 +401,8 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
     toast.success(`Added ${courierIds.length} couriers to the plan`)
   }
 
-  // Debug function to log current form values
-  const debugFormValues = () => {
-    const values = form.getValues()
-    console.log("Current form values:", values)
-    console.log("Selected courier indices:", Array.from(selectedCourierIndices))
-  }
-
   return (
     <div className="from-background to-muted/20 mx-auto min-h-screen min-w-full space-y-6 bg-gradient-to-br p-6">
-      {/* Debug button - remove in production */}
-      {process.env.NODE_ENV === "development" && (
-        <Button onClick={debugFormValues} variant="outline" size="sm">
-          Debug Form Values
-        </Button>
-      )}
-
       {/* Header */}
       <FormHeader
         isEditing={isEditing}

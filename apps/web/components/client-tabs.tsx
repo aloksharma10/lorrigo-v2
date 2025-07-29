@@ -22,6 +22,12 @@ import {
   CreditCard,
   AlertTriangle,
   HandCoins,
+  FilePlus,
+  PackageCheck,
+  Truck,
+  CheckCircle,
+  RotateCcw,
+  List
 } from "lucide-react"
 
 // Icon mapping to convert string names to components
@@ -43,6 +49,12 @@ const iconMap = {
   CreditCard,
   AlertTriangle,
   HandCoins,
+  FilePlus,
+  PackageCheck,
+  Truck,
+  CheckCircle,
+  RotateCcw,
+  List
 } as const
 
 interface ClientTabsProps {
@@ -161,7 +173,7 @@ export default function ClientTabs({ menuItems, onValueChange }: ClientTabsProps
           {/* Scrollable tab list */}
           <div ref={tabsListRef} className="scrollbar-hide w-full overflow-x-auto md:w-auto" onScroll={checkScroll}>
             <Tabs value={currentPath} onValueChange={handleValueChange} className="w-full">
-              <TabsList className="scrollbar-hide inline-flex w-max whitespace-nowrap gap-1 px-1 overflow-x-auto">
+              <TabsList className="scrollbar-hide inline-flex w-max whitespace-nowrap gap-4 px-1 overflow-x-auto">
                 {processedMenuItems.map((item, index) => (
                   <TabsTrigger
                     key={index}

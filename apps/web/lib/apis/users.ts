@@ -49,10 +49,12 @@ export interface UserProfile {
   early_remittance_charge: number;
   ndr_boost?: Record<string, any>;
   
-  // Billing Cycle
-  billing_cycle_start_date?: string;
-  billing_cycle_end_date?: string;
+  // Billing Cycle Configuration
   billing_cycle_type: string;
+  billing_days_of_week: number[];
+  billing_day_of_month?: number;
+  billing_week_of_month?: number;
+  billing_days: number[];
   
   // Label/Manifest Format
   label_format: string;
