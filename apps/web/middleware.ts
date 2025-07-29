@@ -37,7 +37,7 @@ export const middleware: any = auth((request) => {
   }
 
   // Redirect authenticated users from auth pages to their dashboard
-  if (request.nextUrl.pathname.startsWith('/auth/signin') && isAuthenticated) {
+  if (request.nextUrl.pathname.startsWith('/auth') && isAuthenticated) {
     const dashboardUrl = getRoleBasedRedirect(userRole);
     return NextResponse.redirect(new URL(dashboardUrl, request.url));
   }

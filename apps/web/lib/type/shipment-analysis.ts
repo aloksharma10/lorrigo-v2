@@ -1,5 +1,18 @@
 // Frontend types for Shipment Analysis API
 
+export interface TopCustomerItem {
+  customerId: string;
+  customerName: string;
+  totalShipments: number;
+  delivered: number;
+  rto: number;
+  lostDamaged: number;
+  successRate: number;
+  averageDeliveryTime: number;
+  totalRevenue: number;
+  averageOrderValue: number;
+}
+
 export interface ShipmentAnalysisFilters {
   startDate?: string;
   endDate?: string;
@@ -69,7 +82,7 @@ export interface ShipmentPerformanceAnalytics {
   weightAnalysis: WeightAnalysisItem[];
   channelAnalysis: ChannelAnalysisItem[];
   topIssues: TopIssueItem[];
-
+  topCustomers: TopCustomerItem[];
   ndrReason: any;
   successByCourier: any;
   buyerResponse: any;

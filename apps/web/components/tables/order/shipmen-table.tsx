@@ -234,11 +234,11 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
         return (
           <div className="flex flex-col">
             <div className="font-medium">{currencyFormatter(shipment.totalAmount)}</div>
-            <Badge variant="outline" className="mt-1 w-fit">
+            <Badge variant={shipment.paymentType === 'COD' ? 'default': "status_success"}  className="mt-1 w-fit">
               {shipment.paymentType}
             </Badge>
             {shipment.paymentType === 'COD' && (
-              <Badge variant="outline" className="mt-1 w-fit">
+              <Badge variant={'success'} className="mt-1 w-fit">
                 <span className="sr-only">To collect</span>
                 <ActionTooltip label="To collect" side="left" className="m-0 w-fit p-0">
                   <span>{currencyFormatter(shipment.amountToCollect)}</span>
@@ -260,12 +260,12 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
         return (
           <div className="flex flex-col">
             <HoverCardToolTip className="w-80" label={shipment?.hub?.name}>
-              <div className="flex items-center justify-between text-xs font-medium">
+              <div className="flex gap-2 items-center justify-between text-xs font-medium">
                 <div className="flex items-center gap-1">
                   <TruckIcon className="mr-1 h-3 w-3" />
                   <span>{shipment?.hub?.name}</span>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 truncate">
                   <span className="text-muted-foreground text-xs">Hub ID:</span>
                   {shipment?.hub?.lorrigoPickupId}
                 </div>

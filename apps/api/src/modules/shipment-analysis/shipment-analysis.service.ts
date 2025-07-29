@@ -24,6 +24,7 @@ import {
   WeightAnalysisItem,
   ChannelAnalysisItem,
   TopIssueItem,
+  TopCustomerItem,
   SystemAlertItem,
   DeliveryPredictionItem,
   RtoPredictionItem,
@@ -104,6 +105,7 @@ export class ShipmentAnalysisService {
       deliveryTimeline,
       weightAnalysis,
       channelAnalysis,
+      topCustomers,
       topIssues,
     ] = await Promise.all([
       this.getShipmentOverview(params),
@@ -113,6 +115,7 @@ export class ShipmentAnalysisService {
       this.getDeliveryTimeline(params),
       this.getWeightAnalysis(params),
       this.getChannelAnalysis(params),
+      this.getTopCustomers(params),
       this.getTopIssues(params),
     ]);
 
@@ -332,6 +335,7 @@ export class ShipmentAnalysisService {
       deliveryTimeline,
       weightAnalysis,
       channelAnalysis,
+      topCustomers,
       topIssues,
       ndrMetrics,
       ndrResponseSummary,
@@ -959,6 +963,90 @@ export class ShipmentAnalysisService {
         averageOrderValue: orderValues.length > 0 ? orderValues.reduce((sum, val) => sum + val, 0) / orderValues.length : 0,
       };
     }).sort((a, b) => b.totalOrders - a.totalOrders);
+  }
+
+  private async getTopCustomers(params: OptimizedQueryParams): Promise<TopCustomerItem[]> {
+    const orders = await prisma.order.findMany({
+      where: {
+        user_id: params.userId,
+        created_at: { gte: params.startDate, lte: params.endDate },
+      },
+      select: {
+        id: true,
+        customer_id: true,
+        total_amount: true,
+        customer: {
+          select: {
+            name: true,
+          },
+        },
+        shipment: {
+          select: {
+            id: true,
+            status: true,
+            created_at: true,
+            updated_at: true,
+          },
+        },
+      },
+    });
+    
+    const groupedByCustomer = orders.reduce((acc, order) => {
+      const customerId = order.customer_id || 'Unknown';
+      if (!acc[customerId]) {
+        acc[customerId] = {
+          customerId: order.customer_id || 'Unknown',
+          customerName: order.customer?.name || 'Unknown',
+          totalShipments: 0,
+          delivered: 0,
+          rto: 0,
+          lostDamaged: 0,
+          successRate: 0,
+          averageDeliveryTime: 0,
+          totalRevenue: 0,
+          averageOrderValue: 0,
+          deliveryTimes: [] as number[],
+          orderValues: [] as number[],
+        };
+      }
+      
+      // Add revenue data
+      if (order.total_amount) {
+        acc[customerId].totalRevenue += order.total_amount;
+        acc[customerId].orderValues.push(order.total_amount);
+      }
+      
+      // Add shipment data
+      if (order.shipment) {
+        acc[customerId].totalShipments += 1;
+        if (order.shipment.status === 'DELIVERED') {
+          acc[customerId].delivered += 1;
+          // Calculate delivery time
+          if (order.shipment.updated_at && order.shipment.created_at) {
+            const deliveryTime = (order.shipment.updated_at.getTime() - order.shipment.created_at.getTime()) / (1000 * 60 * 60 * 24);
+            acc[customerId].deliveryTimes.push(deliveryTime);
+          }
+        }
+        if (['RTO_INITIATED', 'RTO_IN_TRANSIT', 'RTO_DELIVERED'].includes(order.shipment.status)) {
+          acc[customerId].rto += 1;
+        }
+        if (order.shipment.status === 'EXCEPTION') {
+          acc[customerId].lostDamaged += 1;
+        }
+      }
+      
+      return acc;
+    }, {} as Record<string, TopCustomerItem & { deliveryTimes: number[]; orderValues: number[] }>);
+
+    return Object.values(groupedByCustomer).map(item => {
+      const { deliveryTimes, orderValues, ...rest } = item;
+      return {
+        ...rest,
+        successRate: item.totalShipments > 0 ? (item.delivered / item.totalShipments) * 100 : 0,
+        averageDeliveryTime: deliveryTimes.length > 0 ? deliveryTimes.reduce((sum, time) => sum + time, 0) / deliveryTimes.length : 0,
+        averageOrderValue: orderValues.length > 0 ? orderValues.reduce((sum, val) => sum + val, 0) / orderValues.length : 0,
+      };
+    }).sort((a, b) => b.totalShipments - a.totalShipments).slice(0, 10);
   }
 
   private async getTopIssues(params: OptimizedQueryParams): Promise<TopIssueItem[]> {

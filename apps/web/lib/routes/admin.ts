@@ -1,4 +1,4 @@
-import { Command, GalleryVerticalEnd } from 'lucide-react';
+import { Command, GalleryVerticalEnd, FileText, Users, CreditCard, MapPin, Activity } from 'lucide-react';
 
 export const ADMIN_ROUTES = [
   {
@@ -25,14 +25,17 @@ export const ADMIN_ROUTES = [
       {
         title: 'Forward Shipment',
         url: '/admin/orders/forward-shipments/all',
+        icon: Command,
       },
       {
         title: 'Reverse Shipment',
         url: '/admin/orders/reverse-shipments/all',
+        icon: Command,
       },
       {
         title: 'NDR',
         url: '/admin/orders/ndr',
+        icon: Command,
       },
     ],
   },
@@ -45,10 +48,12 @@ export const ADMIN_ROUTES = [
       {
         title: 'Weight Discrepancy',
         url: '/admin/billing/weight-disputes',
+        icon: Command,
       },
       {
         title: 'Weight Freeze',
         url: '/admin/weight-management/weight-freeze',
+        icon: Command,
         un_dev: true,
       },
       // {
@@ -106,7 +111,7 @@ export const ADMIN_ROUTES = [
   {
     title: 'Bulk Activity Log',
     url: '/admin/bulk-activity-logs',
-    icon: Command,
+    icon: Activity,
     isActive: false,
     un_dev: true,
   },
@@ -119,18 +124,22 @@ export const ADMIN_ROUTES = [
       {
         title: 'Billing Cycles',
         url: '/admin/billing/cycles',
+        icon: Command,
       },
       {
         title: 'Shipping Charges',
         url: '/admin/billing/shipping-charges',
+        icon: Command,
       },
       {
         title: 'COD Remittance',
         url: '/admin/billing/cod-remittances',
+        icon: Command,
       },
       {
         title: 'Invoices',
         url: '/admin/billing/invoices',
+        icon: FileText,
         un_dev: true,
       },
     ],
@@ -138,27 +147,27 @@ export const ADMIN_ROUTES = [
   {
     title: 'Users',
     url: '/admin/users',
-    icon: Command,
+    icon: Users,
     isActive: false,
   },
   {
     title: 'Wallet',
     url: '/admin/wallets',
-    icon: Command,
+    icon: CreditCard,
     isActive: false,
     un_dev: true,
   },
   {
     title: 'Pincodes',
     url: '/admin/pincodes',
-    icon: Command,
+    icon: MapPin,
     isActive: false,
     un_dev: true,
   },
   {
     title: 'Courier Statuses',
     url: '/admin/courier-statuses',
-    icon: Command,
+    icon: Activity,
     isActive: false,
     un_dev: true,
   },

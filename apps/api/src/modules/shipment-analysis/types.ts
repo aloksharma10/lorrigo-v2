@@ -68,6 +68,7 @@ export interface ShipmentPerformanceAnalytics {
   deliveryTimeline: DeliveryTimelineItem[];
   weightAnalysis: WeightAnalysisItem[];
   channelAnalysis: ChannelAnalysisItem[];
+  topCustomers: TopCustomerItem[];
   topIssues: TopIssueItem[];
   // NDR analytics (required for NDR dashboard)
   ndrMetrics?: any; // Summary metrics for NDR
@@ -169,6 +170,19 @@ export interface TopIssueItem {
   percentage: number;
   impact: 'high' | 'medium' | 'low';
   resolution: string;
+}
+
+export interface TopCustomerItem {
+  customerId: string;
+  customerName: string;
+  totalShipments: number;
+  delivered: number;
+  rto: number;
+  lostDamaged: number;
+  successRate: number;
+  averageDeliveryTime: number;
+  totalRevenue: number;
+  averageOrderValue: number;
 }
 
 // Real-time Analytics Types

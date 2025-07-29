@@ -9,6 +9,7 @@ import { IndiaMap } from './components/india-map';
 import { Header } from '@/components/header';
 import { ShipmentOverviewTable } from './components/shipment-overview-table';
 import { useShipmentAnalysis } from '@/lib/hooks/use-shipment-analysis';
+import ActionTooltip from '@/components/action-tooltip';
 
 export default function SellerDashboardOverview() {
   const { home, performance, realtime, predictive, isTokenReady } = useShipmentAnalysis();
@@ -70,22 +71,12 @@ export default function SellerDashboardOverview() {
     <div className="mx-auto space-y-6 p-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Dashboard</h1>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="px-3 py-1">Domestic</Badge>
-          <Button variant="outline" size="sm" className="gap-1">
-            <RefreshCw className="h-4 w-4" />
-            Refresh
-          </Button>
-        </div>
       </div>
       {/* First row */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card className="border-none">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Today's Orders</CardTitle>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <ExternalLink className="h-4 w-4" />
-            </Button>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-4">
@@ -104,9 +95,6 @@ export default function SellerDashboardOverview() {
         <Card className="border-none">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Today's Revenue</CardTitle>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <ExternalLink className="h-4 w-4" />
-            </Button>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-4">
@@ -114,9 +102,9 @@ export default function SellerDashboardOverview() {
                 <Boxes className="text-green-500 h-6 w-6" />
               </div>
               <div>
-                <div className="text-3xl font-bold">₹{todayRevenue}</div>
+                <div className="text-3xl font-bold">{todayRevenue}</div>
                 <div className="text-muted-foreground text-xs">
-                  Yesterday: <span className="font-medium">₹{yesterdayRevenue}</span>
+                  Yesterday: <span className="font-medium">{yesterdayRevenue}</span>
                 </div>
               </div>
             </div>
@@ -129,11 +117,10 @@ export default function SellerDashboardOverview() {
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div className="flex items-center gap-2">
               <CardTitle className="text-sm font-medium">Shipments Details</CardTitle>
-              <CircleHelp className="text-muted-foreground h-4 w-4" />
+              <ActionTooltip label="Shipments Details" side="top">
+                <CircleHelp className="text-muted-foreground" size={20} />
+              </ActionTooltip>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <ExternalLink className="h-4 w-4" />
-            </Button>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
@@ -184,11 +171,10 @@ export default function SellerDashboardOverview() {
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div className="flex items-center gap-2">
               <CardTitle className="text-sm font-medium">NDR Details</CardTitle>
-              <CircleHelp className="text-muted-foreground h-4 w-4" />
+              <ActionTooltip label="NDR Details" side="top">
+                <CircleHelp className="text-muted-foreground" size={20} />
+              </ActionTooltip>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <ExternalLink className="h-4 w-4" />
-            </Button>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4">

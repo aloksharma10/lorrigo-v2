@@ -23,6 +23,7 @@ import { ManualBillingModal } from '@/components/modals/manual-billing-modal';
 import { RemittanceDetailModal } from '@/components/modals/remittance-detail-modal';
 import ManageBankAccountsModal from '@/components/modals/manage-bank-accounts';
 import AddBankAccountModal from '@/components/modals/add-bank-account-modal';
+import { AllPoliciesModal } from '@/components/modals/all-policies-modal';
 
 // Store to track registered modals
 interface ModalRegistryState {
@@ -61,6 +62,7 @@ export function ModalRegistry() {
       registerModal('remittance-detail', RemittanceDetailModal);
       registerModal('manage-bank-accounts', ManageBankAccountsModal);
       registerModal('add-bank-account', AddBankAccountModal);
+      registerModal('all-policies', AllPoliciesModal);
 
       setRegistered(true);
       console.log('Modal components registered successfully');

@@ -9,6 +9,7 @@ import { getRoleBasedRedirect } from '@/lib/routes/redirect';
 import { Role } from '@lorrigo/db';
 import { checkAccessAndRedirect } from '@/lib/routes/check-permission';
 import { useAuthToken } from '@/components/providers/token-provider';
+import Redirecting from '@/components/skeletons/redirecting';
 
 function SignInForm() {
   const [email, setEmail] = useState('');
@@ -20,7 +21,7 @@ function SignInForm() {
   const router = useRouter();
   const callbackUrl = searchParams.get('callbackUrl');
   const urlError = searchParams.get('error');
-
+  const {isTokenReady} = useAuthToken();
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -90,7 +91,11 @@ function SignInForm() {
   };
 
   const errorMessage = getErrorMessage();
-
+  
+  if(isTokenReady) {
+    return <Redirecting />
+  }
+  
   return (
     <div className="flex min-h-screen flex-col items-center justify-center py-12">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">

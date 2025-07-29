@@ -8,6 +8,7 @@ import {
   Skeleton,
 } from '@lorrigo/ui/components';
 import { CircleHelp, ExternalLink } from 'lucide-react';
+import ActionTooltip from '../action-tooltip';
 
 interface ChartCardProps {
   title: string;
@@ -40,7 +41,11 @@ export function ChartCard({
               {badge}
             </Badge>
           )}
-          {helpText && !isLoading && <CircleHelp className="text-muted-foreground h-4 w-4" />}
+          {helpText && !isLoading && (
+            <ActionTooltip label={helpText} side="top">
+              <CircleHelp className="text-muted-foreground" size={20} />
+            </ActionTooltip>
+          )}
         </div>
         {onExternalLinkClick && !isLoading && (
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onExternalLinkClick}>

@@ -138,7 +138,7 @@ export function PieChart({
       </div>
 
       {showLegend && (
-        <div className={`mt-4 grid ${legendPosition === 'bottom' ? 'grid-cols-2 gap-2 md:grid-cols-3' : 'grid-cols-1 gap-1'}`}>
+        <div className={`mt-4 flex justify-center flex-wrap gap-4`}>
           {data.map((item, i) => (
             <div key={i} className="flex items-center gap-2" onMouseEnter={() => setActiveIndex(i)} onMouseLeave={() => setActiveIndex(-1)}>
               <div className="h-3 w-3 rounded-full" style={{ backgroundColor: colors[i] }} />

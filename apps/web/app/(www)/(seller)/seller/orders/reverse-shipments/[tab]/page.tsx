@@ -52,11 +52,6 @@ export default function ShipmentsPage() {
     <div>
       <div className="flex items-center justify-between">
         <h1 className="text-base font-bold capitalize lg:text-2xl">{tab || 'All'} Reverse Orders</h1>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="px-3 py-1">
-            Domestic
-          </Badge>
-        </div>
       </div>
 
       <ScrollableTabsProps menuItems={SHIPMENT_TAB_ROUTES} />

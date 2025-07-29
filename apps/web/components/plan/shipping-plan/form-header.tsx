@@ -11,7 +11,7 @@ interface FormHeaderProps {
 
 export function FormHeader({ isEditing, isSubmitting, onSubmit }: FormHeaderProps) {
   return (
-    <Card className="from-primary to-primary/90 text-primary-foreground dark:from-primary dark:to-primary/90 border-0 bg-gradient-to-r shadow-lg">
+    <Card className="from-secondary to-secondary/90 dark:from-secondary dark:to-secondary/90 border-0 bg-gradient-to-r shadow-lg">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -22,7 +22,7 @@ export function FormHeader({ isEditing, isSubmitting, onSubmit }: FormHeaderProp
               <CardTitle className="text-2xl font-bold">
                 {isEditing ? 'Edit Shipping Plan' : 'Create New Shipping Plan'}
               </CardTitle>
-              <CardDescription className="text-primary-foreground/80">
+              <CardDescription>
                 Configure pricing, features, and courier settings for your shipping plan
               </CardDescription>
             </div>

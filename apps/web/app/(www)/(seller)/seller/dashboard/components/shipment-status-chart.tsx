@@ -15,7 +15,6 @@ export function ShipmentStatusChart({ data, isLoading = false }: ShipmentStatusC
       badge="Last 30 days"
       helpText="Shows the distribution of shipment statuses"
       isLoading={isLoading}
-      onExternalLinkClick={() => console.log('External link clicked')}
     >
       <PieChart data={data} tooltipFormatter={(value) => [`${value}`, 'Shipments']} />
     </ChartCard>

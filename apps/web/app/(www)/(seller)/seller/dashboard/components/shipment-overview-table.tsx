@@ -37,7 +37,7 @@ export function ShipmentOverviewTable({ data, isLoading = false }: ShipmentOverv
       columns={columns as Column<ShipmentData>[]}
       data={data}
       isLoading={isLoading}
-      onExternalLinkClick={() => console.log('External link clicked')}
+      // onExternalLinkClick={() => console.log('External link clicked')}
     />
   );
 }

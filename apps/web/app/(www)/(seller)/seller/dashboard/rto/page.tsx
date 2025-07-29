@@ -66,7 +66,7 @@ export default function RTOPage() {
         {/* RTO Overview */}
         <div className="mb-6">
           <ChartCard title="RTO Overview">
-            <div className="mb-4 rounded-md bg-purple-900 p-4 text-white">
+            {/* <div className="mb-4 rounded-md bg-purple-900 p-4 text-white">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-bold">Protect Your COD Orders from Address Risk</h3>
@@ -78,7 +78,7 @@ export default function RTOPage() {
                   </Button>
                 </div>
               </div>
-            </div>
+            </div> */}
             <div className="grid grid-cols-5 gap-4">
               <MetricCard
                 title="Total RTO"

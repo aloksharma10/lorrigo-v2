@@ -196,19 +196,19 @@ export default function RateCalculator() {
       {/* Form Section */}
       <div className="xl:col-span-1">
         <Card className="sticky top-24 border-0 shadow-xl">
-          <CardHeader className="rounded-t-lg py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white">
+          <CardHeader className="rounded-t-lg py-3 bg-gradient-to-r bg-primary text-white">
             <CardTitle className="flex items-center gap-2">
               <Calculator className="h-5 w-5" />
               Shipment Details
             </CardTitle>
-            <CardDescription className="text-blue-100">Enter your package information for accurate quotes</CardDescription>
+            <CardDescription className="text-red-100">Enter your package information for accurate quotes</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 p-6">
             {/* Pincode Section */}
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="pickup" className="flex items-center gap-2 text-sm font-medium">
-                  <MapPin className="h-4 w-4 text-blue-500" />
+                  <MapPin className="h-4 w-4" />
                   Pickup Pincode *
                 </Label>
                 <Input
@@ -221,7 +221,7 @@ export default function RateCalculator() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="delivery" className="flex items-center gap-2 text-sm font-medium">
-                  <Package className="h-4 w-4 text-indigo-500" />
+                  <Package className="h-4 w-4" />
                   Delivery Pincode *
                 </Label>
                 <Input
@@ -326,7 +326,7 @@ export default function RateCalculator() {
               <Button
                 onClick={handleCalculate}
                 disabled={loading}
-                className="h-12 w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
+                className="h-12 w-full"
               >
                 {loading ? (
                   <>
@@ -572,8 +572,8 @@ export default function RateCalculator() {
         {rates.length === 0 && !loading && (
           <Card className="border-0 bg-white/90 shadow-lg backdrop-blur-sm">
             <CardContent className="p-12 text-center">
-              <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-indigo-100">
-                <Package className="h-12 w-12 text-blue-500" />
+              <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-red-100">
+                <Package className="h-12 w-12 text-red-700" />
               </div>
               <h3 className="mb-2 text-xl font-semibold text-gray-900">Ready to Calculate Rates?</h3>
               <p className="mb-6 text-gray-600">Fill in your shipment details and discover the best courier options with competitive rates.</p>

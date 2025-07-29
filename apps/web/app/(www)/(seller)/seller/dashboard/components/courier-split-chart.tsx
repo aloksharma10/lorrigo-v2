@@ -15,7 +15,6 @@ export function CourierSplitChart({ data, isLoading = false }: CourierSplitChart
       badge="Last 30 days"
       helpText="Shows the distribution of shipments across couriers"
       isLoading={isLoading}
-      onExternalLinkClick={() => console.log('External link clicked')}
     >
       <PieChart data={data} tooltipFormatter={(value) => [`${value}`, 'Shipments']} />
     </ChartCard>

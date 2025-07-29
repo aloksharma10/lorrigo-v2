@@ -48,15 +48,6 @@ export default function NDRPage() {
         <h1 className="text-base font-bold capitalize lg:text-2xl">
           NDR {stage?.replace('-', ' ')} Orders
         </h1>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="px-3 py-1">
-            Domestic
-          </Badge>
-          <Button variant="outline" size="sm" className="gap-1">
-            <RefreshCw className="h-4 w-4" />
-            Refresh
-          </Button>
-        </div>
       </div>
 
       {/* Tabs */}

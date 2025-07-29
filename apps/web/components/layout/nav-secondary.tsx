@@ -13,6 +13,7 @@ import {
 } from '@lorrigo/ui/components';
 import { Skeleton } from '@lorrigo/ui/components';
 import { Switch } from '@lorrigo/ui/components';
+import { useModalStore } from '@/modal/modal-store';
 
 export function NavSecondary({
   items,
@@ -26,7 +27,7 @@ export function NavSecondary({
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
-
+  const { openModal } = useModalStore();
   React.useEffect(() => {
     setMounted(true);
   }, []);
@@ -38,10 +39,10 @@ export function NavSecondary({
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton asChild>
-                <a href={item.url}>
+                <div onClick={() => openModal('all-policies', { type: item.url.split('/').pop(), title: item.title, className: 'max-w-4xl p-4' })}>
                   <item.icon />
                   <span>{item.title}</span>
-                </a>
+                </div>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}

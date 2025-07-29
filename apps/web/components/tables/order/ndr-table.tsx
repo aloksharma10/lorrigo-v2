@@ -297,7 +297,6 @@ export default function NDRTable({ initialParams = {} }: NDRTableProps) {
           <div className="flex flex-col items-start gap-2">
             {!ndr.action_taken && (
               <Button
-                className="w-full bg-blue-600 text-xs hover:bg-blue-700"
                 size="sm"
                 onClick={() => handleNDRAction(ndr)}
                 disabled={ndr.otp_verified}

@@ -15,7 +15,6 @@ export function DeliveryPerformanceChart({ data, isLoading = false }: DeliveryPe
       badge="Last 30 days"
       helpText="Shows the distribution of delivery performance"
       isLoading={isLoading}
-      onExternalLinkClick={() => console.log('External link clicked')}
     >
       <PieChart data={data} tooltipFormatter={(value) => [`${value}`, 'Shipments']} />
     </ChartCard>
