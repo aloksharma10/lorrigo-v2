@@ -1,9 +1,9 @@
-"use client"
+'use client';
 
-import { Button, useSidebar, SidebarTrigger } from "@lorrigo/ui/components"
-import { Input } from "@lorrigo/ui/components"
-import { Separator } from "@lorrigo/ui/components"
-import { Avatar, AvatarFallback, AvatarImage } from "@lorrigo/ui/components"
+import { Button, useSidebar, SidebarTrigger } from '@lorrigo/ui/components';
+import { Input } from '@lorrigo/ui/components';
+import { Separator } from '@lorrigo/ui/components';
+import { Avatar, AvatarFallback, AvatarImage } from '@lorrigo/ui/components';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,57 +12,61 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@lorrigo/ui/components"
-import { IndianRupee, Search, Plus, User, Settings, LogOut } from "lucide-react"
-import HoverCardToolTip from "../hover-card-tooltip"
-import { useWalletOperations } from "@/lib/apis/wallet"
-import { useModalStore } from "@/modal/modal-store"
-import { currencyFormatter } from "@lorrigo/utils"
-import { useSession, signOut } from "next-auth/react"
-import { LorrigoLogo } from "@/components/logos/lorrigo-logo"
+} from '@lorrigo/ui/components';
+import { IndianRupee, Search, Plus, User, Settings, LogOut } from 'lucide-react';
+import HoverCardToolTip from '../hover-card-tooltip';
+import { useWalletOperations } from '@/lib/apis/wallet';
+import { useModalStore } from '@/modal/modal-store';
+import { currencyFormatter } from '@lorrigo/utils';
+import { useSession, signOut } from 'next-auth/react';
+import { LorrigoLogo } from '@/components/logos/lorrigo-logo';
+import { BackButton } from '../back-btn';
+import Link from 'next/link';
 
 export function SiteHeader() {
-  const { getWalletBalance } = useWalletOperations()
-  const { openModal } = useModalStore()
-  const { data: session } = useSession()
+  const { getWalletBalance } = useWalletOperations();
+  const { openModal } = useModalStore();
+  const { data: session } = useSession();
 
   // Get wallet balance from API
-  const { data: walletData, isLoading } = getWalletBalance
-  const walletBalance = walletData?.balance || 0
-  const holdAmount = walletData?.hold_amount || 0
-  const usableAmount = walletData?.usable_amount || 0
+  const { data: walletData, isLoading } = getWalletBalance;
+  const walletBalance = walletData?.balance || 0;
+  const holdAmount = walletData?.hold_amount || 0;
+  const usableAmount = walletData?.usable_amount || 0;
 
-  const {isMobile} = useSidebar()
+  const { isMobile } = useSidebar();
 
   // Open recharge wallet modal
   const handleRechargeWallet = () => {
-    openModal("recharge-wallet", {
+    openModal('recharge-wallet', {
       onSuccess: () => {
         // Wallet balance will be automatically refreshed due to query invalidation
       },
-    })
-  }
+    });
+  };
 
   // Handle sign out
   const handleSignOut = () => {
-    signOut({ callbackUrl: "/" })
-  }
+    signOut({ callbackUrl: '/' });
+  };
 
   // Get user initials for avatar fallback
   const getUserInitials = (name?: string | null) => {
-    if (!name) return "U"
+    if (!name) return 'U';
     return name
-      .split(" ")
+      .split(' ')
       .map((n) => n[0])
-      .join("")
+      .join('')
       .toUpperCase()
-      .slice(0, 2)
-  }
+      .slice(0, 2);
+  };
 
   return (
-    <header className="sticky top-0 rounded-t-xl z-40 h-[var(--header-height)] flex shrink-0 items-center gap-2 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-[width,height] ease-linear">
+    <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40 flex h-[var(--header-height)] shrink-0 items-center gap-2 rounded-t-xl border-b backdrop-blur transition-[width,height] ease-linear">
       <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
-        {isMobile && <SidebarTrigger className="-ml-1 " />}
+        {isMobile && <SidebarTrigger className="-ml-1" />}
+        {!isMobile && <BackButton showLabel={false} className="w-min" />}
+
         <LorrigoLogo />
         <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
 
@@ -85,16 +89,13 @@ export function SiteHeader() {
           <div className="flex items-center gap-2">
             <HoverCardToolTip
               triggerComponent={
-                <div
-                  onClick={handleRechargeWallet}
-                  className="bg-secondary/50 flex items-center rounded-md border px-3 py-1 gap-2 cursor-pointer hover:bg-secondary/70 transition-colors"
-                >
-                  <IndianRupee className="text-muted-foreground mr-1.5 h-3.5 w-3.5" />
-                  <span className="text-secondary-foreground text-sm font-medium">
-                    {isLoading ? "Loading..." : currencyFormatter(walletBalance)}
-                  </span>
-                  <Separator orientation="vertical" className="data-[orientation=vertical]:h-4 text-muted-foreground" />
-                  <Plus className="h-3.5 w-3.5" />
+                <div className="bg-secondary/50 hover:bg-secondary/70 flex cursor-pointer items-center gap-2 rounded-md border px-3 py-1 transition-colors">
+                  <Link href="/seller/wallet" className="flex items-center gap-2">
+                    <IndianRupee className="text-muted-foreground mr-1.5 h-3.5 w-3.5" />
+                    <span className="text-secondary-foreground text-sm font-medium">{isLoading ? 'Loading...' : currencyFormatter(walletBalance)}</span>
+                  </Link>
+                  <Separator orientation="vertical" className="text-muted-foreground data-[orientation=vertical]:h-4" />
+                  <Plus className="h-3.5 w-3.5 lg:hidden" onClick={handleRechargeWallet} />
                 </div>
               }
               className="w-64 text-center text-sm"
@@ -109,12 +110,7 @@ export function SiteHeader() {
               </div>
             </HoverCardToolTip>
 
-            <Button
-              variant="outline"
-              size="sm"
-              className="hidden lg:flex h-8 items-center gap-1 px-2 py-0 bg-transparent"
-              onClick={handleRechargeWallet}
-            >
+            <Button size="sm" className="hidden h-8 items-center gap-1 px-2 py-0 lg:flex" onClick={handleRechargeWallet}>
               <Plus className="h-3.5 w-3.5" />
               <span className="text-xs">Recharge</span>
             </Button>
@@ -126,10 +122,8 @@ export function SiteHeader() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={session.user.image || ""} alt={session.user.name || ""} />
-                    <AvatarFallback className="text-xs font-medium">
-                      {getUserInitials(session.user.name)}
-                    </AvatarFallback>
+                    <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} />
+                    <AvatarFallback className="text-xs font-medium">{getUserInitials(session.user.name)}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
@@ -137,9 +131,7 @@ export function SiteHeader() {
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">{session.user.name}</p>
-                    <p className="text-xs leading-none text-muted-foreground">
-                      {session.user.email}
-                    </p>
+                    <p className="text-muted-foreground text-xs leading-none">{session.user.email}</p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -164,5 +156,5 @@ export function SiteHeader() {
         </div>
       </div>
     </header>
-  )
+  );
 }

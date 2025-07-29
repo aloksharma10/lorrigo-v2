@@ -1,8 +1,7 @@
 'use client';
 
-import type * as React from 'react';
-import { useMemo } from 'react';
-import { IconHelp, IconInnerShadowTop, IconSettings } from '@tabler/icons-react';
+import { useEffect, useMemo } from 'react';
+import { IconHelp, IconSettings } from '@tabler/icons-react';
 import {
   Sidebar,
   SidebarContent,
@@ -19,10 +18,10 @@ import {
 
 import { NavMain } from './nav-main';
 import { NavSecondary } from './nav-secondary';
-import { NavUser } from './nav-user';
 import { SELLER_ROUTES } from '@/lib/routes/seller';
 import { ADMIN_ROUTES } from '@/lib/routes/admin';
 import { useSession } from 'next-auth/react';
+import { usePathname } from 'next/navigation';
 
 // ------------------------------
 // Time-based greeting function
@@ -79,11 +78,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session } = useSession();
   const user = session?.user;
   const isAdmin = user?.role === 'ADMIN';
-  const { state } = useSidebar();
+  const { state, setOpenMobile, openMobile, isMobile  } = useSidebar();
   const isCollapsed = state === 'collapsed';
+  const pathname = usePathname();
 
   const firstName = useMemo(() => user?.name?.split(' ')[0] ?? 'there', [user?.name]);
   const greeting = useMemo(() => getTimeGreeting(firstName), [firstName]);
+
+
+  useEffect(() => {
+    setOpenMobile(false);
+  }, [pathname, setOpenMobile]);
 
   return (
     <Sidebar collapsible="icon" variant="inset" {...props}>

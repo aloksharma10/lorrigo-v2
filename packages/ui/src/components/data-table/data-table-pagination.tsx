@@ -23,7 +23,7 @@ export function DataTablePagination<TData>({
   showToolbar = true,
 }: DataTablePaginationProps<TData>) {
   return (
-    <div className="flex items-center justify-between px-2">
+    <div className="flex flex-col lg:flex-row items-center justify-between px-2">
       <div className="flex items-center space-x-6 lg:space-x-8">
         <div className={cn(`items-center space-x-2`, showToolbar ? 'flex' : 'hidden')}>
           <p className="text-sm font-medium">Items per page</p>

@@ -47,7 +47,7 @@ export const ADMIN_ROUTES = [
     items: [
       {
         title: 'Weight Discrepancy',
-        url: '/admin/billing/weight-disputes',
+        url: '/admin/billing/weight-disputes/pending',
         icon: Command,
       },
       {

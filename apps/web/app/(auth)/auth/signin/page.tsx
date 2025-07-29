@@ -4,7 +4,7 @@ import { useState, Suspense } from 'react';
 import { signIn, getSession } from 'next-auth/react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Input } from '@lorrigo/ui/components';
+import { Button, Input } from '@lorrigo/ui/components';
 import { getRoleBasedRedirect } from '@/lib/routes/redirect';
 import { Role } from '@lorrigo/db';
 import { checkAccessAndRedirect } from '@/lib/routes/check-permission';
@@ -42,7 +42,7 @@ function SignInForm() {
 
       // Get the updated session with user role
       const session = await getSession();
-      const userRole = (session?.user as any)?.role?.toLowerCase() as Role;
+      const userRole = (session?.user as any)?.role as Role;
 
       if (session?.user.token) {
         setAuthToken(session.user.token as string);
@@ -64,7 +64,6 @@ function SignInForm() {
         // No callback URL, redirect to role-based dashboard
         redirectUrl = getRoleBasedRedirect(userRole);
       }
-
       router.push(redirectUrl);
     } catch (error) {
       setError('An error occurred. Please try again.');
@@ -164,7 +163,7 @@ function SignInForm() {
               <div className="text-sm">
                 <Link
                   href="/auth/forgot-password"
-                  className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
+                  className="font-medium text-primary hover:text-primary/80 dark:text-primary/80 dark:hover:text-primary/60"
                 >
                   Forgot your password?
                 </Link>
@@ -172,39 +171,14 @@ function SignInForm() {
             </div>
 
             <div>
-              <button
+              <Button
                 type="submit"
                 disabled={isLoading}
-                className="flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+                className="w-full"
+                isLoading={isLoading}
               >
-                {isLoading ? (
-                  <div className="flex items-center">
-                    <svg
-                      className="-ml-1 mr-3 h-5 w-5 animate-spin text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Signing in...
-                  </div>
-                ) : (
-                  'Sign in'
-                )}
-              </button>
+                Sign in
+              </Button>
             </div>
           </form>
 
