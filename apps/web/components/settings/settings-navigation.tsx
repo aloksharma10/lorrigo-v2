@@ -18,6 +18,9 @@ import {
   Settings,
   BadgeIndianRupee,
   HandCoins,
+  User,
+  CreditCard,
+  AlertTriangle,
 } from "lucide-react"
 import type { UserSettingsTab } from "@/lib/routes/user-settings"
 
@@ -37,6 +40,9 @@ const iconMap = {
   Lock,
   Settings,
   HandCoins,
+  User,
+  CreditCard,
+  AlertTriangle,
 } as const
 
 interface SettingsNavigationProps {

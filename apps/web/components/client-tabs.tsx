@@ -18,6 +18,10 @@ import {
   Lock,
   Settings,
   BadgeIndianRupee,
+  User,
+  CreditCard,
+  AlertTriangle,
+  HandCoins,
 } from "lucide-react"
 
 // Icon mapping to convert string names to components
@@ -35,6 +39,10 @@ const iconMap = {
   Link: LinkIcon,
   Lock,
   Settings,
+  User,
+  CreditCard,
+  AlertTriangle,
+  HandCoins,
 } as const
 
 interface ClientTabsProps {

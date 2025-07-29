@@ -61,12 +61,6 @@ const userProfileSchema = z.object({
   kyc_submitted: z.boolean(),
   kyc_verified: z.boolean(),
   
-  // Bank Details
-  acc_holder_name: z.string().max(100).optional().or(z.literal('')),
-  acc_number: z.string().max(20).optional().or(z.literal('')),
-  ifsc_number: z.string().length(11, 'IFSC code must be exactly 11 characters').optional().or(z.literal('')),
-  acc_type: z.enum(['SAVINGS', 'CURRENT']).optional(),
-  
   // Seller Config
   is_d2c: z.boolean(),
   is_b2b: z.boolean(),
@@ -117,10 +111,6 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
       gst_no: '',
       kyc_submitted: false,
       kyc_verified: false,
-      acc_holder_name: '',
-      acc_number: '',
-      ifsc_number: '',
-      acc_type: undefined,
       is_d2c: true,
       is_b2b: true,
       is_prepaid: true,
@@ -183,10 +173,6 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
         gst_no: profile.gst_no || '',
         kyc_submitted: profile.kyc_submitted,
         kyc_verified: profile.kyc_verified,
-        acc_holder_name: profile.acc_holder_name || '',
-        acc_number: profile.acc_number || '',
-        ifsc_number: profile.ifsc_number || '',
-        acc_type: profile.acc_type as any,
         is_d2c: profile.is_d2c,
         is_b2b: profile.is_b2b,
         is_prepaid: profile.is_prepaid,
@@ -256,7 +242,7 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-6 mb-6">
+            <TabsList className="grid w-full grid-cols-5 mb-6">
               <TabsTrigger value="basic" className="flex items-center gap-2">
                 <Building className="h-4 w-4" />
                 <span className="hidden sm:inline">Company</span>
@@ -264,10 +250,6 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
               <TabsTrigger value="kyc" className="flex items-center gap-2">
                 <FileCheck className="h-4 w-4" />
                 <span className="hidden sm:inline">KYC</span>
-              </TabsTrigger>
-              <TabsTrigger value="bank" className="flex items-center gap-2">
-                <CreditCard className="h-4 w-4" />
-                <span className="hidden sm:inline">Banking</span>
               </TabsTrigger>
               <TabsTrigger value="seller" className="flex items-center gap-2">
                 <Settings className="h-4 w-4" />
@@ -515,86 +497,6 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
                       </AlertDescription>
                     </Alert>
                   )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Bank Details Tab */}
-            <TabsContent value="bank" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CreditCard className="h-5 w-5" />
-                    Banking Information
-                  </CardTitle>
-                  <CardDescription>Bank account details for payments and settlements</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={form.control}
-                      name="acc_holder_name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Account Holder Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter account holder name" {...field} />
-                          </FormControl>
-                          <FormDescription>Name as per bank records</FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="acc_type"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Account Type</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select account type" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="SAVINGS">Savings Account</SelectItem>
-                              <SelectItem value="CURRENT">Current Account</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="acc_number"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Account Number</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter account number" {...field} />
-                          </FormControl>
-                          <FormDescription>Your bank account number</FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="ifsc_number"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>IFSC Code</FormLabel>
-                          <FormControl>
-                            <Input placeholder="SBIN0001234" className="uppercase" maxLength={11} {...field} />
-                          </FormControl>
-                          <FormDescription>11-character IFSC code (e.g., SBIN0001234)</FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
