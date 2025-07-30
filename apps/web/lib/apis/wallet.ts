@@ -44,12 +44,48 @@ export const useWalletOperations = () => {
   });
 
   // Get transaction history
-  const getTransactionHistory = ({ page, limit, userId }: { page: number; limit: number; userId?: string }) => {
+  const getTransactionHistory = ({ 
+    page, 
+    limit, 
+    userId, 
+    search, 
+    type, 
+    dateRange,
+    transactionType,
+    status: transactionStatus
+  }: { 
+    page: number; 
+    limit: number; 
+    userId?: string; 
+    search?: string;
+    type?: 'SHIPMENT' | 'INVOICE' | 'WALLET' | string[] | string;
+    dateRange?: { from: Date; to: Date };
+    transactionType?: 'CREDIT' | 'DEBIT' | 'HOLD' | 'HOLD_RELEASE' | string[] | string;
+    status?: 'COMPLETED' | 'PENDING' | 'FAILED' | 'REFUNDED' | string[] | string;
+  }) => {
     return useQuery({
-      queryKey: ['wallet', 'transactions'],
+      queryKey: ['wallet', 'transactions', { page, limit, userId, search, type, dateRange, transactionType, status: transactionStatus }],
       queryFn: async () => {
+        const params: any = { page, limit, userId, search };
+        
+        // Handle comma-separated values for filters
+        if (type) {
+          params.type = Array.isArray(type) ? type.join(',') : type;
+        }
+        if (transactionType) {
+          params.transactionType = Array.isArray(transactionType) ? transactionType.join(',') : transactionType;
+        }
+        if (transactionStatus) {
+          params.status = Array.isArray(transactionStatus) ? transactionStatus.join(',') : transactionStatus;
+        }
+        
+        if (dateRange?.from && dateRange?.to) {
+          params.startDate = dateRange.from.toISOString();
+          params.endDate = dateRange.to.toISOString();
+        }
+        
         const response = await api.get<{ transactions: any[], pagination: { total: number, page: number, limit: number, totalPages: number } }>('/transactions/history', {
-          params: { page, limit, userId },
+          params,
         });
         return response;
       },

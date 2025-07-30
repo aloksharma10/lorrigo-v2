@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { History, ArrowUpDown, FileText, CreditCard } from 'lucide-react';
 import {
   DataTable,
   DataTableColumnHeader,
   type ColumnDef,
+  type ColumnFiltersState,
   Badge,
   Alert,
   AlertDescription,
@@ -29,6 +30,17 @@ export function TransactionHistoryTable({
     pageIndex: 0,
     pageSize: 15,
   });
+  const [filters, setFilters] = useState<ColumnFiltersState>([]);
+  const [globalFilter, setGlobalFilter] = useState('');
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
+    from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    to: new Date(),
+  });
+
+  // Get filter values - handle both single values and arrays
+  const transactionTypeFilter = filters.find(f => f.id === 'type')?.value as string[] | string | undefined;
+  const statusFilter = filters.find(f => f.id === 'status')?.value as string[] | string | undefined;
+  const entityTypeFilter = filters.find(f => f.id === 'entity_type')?.value as string[] | string | undefined;
 
   // Fetch transaction history
   const { getTransactionHistory } = useWalletOperations();
@@ -36,7 +48,45 @@ export function TransactionHistoryTable({
     page: pagination.pageIndex + 1, // API uses 1-based pagination
     limit: pagination.pageSize,
     userId: userId,
+    search: globalFilter,
+    type: entityTypeFilter || entityType,
+    dateRange: dateRange,
+    transactionType: transactionTypeFilter,
+    status: statusFilter,
   });
+
+  // Define filterable columns
+  const filterableColumns = [
+    {
+      id: 'type',
+      title: 'Transaction Type',
+      options: [
+        { label: 'Credit', value: 'CREDIT' },
+        { label: 'Debit', value: 'DEBIT' },
+        { label: 'Hold', value: 'HOLD' },
+        { label: 'Hold Release', value: 'HOLD_RELEASE' },
+      ],
+    },
+    {
+      id: 'status',
+      title: 'Status',
+      options: [
+        { label: 'Completed', value: 'COMPLETED' },
+        { label: 'Pending', value: 'PENDING' },
+        { label: 'Failed', value: 'FAILED' },
+        { label: 'Refunded', value: 'REFUNDED' },
+      ],
+    },
+    {
+      id: 'entity_type',
+      title: 'Entity Type',
+      options: [
+        { label: 'Shipment', value: 'SHIPMENT', icon: History },
+        { label: 'Invoice', value: 'INVOICE', icon: FileText },
+        { label: 'Wallet', value: 'WALLET', icon: CreditCard },
+      ],
+    },
+  ];
 
   // Define columns
   const columns: ColumnDef<any>[] = [
@@ -204,12 +254,27 @@ export function TransactionHistoryTable({
   ];
 
   // Handle pagination change
-  const handlePaginationChange = React.useCallback(
+  const handlePaginationChange = useCallback(
     (newPagination: { pageIndex: number; pageSize: number }) => {
       setPagination(newPagination);
     },
     []
   );
+
+  // Handle filters change
+  const handleFiltersChange = useCallback((newFilters: ColumnFiltersState) => {
+    setFilters(newFilters);
+  }, []);
+
+  // Handle global filter change
+  const handleGlobalFilterChange = useCallback((newGlobalFilter: string) => {
+    setGlobalFilter(newGlobalFilter);
+  }, []);
+
+  // Handle date range change
+  const handleDateRangeChange = useCallback((newDateRange: { from: Date; to: Date }) => {
+    setDateRange(newDateRange);
+  }, []);
 
   if (isError) {
     return (
@@ -224,13 +289,13 @@ export function TransactionHistoryTable({
   return (
     <>
       <DataTable
-        showToolbar={false}
         columns={columns}
         data={data?.transactions || []}
         count={data?.pagination?.total || 0}
         pageCount={data?.pagination?.totalPages || 0}
         page={pagination.pageIndex}
         pageSize={pagination.pageSize}
+        filterableColumns={filterableColumns}
         searchableColumns={[
           {
             id: 'code',
@@ -249,9 +314,14 @@ export function TransactionHistoryTable({
         isLoading={isLoading || isFetching}
         isError={isError}
         onPaginationChange={handlePaginationChange}
+        onFiltersChange={handleFiltersChange}
+        onGlobalFilterChange={handleGlobalFilterChange}
+        onDateRangeChange={handleDateRangeChange}
+        dateRangeFilter={true}
+        defaultDateRange={dateRange}
         manualPagination={true}
         manualSorting={false}
-        manualFiltering={false}
+        manualFiltering={true}
       />
     </>
   );

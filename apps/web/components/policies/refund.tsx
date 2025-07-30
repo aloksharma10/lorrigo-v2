@@ -1,6 +1,6 @@
 export default function RefundPolicy() {
     return (
-        <div className="text-gray-800 mx-auto p-6">
+        <div className="mx-auto p-6">
 
             <ul className="my-4">
                 <li>Company Name: Diaforaison Services Pvt Limited</li>

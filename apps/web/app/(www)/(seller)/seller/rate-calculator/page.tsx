@@ -196,7 +196,7 @@ export default function RateCalculator() {
       {/* Form Section */}
       <div className="xl:col-span-1">
         <Card className="sticky top-24 border-0 shadow-xl">
-          <CardHeader className="rounded-t-lg py-3 bg-gradient-to-r bg-primary text-white">
+          <CardHeader className="rounded-t-lg py-3 bg-primary text-white dark:bg-stone-800">
             <CardTitle className="flex items-center gap-2">
               <Calculator className="h-5 w-5" />
               Shipment Details
@@ -313,7 +313,7 @@ export default function RateCalculator() {
                 </div>
               )}
 
-              <div className="flex items-center space-x-2 rounded-lg bg-gray-50 p-3">
+              <div className="flex items-center space-x-2 rounded-lg bg-gray-50 dark:bg-stone-800 p-3">
                 <Switch id="reverseOrder" checked={formData.isReversedOrder} onCheckedChange={(checked) => handleInputChange('isReversedOrder', checked)} />
                 <Label htmlFor="reverseOrder" className="text-sm">
                   Reverse Order
@@ -570,14 +570,14 @@ export default function RateCalculator() {
         )}
 
         {rates.length === 0 && !loading && (
-          <Card className="border-0 bg-white/90 shadow-lg backdrop-blur-sm">
+          <Card className="border-0  shadow-lg backdrop-blur-sm">
             <CardContent className="p-12 text-center">
               <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-red-100">
                 <Package className="h-12 w-12 text-red-700" />
               </div>
-              <h3 className="mb-2 text-xl font-semibold text-gray-900">Ready to Calculate Rates?</h3>
-              <p className="mb-6 text-gray-600">Fill in your shipment details and discover the best courier options with competitive rates.</p>
-              <div className="flex items-center justify-center gap-8 text-sm text-gray-500">
+              <h3 className="mb-2 text-xl font-semibold text-gray-900 dark:text-white">Ready to Calculate Rates?</h3>
+              <p className="mb-6 text-gray-600 dark:text-white">Fill in your shipment details and discover the best courier options with competitive rates.</p>
+              <div className="flex items-center justify-center gap-8 text-sm text-gray-500 dark:text-white">
                 <div className="flex items-center gap-2">
                   <Zap className="h-4 w-4 text-blue-500" />
                   <span>Instant Quotes</span>

@@ -77,15 +77,14 @@ export const VerifyWalletRechargeSchema = z.object({
 });
 
 export const GetTransactionHistorySchema = z.object({
-  type: z
-    .enum([
-      TransactionEntityType.SHIPMENT,
-      TransactionEntityType.INVOICE,
-      TransactionEntityType.WALLET,
-    ])
-    .optional(),
+  type: z.string().optional(),
   page: z.number().int().positive().optional(),
   limit: z.number().int().positive().max(100).optional(),
+  search: z.string().optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  transactionType: z.string().optional(),
+  status: z.string().optional(),
 });
 
 export const PayInvoiceSchema = z.object({
@@ -311,11 +310,26 @@ export class TransactionController {
       //   userId = undefined as any;
       // }
 
+      // Parse comma-separated values and cast to proper types
+      const entityType = query.type ? query.type.split(',') as TransactionEntityType[] : undefined;
+      const transactionType = query.transactionType ? query.transactionType.split(',') as TransactionType[] : undefined;
+      const status = query.status ? query.status.split(',') as TransactionStatus[] : undefined;
+      
+      // Create dateRange object from separate parameters
+      const dateRange = query.startDate && query.endDate ? {
+        startDate: query.startDate,
+        endDate: query.endDate,
+      } : undefined;
+      
       const result = await this.transactionService.getTransactionHistory(
         userId,
-        query.type,
+        entityType,
         query.page,
-        query.limit
+        query.limit,
+        query.search,
+        dateRange,
+        transactionType,
+        status
       );
 
       if (!result.success) {

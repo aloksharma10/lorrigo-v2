@@ -1,7 +1,7 @@
 export default function PrivacyPolicy() {
     return (
 
-        <div id="write" className="mx-auto  p-6 bg-white rounded-lg shadow-md">
+        <div id="write" className="mx-auto  p-6 rounded-lg shadow-md">
            
             <p className="mb-4"><span>We at Diaforaison Services Private Limited (“Lorrigo”) consider customer trust as our top priority. We deliver services to millions of customers across the country. Our customers trust us with some of their most sensitive information. This document informs you of our policies regarding the collection, use, and disclosure of personal data when you use our Services and the choices you have associated with that data.</span></p>
             <h3 id="1-what-do-we-collect" className="text-2xl font-bold mb-2"><span>1. What do we collect?</span></h3>

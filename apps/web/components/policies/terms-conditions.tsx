@@ -1,6 +1,6 @@
 export default function TermsAndConditions() {
     return (
-        <div className=" mx-auto bg-white p-6 rounded shadow">
+        <div className=" mx-auto p-6 rounded-lg shadow-md">
             <h2 className="text-xl font-semibold mt-6 mb-2">Terms of Service</h2>
             <p className="mb-4">
                 Welcome to Lorrigo! These Terms of Service (&quot;Terms&quot;) govern your use of the Lorrigo platform and services. By

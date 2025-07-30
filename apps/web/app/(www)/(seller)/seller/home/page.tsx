@@ -119,14 +119,14 @@ export default function Home() {
                   value={kycStatusData?.isCompleted ? "Completed" : `${kycStatusData?.completionPercentage || 0}%`}
                   description={kycStatusData?.nextAction || "Complete your KYC to start selling on Lorrigo"}
                   icon={kycStatusData?.isCompleted ? IconCircleCheck : IconUserCheck}
-                  className={kycStatusData?.isCompleted ? "bg-green-100" : "bg-yellow-100"}
+                  className={kycStatusData?.isCompleted ? "bg-green-100" : "bg-yellow-100 dark:text-gray-600 "}
                 />
                 <CardItems
                   title="Getting Started"
                   value={kycStatusData?.isCompleted ? "Ready" : "Pending"}
                   description={kycStatusData?.isCompleted ? "You're all set to start selling" : "Complete KYC to get started"}
                   icon={kycStatusData?.isCompleted ? IconCircleCheck : IconClockPause}
-                  className={kycStatusData?.isCompleted ? "bg-green-100" : "bg-gray-100"}
+                  className={kycStatusData?.isCompleted ? "bg-green-100" : "bg-gray-100 dark:text-gray-600"}
                 />
               </>
             )}

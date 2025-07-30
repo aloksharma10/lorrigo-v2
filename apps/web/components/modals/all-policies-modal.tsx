@@ -25,7 +25,7 @@ export const AllPoliciesModal = ({
 
   return (
     <div>
-      <h1 className='sticky top-0 bg-white z-10 text-2xl font-bold p-4 border-b bg-secondary'>{title}</h1>
+      <h1 className='sticky top-0 bg-white z-10 text-2xl font-bold p-4 border-b bg-secondary dark:bg-secondary/80'>{title}</h1>
       <ScrollArea className="flex flex-col gap-4 h-[calc(100vh-10rem)]">
         {type === 'privacy-policy' && <PrivacyPolicy />}
         {type === 'terms-conditions' && <TermsAndConditions />}

@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { PrismaClient, TransactionStatus, ChargeType } from '@lorrigo/db';
+import { PrismaClient, TransactionStatus, ChargeType, Prisma } from '@lorrigo/db';
 import { generateId, getFinancialYear } from '@lorrigo/utils';
 import { Queue } from 'bullmq';
 import { QueueNames } from '@/lib/queue';
@@ -739,33 +739,80 @@ export class TransactionService {
    */
   async getTransactionHistory(
     userId: string | undefined,
-    type?: TransactionEntityType,
+    type?: TransactionEntityType | TransactionEntityType[],
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
+    search?: string,
+    dateRange?: {
+      startDate: string,
+      endDate: string,
+    },
+    transactionType?: TransactionType | TransactionType[],
+    status?: TransactionStatus | TransactionStatus[]
   ) {
     try {
       const skip = (page - 1) * limit;
       let transactions: any[] = [];
       let total = 0;
 
-      const whereClause = userId ? { user_id: userId } : {};
+      const dateRangeClause = dateRange ? {
+        created_at: {
+          gte: new Date(dateRange.startDate),
+          lte: new Date(dateRange.endDate),
+        },
+      } : {};
+
+      const searchClause = search ? {
+        OR: [
+          { description: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
+          { code: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
+        ],
+      } : {};
+
+      // Build additional filters
+      const additionalFilters: any = {};
+      if (transactionType) {
+        if (Array.isArray(transactionType)) {
+          additionalFilters.type = { in: transactionType };
+        } else {
+          additionalFilters.type = transactionType;
+        }
+      }
+      if (status) {
+        if (Array.isArray(status)) {
+          additionalFilters.status = { in: status };
+        } else {
+          additionalFilters.status = status;
+        }
+      }
+
+      const whereClause = userId ? { 
+        user_id: userId, 
+        ...dateRangeClause, 
+        ...searchClause,
+        ...additionalFilters
+      } : { 
+        ...dateRangeClause, 
+        ...searchClause,
+        ...additionalFilters
+      };
       // Get transactions based on type
-      if (!type || type === TransactionEntityType.SHIPMENT) {
-        const shipmentTransactions = await this.prisma.shipmentTransaction.findMany({
-          where: whereClause,
-          skip,
-          // take: type ? limit : Math.floor(limit / 3),
-          orderBy: { created_at: 'desc' },
-          include: {
-            shipment: {
-              select: {
-                code: true,
-                awb: true,
-                status: true,
+              if (!type || type.includes(TransactionEntityType.SHIPMENT)) {
+          const shipmentTransactions = await this.prisma.shipmentTransaction.findMany({
+            where: {...whereClause, awb: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
+            skip,
+            // take: type ? limit : Math.floor(limit / 3),
+            orderBy: { created_at: 'desc' },
+            include: {
+              shipment: {
+                select: {
+                  code: true,
+                  awb: true,
+                  status: true,
+                },
               },
             },
-          },
-        });
+          });
 
         const shipmentCount = await this.prisma.shipmentTransaction.count({
           where: whereClause,
@@ -786,11 +833,11 @@ export class TransactionService {
         }
       }
 
-      if (!type || type === TransactionEntityType.INVOICE) {
+      if (!type || type.includes(TransactionEntityType.INVOICE)) {
         const invoiceTransactions = await this.prisma.invoiceTransaction.findMany({
           where: whereClause,
-          skip: type ? skip : 0,
-          take: type ? limit : Math.floor(limit / 3),
+          skip,
+          // take: type ? limit : Math.floor(limit / 3),
           orderBy: { created_at: 'desc' },
           include: {
             invoice: {
@@ -815,18 +862,18 @@ export class TransactionService {
           })),
         ];
 
-        if (type === TransactionEntityType.INVOICE) {
+        if (type && type.includes(TransactionEntityType.INVOICE)) {
           total = invoiceCount;
         } else {
           total += invoiceCount;
         }
       }
 
-      if (!type || type === TransactionEntityType.WALLET) {
+      if (!type || type.includes(TransactionEntityType.WALLET)) {
         const walletTransactions = await this.prisma.walletRechargeTransaction.findMany({
           where: whereClause,
-          skip: type ? skip : 0,
-          take: type ? limit : Math.floor(limit / 3),
+          skip,
+          // take: type ? limit : Math.floor(limit / 3),
           orderBy: { created_at: 'desc' },
         });
 
@@ -860,6 +907,10 @@ export class TransactionService {
       return {
         success: true,
         transactions,
+        _stats: { 
+          total_debit: transactions.filter((t) => t.type === TransactionType.DEBIT).reduce((acc, t) => acc + t.amount, 0),
+          total_credit: transactions.filter((t) => t.type === TransactionType.CREDIT).reduce((acc, t) => acc + t.amount, 0),
+        },
         pagination: {
           page,
           limit,
