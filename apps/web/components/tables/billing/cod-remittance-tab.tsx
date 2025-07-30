@@ -45,10 +45,10 @@ export default function CODRemittanceTab() {
     from: dateRange.from ? dateRange.from.toISOString().split('T')[0] : '',
     to: dateRange.to ? dateRange.to.toISOString().split('T')[0] : '',
   };
-  const { data, isLoading, isError, refetch: refetchRemittances } = isAdmin ? useAdminRemittances(params) : useSellerRemittances(params);
+  const { data, isLoading, isError } = isAdmin ? useAdminRemittances(params) : useSellerRemittances(params);
 
   // Fetch user bank accounts (for sellers)
-  const { data: bankAccountsData, isLoading: isBankLoading, refetch: refetchBankAccounts } = useUserBankAccounts();
+  const { data: bankAccountsData, isLoading: isBankLoading } = useUserBankAccounts();
   const bankAccounts = bankAccountsData?.data?.bankAccounts || bankAccountsData?.bankAccounts || [];
 
   // Handler for selecting a bank account

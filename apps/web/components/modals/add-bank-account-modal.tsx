@@ -1,71 +1,101 @@
-import React from 'react';
-import { Modal, Button, Input, Label, toast, Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@lorrigo/ui/components';
-import { useAddBankAccount } from '@/lib/apis/remittance';
-import { useForm } from 'react-hook-form';
+'use client';
+
+import * as React from 'react';
+import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { useModalStore } from '@/modal/modal-store';
+import { useForm } from 'react-hook-form';
+import {
+  Button,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  FormDescription,
+  toast,
+} from '@lorrigo/ui/components'; // Assuming these are from shadcn/ui
+import { Loader2 } from 'lucide-react';
+import { useAddBankAccount } from '@/lib/apis/remittance';
 
-export const bankAccountSchema = z.object({
-  account_number: z
-    .string()
-    .trim()
-    .min(9, "Account number must be at least 9 digits")
-    .max(18, "Account number cannot exceed 18 digits")
-    .regex(/^\d+$/, "Account number must contain only digits"),
-
-  ifsc: z
-    .string()
-    .trim()
-    .toUpperCase()
-    .regex(
-      /^[A-Z]{4}0[A-Z0-9]{6}$/,
-      "Invalid IFSC format. Must be like 'ABCD0123456'"
-    ),
-
-  bank_name: z
-    .string()
-    .trim()
-    .min(3, "Bank name must be at least 3 characters")
-    .max(100, "Bank name is too long"),
-
-  account_holder: z
-    .string()
-    .trim()
-    .min(3, "Account holder name must be at least 3 characters")
-    .max(100, "Account holder name is too long"),
+// Zod schema for bank account form
+const bankAccountSchema = z.object({
+  account_number: z.string().min(1, 'Account number is required').max(20),
+  ifsc: z.string().length(11, 'IFSC code must be exactly 11 characters'),
+  bank_name: z.string().min(1, 'Bank name is required').max(100),
+  account_holder: z.string().min(1, 'Account holder name is required').max(100),
+  acc_type: z.enum(['SAVINGS', 'CURRENT']),
 });
 
-type BankAccountFormValues = z.infer<typeof bankAccountSchema>;
+export type BankAccountFormData = z.infer<typeof bankAccountSchema>;
 
-interface AddBankAccountModalProps {
-  showModal: boolean;
-  setShowModal: React.Dispatch<React.SetStateAction<boolean>>;
-  onSuccess?: () => void;
+// Assuming UserBankAccount type is defined in '@/lib/apis/users'
+// For demonstration, defining a minimal type here if not available
+interface UserBankAccount {
+  id: string;
+  account_number: string;
+  ifsc: string;
+  bank_name: string;
+  account_holder: string;
+  acc_type?: 'SAVINGS' | 'CURRENT';
+  is_verified: boolean;
+  verified_at?: string;
+  created_at: string;
+  is_selected_for_remittance?: boolean;
 }
 
-export default function AddBankAccountModal() {
-  const { modals, closeModal } = useModalStore();
-  const modal_props = modals.filter((modal) => modal.type === 'add-bank-account')[0];
-  const modal_id = modal_props!.id;
-  const form = useForm<BankAccountFormValues>({
+interface BankAccountFormDialogProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  editingAccount: UserBankAccount | null;
+  onSubmit: (data: BankAccountFormData) => Promise<void>;
+  isSubmitting: boolean;
+}
+
+export function BankAccountFormModal({ isOpen, onOpenChange, editingAccount, onSubmit, isSubmitting }: BankAccountFormDialogProps) {
+  const { mutate: addBankAccount, isPending } = useAddBankAccount();
+
+  const form = useForm<BankAccountFormData>({
     resolver: zodResolver(bankAccountSchema),
     defaultValues: {
       account_number: '',
       ifsc: '',
       bank_name: '',
       account_holder: '',
+      acc_type: 'SAVINGS',
     },
   });
 
-  const { mutate: addBankAccount, isPending } = useAddBankAccount();
+  React.useEffect(() => {
+    if (editingAccount) {
+      form.reset({
+        account_number: editingAccount.account_number,
+        ifsc: editingAccount.ifsc,
+        bank_name: editingAccount.bank_name,
+        account_holder: editingAccount.account_holder,
+        acc_type: editingAccount.acc_type || 'SAVINGS',
+      });
+    } else {
+      form.reset(); // Reset form when not editing (e.g., for new account)
+    }
+  }, [editingAccount, form]);
 
-  const handleSubmit = (values: BankAccountFormValues) => {
-    addBankAccount(values, {
+  const handleFormSubmit = async (data: BankAccountFormData) => {
+    if (onSubmit) {
+      await onSubmit(data);
+      return;
+    }
+
+    addBankAccount(data, {
       onSuccess: () => {
         toast.success('Bank account added successfully');
         form.reset();
-        closeModal(modal_id);
       },
       onError: (err: any) => {
         toast.error(err?.message || 'Failed to add bank account');
@@ -73,34 +103,31 @@ export default function AddBankAccountModal() {
     });
   };
 
+  const handleClose = (open: boolean) => {
+    if (!open) {
+      form.reset(); // Reset form on close
+      onOpenChange(open);
+    } else {
+      onOpenChange(open);
+    }
+  };
+
   return (
-    <Modal>
-   <div className='p-4'>
-   <h2 className="lg:text-xl text-lg font-semibold mb-4">Add Bank Account</h2>
+    <div className="p-4">
+      <h2 className="text-lg font-semibold">{editingAccount ? 'Edit Bank Account' : 'Add New Bank Account'}</h2>
+      <p className="text-muted-foreground text-sm">{editingAccount ? 'Update the bank account details below.' : 'Add a new bank account for this user.'}</p>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="mt-4 space-y-4">
           <FormField
             control={form.control}
-            name="account_number"
+            name="account_holder"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Account Number</FormLabel>
+                <FormLabel>Account Holder Name</FormLabel>
                 <FormControl>
-                  <Input {...field} required />
+                  <Input placeholder="Enter account holder name" {...field} />
                 </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="ifsc"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>IFSC</FormLabel>
-                <FormControl>
-                  <Input {...field} required />
-                </FormControl>
+                <FormDescription>Name as per bank records</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -112,36 +139,76 @@ export default function AddBankAccountModal() {
               <FormItem>
                 <FormLabel>Bank Name</FormLabel>
                 <FormControl>
-                  <Input {...field} required />
+                  <Input placeholder="Enter bank name" {...field} />
                 </FormControl>
+                <FormDescription>Full name of the bank</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
           <FormField
             control={form.control}
-            name="account_holder"
+            name="acc_type"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Account Holder</FormLabel>
-                <FormControl>
-                  <Input {...field} required />
-                </FormControl>
+                <FormLabel>Account Type</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select account type" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="SAVINGS">Savings Account</SelectItem>
+                    <SelectItem value="CURRENT">Current Account</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormDescription>Type of bank account</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="account_number"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Account Number</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter account number" {...field} />
+                  </FormControl>
+                  <FormDescription>Your bank account number</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="ifsc"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>IFSC Code</FormLabel>
+                  <FormControl>
+                    <Input placeholder="SBIN0001234" className="uppercase" maxLength={11} {...field} />
+                  </FormControl>
+                  <FormDescription>11-character IFSC code (e.g., SBIN0001234)</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => closeModal(modal_id)} disabled={isPending}>
+            <Button type="button" variant="outline" onClick={() => handleClose(false)} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button type="submit" isLoading={isPending} disabled={isPending}>
-              Add Account
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {editingAccount ? 'Update' : 'Add'} Account
             </Button>
           </div>
         </form>
       </Form>
-   </div>
-    </Modal>
+    </div>
   );
-} 
+}

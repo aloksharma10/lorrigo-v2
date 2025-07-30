@@ -19,10 +19,9 @@ import { BulkOrdersOperationsModal } from '@/components/modals/bulk-operations-m
 import { BillingCycleModal } from '@/components/modals/billing-cycle-modal';
 import { WeightDisputeCSVModal } from '@/components/modals/weight-dispute-csv-modal';
 import { DisputeActionsCSVModal } from '@/components/modals/dispute-actions-csv-modal';
-import { ManualBillingModal } from '@/components/modals/manual-billing-modal';
 import { RemittanceDetailModal } from '@/components/modals/remittance-detail-modal';
 import ManageBankAccountsModal from '@/components/modals/manage-bank-accounts';
-import AddBankAccountModal from '@/components/modals/add-bank-account-modal';
+import { BankAccountFormModal } from '@/components/modals/add-bank-account-modal';
 import { AllPoliciesModal } from '@/components/modals/all-policies-modal';
 
 // Store to track registered modals
@@ -58,10 +57,9 @@ export function ModalRegistry() {
       registerModal('billing-cycle', BillingCycleModal);
       registerModal('weight-dispute-csv', WeightDisputeCSVModal);
       registerModal('dispute-actions-csv', DisputeActionsCSVModal);
-      registerModal('manual-billing', ManualBillingModal);
       registerModal('remittance-detail', RemittanceDetailModal);
       registerModal('manage-bank-accounts', ManageBankAccountsModal);
-      registerModal('add-bank-account', AddBankAccountModal);
+      registerModal('add-bank-account', BankAccountFormModal);
       registerModal('all-policies', AllPoliciesModal);
 
       setRegistered(true);

@@ -18,7 +18,6 @@ export type ModalType =
   | 'billing-cycle'
   | 'weight-dispute-csv'
   | 'dispute-actions-csv'
-  | 'manual-billing'
   | 'remittance-detail'
   | 'manage-bank-accounts'
   | 'add-bank-account'
@@ -76,7 +75,6 @@ export const useModalStore = create<ModalState>((set, get) => ({
     'billing-cycle': undefined as unknown as ModalComponent,
     'weight-dispute-csv': undefined as unknown as ModalComponent,
     'dispute-actions-csv': undefined as unknown as ModalComponent,
-    'manual-billing': undefined as unknown as ModalComponent,
     'remittance-detail': undefined as unknown as ModalComponent,
     'manage-bank-accounts': undefined as unknown as ModalComponent,
     'add-bank-account': undefined as unknown as ModalComponent,
