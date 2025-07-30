@@ -30,6 +30,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@lorrigo/ui/components';
+import { VideoContainer } from '@/components/auth/video-container';
 
 interface FormData {
   name: string;
@@ -116,6 +117,7 @@ export default function SignUp() {
     if (!formData.email) newErrors.email = 'Email is required';
     if (!formData.password) newErrors.password = 'Password is required';
     if (!formData.business_name) newErrors.business_name = 'Business name is required';
+    if (!formData.phone) newErrors.phone = 'Phone number is required';
 
     // Field-specific validation
     Object.keys(formData).forEach((key) => {
@@ -192,8 +194,8 @@ export default function SignUp() {
   const progress = (completedFields / totalRequiredFields) * 100;
 
   return (
-    <div className="flex items-center justify-center">
-      <Card className="w-full max-w-lg">
+   <>
+      <Card className="w-full max-w-lg m-auto">
         <CardHeader className="space-y-1">
           <CardTitle className="text-center text-2xl font-bold">Create your account</CardTitle>
           <CardDescription className="text-center">
@@ -393,16 +395,19 @@ export default function SignUp() {
             </div>
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-background text-muted-foreground px-2">
-                Already have an account?
+                Don't have an account?
               </span>
             </div>
           </div>
 
-          <Button variant="outline" className="w-full" asChild>
-            <Link href="/auth/signin">Sign in to your account</Link>
-          </Button>
+          <Link href="/auth/signin">
+            <Button variant="outline" className="w-full">
+              Already have an account? Sign in
+            </Button>
+          </Link>
         </CardContent>
       </Card>
-    </div>
+      <VideoContainer />
+    </>
   );
 }

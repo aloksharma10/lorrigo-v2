@@ -4,12 +4,14 @@ import { useState, Suspense } from 'react';
 import { signIn, getSession } from 'next-auth/react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Button, Input } from '@lorrigo/ui/components';
+import { Alert, AlertDescription, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label } from '@lorrigo/ui/components';
 import { getRoleBasedRedirect } from '@/lib/routes/redirect';
 import { Role } from '@lorrigo/db';
 import { checkAccessAndRedirect } from '@/lib/routes/check-permission';
 import { useAuthToken } from '@/components/providers/token-provider';
 import Redirecting from '@/components/skeletons/redirecting';
+import { VideoContainer } from '@/components/auth/video-container';
+import { AlertCircle } from 'lucide-react';
 
 function SignInForm() {
   const [email, setEmail] = useState('');
@@ -96,34 +98,33 @@ function SignInForm() {
   }
   
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center py-12">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-bold tracking-tight">
+    <Card className="w-full max-w-lg m-auto">
+      <CardHeader className="space-y-1">
+      <CardTitle className="text-center text-2xl font-bold">
           Sign in to your account
-        </h2>
+        </CardTitle>
         {callbackUrl && (
-          <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
+          <CardDescription className="text-center text-sm">
             You need to sign in to access this page
-          </p>
+          </CardDescription>
         )}
-      </div>
+      </CardHeader>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white px-4 py-8 shadow sm:rounded-lg sm:px-10 dark:bg-gray-800">
+      <CardContent className="space-y-4 p-6">
           {errorMessage && (
-            <div className="mb-4 rounded-md bg-red-50 p-4 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
-              {errorMessage}
-            </div>
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>
           )}
 
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
-              <label
+              <Label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
               >
                 Email address
-              </label>
+              </Label>
               <div className="mt-1">
                 <Input
                   id="email"
@@ -133,18 +134,16 @@ function SignInForm() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                 />
               </div>
             </div>
 
             <div>
-              <label
+              <Label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
               >
                 Password
-              </label>
+              </Label>
               <div className="mt-1">
                 <Input
                   id="password"
@@ -154,7 +153,6 @@ function SignInForm() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                 />
               </div>
             </div>
@@ -163,7 +161,7 @@ function SignInForm() {
               <div className="text-sm">
                 <Link
                   href="/auth/forgot-password"
-                  className="font-medium text-primary hover:text-primary/80 dark:text-primary/80 dark:hover:text-primary/60"
+                  // className="font-medium text-primary hover:text-primary/80 dark:text-primary/80 dark:hover:text-primary/60"
                 >
                   Forgot your password?
                 </Link>
@@ -197,15 +195,15 @@ function SignInForm() {
             <div className="mt-6">
               <Link
                 href="/auth/signup"
-                className="flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
               >
-                Create an account
+                <Button variant="outline" className="w-full">
+                  Create an account
+                </Button>
               </Link>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -219,6 +217,7 @@ export default function SignIn() {
       }
     >
       <SignInForm />
+      <VideoContainer />
     </Suspense>
   );
 }
