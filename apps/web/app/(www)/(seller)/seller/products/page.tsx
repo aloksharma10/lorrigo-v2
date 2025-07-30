@@ -153,7 +153,7 @@ export default function ProductsPage() {
   ];
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="container mx-auto">
       <div className="mb-6">
           <h1 className="text-2xl font-bold">Products</h1>
           <p className="text-muted-foreground">Manage your product catalog and inventory</p>

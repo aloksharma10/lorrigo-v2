@@ -109,8 +109,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       {/* Content */}
       <SidebarContent>
         <ScrollArea className="h-[calc(100vh-8rem)]">
-          <NavMain items={SELLER_ROUTES} group="seller" />
-          {isAdmin && <NavMain items={ADMIN_ROUTES} group="admin" />}
+          
+          {isAdmin ? <NavMain items={ADMIN_ROUTES} group="admin" /> : <NavMain items={SELLER_ROUTES} group="seller" />}
         </ScrollArea>
       </SidebarContent>
 

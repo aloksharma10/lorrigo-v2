@@ -186,25 +186,24 @@ export default function CODRemittanceTab() {
   return (
     <div className="space-y-6">
       {/* Export buttons */}
-      <div className="mb-4 flex flex-col gap-2 lg:flex-row">
-        <Button onClick={() => handleExport('csv')} variant="outline">
-          <Download className="mr-2 h-4 w-4" /> Export CSV
-        </Button>
-        <Button onClick={() => handleExport('xlsx')} variant="outline">
-          <Download className="mr-2 h-4 w-4" /> Export XLSX
-        </Button>
-        {!isAdmin && (
-          <Button icon={PlusCircleIcon} className="lg:ml-auto" onClick={() => openModal('add-bank-account')}>
-            Add Bank Account
+      <div className="mb-4 flex flex-col justify-between gap-2 lg:flex-row">
+        <h1 className="text-2xl font-bold">Remittance Report</h1>
+        <div className="flex gap-2">
+          {!isAdmin && (
+            <Button icon={PlusCircleIcon} onClick={() => openModal('add-bank-account')}>
+              Add Bank Account
+            </Button>
+          )}
+          <Button icon={Settings} onClick={() => openModal('manage-bank-accounts')}>
+            Manage Bank Accounts
           </Button>
-        )}
-        <Button icon={Settings} onClick={() => openModal('manage-bank-accounts')}>
-          Manage Bank Accounts
-        </Button>
+        </div>
       </div>
       {/* Data Table */}
       <DataTable
         columns={columns}
+        showDownload={true}
+        handleDownload={() => handleExport('xlsx')}
         data={remittanceOrders}
         count={paginationMeta.total}
         page={pagination.pageIndex}

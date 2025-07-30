@@ -84,11 +84,11 @@ export const Header = ({ menuItems }: { menuItems: { name: string; path: string,
           {/* Scrollable navigation container */}
           <div
             ref={scrollContainerRef}
-            className="scrollbar-hide w-full overflow-x-auto pl-8 md:w-auto lg:pl-3"
+            className="scrollbar-hide w-full overflow-x-auto"
             onScroll={checkScrollPosition}
           >
             <NavigationMenu>
-              <NavigationMenuList className="flex w-full px-8 md:px-0">
+              <NavigationMenuList className="flex w-full">
                 {menuItems.map((item) => (
                   <NavigationMenuItem key={item.name} className="flex-shrink-0">
                     <Link

@@ -189,7 +189,7 @@ export default function CustomersPage() {
   ];
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="container mx-auto">
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Customers</h1>

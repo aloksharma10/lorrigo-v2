@@ -42,7 +42,7 @@ export default function NDRPage() {
   };
 
   return (
-    <div className="mx-auto w-full space-y-4 p-4">
+    <div className="mx-auto w-full">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-base font-bold capitalize lg:text-2xl">

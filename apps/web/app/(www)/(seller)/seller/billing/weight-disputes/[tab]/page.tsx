@@ -41,9 +41,9 @@ export default function SellerWeightDisputesPage() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex mt-4 items-center justify-between">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg lg:text-2xl font-semibold tracking-tight">Weight Disputes</h1>
+          <h1 className="text-lg lg:text-2xl font-bold tracking-tight">Weight Disputes</h1>
           <p className="text-muted-foreground text-sm lg:text-base">Review and resolve your shipment weight disputes.</p>
         </div>
       </div>

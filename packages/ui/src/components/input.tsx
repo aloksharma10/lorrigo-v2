@@ -9,7 +9,7 @@ interface InputProps extends Omit<React.ComponentProps<"input">, "size"> {
 
 function Input({ className, isLoading, type, size = "md", ...props }: InputProps) {
   return (
-    <div className={cn("relative w-full", className)}>
+    <div className={cn("relative w-full", className?.includes("hidden") ? "hidden" : "")}>
        {type === "search" && (
         <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
           <Search className="h-4 w-4 text-muted-foreground" />

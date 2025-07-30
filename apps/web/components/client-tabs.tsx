@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useState, useEffect, type ForwardRefExoticComponent, type RefAttributes, useMemo } from "react"
-import { ChevronLeft, ChevronRight, type LucideProps } from "lucide-react"
+import { Box, ChevronLeft, ChevronRight, FileText, type LucideProps } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger, Button } from "@lorrigo/ui/components"
 import { useRouter, usePathname } from "next/navigation"
 import {
@@ -54,7 +54,9 @@ const iconMap = {
   Truck,
   CheckCircle,
   RotateCcw,
-  List
+  List,
+  Box,
+  FileText,
 } as const
 
 interface ClientTabsProps {

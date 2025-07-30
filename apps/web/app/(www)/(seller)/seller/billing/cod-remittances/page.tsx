@@ -15,10 +15,6 @@ interface PageProps {
   }>;
 }
 
-// Force dynamic rendering with no caching
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-
 export default async function CODRemittancesPage({ searchParams }: PageProps) {
   const queryParams = await searchParams;
 
@@ -44,5 +40,5 @@ export default async function CODRemittancesPage({ searchParams }: PageProps) {
     //  status: "",
   };
 
-  return <div className="space-y-4 px-4 pt-4"><CODRemittanceTab /></div>;
+  return <CODRemittanceTab />
 }

@@ -141,7 +141,7 @@ export default function BulkLogPage() {
   };
 
   return (
-    <div className="mx-auto w-full py-6">
+    <div className="mx-auto w-full">
       <Card className="w-full">
         <CardHeader className="flex w-full flex-row items-center justify-between">
           <CardTitle>Bulk Operations Log</CardTitle>

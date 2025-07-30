@@ -355,6 +355,21 @@ export class RemittanceService {
       where.OR = [
         { code: { contains: search, mode: 'insensitive' } },
         { transaction_id: { contains: search, mode: 'insensitive' } },
+        { user: { name: { contains: search, mode: 'insensitive' } } },
+        { orders: { 
+          some : { 
+            shipment: { 
+              awb: { contains: search, mode: 'insensitive' }
+            }
+          }
+        }
+       },
+        { orders: { 
+          some : { 
+            order_number: { contains: search, mode: 'insensitive' }
+          }
+        }
+       },
       ];
     }
 

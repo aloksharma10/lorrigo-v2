@@ -369,12 +369,11 @@ export function BillingCycleModal({
   const hasActiveCycle = activeCycles.length > 0;
 
   return (
-    <Modal className="max-w-4xl">
       <div className="flex h-[80vh] flex-col">
         {/* Header */}
         <div className="border-b p-6">
           <div className="flex items-center gap-3">
-            <RotateCcw className="h-6 w-6 text-blue-600" />
+            <RotateCcw className="h-6 w-6 text-primary" />
             <div>
               <h2 className="text-xl font-semibold">Billing Management</h2>
               <p className="text-muted-foreground text-sm">
@@ -781,6 +780,5 @@ export function BillingCycleModal({
           </div>
         </div>
       </div>
-    </Modal>
   );
 }
