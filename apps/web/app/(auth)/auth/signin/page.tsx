@@ -98,7 +98,7 @@ function SignInForm() {
   }
   
   return (
-    <Card className="w-full max-w-lg m-auto">
+    <Card className="w-full max-w-md m-auto">
       <CardHeader className="space-y-1">
       <CardTitle className="text-center text-2xl font-bold">
           Sign in to your account

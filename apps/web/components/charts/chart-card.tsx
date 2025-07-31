@@ -63,6 +63,10 @@ export function ChartCard({
               <Skeleton className="h-4 w-28" />
             </div>
           </div>
+        ) : !isLoading && !children ? (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-muted-foreground">No data available</p>
+          </div>
         ) : (
           children
         )}
