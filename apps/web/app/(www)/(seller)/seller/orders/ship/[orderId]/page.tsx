@@ -172,7 +172,7 @@ export default function ShipOrderPage() {
 
         {/* Main Content */}
         <div className="flex-1">
-          <div className="mx-auto max-w-7xl space-y-4 md:space-y-6">
+          <div className="mx-auto max-w-7xl space-y-4 md:space-y-6 px-4">
             {/* Mobile Header with Order Details Sheet */}
             <div className="flex items-center justify-between md:hidden">
               <h1 className="text-xl font-bold">Select Courier</h1>
@@ -503,7 +503,6 @@ export default function ShipOrderPage() {
                             <Button
                               onClick={() => handleShipOrder(rate.id, rate.name)}
                               disabled={isCreatingShipment}
-                              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700"
                             >
                               {isCreatingShipment ? 'Shipping...' : 'Ship Now'}
                             </Button>
