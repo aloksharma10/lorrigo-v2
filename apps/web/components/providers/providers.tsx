@@ -40,7 +40,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <ProgressProvider height="4px" color="#5b3c37" options={{ showSpinner: false }} shallowRouting>
+    <ProgressProvider height="4px" color="#920b08" options={{ showSpinner: false }} shallowRouting>
       <SessionProvider>
         <QueryClientProvider client={queryClient}>
           <TokenProvider>

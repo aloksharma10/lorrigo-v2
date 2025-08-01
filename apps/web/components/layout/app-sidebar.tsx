@@ -116,7 +116,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
       {/* Footer */}
       <SidebarFooter>
-      <NavSecondary items={navSecondaryLinks} className="mt-auto" />
+      <NavSecondary items={navSecondaryLinks} className="mt-auto shadow-lg rounded-lg border " />
 
         {/* <NavUser
           user={{

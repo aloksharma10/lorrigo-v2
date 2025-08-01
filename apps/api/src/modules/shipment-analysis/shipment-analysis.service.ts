@@ -31,6 +31,7 @@ import {
   DemandForecastItem,
   CourierRecommendationItem,
 } from './types';
+import { ShipmentBucket } from '@lorrigo/utils';
 
 export class ShipmentAnalysisService {
   private fastify: FastifyInstance;
@@ -924,6 +925,22 @@ export class ShipmentAnalysisService {
   private async getChannelAnalysis(params: OptimizedQueryParams): Promise<ChannelAnalysisItem[]> {
     const orders = await prisma.order.findMany({
       where: {
+        shipment: { 
+          bucket : {
+            in: [
+              ShipmentBucket.IN_TRANSIT,
+              ShipmentBucket.NDR,
+              ShipmentBucket.DELIVERED,
+              ShipmentBucket.RTO_INITIATED,
+              ShipmentBucket.RTO_IN_TRANSIT,
+              ShipmentBucket.RTO_DELIVERED,
+              ShipmentBucket.LOST_DAMAGED,
+              ShipmentBucket.DISPOSED,
+              ShipmentBucket.PICKED_UP,
+              ShipmentBucket.OUT_FOR_DELIVERY,
+            ]
+          }
+        },
         user_id: params.userId,
         created_at: { gte: params.startDate, lte: params.endDate },
       },
