@@ -7,6 +7,7 @@ interface FlippingCardProps {
   width?: number;
   frontContent?: React.ReactNode;
   backContent?: React.ReactNode;
+  toggle?: boolean; // New prop for manual flip control
 }
 
 export function FlippingCard({
@@ -15,10 +16,18 @@ export function FlippingCard({
   backContent,
   height = 300,
   width = 350,
+  toggle, // Remove default value to distinguish between controlled and uncontrolled
 }: FlippingCardProps) {
+  // Determine if this is a controlled component (toggle prop provided)
+  const isControlled = toggle !== undefined;
+  
   return (
     <div
-      className="group/flipping-card [perspective:1000px]"
+      className={cn(
+        "group/flipping-card [perspective:1000px]",
+        // Only apply hover group when not controlled
+        !isControlled && "group/flipping-card"
+      )}
       style={
         {
           "--height": `${height}px`,
@@ -28,7 +37,11 @@ export function FlippingCard({
     >
       <div
         className={cn(
-          "relative rounded-xl border border-neutral-200 bg-white shadow-lg transition-all duration-700 [transform-style:preserve-3d] group-hover/flipping-card:[transform:rotateY(180deg)] dark:border-neutral-800 dark:bg-neutral-950",
+          "relative rounded-xl border border-neutral-200 bg-white shadow-lg transition-all duration-700 [transform-style:preserve-3d]",
+          // Apply rotation based on toggle prop or hover state
+          isControlled 
+            ? (toggle ? "[transform:rotateY(180deg)]" : "")
+            : "group-hover/flipping-card:[transform:rotateY(180deg)]",
           "h-[var(--height)] w-[var(--width)]",
           className
         )}

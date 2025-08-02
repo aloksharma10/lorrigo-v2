@@ -2,17 +2,17 @@ import { Button, Input, Label } from "@lorrigo/ui/components";
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 
-export default function ForgotPassword() {
+interface ForgotPasswordProps {
+  onBackToSignInClick: () => void;
+}
+
+export default function ForgotPassword({ onBackToSignInClick }: ForgotPasswordProps) {
   const [email, setEmail] = useState("");
   const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setForgotPasswordLoading(true);
-  };
-
-  const handleBackToSignIn = () => {
-    // router.push("/auth/signin");
   };
 
   return (
@@ -46,7 +46,7 @@ export default function ForgotPassword() {
       <Button
         type="button"
         variant="outline"
-        onClick={handleBackToSignIn}
+        onClick={onBackToSignInClick}
         className="w-full bg-transparent"
       >
         <ArrowLeft className="h-4 w-4 mr-2" />
