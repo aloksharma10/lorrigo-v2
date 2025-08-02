@@ -61,3 +61,5 @@ export * from './accordion';
 export * from './drawer';
 export * from './slider';
 export * from './alert-dialog';
+
+export * from './flip-card';
