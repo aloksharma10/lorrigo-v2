@@ -45,7 +45,7 @@ export class EmailService {
    */
   private loadTemplates(): void {
     try {
-      const templateDir = path.join(__dirname, '../template');
+      const templateDir = path.join(process.cwd(), './src/template');
       
       if (!fs.existsSync(templateDir)) {
         console.warn('Template directory not found');
