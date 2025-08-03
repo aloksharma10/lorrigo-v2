@@ -22,6 +22,7 @@ import { SELLER_ROUTES } from '@/lib/routes/seller';
 import { ADMIN_ROUTES } from '@/lib/routes/admin';
 import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
+import { cn } from '@lorrigo/ui/lib/utils';
 
 // ------------------------------
 // Time-based greeting function
@@ -116,7 +117,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
       {/* Footer */}
       <SidebarFooter>
-      <NavSecondary items={navSecondaryLinks} className="mt-auto shadow-lg rounded-lg border " />
+      <NavSecondary items={navSecondaryLinks} className={cn("mt-auto shadow-lg rounded-lg border ", isCollapsed && "p-0")} />
 
         {/* <NavUser
           user={{

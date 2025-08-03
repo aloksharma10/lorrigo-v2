@@ -4,7 +4,20 @@ import { useState, Suspense } from 'react';
 import { signIn, getSession } from 'next-auth/react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Alert, AlertDescription, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label, FlippingCard, Separator } from '@lorrigo/ui/components';
+import {
+  Alert,
+  AlertDescription,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Input,
+  Label,
+  FlippingCard,
+  Separator,
+} from '@lorrigo/ui/components';
 import { getRoleBasedRedirect } from '@/lib/routes/redirect';
 import { Role } from '@lorrigo/db';
 import { checkAccessAndRedirect } from '@/lib/routes/check-permission';
@@ -26,15 +39,14 @@ function SignInForm({ onForgotPasswordClick }: { onForgotPasswordClick: () => vo
   const router = useRouter();
   const callbackUrl = searchParams.get('callbackUrl');
   const urlError = searchParams.get('error');
-  const { isTokenReady } = useAuthToken();
   const { authenticateWithPasskey, isPasskeySupported, isLoading: passkeyLoading } = usePasskey();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Prevent duplicate submissions
     if (isLoading) return;
-    
+
     setIsLoading(true);
     setError('');
 
@@ -42,11 +54,11 @@ function SignInForm({ onForgotPasswordClick }: { onForgotPasswordClick: () => vo
       if (authMethod === 'passkey') {
         // Handle passkey authentication
         const result = await authenticateWithPasskey(email);
-        
+
         if (result && (result as any).success) {
           const userData = (result as any).user;
           const token = (result as any).token;
-          
+
           // Set auth token immediately
           if (token) {
             setAuthToken(token);
@@ -130,12 +142,8 @@ function SignInForm({ onForgotPasswordClick }: { onForgotPasswordClick: () => vo
 
   const errorMessage = getErrorMessage();
 
-  if (isTokenReady) {
-    return <Redirecting />;
-  }
-
   return (
-    <Card className="m-auto w-full max-w-md">
+    <Card className="w-full max-w-md">
       <CardHeader className="space-y-1">
         <CardTitle className="text-center text-2xl font-bold">Sign in to your account</CardTitle>
         {callbackUrl && <CardDescription className="text-center text-sm">You need to sign in to access this page</CardDescription>}
@@ -150,12 +158,7 @@ function SignInForm({ onForgotPasswordClick }: { onForgotPasswordClick: () => vo
         )}
 
         {/* Google OAuth Button */}
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          onClick={() => signIn('google', { callbackUrl: callbackUrl || undefined })}
-        >
+        <Button type="button" variant="outline" className="w-full" onClick={() => signIn('google', { callbackUrl: callbackUrl || undefined })}>
           <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
             <path
               fill="currentColor"
@@ -182,7 +185,7 @@ function SignInForm({ onForgotPasswordClick }: { onForgotPasswordClick: () => vo
             <Separator className="w-full" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+            <span className="bg-background text-muted-foreground px-2">Or continue with</span>
           </div>
         </div>
 
@@ -252,12 +255,7 @@ function SignInForm({ onForgotPasswordClick }: { onForgotPasswordClick: () => vo
           )}
 
           <div>
-            <Button 
-              type="submit" 
-              disabled={isLoading || passkeyLoading} 
-              className="w-full" 
-              isLoading={isLoading || passkeyLoading}
-            >
+            <Button type="submit" disabled={isLoading || passkeyLoading} className="w-full" isLoading={isLoading || passkeyLoading}>
               {isLoading || passkeyLoading ? 'Signing in...' : `Sign in with ${authMethod === 'passkey' ? 'Passkey' : 'Email'}`}
             </Button>
           </div>
@@ -288,6 +286,7 @@ function SignInForm({ onForgotPasswordClick }: { onForgotPasswordClick: () => vo
 
 export default function SignIn() {
   const [isFlipped, setIsFlipped] = useState(false);
+  const { isTokenReady } = useAuthToken();
 
   const handleForgotPasswordClick = () => {
     setIsFlipped(true);
@@ -300,19 +299,23 @@ export default function SignIn() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-indigo-600"></div>
+        <div className="flex items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-red-600"></div>
         </div>
       }
     >
-      <FlippingCard
-        className="m-auto w-full max-w-md border-none bottom-0 shadow-none"
+      {isTokenReady ? (
+        <Redirecting />
+      ) : (
+        <FlippingCard
+        className="bottom-0 m-auto w-full max-w-md border-none shadow-none"
         frontContent={<SignInForm onForgotPasswordClick={handleForgotPasswordClick} />}
         backContent={<ForgotPassword onBackToSignInClick={handleBackToSignInClick} />}
-        height={410} // Adjusted height to accommodate form content
+        height={535} // Adjusted height to accommodate form content
         // width={400}
         toggle={isFlipped}
       />
+      )}
       <VideoContainer />
     </Suspense>
   );

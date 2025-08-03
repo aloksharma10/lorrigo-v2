@@ -37,7 +37,7 @@ export function NavSecondary({
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map((item) => (
-            <SidebarMenuItem key={item.title}>
+            <SidebarMenuItem key={item.title} className='flex flex-col items-center justify-center'>
               <SidebarMenuButton asChild>
                 <div onClick={() => openModal('all-policies', { type: item.url.split('/').pop(), title: item.title, className: 'max-w-4xl p-4' })}>
                   <item.icon />

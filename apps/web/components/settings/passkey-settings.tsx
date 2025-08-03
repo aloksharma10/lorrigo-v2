@@ -52,7 +52,7 @@ export function PasskeySettings() {
     if (session?.user?.id) {
       loadPasskeys();
     }
-  }, [session?.user?.id, loadPasskeys]);
+  }, [session?.user?.id]);
 
   const handleAddPasskey = async () => {
     if (!session?.user?.id) {
