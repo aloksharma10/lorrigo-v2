@@ -13,7 +13,7 @@ import crypto from 'crypto';
 
 // WebAuthn configuration
 const rpName = 'Lorrigo';
-const rpID = 'localhost';
+const rpID = process.env.NODE_ENV === 'production' ? 'app.lorrigo.com' : 'localhost';
 const origin = process.env.NODE_ENV === 'production' 
   ? process.env.FRONTEND_URL || 'https://app.lorrigo.com'
   : 'http://localhost:3000';
