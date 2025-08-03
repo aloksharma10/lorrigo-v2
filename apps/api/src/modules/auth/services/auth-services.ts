@@ -221,6 +221,30 @@ export class AuthService {
     return { message: 'Logged out successfully' };
   }
 
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    return { message: 'Password reset email sent' };
+  }
+
+  async resetPassword(newPassword: string, confirmPassword: string, currentPassword: string): Promise<{ message: string }> {
+    const user = await this.prisma.user.findFirst({
+      // where: { reset_password_token: token },
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    return { message: 'Password reset successfully' };
+  }
+
   /**
    * Update user profile
    */

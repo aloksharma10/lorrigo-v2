@@ -12,7 +12,7 @@ import { useAuthToken } from '@/components/providers/token-provider';
 import Redirecting from '@/components/skeletons/redirecting';
 import { VideoContainer } from '@/components/auth/video-container';
 import { AlertCircle } from 'lucide-react';
-import ForgotPassword from '../forgot-pass';
+import ForgotPassword from '@/components/auth/forgot-pass';
 
 function SignInForm({ onForgotPasswordClick }: { onForgotPasswordClick: () => void }) {
   const [email, setEmail] = useState('');
@@ -192,7 +192,7 @@ export default function SignIn() {
         className="m-auto w-full max-w-md border-none bottom-0 shadow-none"
         frontContent={<SignInForm onForgotPasswordClick={handleForgotPasswordClick} />}
         backContent={<ForgotPassword onBackToSignInClick={handleBackToSignInClick} />}
-        height={404} // Adjusted height to accommodate form content
+        height={410} // Adjusted height to accommodate form content
         // width={400}
         toggle={isFlipped}
       />

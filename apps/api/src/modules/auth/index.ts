@@ -116,4 +116,54 @@ export default async function auth(fastify: FastifyInstance) {
     preHandler: fastify.authenticate,
     handler: (request, reply) => authController.logout(request, reply),
   });
+
+  // Forgot password
+  fastify.post('/forgot-password', {
+    schema: {
+      tags: ['Auth'],
+      summary: 'Forgot password',
+      body: {
+        type: 'object',
+        required: ['email'],
+        properties: {
+          email: { type: 'string', format: 'email' },
+        },
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            message: { type: 'string' },
+          },
+        },
+      },
+    },
+    handler: (request, reply) => authController.forgotPassword(request, reply),
+  });
+
+  // Reset password
+  fastify.post('/reset-password', {
+    schema: {
+      tags: ['Auth'],
+      summary: 'Reset password',
+      body: {
+        type: 'object',
+        required: ['email', 'password', 'token'],
+        properties: {
+          email: { type: 'string', format: 'email' },
+          password: { type: 'string' },
+          token: { type: 'string' },
+        },
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            message: { type: 'string' },
+          },
+        },
+      },
+    },
+    handler: (request, reply) => authController.resetPassword(request, reply),
+  });
 }

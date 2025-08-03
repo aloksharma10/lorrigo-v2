@@ -158,4 +158,26 @@ export class AuthController {
       });
     }
   }
+
+  async forgotPassword(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const { email } = request.body as any;
+      await this.authService.forgotPassword(email);
+      return reply.code(200).send({ message: 'Password reset email sent' });
+    } catch (error) {
+      captureException(error as Error);
+      return reply.code(500).send({ message: 'Internal server error' });
+    }
+  }
+
+  async resetPassword(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const { newPassword, confirmPassword, currentPassword } = request.body as any;
+      await this.authService.resetPassword(newPassword, confirmPassword, currentPassword);
+      return reply.code(200).send({ message: 'Password reset successfully' });
+    } catch (error) {
+      captureException(error as Error);
+      return reply.code(500).send({ message: 'Internal server error' });
+    }
+  }
 }
