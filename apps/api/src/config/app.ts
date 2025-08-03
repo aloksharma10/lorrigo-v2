@@ -58,6 +58,25 @@ export const APP_CONFIG = {
     API_BASEURL: process.env.PHONEPE_API_BASEURL || 'https://api.phonepe.com/apis/hermes',
   },
 
+  // Notification settings
+  NOTIFICATION: {
+    EMAIL: {
+      HOST: process.env.EMAIL_HOST || 'smtp.gmail.com',
+      PORT: parseInt(process.env.EMAIL_PORT || '587', 10),
+      SECURE: process.env.EMAIL_SECURE === 'true',
+      USER: process.env.EMAIL_USER || '',
+      PASSWORD: process.env.EMAIL_PASSWORD || '',
+      FROM: process.env.EMAIL_FROM || 'noreply@lorrigo.com',
+      FROM_NAME: process.env.EMAIL_FROM_NAME || 'Lorrigo',
+    },
+    OTP: {
+      EXPIRY_MINUTES: parseInt(process.env.OTP_EXPIRY_MINUTES || '10', 10),
+      LENGTH: parseInt(process.env.OTP_LENGTH || '6', 10),
+      MAX_ATTEMPTS: parseInt(process.env.OTP_MAX_ATTEMPTS || '3', 10),
+      COOLDOWN_MINUTES: parseInt(process.env.OTP_COOLDOWN_MINUTES || '5', 10),
+    },
+  },
+
   // Vendor settings
   VENDOR: {
     SMART_SHIP: {

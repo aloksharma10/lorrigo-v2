@@ -212,6 +212,15 @@ export const usersAPI = {
   deleteUserBankAccount: async (userId: string, bankAccountId: string) => {
     return await axios.delete<{ success: boolean; message: string }>(`/users/${userId}/bank-accounts/${bankAccountId}`);
   },
+
+  // Password reset functions
+  forgotPassword: async (email: string) => {
+    return await axios.post<{ success: boolean; message: string; otpId?: string }>('/auth/forgot-password', { email });
+  },
+
+  resetPassword: async (payload: { email: string; otp: string; newPassword: string; confirmPassword: string }) => {
+    return await axios.post<{ success: boolean; message: string }>('/auth/reset-password', payload);
+  },
 };
 
 // Comprehensive hook for user operations
@@ -346,6 +355,39 @@ export const useDeleteUserBankAccount = () => {
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.error || 'Failed to delete bank account');
+    },
+  });
+};
+
+// Password reset hooks
+export const useForgotPassword = () => {
+  return useMutation({
+    mutationFn: usersAPI.forgotPassword,
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success(data.message || 'OTP sent to your email address');
+      } else {
+        toast.error(data.message || 'Failed to send OTP');
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to send OTP');
+    },
+  });
+};
+
+export const useResetPassword = () => {
+  return useMutation({
+    mutationFn: usersAPI.resetPassword,
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success(data.message || 'Password reset successfully');
+      } else {
+        toast.error(data.message || 'Failed to reset password');
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to reset password');
     },
   });
 };

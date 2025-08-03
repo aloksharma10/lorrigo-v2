@@ -7,6 +7,7 @@ import { APP_CONFIG } from '@/config/app';
 import { registerSwagger } from '@/plugins/swagger';
 import { registerRateLimiter } from '@/plugins/rate-limiter';
 import authPlugin from '@/plugins/auth';
+import notificationPlugin from '@/plugins/notification';
 import { initSentry, captureException } from '@/lib/sentry';
 import { cleanupOrphanedRepeatJobs } from '@/lib/queue';
 
@@ -37,6 +38,7 @@ import { assignDefaultPlanToAllUsers } from './scripts/assign-default-plan';
 import multipart from '@fastify/multipart';
 import { billingRoutes } from '@/modules/billing';
 import { remittanceRoutes } from '@/modules/remittance';
+import notificationRoutes from '@/modules/notifications';
 
 // Initialize Sentry
 initSentry();
@@ -85,6 +87,9 @@ const registerPlugins = async () => {
     // Authentication
     await server.register(authPlugin);
 
+    // Notification system
+    await server.register(notificationPlugin);
+
     // Rate limiter
     await registerRateLimiter(server);
 
@@ -124,6 +129,7 @@ const registerPlugins = async () => {
         fastify.register(usersRoutes, { prefix: '/users' });
         fastify.register(analyticsRoutes, { prefix: '/analytics' });
         fastify.register(shipmentAnalysisRoutes, { prefix: '/shipment-analysis' });
+        fastify.register(notificationRoutes, { prefix: '/notifications' });
 
         // Health check route
         fastify.get('/health', async () => {

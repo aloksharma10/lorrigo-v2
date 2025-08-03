@@ -116,15 +116,28 @@ export class AuthService {
        return user;
      });
 
-    return {
-      user: {
-        id: result.id,
-        email: result.email,
-        name: result.name,
-        role: result.role,
-      },
-    };
-  }
+           // Send welcome email using notification system (if available)
+      try {
+        if (this.fastify.notification) {
+          await this.fastify.notification.sendWelcomeEmail(data.email, {
+            userName: data.name,
+            loginUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login`,
+          });
+        }
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+        // Don't fail registration if email fails
+      }
+
+     return {
+       user: {
+         id: result.id,
+         email: result.email,
+         name: result.name,
+         role: result.role,
+       },
+     };
+   }
 
   async login(
     email: string,
@@ -241,6 +254,29 @@ export class AuthService {
     if (!user) {
       throw new Error('User not found');
     }
+
+    return { message: 'Password reset successfully' };
+  }
+
+  async resetPasswordWithOTP(email: string, newPassword: string): Promise<{ message: string }> {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    // Update the user's password
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+      },
+    });
 
     return { message: 'Password reset successfully' };
   }

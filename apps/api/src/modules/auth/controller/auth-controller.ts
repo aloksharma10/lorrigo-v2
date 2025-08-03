@@ -162,22 +162,138 @@ export class AuthController {
   async forgotPassword(request: FastifyRequest, reply: FastifyReply) {
     try {
       const { email } = request.body as any;
-      await this.authService.forgotPassword(email);
-      return reply.code(200).send({ message: 'Password reset email sent' });
+      
+      // Call auth service to check if user exists
+      const result = await this.authService.forgotPassword(email);
+      
+      // Generate and send OTP using notification system (if available)
+      try {
+        if (request.server.notification) {
+          const otpResult = await request.server.notification.generateAndSendOTP({
+            type: 'password_reset',
+            identifier: email,
+            identifierType: 'email',
+            purpose: 'Password reset verification',
+            metadata: {
+              userName: email.split('@')[0], // Extract username from email
+            },
+          });
+
+          if (otpResult.success) {
+            return reply.code(200).send({ 
+              success: true,
+              message: 'OTP sent to your email address',
+              otpId: otpResult.otpId 
+            });
+          } else {
+            return reply.code(400).send({ 
+              success: false,
+              message: otpResult.message || 'Failed to send OTP' 
+            });
+          }
+        }
+      } catch (otpError) {
+        console.error('Failed to send OTP:', otpError);
+        return reply.code(500).send({ 
+          success: false,
+          message: 'Failed to send OTP. Please try again.' 
+        });
+      }
+      
+      return reply.code(200).send({ 
+        success: true,
+        message: result.message 
+      });
     } catch (error) {
       captureException(error as Error);
-      return reply.code(500).send({ message: 'Internal server error' });
+      return reply.code(500).send({ 
+        success: false,
+        message: error instanceof Error ? error.message : 'Internal server error' 
+      });
     }
   }
 
   async resetPassword(request: FastifyRequest, reply: FastifyReply) {
     try {
-      const { newPassword, confirmPassword, currentPassword } = request.body as any;
-      await this.authService.resetPassword(newPassword, confirmPassword, currentPassword);
-      return reply.code(200).send({ message: 'Password reset successfully' });
+      const { email, otp, newPassword, confirmPassword } = request.body as any;
+      
+      // Validate input
+      if (!email || !otp || !newPassword || !confirmPassword) {
+        return reply.code(400).send({ 
+          success: false,
+          message: 'All fields are required' 
+        });
+      }
+
+      if (newPassword !== confirmPassword) {
+        return reply.code(400).send({ 
+          success: false,
+          message: 'Passwords do not match' 
+        });
+      }
+
+      if (newPassword.length < 6) {
+        return reply.code(400).send({ 
+          success: false,
+          message: 'Password must be at least 6 characters long' 
+        });
+      }
+
+      // Verify OTP first
+      try {
+        if (request.server.notification) {
+          const otpResult = await request.server.notification.verifyOTP({
+            identifier: email,
+            identifierType: 'email',
+            otp: otp,
+            type: 'password_reset',
+          });
+
+          if (!otpResult.success) {
+            return reply.code(400).send({ 
+              success: false,
+              message: otpResult.message || 'Invalid OTP' 
+            });
+          }
+        }
+      } catch (otpError) {
+        console.error('Failed to verify OTP:', otpError);
+        return reply.code(400).send({ 
+          success: false,
+          message: 'Failed to verify OTP' 
+        });
+      }
+
+      // Reset password using auth service
+      try {
+        await this.authService.resetPasswordWithOTP(email, newPassword);
+        
+        // Consume the OTP after successful password reset
+        if (request.server.notification) {
+          try {
+            await request.server.notification.consumeOTP(email, 'password_reset');
+          } catch (consumeError) {
+            console.error('Failed to consume OTP:', consumeError);
+            // Don't fail the password reset if OTP consumption fails
+          }
+        }
+        
+        return reply.code(200).send({ 
+          success: true,
+          message: 'Password reset successfully' 
+        });
+      } catch (resetError) {
+        return reply.code(400).send({ 
+          success: false,
+          message: resetError instanceof Error ? resetError.message : 'Failed to reset password' 
+        });
+      }
     } catch (error) {
       captureException(error as Error);
-      return reply.code(500).send({ message: 'Internal server error' });
+      return reply.code(500).send({ 
+        success: false,
+        message: 'Internal server error' 
+      });
     }
   }
 }

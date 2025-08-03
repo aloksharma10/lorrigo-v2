@@ -121,7 +121,7 @@ export default async function auth(fastify: FastifyInstance) {
   fastify.post('/forgot-password', {
     schema: {
       tags: ['Auth'],
-      summary: 'Forgot password',
+      summary: 'Forgot password - sends OTP to email',
       body: {
         type: 'object',
         required: ['email'],
@@ -133,6 +133,22 @@ export default async function auth(fastify: FastifyInstance) {
         200: {
           type: 'object',
           properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' },
+            otpId: { type: 'string' },
+          },
+        },
+        400: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' },
+          },
+        },
+        500: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
             message: { type: 'string' },
           },
         },
@@ -145,20 +161,29 @@ export default async function auth(fastify: FastifyInstance) {
   fastify.post('/reset-password', {
     schema: {
       tags: ['Auth'],
-      summary: 'Reset password',
+      summary: 'Reset password with OTP verification',
       body: {
         type: 'object',
-        required: ['email', 'password', 'token'],
+        required: ['email', 'otp', 'newPassword', 'confirmPassword'],
         properties: {
           email: { type: 'string', format: 'email' },
-          password: { type: 'string' },
-          token: { type: 'string' },
+          otp: { type: 'string', minLength: 6, maxLength: 6 },
+          newPassword: { type: 'string', minLength: 6 },
+          confirmPassword: { type: 'string', minLength: 6 },
         },
       },
       response: {
         200: {
           type: 'object',
           properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' },
+          },
+        },
+        400: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
             message: { type: 'string' },
           },
         },
