@@ -94,7 +94,8 @@ export class AuthController {
       const { email, password } = loginSchema.parse(request.body);
 
       // Login user using service
-      const result = await this.authService.login(email, password, request.ip);
+      const body = request.body as any;
+      const result = await this.authService.login(email, password, request.ip, body?.deviceInfo);
 
       if ('error' in result) {
         return reply.code(401).send({

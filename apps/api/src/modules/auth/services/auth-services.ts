@@ -142,7 +142,8 @@ export class AuthService {
   async login(
     email: string,
     password: string,
-    ipAddress: string
+    ipAddress: string,
+    deviceInfo?: any
   ): Promise<AuthResponse | { error: string }> {
     // Find user by email
     const user = await this.prisma.user.findUnique({
@@ -177,6 +178,27 @@ export class AuthService {
       },
     });
 
+    // Create or update session with device info
+    const sessionToken = this.generateSessionToken();
+    await this.prisma.session.create({
+      data: {
+        sessionToken,
+        userId: user.id,
+        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        ipAddress: deviceInfo?.ipAddress || ipAddress,
+        userAgent: deviceInfo?.userAgent,
+        deviceType: deviceInfo?.deviceType,
+        browser: deviceInfo?.browser,
+        os: deviceInfo?.os,
+        country: deviceInfo?.country,
+        city: deviceInfo?.city,
+        region: deviceInfo?.region,
+        latitude: deviceInfo?.latitude,
+        longitude: deviceInfo?.longitude,
+        loginMethod: 'credentials',
+      },
+    });
+
     // Generate JWT token
     const token = this.fastify.jwt.sign({
       id: user.id,
@@ -190,9 +212,14 @@ export class AuthService {
         email: user.email,
         name: user.name,
         role: user.role,
+        hasPasskeys: user.hasPasskeys,
       },
       token,
     };
+  }
+
+  private generateSessionToken(): string {
+    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
   async getMe(userId: string) {

@@ -6,6 +6,9 @@ export default async function auth(fastify: FastifyInstance) {
   const authService = new AuthService(fastify);
   const authController = new AuthController(authService);
 
+  // Register passkey routes
+  await fastify.register(import('./passkey-routes'), { prefix: '/passkey' });
+
   // Register route
   fastify.post('/register', {
     schema: {

@@ -159,11 +159,17 @@ model User {
   code        String  @unique // Format: US-YYMM-XXXXX
   email       String  @unique
   name        String
-  password    String
+  password    String?
   phone       String
   role        Role    @default(SELLER)
   is_active   Boolean @default(true)
   is_verified Boolean @default(false)
+
+  // OAuth and Passkey fields
+  image        String? // Profile image from OAuth
+  emailVerified DateTime?
+  googleId     String? @unique
+  hasPasskeys  Boolean @default(false)
 
   plan_id String?
   plan    Plan?   @relation(fields: [plan_id], references: [id])
@@ -184,6 +190,7 @@ model User {
   bulk_operations              BulkOperation[]
   accounts                     Account[]
   sessions                     Session[]
+  passkeys                     Passkey[]
   shipment_transactions        ShipmentTransaction[]
   invoice_transactions         InvoiceTransaction[]
   wallet_recharge_transactions WalletRechargeTransaction[]
@@ -195,6 +202,7 @@ model User {
   @@index([code])
   @@index([phone, role, is_active])
   @@index([plan_id])
+  @@index([googleId])
 }
 
 model UserProfile {
@@ -958,7 +966,27 @@ model Session {
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // Enhanced session tracking
+  ipAddress    String?  @db.VarChar(45)
+  userAgent    String?  @db.Text
+  deviceType   String?  @db.VarChar(50) // mobile, desktop, tablet
+  browser      String?  @db.VarChar(100)
+  os           String?  @db.VarChar(100)
+  country      String?  @db.VarChar(100)
+  city         String?  @db.VarChar(100)
+  region       String?  @db.VarChar(100)
+  latitude     Float?
+  longitude    Float?
+  isActive     Boolean  @default(true)
+  lastActivity DateTime @default(now())
+  loginMethod  String   @default("credentials") // credentials, google, passkey
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
   @@index([userId])
+  @@index([ipAddress])
+  @@index([isActive])
+  @@index([lastActivity])
 }
 
 model VerificationToken {
@@ -1289,6 +1317,24 @@ model UserBilling {
   @@index([cycle_type])
   @@index([status])
   @@index([cycle_start_date, cycle_end_date])
+}
+
+model Passkey {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentialID      String   @unique
+  publicKey         String   @db.Text
+  counter           Int      @default(0)
+  transports        String[] // ["usb", "nfc", "ble", "internal"]
+  backupEligible    Boolean  @default(false)
+  backupState       Boolean  @default(false)
+  deviceType        String?  @db.VarChar(50)
+  createdAt         DateTime @default(now())
+  lastUsedAt        DateTime @default(now())
+
+  @@index([userId])
+  @@index([credentialID])
 }
 
 model UserBankAccount {
