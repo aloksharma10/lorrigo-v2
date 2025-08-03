@@ -129,27 +129,6 @@ const notificationPlugin: FastifyPluginAsync = async (fastify) => {
     await notificationWorker.close();
   });
 
-  // Add health check for notification services
-  fastify.get('/health/notifications', async (request, reply) => {
-    try {
-      const serviceStatus = await notificationService.getServiceStatus();
-      const workerStatus = notificationWorker.getStatus();
-
-      return {
-        status: 'ok',
-        services: serviceStatus,
-        worker: workerStatus,
-        timestamp: new Date().toISOString(),
-      };
-    } catch (error) {
-      return reply.code(500).send({
-        status: 'error',
-        message: 'Notification services health check failed',
-        timestamp: new Date().toISOString(),
-      });
-    }
-  });
-
   console.log('Notification plugin registered');
 };
 

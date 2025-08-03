@@ -7,7 +7,7 @@ import * as path from 'path';
 import Handlebars from 'handlebars';
 
 export class EmailService {
-  private transporter: nodemailer.Transporter;
+  private transporter: nodemailer.Transporter | undefined;
   private templates: Map<string, HandlebarsTemplateDelegate> = new Map();
 
   constructor() {
@@ -78,7 +78,7 @@ export class EmailService {
     options?: {
       subject?: string;
       from?: string;
-      attachments?: nodemailer.Attachment[];
+      attachments?: any;
     }
   ): Promise<{ success: boolean; message: string; messageId?: string }> {
     try {
@@ -119,7 +119,7 @@ export class EmailService {
     html?: string;
     text?: string;
     from?: string;
-    attachments?: nodemailer.Attachment[];
+      attachments?: any;
   }): Promise<{ success: boolean; message: string; messageId?: string }> {
     try {
       const mailOptions: nodemailer.SendMailOptions = {
@@ -131,7 +131,7 @@ export class EmailService {
         attachments: options.attachments,
       };
 
-      const info = await this.transporter.sendMail(mailOptions);
+      const info = await this.transporter?.sendMail(mailOptions);
       
       return {
         success: true,
@@ -293,7 +293,7 @@ export class EmailService {
    */
   async testConnection(): Promise<boolean> {
     try {
-      await this.transporter.verify();
+      await this.transporter?.verify();
       return true;
     } catch (error) {
       captureException(error as Error);

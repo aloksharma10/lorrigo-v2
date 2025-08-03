@@ -8,7 +8,7 @@ import { captureException } from '@/lib/sentry';
 import { FastifyInstance } from 'fastify';
 
 export class NotificationWorker {
-  private worker: Worker;
+  private worker!: Worker;
   private notificationService: NotificationService;
 
   constructor(fastify: FastifyInstance) {
@@ -28,8 +28,8 @@ export class NotificationWorker {
       {
         connection: redis,
         concurrency: 5, // Process 5 jobs concurrently
-        removeOnComplete: 100, // Keep last 100 completed jobs
-        removeOnFail: 50, // Keep last 50 failed jobs
+        removeOnComplete: { count: 100 }, // Keep last 100 completed jobs
+        removeOnFail: { count: 50 }, // Keep last 50 failed jobs
       }
     );
 
@@ -38,7 +38,7 @@ export class NotificationWorker {
       console.log(`Notification job ${job.id} completed successfully`);
     });
 
-    this.worker.on('failed', (job: Job, err: Error) => {
+    this.worker.on('failed', (job: Job | undefined, err: Error) => {
       console.error(`Notification job ${job?.id} failed:`, err);
       captureException(err);
     });
@@ -117,22 +117,6 @@ export class NotificationWorker {
     }
   }
 
-  /**
-   * Get worker status
-   */
-  getStatus(): {
-    isRunning: boolean;
-    concurrency: number;
-    processedJobs: number;
-    failedJobs: number;
-  } {
-    return {
-      isRunning: this.worker.isRunning(),
-      concurrency: this.worker.concurrency,
-      processedJobs: this.worker.processed,
-      failedJobs: this.worker.failed,
-    };
-  }
 }
 
 // Export worker factory function
