@@ -15,7 +15,7 @@ import crypto from 'crypto';
 const rpName = 'Lorrigo';
 const rpID = 'localhost';
 const origin = process.env.NODE_ENV === 'production' 
-  ? 'https://yourdomain.com' 
+  ? process.env.FRONTEND_URL || 'https://app.lorrigo.com'
   : 'http://localhost:3000';
 
 export class PasskeyController {
