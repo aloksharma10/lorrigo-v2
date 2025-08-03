@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import UAParser from 'ua-parser-js';
+import { UAParser } from 'ua-parser-js';
 
 export interface DeviceInfo {
   ipAddress?: string;
@@ -20,7 +20,8 @@ export async function getDeviceInfo(req: NextRequest | Request): Promise<DeviceI
   try {
     // Extract IP address
     if (req instanceof NextRequest) {
-      deviceInfo.ipAddress = req.ip || req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined;
+      // NextRequest doesn't have an 'ip' property, use headers only
+      deviceInfo.ipAddress = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined;
     } else {
       // For regular Request objects
       deviceInfo.ipAddress = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined;

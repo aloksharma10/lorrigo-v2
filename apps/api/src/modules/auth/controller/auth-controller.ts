@@ -297,4 +297,42 @@ export class AuthController {
       });
     }
   }
+
+  async verifyToken(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      if (!request.userPayload) {
+        return reply.code(401).send({ 
+          success: false,
+          message: 'Invalid token' 
+        });
+      }
+
+      // Get user data from database
+      const user = await this.authService.getMe(request.userPayload.id);
+      
+      if (!user) {
+        return reply.code(401).send({ 
+          success: false,
+          message: 'User not found' 
+        });
+      }
+
+      return reply.code(200).send({
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          hasPasskeys: user.hasPasskeys || false,
+        },
+      });
+    } catch (error) {
+      captureException(error as Error);
+      return reply.code(500).send({ 
+        success: false,
+        message: 'Internal server error' 
+      });
+    }
+  }
 }

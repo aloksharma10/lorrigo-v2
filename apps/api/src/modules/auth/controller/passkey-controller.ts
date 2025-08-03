@@ -41,16 +41,20 @@ export class PasskeyController {
         return reply.code(404).send({ success: false, message: 'User not found' });
       }
 
-      // Get existing passkeys for this user
-      const existingPasskeys = await this.prisma.passkey.findMany({
-        where: { userId },
-        select: { credentialID: true },
-      });
+      // Get existing passkeys for this user (only if user has passkeys)
+      let excludeCredentials: any[] = [];
+      
+      if (user.hasPasskeys) {
+        const existingPasskeys = await this.prisma.passkey.findMany({
+          where: { userId },
+          select: { credentialID: true },
+        });
 
-      const excludeCredentials = existingPasskeys.map(passkey => ({
-        id: passkey.credentialID,
-        type: 'public-key' as const,
-      }));
+        excludeCredentials = existingPasskeys.map(passkey => ({
+          id: passkey.credentialID,
+          type: 'public-key' as const,
+        }));
+      }
 
       const options = await generateRegistrationOptions({
         rpName,
@@ -153,18 +157,34 @@ export class PasskeyController {
       // Find user by email
       const user = await this.prisma.user.findUnique({
         where: { email },
-        include: { passkeys: true },
+        select: { 
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          hasPasskeys: true,
+        },
       });
 
       if (!user) {
         return reply.code(404).send({ success: false, message: 'User not found' });
       }
 
-      if (!user.hasPasskeys || user.passkeys.length === 0) {
+      if (!user.hasPasskeys) {
         return reply.code(400).send({ success: false, message: 'No passkeys found for this user' });
       }
 
-      const allowCredentials = user.passkeys.map(passkey => ({
+      // Get passkeys only if user has them
+      const passkeys = await this.prisma.passkey.findMany({
+        where: { userId: user.id },
+        select: { credentialID: true, transports: true },
+      });
+
+      if (passkeys.length === 0) {
+        return reply.code(400).send({ success: false, message: 'No passkeys found for this user' });
+      }
+
+      const allowCredentials = passkeys.map(passkey => ({
         id: passkey.credentialID,
         type: 'public-key' as const,
         transports: passkey.transports as any,
@@ -289,6 +309,19 @@ export class PasskeyController {
     try {
       const { userId } = request.params as { userId: string };
 
+      // Check if user has passkeys first
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { hasPasskeys: true },
+      });
+
+      if (!user?.hasPasskeys) {
+        return reply.code(200).send({
+          success: true,
+          passkeys: [],
+        });
+      }
+
       const passkeys = await this.prisma.passkey.findMany({
         where: { userId },
         select: {
@@ -298,6 +331,7 @@ export class PasskeyController {
           lastUsedAt: true,
           transports: true,
         },
+        orderBy: { lastUsedAt: 'desc' },
       });
 
       return reply.code(200).send({

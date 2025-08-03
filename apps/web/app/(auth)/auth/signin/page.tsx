@@ -31,6 +31,10 @@ function SignInForm({ onForgotPasswordClick }: { onForgotPasswordClick: () => vo
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent duplicate submissions
+    if (isLoading) return;
+    
     setIsLoading(true);
     setError('');
 
@@ -38,21 +42,30 @@ function SignInForm({ onForgotPasswordClick }: { onForgotPasswordClick: () => vo
       if (authMethod === 'passkey') {
         // Handle passkey authentication
         const result = await authenticateWithPasskey(email);
-        console.log(result);
-        if (result) {
-          // Set auth token
-          if (result.token) {
-            setAuthToken(result.token);
+        
+        if (result && (result as any).success) {
+          const userData = (result as any).user;
+          const token = (result as any).token;
+          
+          // Set auth token immediately
+          if (token) {
+            setAuthToken(token);
           }
 
-          // Redirect user
-          let redirectUrl: string;
-          if (callbackUrl) {
-            const { hasAccess, redirectPath } = checkAccessAndRedirect(callbackUrl, result.user.role as Role);
-            redirectUrl = hasAccess ? callbackUrl : redirectPath;
-          } else {
-            redirectUrl = getRoleBasedRedirect(result.user.role as Role);
+          // Use NextAuth signIn with the passkey token as password
+          const signInResult = await signIn('credentials', {
+            email: userData.email,
+            password: token, // Use token as password for passkey auth
+            redirect: false,
+          });
+
+          if (signInResult?.error) {
+            setError('Session creation failed');
+            return;
           }
+
+          // Redirect user (no need to get session again since we have user data)
+          const redirectUrl = getRedirectUrl(callbackUrl, userData.role as Role);
           router.push(redirectUrl);
         } else {
           setError('Passkey authentication failed');
@@ -67,10 +80,10 @@ function SignInForm({ onForgotPasswordClick }: { onForgotPasswordClick: () => vo
 
         if (result?.error) {
           setError('Invalid email or password');
-          setIsLoading(false);
           return;
         }
 
+        // Get session once and use it for both token and redirection
         const session = await getSession();
         const userRole = (session?.user as any)?.role as Role;
 
@@ -78,21 +91,24 @@ function SignInForm({ onForgotPasswordClick }: { onForgotPasswordClick: () => vo
           setAuthToken(session.user.token as string);
         }
 
-        let redirectUrl: string;
-
-        if (callbackUrl) {
-          const { hasAccess, redirectPath } = checkAccessAndRedirect(callbackUrl, userRole);
-          redirectUrl = hasAccess ? callbackUrl : redirectPath;
-        } else {
-          redirectUrl = getRoleBasedRedirect(userRole);
-        }
+        const redirectUrl = getRedirectUrl(callbackUrl, userRole);
         router.push(redirectUrl);
       }
     } catch (error) {
+      console.error('Authentication error:', error);
       setError('An error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Helper function to get redirect URL
+  const getRedirectUrl = (callbackUrl: string | null, userRole: Role): string => {
+    if (callbackUrl) {
+      const { hasAccess, redirectPath } = checkAccessAndRedirect(callbackUrl, userRole);
+      return hasAccess ? callbackUrl : redirectPath;
+    }
+    return getRoleBasedRedirect(userRole);
   };
 
   const getErrorMessage = () => {

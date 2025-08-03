@@ -6,20 +6,24 @@ export const usePasskeySetup = () => {
   const { data: session } = useSession();
   const [showModal, setShowModal] = useState(false);
   const [hasConfigured, setHasConfigured] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
 
   useEffect(() => {
-    if (!session?.user?.id) return;
+    if (!session?.user?.id || isChecking || hasConfigured) return;
 
     // Check if user already has passkeys configured
     const checkPasskeyStatus = async () => {
+      setIsChecking(true);
       try {
         const data = await api.get(`/auth/passkey/${session.user.id}`);
-        if (data.success && data.passkeys && data.passkeys.length > 0) {
+        if ((data as any).success && (data as any).passkeys && (data as any).passkeys.length > 0) {
           setHasConfigured(true);
           return;
         }
       } catch (error) {
         console.error('Error checking passkey status:', error);
+      } finally {
+        setIsChecking(false);
       }
 
       // Check if user has skipped recently
@@ -41,7 +45,7 @@ export const usePasskeySetup = () => {
     };
 
     checkPasskeyStatus();
-  }, [session?.user?.id]);
+  }, [session?.user?.id, isChecking, hasConfigured]);
 
   const handleClose = () => {
     // Don't allow closing - user must make a choice

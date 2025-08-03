@@ -2,7 +2,6 @@ import { Role } from '@lorrigo/db';
 import NextAuth, { NextAuthResult } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
-import { PrismaAdapter } from '@auth/prisma-adapter';
 import { prisma } from '@lorrigo/db';
 import { getDeviceInfo } from '@/lib/utils/device-info';
 
@@ -34,13 +33,47 @@ export const result = NextAuth({
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
+        passkeyToken: { label: 'Passkey Token', type: 'text' },
       },
       async authorize(credentials, req) {
-        if (!credentials?.email || !credentials?.password) {
+        if (!credentials?.email) {
           return null;
         }
 
         try {
+          // Handle passkey authentication (when password is actually a token)
+          if (credentials.password && typeof credentials.password === 'string' && credentials.password.startsWith('eyJ')) {
+            // This is a JWT token, not a password - handle as passkey auth
+            const response = await fetch(`${process.env.FASTIFY_BACKEND_URL}/auth/verify-token`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${credentials.password}`,
+              },
+              body: JSON.stringify({
+                token: "verify",
+              }),
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              return {
+                id: data.user.id,
+                email: data.user.email,
+                name: data.user.name,
+                role: data.user.role,
+                token: credentials.password as string,
+                hasPasskeys: data.user.hasPasskeys,
+              };
+            }
+            return null;
+          }
+
+          // Handle regular password authentication
+          if (!credentials.password) {
+            return null;
+          }
+
           const deviceInfo = await getDeviceInfo(req);
           
           const response = await fetch(`${process.env.FASTIFY_BACKEND_URL}/auth/login`, {
@@ -144,7 +177,7 @@ export const result = NextAuth({
         // @ts-ignore
         token.role = user.role;
         // @ts-ignore
-        token.token = user.token;
+        token.token = user.token as string;
         // @ts-ignore
         token.hasPasskeys = user.hasPasskeys;
       }
@@ -152,9 +185,9 @@ export const result = NextAuth({
     },
     async session({ session, token }) {
       if (token && session.user) {
-        session.user.id = token.id || '';
+        session.user.id = (token.id as string) || '';
         session.user.role = token.role as Role;
-        session.user.token = token.token as string;
+        session.user.token = (token.token as any) || '';
         session.user.hasPasskeys = token.hasPasskeys as boolean;
       }
       return session;

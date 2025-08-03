@@ -21,30 +21,31 @@ export const usePasskey = () => {
 
   // Register a new passkey
   const registerPasskey = async (userId: string) => {
+    if (isLoading) return false; // Prevent duplicate requests
+    
     setIsLoading(true);
     try {
       // Get registration options from server
       const optionsResponse = await api.post(`/auth/passkey/register/${userId}/options`);
-      console.log(optionsResponse);
       
-      if (!optionsResponse.success) {
+      if (!(optionsResponse as any).success) {
         throw new Error('Failed to get registration options');
       }
 
       // Start registration on the client
-      const credential = await startRegistration(optionsResponse.options);
+      const credential = await startRegistration((optionsResponse as any).options);
 
       // Verify registration with server
       const verificationResponse = await api.post(`/auth/passkey/register/${userId}/verify`, {
         credential,
-        expectedChallenge: optionsResponse.options.challenge,
+        expectedChallenge: (optionsResponse as any).options.challenge,
       });
 
-      if (verificationResponse.success) {
+      if ((verificationResponse as any).success) {
         toast.success('Passkey registered successfully');
         return true;
       } else {
-        throw new Error(verificationResponse.message || 'Registration failed');
+        throw new Error((verificationResponse as any).message || 'Registration failed');
       }
     } catch (error) {
       console.error('Passkey registration error:', error);
@@ -62,12 +63,12 @@ export const usePasskey = () => {
       // Get authentication options from server
       const optionsResponse = await api.post('/auth/passkey/authenticate/options', { email });
       
-      if (!optionsResponse.success) {
+      if (!(optionsResponse as any).success) {
         throw new Error('Failed to get authentication options');
       }
 
       // Start authentication on the client
-      const credential = await startAuthentication(optionsResponse.options);
+      const credential = await startAuthentication((optionsResponse as any).options);
 
       // Verify authentication with server
       const verificationResponse = await api.post('/auth/passkey/authenticate/verify', {
@@ -75,11 +76,11 @@ export const usePasskey = () => {
         credential,
       });
 
-      if (verificationResponse.success) {
+      if ((verificationResponse as any).success) {
         toast.success('Authentication successful');
-        return verificationResponse 
+        return (verificationResponse as any);
       } else {
-        throw new Error(verificationResponse.message || 'Authentication failed');
+        throw new Error((verificationResponse as any).message || 'Authentication failed');
       }
     } catch (error) {
       console.error('Passkey authentication error:', error);
@@ -111,7 +112,7 @@ export const usePasskey = () => {
   const deletePasskey = async (userId: string, passkeyId: string) => {
     try {
       const response = await api.delete(`/auth/passkey/${userId}/${passkeyId}`);
-      if (response.success) {
+      if ((response as any).success) {
         toast.success('Passkey deleted successfully');
         return true;
       } else {

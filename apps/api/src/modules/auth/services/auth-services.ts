@@ -21,6 +21,7 @@ interface AuthResponse {
     email: string;
     name: string;
     role: string;
+    hasPasskeys?: boolean;
   };
   token?: string;
 }
@@ -234,6 +235,7 @@ export class AuthService {
         is_active: true,
         is_verified: true,
         plan_id: true,
+        hasPasskeys: true,
       },
     });
   }
@@ -335,6 +337,10 @@ export class AuthService {
     }
 
     // Verify current password
+    if (!user.password) {
+      throw new Error('User has no password set');
+    }
+    
     const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
 
     if (!isCurrentPasswordValid) {
