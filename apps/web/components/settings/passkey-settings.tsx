@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { usePasskey } from '@/lib/hooks/use-passkey';
 import { usePasskeySetupContext } from '@/components/providers/passkey-setup-provider';
@@ -33,13 +33,7 @@ export function PasskeySettings() {
   const [isLoading, setIsLoading] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
 
-  useEffect(() => {
-    if (session?.user?.id) {
-      loadPasskeys();
-    }
-  }, [session?.user?.id]);
-
-  const loadPasskeys = async () => {
+  const loadPasskeys = useCallback(async () => {
     if (!session?.user?.id) return;
     
     setIsLoading(true);
@@ -52,7 +46,13 @@ export function PasskeySettings() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [session?.user?.id, getUserPasskeys]);
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      loadPasskeys();
+    }
+  }, [session?.user?.id, loadPasskeys]);
 
   const handleAddPasskey = async () => {
     if (!session?.user?.id) {

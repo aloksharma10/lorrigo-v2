@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { api } from '../apis/axios';
 
@@ -7,12 +7,14 @@ export const usePasskeySetup = () => {
   const [showModal, setShowModal] = useState(false);
   const [hasConfigured, setHasConfigured] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
+  const hasCheckedRef = useRef(false);
 
   useEffect(() => {
-    if (!session?.user?.id || isChecking || hasConfigured) return;
+    if (!session?.user?.id || isChecking || hasConfigured || hasCheckedRef.current) return;
 
     // Check if user already has passkeys configured
     const checkPasskeyStatus = async () => {
+      hasCheckedRef.current = true;
       setIsChecking(true);
       try {
         const data = await api.get(`/auth/passkey/${session.user.id}`);
@@ -45,7 +47,7 @@ export const usePasskeySetup = () => {
     };
 
     checkPasskeyStatus();
-  }, [session?.user?.id, isChecking, hasConfigured]);
+  }, [session?.user?.id]); // Removed isChecking and hasConfigured from dependencies
 
   const handleClose = () => {
     // Don't allow closing - user must make a choice
@@ -70,6 +72,7 @@ export const usePasskeySetup = () => {
 
   const resetSkipPreference = () => {
     localStorage.removeItem('passkey_skip_until');
+    hasCheckedRef.current = false; // Reset the ref to allow checking again
     setShowModal(true);
   };
 
