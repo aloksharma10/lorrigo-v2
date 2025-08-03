@@ -90,16 +90,10 @@ function SignInForm({ onForgotPasswordClick }: { onForgotPasswordClick: () => vo
   }
 
   return (
-    <Card className="w-full max-w-md m-auto">
+    <Card className="m-auto w-full max-w-md">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-center text-2xl font-bold">
-          Sign in to your account
-        </CardTitle>
-        {callbackUrl && (
-          <CardDescription className="text-center text-sm">
-            You need to sign in to access this page
-          </CardDescription>
-        )}
+        <CardTitle className="text-center text-2xl font-bold">Sign in to your account</CardTitle>
+        {callbackUrl && <CardDescription className="text-center text-sm">You need to sign in to access this page</CardDescription>}
       </CardHeader>
 
       <CardContent className="space-y-4 p-6">
@@ -114,15 +108,7 @@ function SignInForm({ onForgotPasswordClick }: { onForgotPasswordClick: () => vo
           <div>
             <Label htmlFor="email">Email address</Label>
             <div className="mt-1">
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+              <Input id="email" name="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
           </div>
 
@@ -146,7 +132,7 @@ function SignInForm({ onForgotPasswordClick }: { onForgotPasswordClick: () => vo
               <button
                 type="button"
                 onClick={onForgotPasswordClick}
-                className="font-medium text-primary hover:text-primary/80 dark:text-primary/80 dark:hover:text-primary/60"
+                className="text-primary hover:text-primary/80 dark:text-primary/80 dark:hover:text-primary/60 font-medium"
               >
                 Forgot your password?
               </button>
@@ -154,12 +140,7 @@ function SignInForm({ onForgotPasswordClick }: { onForgotPasswordClick: () => vo
           </div>
 
           <div>
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full"
-              isLoading={isLoading}
-            >
+            <Button type="submit" disabled={isLoading} className="w-full" isLoading={isLoading}>
               Sign in
             </Button>
           </div>
@@ -171,9 +152,7 @@ function SignInForm({ onForgotPasswordClick }: { onForgotPasswordClick: () => vo
               <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="bg-white px-2 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
-                Don't have an account?
-              </span>
+              <span className="bg-white px-2 text-gray-500 dark:bg-gray-800 dark:text-gray-400">Don't have an account?</span>
             </div>
           </div>
 
@@ -210,11 +189,11 @@ export default function SignIn() {
       }
     >
       <FlippingCard
-        className="w-full max-w-md m-auto"
+        className="m-auto w-full max-w-md border-none bottom-0 shadow-none"
         frontContent={<SignInForm onForgotPasswordClick={handleForgotPasswordClick} />}
         backContent={<ForgotPassword onBackToSignInClick={handleBackToSignInClick} />}
-        height={600} // Adjusted height to accommodate form content
-        width={400}
+        height={404} // Adjusted height to accommodate form content
+        // width={400}
         toggle={isFlipped}
       />
       <VideoContainer />

@@ -24,7 +24,7 @@ export function FlippingCard({
   return (
     <div
       className={cn(
-        "group/flipping-card [perspective:1000px]",
+        "group/flipping-card [perspective:1000px] flex",
         // Only apply hover group when not controlled
         !isControlled && "group/flipping-card"
       )}

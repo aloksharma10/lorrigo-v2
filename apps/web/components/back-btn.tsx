@@ -1,4 +1,5 @@
 'use client';
+
 import { Button } from '@lorrigo/ui/components';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -12,11 +13,33 @@ export function BackButton({
   showLabel?: boolean;
 }) {
   const router = useRouter();
+
+  const handleBack = () => {
+    const referrer = document.referrer;
+
+    try {
+      const url = new URL(referrer);
+      const isSameDomain = 
+        url.hostname.endsWith('lorrigo.com') || 
+        url.hostname === 'localhost' || 
+        url.hostname === '127.0.0.1';
+
+      if (isSameDomain) {
+        router.back(); // safe to go back
+      } else {
+        router.push('/'); // redirect to safe default (like homepage or dashboard)
+      }
+    } catch (error) {
+      // If referrer is not a valid URL (empty or malformed), redirect to home
+      router.push('/');
+    }
+  };
+
   return (
     <Button
       variant="outline"
       className={cn('group relative overflow-hidden', className)}
-      onClick={() => router.back()}
+      onClick={handleBack}
     >
       {showLabel && (
         <span className="w-20 translate-x-2 transition-opacity duration-500 group-hover:opacity-0">
