@@ -123,6 +123,48 @@ export class AuthController {
     }
   }
 
+  async loginWithGoogle(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const { email, name, googleId, image } = request.body as any;
+
+      // Validate required fields
+      if (!email || !name || !googleId) {
+        return reply.code(400).send({
+          success: false,
+          message: 'Email, name, and googleId are required',
+        });
+      }
+
+      // Login with Google using service
+      const body = request.body as any;
+      const result = await this.authService.loginWithGoogle(
+        { email, name, googleId, image },
+        request.ip,
+        body?.deviceInfo
+      );
+
+      if ('error' in result) {
+        return reply.code(401).send({
+          success: false,
+          message: result.error,
+        });
+      }
+
+      // Return success response
+      return reply.code(200).send({
+        success: true,
+        user: result.user,
+        token: result.token,
+      });
+    } catch (error) {
+      captureException(error as Error);
+      return reply.code(500).send({
+        success: false,
+        message: 'Internal server error',
+      });
+    }
+  }
+
   async getMe(request: FastifyRequest, reply: FastifyReply) {
     try {
       if (!request.userPayload) {

@@ -77,6 +77,58 @@ export default async function auth(fastify: FastifyInstance) {
     handler: (request, reply) => authController.login(request, reply),
   });
 
+  // Google OAuth login route
+  fastify.post('/login/google', {
+    schema: {
+      tags: ['Auth'],
+      summary: 'Login with Google OAuth',
+      body: {
+        type: 'object',
+        required: ['email', 'name', 'googleId'],
+        properties: {
+          email: { type: 'string', format: 'email' },
+          name: { type: 'string' },
+          googleId: { type: 'string' },
+          image: { type: 'string' },
+        },
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            user: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                email: { type: 'string' },
+                name: { type: 'string' },
+                role: { type: 'string' },
+                hasPasskeys: { type: 'boolean' },
+              },
+            },
+            token: { type: 'string' },
+          },
+        },
+        400: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' },
+          },
+        },
+        401: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' },
+          },
+        },
+      },
+    },
+    handler: (request, reply) => authController.loginWithGoogle(request, reply),
+  });
+
   // Me route
   fastify.get('/me', {
     schema: {

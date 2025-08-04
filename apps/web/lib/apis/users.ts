@@ -221,6 +221,11 @@ export const usersAPI = {
   resetPassword: async (payload: { email: string; otp: string; newPassword: string; confirmPassword: string }) => {
     return await axios.post<{ success: boolean; message: string }>('/auth/reset-password', payload);
   },
+
+  // Google OAuth functions
+  loginWithGoogle: async (payload: { email: string; name: string; googleId: string; image?: string }) => {
+    return await axios.post<{ success: boolean; user: any; token: string }>('/auth/login/google', payload);
+  },
 };
 
 // Comprehensive hook for user operations
@@ -388,6 +393,22 @@ export const useResetPassword = () => {
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to reset password');
+    },
+  });
+};
+
+export const useGoogleLogin = () => {
+  return useMutation({
+    mutationFn: usersAPI.loginWithGoogle,
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success('Google login successful');
+      } else {
+        toast.error('Google login failed');
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Google login failed');
     },
   });
 };

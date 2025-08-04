@@ -26,6 +26,13 @@ interface AuthResponse {
   token?: string;
 }
 
+interface GoogleOAuthData {
+  email: string;
+  name: string;
+  googleId: string;
+  image?: string;
+}
+
 export class AuthService {
   private prisma: PrismaClient;
   private fastify: FastifyInstance;
@@ -168,6 +175,132 @@ export class AuthService {
       return { error: 'Invalid email or password' };
     }
 
+    return this.createUserSession(user, ipAddress, deviceInfo, 'credentials');
+  }
+
+  async loginWithGoogle(
+    googleData: GoogleOAuthData,
+    ipAddress: string,
+    deviceInfo?: any
+  ): Promise<AuthResponse | { error: string }> {
+    try {
+      // Check if user exists by email
+      let user = await this.prisma.user.findUnique({
+        where: { email: googleData.email },
+      });
+
+      if (!user) {
+        // Create new user with Google data
+        const lastUserSequenceNumber = await this.prisma.user.count({
+          where: {
+            created_at: {
+              gte: new Date(new Date().getFullYear(), 0, 1),
+              lte: new Date(new Date().getFullYear(), 11, 31),
+            },
+          },
+        });
+
+        const code = generateId({
+          tableName: 'user',
+          entityName: googleData.name,
+          lastUsedFinancialYear: getFinancialYear(new Date()),
+          lastSequenceNumber: lastUserSequenceNumber,
+        }).id;
+
+        user = await this.prisma.$transaction(async (tx) => {
+          const newUser = await tx.user.create({
+            data: {
+              code,
+              email: googleData.email,
+              name: googleData.name,
+              googleId: googleData.googleId,
+              image: googleData.image,
+              emailVerified: new Date(),
+              role: 'SELLER',
+              phone: '', // Will be required later
+            },
+          });
+
+          // Create user wallet
+          const lastWalletSequenceNumber = await tx.userWallet.count({
+            where: {
+              created_at: {
+                gte: new Date(new Date().getFullYear(), 0, 1),
+                lte: new Date(new Date().getFullYear(), 11, 31),
+              },
+            },
+          });
+
+          await tx.userWallet.create({
+            data: {
+              code: generateId({
+                tableName: 'wallet',
+                entityName: newUser.name,
+                lastUsedFinancialYear: getFinancialYear(new Date()),
+                lastSequenceNumber: lastWalletSequenceNumber,
+              }).id,
+              balance: 0,
+              hold_amount: 0,
+              usable_amount: 0,
+              user_id: newUser.id,
+            },
+          });
+
+          // Create user profile
+          await tx.userProfile.create({
+            data: {
+              user_id: newUser.id,
+              notification_settings: { 
+                whatsapp: true,
+                email: true,
+                sms: true,
+                push: true,
+              }
+            },
+          });
+
+          return newUser;
+        });
+
+        // Send welcome email using notification system (if available)
+        try {
+          if (this.fastify.notification) {
+            await this.fastify.notification.sendWelcomeEmail(googleData.email, {
+              userName: googleData.name,
+              loginUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login`,
+            });
+          }
+        } catch (emailError) {
+          console.error('Failed to send welcome email:', emailError);
+          // Don't fail registration if email fails
+        }
+      } else {
+        // Update existing user's Google ID if not set
+        if (!user.googleId) {
+          await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+              googleId: googleData.googleId,
+              image: googleData.image,
+              emailVerified: new Date(),
+            },
+          });
+        }
+      }
+
+      return this.createUserSession(user, ipAddress, deviceInfo, 'google');
+    } catch (error) {
+      console.error('Google OAuth login error:', error);
+      return { error: 'Failed to authenticate with Google' };
+    }
+  }
+
+  private async createUserSession(
+    user: any,
+    ipAddress: string,
+    deviceInfo?: any,
+    loginMethod: string = 'credentials'
+  ): Promise<AuthResponse> {
     // Create API request log
     await this.prisma.apiRequest.create({
       data: {
@@ -196,7 +329,7 @@ export class AuthService {
         region: deviceInfo?.region,
         latitude: deviceInfo?.latitude,
         longitude: deviceInfo?.longitude,
-        loginMethod: 'credentials',
+        loginMethod,
       },
     });
 
