@@ -41,9 +41,9 @@ export const result = NextAuth({
         }
 
         try {
-          // Handle passkey authentication (when password is actually a token)
+          // Handle Shopify OAuth authentication (when password is a Shopify JWT token)
           if (credentials.password && typeof credentials.password === 'string' && credentials.password.startsWith('eyJ')) {
-            // This is a JWT token, not a password - handle as passkey auth
+            // This is a JWT token - verify it with the backend
             const response = await fetch(`${process.env.FASTIFY_BACKEND_URL}/auth/verify-token`, {
               method: 'POST',
               headers: {

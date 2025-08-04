@@ -12,7 +12,7 @@ export default async function channelRoutes(fastify: FastifyInstance): Promise<v
   // Initialize services and controllers
   const channelConfigService = new ChannelConfigService();
   const channelConfigController = new ChannelConfigController(channelConfigService);
-  const shopifyController = new ShopifyController();
+  const shopifyController = new ShopifyController(fastify);
 
   // All routes require authentication
   fastify.addHook('onRequest', fastify.authenticate);

@@ -2,6 +2,8 @@ import { PrismaClient } from '@lorrigo/db';
 import bcrypt from 'bcrypt';
 import { FastifyInstance } from 'fastify';
 import { generateId, getFinancialYear } from '@lorrigo/utils';
+import { ShopifyChannel, ShopifyOAuthData } from '../../channels/services/shopify/shopify-channel';
+import { captureException } from '@sentry/node';
 
 interface RegisterData {
   email: string;
@@ -26,6 +28,21 @@ interface AuthResponse {
   token?: string;
 }
 
+interface LoginResult {
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+    hasPasskeys?: boolean;
+  };
+  token: string;
+}
+
+interface LoginError {
+  error: string;
+}
+
 interface GoogleOAuthData {
   email: string;
   name: string;
@@ -42,7 +59,7 @@ export class AuthService {
     this.fastify = fastify;
   }
 
-  async register(data: RegisterData): Promise<AuthResponse> {
+    async register(data: RegisterData): Promise<AuthResponse> {
     // Check if user already exists
     const existingUser = await this.prisma.user.findUnique({
       where: { email: data.email },
@@ -112,10 +129,10 @@ export class AuthService {
              company: data.company || data.business_name,
              gst_no: data.gst_no,
              notification_settings: { 
-              whatsapp: true,
-              email: true,
-              sms: true,
-              push: true,
+               whatsapp: true,
+               email: true,
+               sms: true,
+               push: true,
              }
            },
          });
@@ -124,35 +141,43 @@ export class AuthService {
        return user;
      });
 
-           // Send welcome email using notification system (if available)
-      try {
-        if (this.fastify.notification) {
-          await this.fastify.notification.sendWelcomeEmail(data.email, {
-            userName: data.name,
-            loginUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login`,
-          });
-        }
-      } catch (emailError) {
-        console.error('Failed to send welcome email:', emailError);
-        // Don't fail registration if email fails
-      }
+            // Send welcome email using notification system (if available)
+       try {
+         if (this.fastify.notification) {
+           await this.fastify.notification.sendWelcomeEmail(data.email, {
+             userName: data.name,
+             loginUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login`,
+           });
+         }
+       } catch (emailError) {
+         console.error('Failed to send welcome email:', emailError);
+         // Don't fail registration if email fails
+       }
 
-     return {
-       user: {
-         id: result.id,
-         email: result.email,
-         name: result.name,
-         role: result.role,
-       },
-     };
-   }
+      // Create JWT token for the new user
+      const token = this.fastify.jwt.sign({
+        id: result.id,
+        email: result.email,
+        role: result.role,
+      });
+
+      return {
+        user: {
+          id: result.id,
+          email: result.email,
+          name: result.name,
+          role: result.role,
+        },
+        token,
+      };
+    }
 
   async login(
     email: string,
     password: string,
     ipAddress: string,
     deviceInfo?: any
-  ): Promise<AuthResponse | { error: string }> {
+  ): Promise<LoginResult | LoginError> {
     // Find user by email
     const user = await this.prisma.user.findUnique({
       where: { email },
@@ -182,7 +207,7 @@ export class AuthService {
     googleData: GoogleOAuthData,
     ipAddress: string,
     deviceInfo?: any
-  ): Promise<AuthResponse | { error: string }> {
+  ): Promise<LoginResult | LoginError> {
     try {
       // Check if user exists by email
       let user = await this.prisma.user.findUnique({
@@ -300,7 +325,7 @@ export class AuthService {
     ipAddress: string,
     deviceInfo?: any,
     loginMethod: string = 'credentials'
-  ): Promise<AuthResponse> {
+  ): Promise<LoginResult> {
     // Create API request log
     await this.prisma.apiRequest.create({
       data: {
@@ -481,14 +506,93 @@ export class AuthService {
     }
 
     // Hash new password
-    // const hashedNewPassword = await bcrypt.hash(newPassword, 12);
+    const hashedNewPassword = await bcrypt.hash(newPassword, 12);
 
     // Update password
     await this.prisma.user.update({
       where: { id: userId },
-      data: { password: newPassword },
+      data: { password: hashedNewPassword },
     });
 
     return { message: 'Password updated successfully' };
+  }
+
+  /**
+   * Handle Shopify OAuth authentication
+   * @param code OAuth authorization code
+   * @param state OAuth state parameter
+   * @param shop Shop domain
+   * @param ipAddress User's IP address
+   * @param deviceInfo Device information
+   * @returns Promise resolving to auth response
+   */
+  public async handleShopifyOAuth(
+    code: string,
+    state: string,
+    shop: string,
+    ipAddress: string,
+    deviceInfo?: any
+  ): Promise<LoginResult | LoginError> {
+    try {
+      // Create Shopify channel instance for OAuth
+      const shopifyChannel = new ShopifyChannel(shop, '', this.fastify);
+
+      // Verify OAuth state
+      const isValidState = await shopifyChannel.verifyState(state);
+      if (!isValidState) {
+        return { error: 'Invalid OAuth state' };
+      }
+
+      try {
+        // Exchange code for token and shop info
+        const oauthData = await shopifyChannel.exchangeCodeForTokenWithShop(code, shop);
+
+        // Handle login with Shopify data
+        const result = await shopifyChannel.handleShopifyLogin(oauthData, ipAddress, deviceInfo);
+
+        if ('error' in result) {
+          // Delete state even on error to prevent reuse
+          await shopifyChannel.deleteState(state);
+          return result;
+        }
+
+        // Delete OAuth state after successful authentication
+        await shopifyChannel.deleteState(state);
+        
+        return result;
+      } catch (oauthError: any) {
+        // Handle OAuth code already used error
+        if (oauthError.message === 'OAUTH_CODE_ALREADY_USED') {
+          // Try to find existing user by shop domain and create session
+          const result = await shopifyChannel.handleExistingUserLogin(shop, ipAddress);
+          
+          if ('error' in result) {
+            await shopifyChannel.deleteState(state);
+            return result;
+          }
+
+          // Delete OAuth state
+          await shopifyChannel.deleteState(state);
+
+          return result;
+        }
+
+        // If not handled above, re-throw the error
+        throw oauthError;
+      }
+    } catch (error) {
+      captureException(error as Error);
+      return { error: 'Failed to authenticate with Shopify' };
+    }
+  }
+
+  /**
+   * Generate Shopify OAuth URL
+   * @param shop Optional shop domain to pre-fill
+   * @returns Authentication URL
+   */
+  public generateShopifyAuthUrl(shop?: string): string {
+    const shopifyChannel = new ShopifyChannel(shop || '', '', this.fastify);
+    return shopifyChannel.generateAuthUrl(shop);
   }
 }

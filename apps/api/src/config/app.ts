@@ -120,7 +120,7 @@ export const APP_CONFIG = {
       SCOPES: process.env.SHOPIFY_SCOPES || 'read_orders,read_products,read_customers',
       HOST: process.env.SHOPIFY_HOST || '',
       REDIRECT_URI:
-        process.env.SHOPIFY_REDIRECT_URI || 'http://localhost:3000/seller/channels/callback',
+        process.env.SHOPIFY_REDIRECT_URI || 'http://localhost:3000/auth/shopify/callback',
     },
   },
 };

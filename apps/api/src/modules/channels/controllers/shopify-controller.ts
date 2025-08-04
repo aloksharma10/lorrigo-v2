@@ -6,7 +6,7 @@ import { ShopifyChannel, ShopifyConnection } from '../services/shopify/shopify-c
 
 // Validation schemas
 const shopifyAuthSchema = z.object({
-  shop: z.string().min(1, 'Shop parameter is required'),
+  shop: z.string().optional(),
 });
 
 const shopifyCallbackSchema = z.object({
@@ -31,9 +31,11 @@ const shopifyOrderParamsSchema = z.object({
 
 export class ShopifyController {
   private connectionService: ChannelConnectionService;
+  private fastify: FastifyInstance;
 
-  constructor() {
+  constructor(fastify: FastifyInstance) {
     this.connectionService = new ChannelConnectionService();
+    this.fastify = fastify;
   }
 
   /**
@@ -80,7 +82,7 @@ export class ShopifyController {
       }
 
       const { shop } = result.data;
-      console.log('Getting Shopify auth URL for shop:', shop);
+      console.log('Getting Shopify auth URL for shop:', shop || 'generic');
 
       // Get authenticated user from request
       const user = request.userPayload;
@@ -89,11 +91,11 @@ export class ShopifyController {
         return reply.code(401).send({ error: 'Authentication required' });
       }
 
-      // Create Shopify channel instance
-      const shopifyChannel = new ShopifyChannel(shop, user.id);
+      // Create Shopify channel instance with a placeholder shop if none provided
+      const shopifyChannel = new ShopifyChannel(shop || 'placeholder.myshopify.com', user.id, this.fastify);
 
-      // Generate auth URL
-      const authUrl = shopifyChannel.getAuthUrl();
+      // Generate auth URL (pass the shop parameter if provided)
+      const authUrl = shopifyChannel.generateAuthUrl(shop);
 
       // Return the URL instead of redirecting
       reply.send({ authUrl });
@@ -121,7 +123,7 @@ export class ShopifyController {
       }
 
       const { shop } = result.data;
-      console.log('Initiating Shopify auth for shop:', shop);
+      console.log('Initiating Shopify auth for shop:', shop || 'generic');
 
       // Get authenticated user from request
       const user = request.userPayload;
@@ -130,11 +132,11 @@ export class ShopifyController {
         return reply.code(401).send({ error: 'Authentication required' });
       }
 
-      // Create Shopify channel instance
-      const shopifyChannel = new ShopifyChannel(shop, user.id);
+      // Create Shopify channel instance with a placeholder shop if none provided
+      const shopifyChannel = new ShopifyChannel(shop || 'placeholder.myshopify.com', user.id, this.fastify);
 
-      // Generate auth URL
-      const authUrl = shopifyChannel.getAuthUrl();
+      // Generate auth URL (pass the shop parameter if provided)
+      const authUrl = shopifyChannel.generateAuthUrl(shop);
 
       // Redirect to Shopify auth page
       reply.redirect(authUrl);
@@ -176,7 +178,7 @@ export class ShopifyController {
       }
 
       // Create Shopify channel instance
-      const shopifyChannel = new ShopifyChannel(shop, user.id);
+      const shopifyChannel = new ShopifyChannel(shop, user.id, this.fastify);
 
       // If we don't have a code, this might be an app installation request
       if (!code) {
@@ -340,7 +342,7 @@ export class ShopifyController {
       }
 
       // Create Shopify channel instance to handle disconnection
-      const shopifyChannel = new ShopifyChannel(connection.shop, user.id, connection.access_token);
+      const shopifyChannel = new ShopifyChannel(connection.shop, user.id, this.fastify, connection.access_token);
 
       // Disconnect from Shopify (clear token from cache)
       await shopifyChannel.disconnect();
@@ -399,7 +401,7 @@ export class ShopifyController {
       }
 
       // Create Shopify channel instance
-      const shopifyChannel = new ShopifyChannel(connection.shop, user.id, connection.access_token);
+      const shopifyChannel = new ShopifyChannel(connection.shop, user.id, this.fastify, connection.access_token);
 
       // Build query params
       const params: Record<string, string | number> = {};
@@ -471,7 +473,7 @@ export class ShopifyController {
       }
 
       // Create Shopify channel instance
-      const shopifyChannel = new ShopifyChannel(connection.shop, user.id, connection.access_token);
+      const shopifyChannel = new ShopifyChannel(connection.shop, user.id, this.fastify, connection.access_token);
 
       // Get order from Shopify
       const order = await shopifyChannel.getOrder(parseInt(id, 10));

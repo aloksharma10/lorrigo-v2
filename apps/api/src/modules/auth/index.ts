@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { AuthController } from './controller/auth-controller';
-import { AuthService } from './services/auth-services';
+import { AuthService } from './services/auth-service';
 
 export default async function auth(fastify: FastifyInstance) {
   const authService = new AuthService(fastify);
@@ -282,4 +282,94 @@ export default async function auth(fastify: FastifyInstance) {
     preHandler: fastify.authenticate,
     handler: (request, reply) => authController.verifyToken(request, reply),
   });
+
+  // Shopify OAuth routes
+  fastify.get('/shopify/auth-url', {
+    schema: {
+      tags: ['Auth'],
+      summary: 'Generate Shopify OAuth URL for login',
+      querystring: {
+        type: 'object',
+        properties: {
+          shop: { type: 'string' },
+        },
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            authUrl: { type: 'string' },
+          },
+        },
+        500: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' },
+          },
+        },
+      },
+    },
+    handler: (request, reply) => authController.generateShopifyAuthUrl(request, reply),
+  });
+
+  fastify.get('/shopify/callback', {
+    schema: {
+      tags: ['Auth'],
+      summary: 'Handle Shopify OAuth callback',
+      querystring: {
+        type: 'object',
+        required: ['code', 'state', 'shop'],
+        properties: {
+          code: { type: 'string' },
+          state: { type: 'string' },
+          shop: { type: 'string' },
+        },
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            user: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                email: { type: 'string' },
+                name: { type: 'string' },
+                role: { type: 'string' },
+                hasPasskeys: { type: 'boolean' },
+              },
+            },
+            token: { type: 'string' },
+          },
+        },
+        400: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' },
+          },
+        },
+        401: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' },
+          },
+        },
+        500: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' },
+          },
+        },
+      },
+    },
+    handler: (request, reply) => authController.handleShopifyCallback(request, reply),
+  });
+
+
 }

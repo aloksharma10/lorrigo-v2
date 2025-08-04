@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient, useAuthToken } from '@/components/providers/token-provider';
 import { useSession } from 'next-auth/react';
-import axios, { AxiosError } from 'axios';
+import { AxiosError } from 'axios';
 
 // Types
 export interface ShopifyConnection {
@@ -67,9 +67,10 @@ export const useShopify = () => {
 
   // Generate Shopify auth URL
   const initiateAuth = useMutation({
-    mutationFn: async (shopDomain: string) => {
+    mutationFn: async (shopDomain?: string) => {
+      const params = shopDomain ? { shop: shopDomain } : {};
       const response = await apiClient.get<{ authUrl: string }>('/channels/shopify/auth/url', {
-        params: { shop: shopDomain },
+        params,
       });
       return response.data.authUrl;
     },

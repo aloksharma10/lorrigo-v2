@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import {
   Button,
-  Input,
   Alert,
   AlertTitle,
   AlertDescription,
@@ -21,9 +20,6 @@ import { ChannelCard } from '../channel-card-factory';
 import { useShopify } from '@/lib/apis/channels/shopify';
 
 export function ShopifyChannelCard() {
-  const [shopDomain, setShopDomain] = useState('');
-  const [isValidDomain, setIsValidDomain] = useState(true);
-
   // Use our shopify hook
   const shopify = useShopify();
   const {
@@ -37,20 +33,9 @@ export function ShopifyChannelCard() {
   const { mutate: disconnect, isPending: isDisconnecting } = shopify.disconnect;
 
   const handleConnect = () => {
-    // Basic validation for Shopify domain
-    if (!shopDomain.trim()) {
-      setIsValidDomain(false);
-      return;
-    }
-
-    // Format domain if needed
-    let domain = shopDomain.trim();
-    if (!domain.includes('.myshopify.com')) {
-      domain = `${domain}.myshopify.com`;
-    }
-
-    setIsValidDomain(true);
-    initiateAuth(domain, {
+    // Generate auth URL without specifying a shop domain
+    // Shopify will handle the shop selection during OAuth flow
+    initiateAuth('', {
       onSuccess: (authUrl: string) => {
         // Show loading state
         toast.loading('Redirecting to Shopify...', {
@@ -75,7 +60,6 @@ export function ShopifyChannelCard() {
     disconnect(undefined, {
       onSuccess: () => {
         toast.success('Shopify store disconnected successfully');
-        setShopDomain('');
       },
       onError: (error: unknown) => {
         toast.error('Failed to disconnect Shopify store', {
@@ -145,26 +129,21 @@ export function ShopifyChannelCard() {
           </Alert>
         )}
 
-        <div>
-          <label htmlFor="shop-domain" className="mb-1.5 block text-sm font-medium">
-            Shopify Store Domain
-          </label>
-          <div className="flex items-center gap-2">
-            <Input
-              id="shop-domain"
-              placeholder="your-store"
-              value={shopDomain}
-              onChange={(e) => {
-                setShopDomain(e.target.value);
-                setIsValidDomain(true);
-              }}
-              className={!isValidDomain ? 'border-red-500' : ''}
-            />
-            <span className="text-muted-foreground whitespace-nowrap text-sm">.myshopify.com</span>
+        <div className="text-center space-y-3">
+          <div className="flex items-center justify-center w-16 h-16 mx-auto rounded-full bg-emerald-50 dark:bg-emerald-950/30">
+            <Store className="w-8 h-8 text-emerald-600" />
           </div>
-          {!isValidDomain && (
-            <p className="mt-1 text-xs text-red-500">Please enter a valid store name</p>
-          )}
+          <div>
+            <h3 className="text-lg font-semibold">Connect Your Shopify Store</h3>
+            <p className="text-muted-foreground text-sm mt-1">
+              Import orders automatically from your Shopify store
+            </p>
+          </div>
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p>• Sync orders in real-time</p>
+            <p>• Manage shipping and tracking</p>
+            <p>• Access order analytics</p>
+          </div>
         </div>
       </div>
     );
@@ -187,7 +166,7 @@ export function ShopifyChannelCard() {
 
     return (
       <Button onClick={handleConnect} disabled={isConnecting} className="w-full" icon={LinkIcon}>
-        {isConnecting ? 'Connecting...' : 'Connect Shopify Store'}
+        {isConnecting ? 'Connecting...' : 'Connect with Shopify'}
       </Button>
     );
   };

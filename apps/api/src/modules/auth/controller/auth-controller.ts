@@ -3,7 +3,7 @@ import { z } from 'zod';
 import bcrypt from 'bcrypt';
 import { captureException } from '@/lib/sentry';
 
-import { AuthService } from '../services/auth-services';
+import { AuthService } from '../services/auth-service';
 
 // Add type augmentation for Fastify
 // declare module 'fastify' {
@@ -44,7 +44,9 @@ const registerSchema = z.object({
 });
 
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService
+  ) {}
 
   async register(request: FastifyRequest, reply: FastifyReply) {
     try {
@@ -374,6 +376,74 @@ export class AuthController {
       return reply.code(500).send({ 
         success: false,
         message: 'Internal server error' 
+      });
+    }
+  }
+
+  /**
+   * Generate Shopify OAuth URL for login
+   */
+  async generateShopifyAuthUrl(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const { shop } = request.query as any;
+      const authUrl = this.authService.generateShopifyAuthUrl(shop);
+      
+      return reply.code(200).send({
+        success: true,
+        authUrl,
+      });
+    } catch (error) {
+      captureException(error as Error);
+      return reply.code(500).send({
+        success: false,
+        message: 'Failed to generate Shopify auth URL',
+      });
+    }
+  }
+
+  /**
+   * Handle Shopify OAuth callback
+   */
+  async handleShopifyCallback(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      // Get parameters from query string (Shopify sends them as query params)
+      const { code, state, shop } = request.query as any;
+
+      // Validate required parameters
+      if (!code || !state || !shop) {
+        return reply.code(400).send({
+          success: false,
+          message: 'Missing required parameters: code, state, or shop',
+        });
+      }
+
+      // Handle Shopify OAuth using the auth service
+      const result = await this.authService.handleShopifyOAuth(
+        code,
+        state,
+        shop,
+        request.ip,
+        {} // No device info for OAuth flow
+      );
+
+      if ('error' in result) {
+        return reply.code(401).send({
+          success: false,
+          message: result.error,
+        });
+      }
+
+      return reply.code(200).send({
+        success: true,
+        user: result.user,
+        token: result.token,
+      });
+    } catch (error) {
+      captureException(error as Error);
+      return reply.code(500).send({
+        success: false,
+        message: 'Failed to authenticate with Shopify',
+        error: process.env.NODE_ENV === 'development' ? error instanceof Error ? error.message : 'Unknown error' : undefined,
       });
     }
   }
