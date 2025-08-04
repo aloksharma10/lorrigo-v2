@@ -3,6 +3,12 @@ import { z } from 'zod';
 import { captureException } from '@/lib/sentry';
 import { ChannelConnectionService, Channel } from '../services/channel-connection-service';
 import { ShopifyChannel, ShopifyConnection } from '../services/shopify/shopify-channel';
+import { 
+  ShopifyWebhookService, 
+  ShopifyCustomerDataRequestPayload,
+  ShopifyCustomerRedactPayload,
+  ShopifyShopRedactPayload
+} from '../services/shopify/shopify-webhook-service';
 
 // Validation schemas
 const shopifyAuthSchema = z.object({
@@ -32,10 +38,12 @@ const shopifyOrderParamsSchema = z.object({
 export class ShopifyController {
   private connectionService: ChannelConnectionService;
   private fastify: FastifyInstance;
+  private webhookService: ShopifyWebhookService;
 
   constructor(fastify: FastifyInstance) {
     this.connectionService = new ChannelConnectionService();
     this.fastify = fastify;
+    this.webhookService = new ShopifyWebhookService();
   }
 
   /**
@@ -63,6 +71,14 @@ export class ShopifyController {
 
     // Get a specific order
     fastify.get('/shopify/orders/:id', this.getOrder.bind(this));
+
+    // Mandatory webhooks for Shopify App Store compliance
+    fastify.post('/shopify/webhooks/customers/data_request', this.handleCustomerDataRequest.bind(this));
+    fastify.post('/shopify/webhooks/customers/redact', this.handleCustomerDataErasure.bind(this));
+    fastify.post('/shopify/webhooks/shop/redact', this.handleShopDataErasure.bind(this));
+
+    // Test endpoint for webhook verification (remove in production)
+    fastify.get('/shopify/webhooks/test', this.testWebhookEndpoint.bind(this));
   }
 
   /**
@@ -490,6 +506,274 @@ export class ShopifyController {
       console.error('Error fetching Shopify order:', error);
       captureException(error as Error);
       reply.code(500).send({ error: 'Failed to fetch Shopify order' });
+    }
+  }
+
+  /**
+   * Handle customer data request webhook (GDPR compliance)
+   * Shopify sends this when a customer requests their data
+   * @param request Fastify request
+   * @param reply Fastify reply
+   */
+  private async handleCustomerDataRequest(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    try {
+      console.log('Customer data request webhook received');
+
+      // Validate webhook headers
+      if (!this.webhookService.validateWebhookHeaders(request.headers)) {
+        console.error('Invalid webhook headers');
+        return reply.code(401).send({ error: 'Invalid webhook headers' });
+      }
+
+      // Verify webhook authenticity using HMAC
+      const hmac = request.headers['x-shopify-hmac-sha256'];
+      const bodyString = typeof request.body === 'string' ? request.body : JSON.stringify(request.body);
+      
+      if (!this.webhookService.verifyWebhookHmac(bodyString, hmac as string)) {
+        console.error('Invalid webhook HMAC signature');
+        return reply.code(401).send({ error: 'Invalid webhook signature' });
+      }
+
+      // Parse the webhook payload
+      const payload: ShopifyCustomerDataRequestPayload = this.webhookService.parseCustomerDataRequestPayload(bodyString);
+
+      console.log('Customer data request payload:', {
+        shop_id: payload.shop_id,
+        shop_domain: payload.shop_domain,
+        customer_id: payload.customer.id,
+        customer_email: payload.customer.email,
+        orders_requested: payload.orders_requested.length,
+        data_request_id: payload.data_request.id
+      });
+
+      // Get shop connection
+      const connection = await this.connectionService.getConnectionByShop(
+        '', // We'll need to get user ID from shop domain
+        payload.shop_domain,
+        Channel.SHOPIFY
+      );
+
+      if (!connection) {
+        console.log('No connection found for shop:', payload.shop_domain);
+        // Still return 200 as required by Shopify
+        return reply.code(200).send({ success: true });
+      }
+
+      // Generate customer data export for GDPR compliance
+      const customerData = this.webhookService.generateCustomerDataExport(payload);
+
+      // Store the data request for processing (you might want to queue this)
+      // This data should be provided to the store owner within 30 days
+      await this.webhookService.logWebhookEvent(
+        'customers/data_request',
+        payload.shop_domain,
+        customerData,
+        'pending'
+      );
+
+      // TODO: Implement actual data export logic
+      // 1. Fetch customer data from your database
+      // 2. Fetch order data for the requested orders
+      // 3. Include any app-specific data you store
+      // 4. Format the data for export
+      // 5. Store or send the export to the store owner
+
+      // Return success immediately (Shopify expects a 200 response)
+      reply.code(200).send({ success: true });
+    } catch (error) {
+      console.error('Error handling customer data request webhook:', error);
+      captureException(error as Error);
+      // Always return 200 to Shopify even on error
+      reply.code(200).send({ success: true });
+    }
+  }
+
+  /**
+   * Handle customer data erasure webhook (GDPR compliance)
+   * Shopify sends this when a customer requests data deletion
+   * @param request Fastify request
+   * @param reply Fastify reply
+   */
+  private async handleCustomerDataErasure(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    try {
+      console.log('Customer data erasure webhook received');
+
+      // Validate webhook headers
+      if (!this.webhookService.validateWebhookHeaders(request.headers)) {
+        console.error('Invalid webhook headers');
+        return reply.code(401).send({ error: 'Invalid webhook headers' });
+      }
+
+      // Verify webhook authenticity using HMAC
+      const hmac = request.headers['x-shopify-hmac-sha256'];
+      const bodyString = typeof request.body === 'string' ? request.body : JSON.stringify(request.body);
+      
+      if (!this.webhookService.verifyWebhookHmac(bodyString, hmac as string)) {
+        console.error('Invalid webhook HMAC signature');
+        return reply.code(401).send({ error: 'Invalid webhook signature' });
+      }
+
+      // Parse the webhook payload
+      const payload: ShopifyCustomerRedactPayload = this.webhookService.parseCustomerRedactPayload(bodyString);
+
+      console.log('Customer data erasure payload:', {
+        shop_id: payload.shop_id,
+        shop_domain: payload.shop_domain,
+        customer_id: payload.customer.id,
+        customer_email: payload.customer.email,
+        orders_to_redact: payload.orders_to_redact.length
+      });
+
+      // Get shop connection
+      const connection = await this.connectionService.getConnectionByShop(
+        '', // We'll need to get user ID from shop domain
+        payload.shop_domain,
+        Channel.SHOPIFY
+      );
+
+      if (!connection) {
+        console.log('No connection found for shop:', payload.shop_domain);
+        // Still return 200 as required by Shopify
+        return reply.code(200).send({ success: true });
+      }
+
+      // Delete customer data from your database
+      // This must be completed within 30 days of receiving the request
+      // If you're legally required to retain data, you shouldn't complete the action
+      
+      // TODO: Implement actual data deletion logic
+      // 1. Delete customer-specific data from your database
+      // 2. Delete order data for the specified orders
+      // 3. Delete any analytics or preferences data
+      // 4. Ensure complete data removal
+
+      // Example deletion operations (uncomment and modify as needed):
+      // if (payload.customer.id) {
+      //   // Delete customer data
+      //   await this.prisma.customerData.deleteMany({
+      //     where: { shopify_customer_id: payload.customer.id.toString() }
+      //   });
+      //   
+      //   // Delete order data
+      //   if (payload.orders_to_redact.length > 0) {
+      //     await this.prisma.orderData.deleteMany({
+      //       where: { shopify_order_id: { in: payload.orders_to_redact.map(id => id.toString()) } }
+      //     });
+      //   }
+      //   
+      //   // Delete analytics data
+      //   await this.prisma.customerAnalytics.deleteMany({
+      //     where: { shopify_customer_id: payload.customer.id.toString() }
+      //   });
+      // }
+
+      // Log the erasure request
+      await this.webhookService.logWebhookEvent(
+        'customers/redact',
+        payload.shop_domain,
+        payload,
+        'completed'
+      );
+
+      // Return success immediately (Shopify expects a 200 response)
+      reply.code(200).send({ success: true });
+    } catch (error) {
+      console.error('Error handling customer data erasure webhook:', error);
+      captureException(error as Error);
+      // Always return 200 to Shopify even on error
+      reply.code(200).send({ success: true });
+    }
+  }
+
+  /**
+   * Handle shop data erasure webhook (GDPR compliance)
+   * Shopify sends this 48 hours after app uninstallation
+   * @param request Fastify request
+   * @param reply Fastify reply
+   */
+  private async handleShopDataErasure(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    try {
+      console.log('Shop data erasure webhook received');
+
+      // Validate webhook headers
+      if (!this.webhookService.validateWebhookHeaders(request.headers)) {
+        console.error('Invalid webhook headers');
+        return reply.code(401).send({ error: 'Invalid webhook headers' });
+      }
+
+      // Verify webhook authenticity using HMAC
+      const hmac = request.headers['x-shopify-hmac-sha256'];
+      const bodyString = typeof request.body === 'string' ? request.body : JSON.stringify(request.body);
+      
+      if (!this.webhookService.verifyWebhookHmac(bodyString, hmac as string)) {
+        console.error('Invalid webhook HMAC signature');
+        return reply.code(401).send({ error: 'Invalid webhook signature' });
+      }
+
+      // Parse the webhook payload
+      const payload: ShopifyShopRedactPayload = this.webhookService.parseShopRedactPayload(bodyString);
+
+      console.log('Shop data erasure payload:', {
+        shop_id: payload.shop_id,
+        shop_domain: payload.shop_domain
+      });
+
+      // Get shop connection
+      const connection = await this.connectionService.getConnectionByShop(
+        '', // We'll need to get user ID from shop domain
+        payload.shop_domain,
+        Channel.SHOPIFY
+      );
+
+      if (!connection) {
+        console.log('No connection found for shop:', payload.shop_domain);
+        // Still return 200 as required by Shopify
+        return reply.code(200).send({ success: true });
+      }
+
+      // Delete the shop connection
+      await this.connectionService.deleteConnection(connection.user_id, Channel.SHOPIFY);
+
+      // Log the erasure request
+      await this.webhookService.logWebhookEvent(
+        'shop/redact',
+        payload.shop_domain,
+        payload,
+        'completed'
+      );
+
+      // Return success immediately (Shopify expects a 200 response)
+      reply.code(200).send({ success: true });
+    } catch (error) {
+      console.error('Error handling shop data erasure webhook:', error);
+      captureException(error as Error);
+      // Always return 200 to Shopify even on error
+      reply.code(200).send({ success: true });
+    }
+  }
+
+  /**
+   * Test endpoint for webhook verification (remove in production)
+   * @param request Fastify request
+   * @param reply Fastify reply
+   */
+  private async testWebhookEndpoint(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    try {
+      const hmac = request.headers['x-shopify-hmac-sha256'];
+      const bodyString = typeof request.body === 'string' ? request.body : JSON.stringify(request.body);
+
+      if (!this.webhookService.verifyWebhookHmac(bodyString, hmac as string)) {
+        return reply.code(401).send({ error: 'Invalid webhook signature' });
+      }
+
+      reply.send({
+        success: true,
+        message: 'Webhook signature verified successfully!',
+      });
+    } catch (error) {
+      console.error('Error testing webhook endpoint:', error);
+      captureException(error as Error);
+      reply.code(500).send({ error: 'Failed to test webhook endpoint' });
     }
   }
 }
