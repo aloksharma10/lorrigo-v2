@@ -173,24 +173,32 @@ export class ShopifyController {
       const result = shopifyCallbackSchema.safeParse(request.query);
 
       if (!result.success) {
-        return reply.code(400).send({
-          error: 'Validation error',
-          details: result.error.format(),
-        });
+        console.error('OAuth callback validation error:', result.error.format());
+        // Redirect to app with error
+        const errorUrl = `${process.env.FRONTEND_URL || 'https://app.lorrigo.com'}/auth/signin?error=validation_failed`;
+        return reply.redirect(errorUrl);
       }
 
       const { shop, code, hmac, timestamp, host } = result.data;
+
+      console.log('OAuth callback received:', { shop, code: code ? 'present' : 'missing', host });
 
       // Get authenticated user from request
       const user = request.userPayload;
 
       if (!user) {
-        return reply.code(401).send({ error: 'Authentication required' });
+        console.error('No authenticated user in OAuth callback');
+        // Redirect to app with error
+        const errorUrl = `${process.env.FRONTEND_URL || 'https://app.lorrigo.com'}/auth/signin?error=authentication_required`;
+        return reply.redirect(errorUrl);
       }
 
       // Validate that the shop is a valid Shopify shop domain
       if (!shop.match(/^[a-zA-Z0-9][a-zA-Z0-9\-]*\.myshopify\.com$/)) {
-        return reply.code(400).send({ error: 'Invalid shop domain' });
+        console.error('Invalid shop domain:', shop);
+        // Redirect to app with error
+        const errorUrl = `${process.env.FRONTEND_URL || 'https://app.lorrigo.com'}/auth/signin?error=invalid_shop`;
+        return reply.redirect(errorUrl);
       }
 
       // Create Shopify channel instance
@@ -201,13 +209,9 @@ export class ShopifyController {
         console.log('No code provided, generating auth URL for shop:', shop);
         // Generate a new authorization URL
         const authUrl = shopifyChannel.getAuthUrl();
-
-        reply.send({
-          success: true,
-          authUrl,
-          message: 'Authorization URL generated',
-        });
-        return;
+        
+        // Redirect to the authorization URL
+        return reply.redirect(authUrl);
       }
 
       // Exchange code for token
@@ -215,8 +219,10 @@ export class ShopifyController {
         const connection = await shopifyChannel.exchangeCodeForToken(code);
 
         if (!connection) {
-          reply.code(500).send({ error: 'Failed to exchange code for token' });
-          return;
+          console.error('Failed to exchange code for token');
+          // Redirect to app with error
+          const errorUrl = `${process.env.FRONTEND_URL || 'https://app.lorrigo.com'}/auth/signin?error=token_exchange_failed`;
+          return reply.redirect(errorUrl);
         }
 
         // Save the connection to the database
@@ -225,16 +231,16 @@ export class ShopifyController {
           channel: Channel.SHOPIFY,
         });
 
-        // Return success response with connection info
-        reply.send({
-          success: true,
-          connection: {
-            shop: savedConnection.shop,
-            scope: savedConnection.scope,
-            connected_at: savedConnection.connected_at,
-            status: 'active',
-          },
+        console.log('Shopify connection saved successfully:', {
+          shop: savedConnection.shop,
+          user_id: savedConnection.user_id,
+          connected_at: savedConnection.connected_at
         });
+
+        // For non-embedded apps, redirect to the app's dashboard
+        const dashboardUrl = `${process.env.FRONTEND_URL || 'https://app.lorrigo.com'}/seller/dashboard?shop=${shop}&status=success`;
+        return reply.redirect(dashboardUrl);
+
       } catch (exchangeError: any) {
         console.error('Error exchanging code for token:', exchangeError);
         const errorMessage = exchangeError.message || 'Failed to exchange code for token';
@@ -254,44 +260,24 @@ export class ShopifyController {
           );
 
           if (existingConnection) {
-            // If we already have a connection, consider this a success
-            reply.send({
-              success: true,
-              connection: {
-                shop: existingConnection.shop,
-                scope: existingConnection.scope,
-                connected_at: existingConnection.connected_at,
-                status: 'active',
-              },
-              message: 'Connection already exists',
-            });
-            return;
-          } else {
-            // No existing connection, generate a new auth URL
-            const authUrl = shopifyChannel.getAuthUrl();
-
-            reply.send({
-              success: false,
-              authUrl,
-              error: 'Authorization code was already used. Please try again.',
-              needsReauthorization: true,
-            });
-            return;
+            console.log('Connection already exists for shop:', shop);
+            // If we already have a connection, redirect to dashboard
+            const dashboardUrl = `${process.env.FRONTEND_URL || 'https://app.lorrigo.com'}/seller/dashboard?shop=${shop}&status=already_connected`;
+            return reply.redirect(dashboardUrl);
           }
         }
 
-        reply.code(500).send({
-          error: errorMessage,
-          details: exchangeError.response?.data || {},
-        });
+        // Redirect to app with error
+        const errorUrl = `${process.env.FRONTEND_URL || 'https://app.lorrigo.com'}/auth/signin?error=installation_failed&message=${encodeURIComponent(errorMessage)}`;
+        return reply.redirect(errorUrl);
       }
-    } catch (error: any) {
-      console.error('Error handling Shopify callback:', error);
+    } catch (error) {
+      console.error('Unexpected error in OAuth callback:', error);
       captureException(error as Error);
-      reply.code(500).send({
-        error: 'Failed to complete Shopify authentication',
-        message: error.message || 'Unknown error',
-      });
+      
+      // Redirect to app with error
+      const errorUrl = `${process.env.FRONTEND_URL || 'https://app.lorrigo.com'}/auth/signin?error=unexpected_error`;
+      return reply.redirect(errorUrl);
     }
   }
 

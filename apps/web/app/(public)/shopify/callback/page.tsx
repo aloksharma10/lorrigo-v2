@@ -32,10 +32,18 @@ export default function ShopifyCallback() {
         const timestamp = searchParams.get('timestamp');
         const host = searchParams.get('host');
 
+        console.log('Shopify callback received:', { 
+          shop, 
+          code: code ? 'present' : 'missing', 
+          state: state ? 'present' : 'missing',
+          host 
+        });
+
         // If we have shop but no code, this means we need to redirect to OAuth
         if (shop && !code) {
           try {
             const authUrl = await getShopifyAuthUrl(shop);
+            console.log('Redirecting to Shopify OAuth:', authUrl);
             window.location.href = authUrl;
             return;
           } catch (err) {
@@ -74,9 +82,9 @@ export default function ShopifyCallback() {
           setAuthToken(result.token);
           console.log('Auth token set successfully');
 
-          // Redirect user based on role
+          // For non-embedded apps, redirect to the app's dashboard
           const redirectUrl = getRoleBasedRedirect(result.user.role as Role);
-          console.log('Redirecting to:', redirectUrl);
+          console.log('Redirecting to app dashboard:', redirectUrl);
           
           // Add a small delay to ensure session is created
           setTimeout(() => {

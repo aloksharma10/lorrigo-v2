@@ -123,4 +123,7 @@ export const APP_CONFIG = {
         process.env.SHOPIFY_REDIRECT_URI || 'http://localhost:3000/auth/shopify/callback',
     },
   },
+
+  // Frontend URL for redirects
+  FRONTEND_URL: process.env.FRONTEND_URL || 'https://app.lorrigo.com',
 };
