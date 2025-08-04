@@ -77,28 +77,16 @@ export default function SignUp() {
     setErrors({});
 
     try {
-      const result = await signIn('google', { 
-        redirect: false 
+      // Start Google OAuth flow - this will redirect to Google consent screen
+      await signIn('google', { 
+        callbackUrl: '/dashboard'
       });
-
-      if (result?.error) {
-        setErrors({ submit: 'Google signup failed. Please try again.' });
-        return;
-      }
-
-      // Get session after successful Google signup
-      const session = await getSession();
       
-      if (session?.user) {
-        setSuccess('Account created successfully! Redirecting...');
-        setTimeout(() => {
-          router.push('/dashboard');
-        }, 2000);
-      }
+      // Note: The code below won't execute immediately because signIn will redirect
+      // The actual session handling happens in the NextAuth callbacks
     } catch (error) {
       console.error('Google signup error:', error);
       setErrors({ submit: 'Google signup failed. Please try again.' });
-    } finally {
       setIsGoogleLoading(false);
     }
   };

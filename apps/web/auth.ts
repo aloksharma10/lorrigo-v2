@@ -2,7 +2,6 @@ import { Role } from '@lorrigo/db';
 import NextAuth, { NextAuthResult } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
-import { prisma } from '@lorrigo/db';
 import { getDeviceInfo } from '@/lib/utils/device-info';
 
 // Declare module augmentation for next-auth
@@ -20,13 +19,18 @@ declare module 'next-auth' {
   }
 }
 
-
-
 export const result = NextAuth({
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          prompt: "consent",
+          access_type: "offline",
+          response_type: "code"
+        }
+      }
     }),
     CredentialsProvider({
       name: 'Credentials',
@@ -124,32 +128,38 @@ export const result = NextAuth({
         try {
           // Call our backend API to handle Google OAuth
           const deviceInfo = await getDeviceInfo({ headers: new Headers() } as any);
-          
+          const requestBody = {
+            email: user.email!,
+            name: user.name!,
+            googleId: profile?.sub,
+            image: user.image,
+            deviceInfo,
+          };
           const response = await fetch(`${process.env.FASTIFY_BACKEND_URL}/auth/login/google`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              email: user.email!,
-              name: user.name!,
-              googleId: profile?.sub,
-              image: user.image,
-              deviceInfo,
-            }),
+            body: JSON.stringify(requestBody),
           });
 
+
           if (!response.ok) {
-            console.error('Google OAuth login failed:', await response.text());
+            const errorText = await response.text();
+            console.error('Google OAuth login failed:', errorText);
             return false;
           }
 
           const data = await response.json();
+          if (!data.success) {
+            console.error('Google OAuth login failed:', data.message);
+            return false;
+          }
           
-          // Store the token in the user object for the jwt callback
           (user as any).token = data.token;
           (user as any).role = data.user.role;
           (user as any).hasPasskeys = data.user.hasPasskeys;
+          (user as any).id = data.user.id;
           
           return true;
         } catch (error) {
@@ -180,11 +190,21 @@ export const result = NextAuth({
       }
       return session;
     },
+    async redirect({ url, baseUrl }) {
+      if (url.startsWith('/')) {
+        return `${baseUrl}${url}`;
+      }
+      if (new URL(url).origin === baseUrl) {
+        return url;
+      }
+      return `${baseUrl}/dashboard`;
+    },
     authorized: async ({ auth }) => {
       return !!auth;
     },
   },
   secret: process.env.AUTH_SECRET,
+  debug: process.env.NODE_ENV === 'development',
 });
 
 export const handlers: NextAuthResult['handlers'] = result.handlers;

@@ -134,30 +134,16 @@ function SignInForm({ onForgotPasswordClick }: { onForgotPasswordClick: () => vo
     setError('');
 
     try {
-      const result = await signIn('google', { 
-        callbackUrl: callbackUrl || undefined,
-        redirect: false 
+      // Start Google OAuth flow - this will redirect to Google consent screen
+      await signIn('google', { 
+        callbackUrl: callbackUrl || '/dashboard'
       });
-
-      if (result?.error) {
-        setError('Google login failed. Please try again.');
-        return;
-      }
-
-      // Get session after successful Google login
-      const session = await getSession();
-      const userRole = (session?.user as any)?.role as Role;
-
-      if (session?.user.token) {
-        setAuthToken(session.user.token as string);
-      }
-
-      const redirectUrl = getRedirectUrl(callbackUrl, userRole);
-      router.push(redirectUrl);
+      
+      // Note: The code below won't execute immediately because signIn will redirect
+      // The actual session handling happens in the NextAuth callbacks
     } catch (error) {
       console.error('Google login error:', error);
       setError('Google login failed. Please try again.');
-    } finally {
       setIsGoogleLoading(false);
     }
   };
