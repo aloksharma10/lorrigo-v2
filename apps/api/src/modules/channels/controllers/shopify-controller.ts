@@ -207,8 +207,8 @@ export class ShopifyController {
       // If we don't have a code, this might be an app installation request
       if (!code) {
         console.log('No code provided, generating auth URL for shop:', shop);
-        // Generate a new authorization URL
-        const authUrl = shopifyChannel.getAuthUrl();
+        // Generate a new authorization URL with the shop parameter
+        const authUrl = shopifyChannel.generateAuthUrl(shop);
         
         // Redirect to the authorization URL
         return reply.redirect(authUrl);

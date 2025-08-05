@@ -198,7 +198,12 @@ export class ShopifyChannel extends BaseChannel {
     const key = `shopify_oauth_nonce:${nonce}`;
     this.fastify.redis.setex(key, 300, '1'); // 5 minutes expiry
 
-    const authUrl = `https://www.shopify.com/admin/oauth/authorize?${querystring.stringify(params)}`;
+    // Use the correct Shopify OAuth URL format
+    // For app installations, we need to use the shop-specific URL
+    const baseUrl = shop ? `https://${shop}/admin/oauth/authorize` : 'https://www.shopify.com/admin/oauth/authorize';
+    const authUrl = `${baseUrl}?${querystring.stringify(params)}`;
+    
+    console.log('Generated Shopify OAuth URL:', { shop, authUrl });
     return authUrl;
   }
 
