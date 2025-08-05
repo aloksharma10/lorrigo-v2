@@ -98,7 +98,6 @@ export class ShopifyController {
       }
 
       const { shop } = result.data;
-      console.log('Getting Shopify auth URL for shop:', shop || 'generic');
 
       // Get authenticated user from request
       const user = request.userPayload;
@@ -139,7 +138,6 @@ export class ShopifyController {
       }
 
       const { shop } = result.data;
-      console.log('Initiating Shopify auth for shop:', shop || 'generic');
 
       // Get authenticated user from request
       const user = request.userPayload;
@@ -181,8 +179,6 @@ export class ShopifyController {
 
       const { shop, code, hmac, timestamp, host } = result.data;
 
-      console.log('OAuth callback received:', { shop, code: code ? 'present' : 'missing', host });
-
       // Get authenticated user from request
       const user = request.userPayload;
 
@@ -206,8 +202,6 @@ export class ShopifyController {
 
       // If we don't have a code, this might be an app installation request
       if (!code) {
-        console.log('No code provided, generating auth URL for shop:', shop);
-        // Generate a new authorization URL with the shop parameter
         const authUrl = shopifyChannel.generateAuthUrl(shop);
         
         // Redirect to the authorization URL
@@ -226,15 +220,9 @@ export class ShopifyController {
         }
 
         // Save the connection to the database
-        const savedConnection = await this.connectionService.saveConnection({
+        await this.connectionService.saveConnection({
           ...connection,
           channel: Channel.SHOPIFY,
-        });
-
-        console.log('Shopify connection saved successfully:', {
-          shop: savedConnection.shop,
-          user_id: savedConnection.user_id,
-          connected_at: savedConnection.connected_at
         });
 
         // For non-embedded apps, redirect to the app's dashboard
@@ -260,7 +248,6 @@ export class ShopifyController {
           );
 
           if (existingConnection) {
-            console.log('Connection already exists for shop:', shop);
             // If we already have a connection, redirect to dashboard
             const dashboardUrl = `${process.env.FRONTEND_URL || 'https://app.lorrigo.com'}/seller/dashboard?shop=${shop}&status=already_connected`;
             return reply.redirect(dashboardUrl);
@@ -523,7 +510,7 @@ export class ShopifyController {
       // Parse the webhook payload
       const payload: ShopifyCustomerDataRequestPayload = this.webhookService.parseCustomerDataRequestPayload(bodyString);
 
-      console.log('Customer data request payload:', {
+      console.log('[SHOPIFY] Customer data request payload:', {
         shop_id: payload.shop_id,
         shop_domain: payload.shop_domain,
         customer_id: payload.customer.id,

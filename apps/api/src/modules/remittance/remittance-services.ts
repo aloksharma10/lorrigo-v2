@@ -767,7 +767,6 @@ export class RemittanceService {
     if (!remittanceOrder) {
       return { csvBuffer: Buffer.from('', 'utf-8'), filename: `remittance-${id}.csv` };
     }
-    console.log(remittanceOrder.orders, 'remittanceOrder.orders')
     const orders = (remittanceOrder.orders || []).map((order: any) => ({
       remittance_id: remittanceOrder.id,
       remittance_code: remittanceOrder.code,

@@ -7,8 +7,7 @@ import { handleShopifyCallback, getShopifyAuthUrl } from '@/lib/apis/shopify-aut
 import { useAuthToken } from '@/components/providers/token-provider';
 import { getRoleBasedRedirect } from '@/lib/routes/redirect';
 import { Role } from '@lorrigo/db';
-import { Alert, AlertDescription } from '@lorrigo/ui/components';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 export default function ShopifyCallback() {
   const searchParams = useSearchParams();

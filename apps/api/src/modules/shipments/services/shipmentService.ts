@@ -98,8 +98,6 @@ export class ShipmentService {
   }
 
   async getServiceableCouriers(userId : string, params : RateCalculationParams){
-    console.log(params, 'params')
-
     const dimensionsStr = `${params.boxLength || 0}x${params.boxWidth || 0}x${params.boxHeight || 0}x${params.weight || 0}`;
     const ratesKey = `rates-${userId}-${params.isReversedOrder ? 'reverse' : 'forward'}-${params.pickupPincode}-${params.deliveryPincode}-${params.weight}-${dimensionsStr}-${params.paymentType}-${params.collectableAmount}`;
 

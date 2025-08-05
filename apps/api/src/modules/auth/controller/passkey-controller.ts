@@ -69,8 +69,6 @@ export class PasskeyController {
         supportedAlgorithmIDs: [-7, -257], // ES256, RS256
       });
 
-      console.log(options);
-
       // Store challenge in Redis or session
       await request.server.redis.setex(
         `passkey_challenge:${userId}`,

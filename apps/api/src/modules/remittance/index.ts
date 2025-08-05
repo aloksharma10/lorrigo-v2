@@ -15,12 +15,12 @@ export async function remittanceRoutes(fastify: FastifyInstance) {
   const remittanceController = new RemittanceController(remittanceService);
 
   // Auto-run remittance calculation on server start in development
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('[DEV] Running calculateRemittanceForAllUsers on server start...');
-    remittanceService.calculateRemittanceForAllUsers()
-      .then(() => console.log('[DEV] Remittance calculation completed.'))
-      .catch((err) => console.error('[DEV] Remittance calculation error:', err));
-  }
+  // if (process.env.NODE_ENV !== 'production') {
+  //   console.log('[DEV] Running calculateRemittanceForAllUsers on server start...');
+  //   remittanceService.calculateRemittanceForAllUsers()
+  //     .then(() => console.log('[DEV] Remittance calculation completed.'))
+  //     .catch((err) => console.error('[DEV] Remittance calculation error:', err));
+  // }
 
   const queue = new Queue(QueueNames.REMITTANCE_PROCESSING, {
     connection: fastify.redis,

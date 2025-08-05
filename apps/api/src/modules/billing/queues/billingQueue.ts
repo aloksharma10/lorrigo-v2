@@ -49,7 +49,6 @@ export function initBillingQueue(fastify: FastifyInstance, billingService: Billi
     async (job: Job<BillingJobData>) => {
       const { name, data } = job;
       fastify.log.info(`Processing billing job: ${name}`, { jobId: job.id });
-      console.log('Job data:', data, name);
 
       try {
         let result;

@@ -13,8 +13,6 @@ export enum RemittanceJobType {
 export const remittanceWorker = new Worker(
   QueueNames.REMITTANCE_PROCESSING,
   async (job) => {
-    console.log(`Processing remittance job: ${job.name}`);
-    
     if (job.name === RemittanceJobType.CALCULATE_REMITTANCE) {
       // Create a Fastify instance to pass to RemittanceService
       const app: FastifyInstance = fastify();

@@ -84,8 +84,6 @@ export class CustomerService {
       this.fastify.prisma.customer.count({ where: whereCondition }),
     ]);
 
-    console.log(customers, 'customers')
-  
     const totalPages = Math.ceil(total / limit);
   
     return {
