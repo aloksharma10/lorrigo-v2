@@ -1,6 +1,22 @@
-import { Boxes, Command, FileText, GalleryVerticalEnd, GitCompare, GitPullRequestDraft, IndianRupee, ListTodo, ReceiptTextIcon, Settings, Sigma, SquareSigma, Tickets, UsersRound, Weight, Truck } from 'lucide-react';
-import { Home, LayoutDashboard, ClipboardList, FilePlus, RotateCcw, AlertCircle, } from "lucide-react";
-
+import {
+  Boxes,
+  Command,
+  FileText,
+  GalleryVerticalEnd,
+  GitCompare,
+  GitPullRequestDraft,
+  IndianRupee,
+  ListTodo,
+  ReceiptTextIcon,
+  Settings,
+  Sigma,
+  SquareSigma,
+  Tickets,
+  UsersRound,
+  Weight,
+  Truck,
+} from 'lucide-react';
+import { Home, LayoutDashboard, ClipboardList, FilePlus, RotateCcw, AlertCircle } from 'lucide-react';
 
 export const SELLER_ROUTES = [
   {
@@ -104,7 +120,7 @@ export const SELLER_ROUTES = [
       {
         title: 'Rate Calculator',
         url: '/seller/rate-calculator',
-        icon: Sigma
+        icon: Sigma,
       },
       {
         title: 'Rate Card',
@@ -115,7 +131,7 @@ export const SELLER_ROUTES = [
       {
         title: 'Bulk Activity Log',
         url: '/seller/bulk-log',
-        icon: ListTodo
+        icon: ListTodo,
       },
     ],
   },
@@ -128,12 +144,12 @@ export const SELLER_ROUTES = [
       {
         title: 'Shipping Charges',
         url: '/seller/billing/shipping-charges',
-        icon: IndianRupee
+        icon: IndianRupee,
       },
       {
         title: 'COD Remittances',
         url: '/seller/billing/cod-remittances',
-        icon: Tickets
+        icon: Tickets,
       },
       {
         title: 'Invoices',

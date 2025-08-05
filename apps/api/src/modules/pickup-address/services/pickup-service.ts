@@ -4,12 +4,7 @@ import { ShiprocketVendor, ShiprocketB2BVendor } from '@/modules/vendors/shiproc
 import { DelhiveryVendorFactory } from '@/modules/vendors/delhivery.vendor';
 import { getPincodeDetails } from '@/utils/pincode';
 import { FastifyInstance } from 'fastify';
-import {
-  generateId,
-  getFinancialYear,
-  getFinancialYearStartDate,
-  PickupAddress,
-} from '@lorrigo/utils';
+import { generateId, getFinancialYear, getFinancialYearStartDate, PickupAddress } from '@lorrigo/utils';
 import { AddressType } from '@lorrigo/db';
 
 /**
@@ -26,16 +21,7 @@ export class PickupService {
    */
   async createPickup(pickupData: PickupAddress, sellerId: string, sellerName: string) {
     try {
-      const {
-        facilityName,
-        contactPersonName,
-        address: addressLine,
-        isRTOAddressSame,
-        rtoAddress,
-        rtoCity,
-        rtoState,
-        rtoPincode,
-      } = pickupData;
+      const { facilityName, contactPersonName, address: addressLine, isRTOAddressSame, rtoAddress, rtoCity, rtoState, rtoPincode } = pickupData;
       const pincode = pickupData.pincode;
       const phone = pickupData.phone;
 
@@ -57,34 +43,33 @@ export class PickupService {
 
       const { city, state } = pincodeDetails;
 
-      const [lastSequenceNumberHub, lastSequenceNumberAddress, b2bConfig, lastHub] =
-        await Promise.all([
-          this.fastify.prisma.hub.count({
-            where: {
-              created_at: {
-                gte: new Date(new Date().getFullYear(), 0, 1),
-                lte: new Date(new Date().getFullYear(), 11, 31),
-              },
+      const [lastSequenceNumberHub, lastSequenceNumberAddress, b2bConfig, lastHub] = await Promise.all([
+        this.fastify.prisma.hub.count({
+          where: {
+            created_at: {
+              gte: new Date(new Date().getFullYear(), 0, 1),
+              lte: new Date(new Date().getFullYear(), 11, 31),
             },
-          }),
-          this.fastify.prisma.address.count({
-            where: {
-              created_at: {
-                gte: new Date(new Date().getFullYear(), 0, 1),
-                lte: new Date(new Date().getFullYear(), 11, 31),
-              },
+          },
+        }),
+        this.fastify.prisma.address.count({
+          where: {
+            created_at: {
+              gte: new Date(new Date().getFullYear(), 0, 1),
+              lte: new Date(new Date().getFullYear(), 11, 31),
             },
-          }),
-          null,
-          this.fastify.prisma.hub.findFirst({
-            orderBy: {
-              created_at: 'desc',
-            },
-          }),
-          // this.fastify.prisma.vendorConfig.findFirst({
-          //   where: { vendorName: 'SHIPROCKET_B2B' },
-          // }),
-        ]);
+          },
+        }),
+        null,
+        this.fastify.prisma.hub.findFirst({
+          orderBy: {
+            created_at: 'desc',
+          },
+        }),
+        // this.fastify.prisma.vendorConfig.findFirst({
+        //   where: { vendorName: 'SHIPROCKET_B2B' },
+        // }),
+      ]);
 
       const lorrigoPickupId = generateId({
         tableName: 'HUB',
@@ -107,16 +92,15 @@ export class PickupService {
       const shiprocketB2BVendor = new ShiprocketB2BVendor();
       const delhiveryVendors = DelhiveryVendorFactory.getAllVendors();
 
-      const [smartShipResult, shiprocketResult, delhiveryResults, shiprocketB2BResult] =
-        await Promise.all([
-          smartShipVendor.registerHubWithBothDeliveryTypes(vendorPayload),
-          shiprocketVendor.registerHub(vendorPayload, lorrigoPickupId),
-          Promise.all(delhiveryVendors.map((vendor) => vendor.registerHub(vendorPayload))),
-          null,
-          // (b2bConfig?.token && b2bConfig?.clientId)
-          //   ? (shiprocketB2BVendor.setClientId(b2bConfig.clientId), shiprocketB2BVendor.registerHub(vendorPayload, lorrigoPickupId, b2bConfig.token))
-          //   : Promise.resolve(null)
-        ]);
+      const [smartShipResult, shiprocketResult, delhiveryResults, shiprocketB2BResult] = await Promise.all([
+        smartShipVendor.registerHubWithBothDeliveryTypes(vendorPayload),
+        shiprocketVendor.registerHub(vendorPayload, lorrigoPickupId),
+        Promise.all(delhiveryVendors.map((vendor) => vendor.registerHub(vendorPayload))),
+        null,
+        // (b2bConfig?.token && b2bConfig?.clientId)
+        //   ? (shiprocketB2BVendor.setClientId(b2bConfig.clientId), shiprocketB2BVendor.registerHub(vendorPayload, lorrigoPickupId, b2bConfig.token))
+        //   : Promise.resolve(null)
+      ]);
 
       const vendorResults: Record<string, VendorRegistrationResult> = {
         smartShip: smartShipResult,
@@ -160,12 +144,12 @@ export class PickupService {
             return await tx.hub.create({
               data: {
                 code: lorrigoPickupId,
-                smart_ship_codes:{
-                  create:{
+                smart_ship_codes: {
+                  create: {
                     surface: smartShipResult.data?.surfaceHubId?.toString(),
                     express: smartShipResult.data?.expressHubId?.toString(),
                     heavy: smartShipResult.data?.heavyHubId?.toString(),
-                  }
+                  },
                 },
                 user: {
                   connect: {

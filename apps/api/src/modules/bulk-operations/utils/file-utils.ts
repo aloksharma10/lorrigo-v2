@@ -21,11 +21,7 @@ export interface BulkOperationResult {
  * @param results Operation results
  * @param fastify Fastify instance
  */
-export async function generateCsvReport(
-  operationId: string,
-  results: BulkOperationResult[],
-  fastify: FastifyInstance
-): Promise<string | null> {
+export async function generateCsvReport(operationId: string, results: BulkOperationResult[], fastify: FastifyInstance): Promise<string | null> {
   try {
     // Create CSV header
     const header = 'ID,Success,Message,Error,Timestamp\n';
@@ -37,9 +33,7 @@ export async function generateCsvReport(
         const success = result.success ? 'Yes' : 'No';
         const message = (result.message || '').replace(/,/g, ';').replace(/\n/g, ' ');
         const error = (result.error || '').replace(/,/g, ';').replace(/\n/g, ' ');
-        const timestamp = result.timestamp
-          ? result.timestamp.toISOString()
-          : new Date().toISOString();
+        const timestamp = result.timestamp ? result.timestamp.toISOString() : new Date().toISOString();
 
         return `"${id}","${success}","${message}","${error}","${timestamp}"`;
       })
@@ -80,11 +74,7 @@ export async function generateCsvReport(
  * @param operationId Bulk operation ID
  * @param fastify Fastify instance
  */
-export async function mergePdfBuffers(
-  pdfBuffers: Buffer[],
-  operationId: string,
-  fastify: FastifyInstance
-): Promise<string | null> {
+export async function mergePdfBuffers(pdfBuffers: Buffer[], operationId: string, fastify: FastifyInstance): Promise<string | null> {
   try {
     // Create a new PDF document
     const mergedPdf = await PDFDocument.create();

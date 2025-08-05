@@ -21,9 +21,7 @@ export const getHomePageAnalytics = async (): Promise<HomePageAnalytics> => {
 };
 
 // Shipment Performance Analytics
-export const getShipmentPerformanceAnalytics = async (
-  filters?: ShipmentAnalysisFilters
-): Promise<ShipmentPerformanceAnalytics> => {
+export const getShipmentPerformanceAnalytics = async (filters?: ShipmentAnalysisFilters): Promise<ShipmentPerformanceAnalytics> => {
   const params = new URLSearchParams();
   if (filters) {
     Object.entries(filters).forEach(([key, value]) => {
@@ -32,7 +30,7 @@ export const getShipmentPerformanceAnalytics = async (
       }
     });
   }
-  
+
   const response = await api.get<ShipmentAnalysisResponse<ShipmentPerformanceAnalytics>>(
     `/shipment-analysis/performance${params.toString() ? `?${params.toString()}` : ''}`
   );
@@ -52,10 +50,7 @@ export const getPredictiveAnalytics = async (): Promise<PredictiveAnalytics> => 
 };
 
 // Generic Analytics Block
-export const getAnalyticsBlock = async (
-  block: string,
-  filters?: ShipmentAnalysisFilters
-): Promise<any> => {
+export const getAnalyticsBlock = async (block: string, filters?: ShipmentAnalysisFilters): Promise<any> => {
   const params = new URLSearchParams();
   if (filters) {
     Object.entries(filters).forEach(([key, value]) => {
@@ -64,19 +59,15 @@ export const getAnalyticsBlock = async (
       }
     });
   }
-  
-  const response = await api.get<ShipmentAnalysisResponse<any>>(
-    `/shipment-analysis/block/${block}${params.toString() ? `?${params.toString()}` : ''}`
-  );
+
+  const response = await api.get<ShipmentAnalysisResponse<any>>(`/shipment-analysis/block/${block}${params.toString() ? `?${params.toString()}` : ''}`);
   return response.data;
 };
 
 // Specialized Analytics Endpoints
 
 // Courier Performance Analytics
-export const getCourierPerformanceAnalytics = async (
-  filters?: ShipmentAnalysisFilters
-): Promise<ShipmentPerformanceAnalytics> => {
+export const getCourierPerformanceAnalytics = async (filters?: ShipmentAnalysisFilters): Promise<ShipmentPerformanceAnalytics> => {
   const params = new URLSearchParams();
   if (filters) {
     Object.entries(filters).forEach(([key, value]) => {
@@ -85,7 +76,7 @@ export const getCourierPerformanceAnalytics = async (
       }
     });
   }
-  
+
   const response = await api.get<ShipmentAnalysisResponse<ShipmentPerformanceAnalytics>>(
     `/shipment-analysis/courier-performance${params.toString() ? `?${params.toString()}` : ''}`
   );
@@ -93,9 +84,7 @@ export const getCourierPerformanceAnalytics = async (
 };
 
 // Zone Performance Analytics
-export const getZonePerformanceAnalytics = async (
-  filters?: ShipmentAnalysisFilters
-): Promise<ShipmentPerformanceAnalytics> => {
+export const getZonePerformanceAnalytics = async (filters?: ShipmentAnalysisFilters): Promise<ShipmentPerformanceAnalytics> => {
   const params = new URLSearchParams();
   if (filters) {
     Object.entries(filters).forEach(([key, value]) => {
@@ -104,7 +93,7 @@ export const getZonePerformanceAnalytics = async (
       }
     });
   }
-  
+
   const response = await api.get<ShipmentAnalysisResponse<ShipmentPerformanceAnalytics>>(
     `/shipment-analysis/zone-performance${params.toString() ? `?${params.toString()}` : ''}`
   );
@@ -112,9 +101,7 @@ export const getZonePerformanceAnalytics = async (
 };
 
 // Delivery Timeline Analytics
-export const getDeliveryTimelineAnalytics = async (
-  filters?: ShipmentAnalysisFilters
-): Promise<ShipmentPerformanceAnalytics> => {
+export const getDeliveryTimelineAnalytics = async (filters?: ShipmentAnalysisFilters): Promise<ShipmentPerformanceAnalytics> => {
   const params = new URLSearchParams();
   if (filters) {
     Object.entries(filters).forEach(([key, value]) => {
@@ -123,7 +110,7 @@ export const getDeliveryTimelineAnalytics = async (
       }
     });
   }
-  
+
   const response = await api.get<ShipmentAnalysisResponse<ShipmentPerformanceAnalytics>>(
     `/shipment-analysis/delivery-timeline${params.toString() ? `?${params.toString()}` : ''}`
   );
@@ -131,9 +118,7 @@ export const getDeliveryTimelineAnalytics = async (
 };
 
 // Weight Analysis Analytics
-export const getWeightAnalysisAnalytics = async (
-  filters?: ShipmentAnalysisFilters
-): Promise<ShipmentPerformanceAnalytics> => {
+export const getWeightAnalysisAnalytics = async (filters?: ShipmentAnalysisFilters): Promise<ShipmentPerformanceAnalytics> => {
   const params = new URLSearchParams();
   if (filters) {
     Object.entries(filters).forEach(([key, value]) => {
@@ -142,7 +127,7 @@ export const getWeightAnalysisAnalytics = async (
       }
     });
   }
-  
+
   const response = await api.get<ShipmentAnalysisResponse<ShipmentPerformanceAnalytics>>(
     `/shipment-analysis/weight-analysis${params.toString() ? `?${params.toString()}` : ''}`
   );
@@ -150,9 +135,7 @@ export const getWeightAnalysisAnalytics = async (
 };
 
 // Channel Analysis Analytics
-export const getChannelAnalysisAnalytics = async (
-  filters?: ShipmentAnalysisFilters
-): Promise<ShipmentPerformanceAnalytics> => {
+export const getChannelAnalysisAnalytics = async (filters?: ShipmentAnalysisFilters): Promise<ShipmentPerformanceAnalytics> => {
   const params = new URLSearchParams();
   if (filters) {
     Object.entries(filters).forEach(([key, value]) => {
@@ -161,7 +144,7 @@ export const getChannelAnalysisAnalytics = async (
       }
     });
   }
-  
+
   const response = await api.get<ShipmentAnalysisResponse<ShipmentPerformanceAnalytics>>(
     `/shipment-analysis/channel-analysis${params.toString() ? `?${params.toString()}` : ''}`
   );
@@ -169,9 +152,7 @@ export const getChannelAnalysisAnalytics = async (
 };
 
 // Top Issues Analytics
-export const getTopIssuesAnalytics = async (
-  filters?: ShipmentAnalysisFilters
-): Promise<ShipmentPerformanceAnalytics> => {
+export const getTopIssuesAnalytics = async (filters?: ShipmentAnalysisFilters): Promise<ShipmentPerformanceAnalytics> => {
   const params = new URLSearchParams();
   if (filters) {
     Object.entries(filters).forEach(([key, value]) => {
@@ -180,7 +161,7 @@ export const getTopIssuesAnalytics = async (
       }
     });
   }
-  
+
   const response = await api.get<ShipmentAnalysisResponse<ShipmentPerformanceAnalytics>>(
     `/shipment-analysis/top-issues${params.toString() ? `?${params.toString()}` : ''}`
   );
@@ -293,4 +274,4 @@ export const getBatchAnalytics = async (requests: Array<{ type: string; filters?
       return { type: requests[index]?.type || 'unknown', error: result.reason };
     }
   });
-}; 
+};

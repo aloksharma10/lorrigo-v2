@@ -14,14 +14,7 @@ interface ConfirmModalProps {
   modalId?: string;
 }
 
-export function ConfirmModal({
-  title,
-  description,
-  onConfirm,
-  onClose,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
-}: ConfirmModalProps) {
+export function ConfirmModal({ title, description, onConfirm, onClose, confirmText = 'Confirm', cancelText = 'Cancel' }: ConfirmModalProps) {
   const { openModal, closeAllModals } = useModal();
 
   const handleConfirm = () => {

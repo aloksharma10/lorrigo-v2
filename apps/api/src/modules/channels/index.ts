@@ -26,8 +26,7 @@ export default async function channelRoutes(fastify: FastifyInstance): Promise<v
     schema: {
       tags: ['Channel Configuration'],
       summary: 'Get all channel configurations',
-      description:
-        'Retrieve all channel configurations with pagination, search, and filtering options',
+      description: 'Retrieve all channel configurations with pagination, search, and filtering options',
       security: [{ bearerAuth: [] }],
       querystring: {
         type: 'object',
@@ -234,8 +233,7 @@ export default async function channelRoutes(fastify: FastifyInstance): Promise<v
         },
       },
     },
-    handler: (request, reply) =>
-      channelConfigController.getChannelConfigByIdentifier(request, reply),
+    handler: (request, reply) => channelConfigController.getChannelConfigByIdentifier(request, reply),
   });
 
   // Create a new channel configuration

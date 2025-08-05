@@ -27,17 +27,7 @@ export class OrderService {
    * Get all orders with pagination and filters
    */
   async getAllOrders(userId: string, queryParams: any, is_reverse_order: boolean = false) {
-    const {
-      page = 1,
-      limit = 10,
-      status,
-      search = '',
-      from_date,
-      to_date,
-      sort = 'created_at',
-      sort_order = 'desc',
-      payment_method,
-    } = queryParams;
+    const { page = 1, limit = 10, status, search = '', from_date, to_date, sort = 'created_at', sort_order = 'desc', payment_method } = queryParams;
 
     const skip = (page - 1) * limit;
 
@@ -50,12 +40,12 @@ export class OrderService {
     if (status && status !== 'all' && typeof status === 'string') {
       // Check if status contains numeric values (e.g., "0,1,2")
       const isNumericStatus = status.split(',').every((s: string) => !Number.isNaN(Number(s.trim())));
-      
+
       if (isNumericStatus) {
         // Handle numeric status values
         where.shipment = {
           is: {
-            bucket: {in: status.split(',').map((bucket: string) => Number(bucket.trim()))}
+            bucket: { in: status.split(',').map((bucket: string) => Number(bucket.trim())) },
           },
         };
       } else {
@@ -77,7 +67,7 @@ export class OrderService {
         }
       }
     }
-    
+
     // Date filters
     if (from_date || to_date) {
       where.created_at = {};
@@ -105,10 +95,7 @@ export class OrderService {
         {
           shipment: {
             is: {
-              OR: [
-                { pickup_id: { contains: search, mode: 'insensitive' } },
-                { awb: { contains: search, mode: 'insensitive' } },
-              ],
+              OR: [{ pickup_id: { contains: search, mode: 'insensitive' } }, { awb: { contains: search, mode: 'insensitive' } }],
             },
           },
         },
@@ -421,50 +408,49 @@ export class OrderService {
         return await this.fastify.prisma.$transaction(
           async (tx) => {
             // OPTIMIZATION 1: Batch validation queries
-            const [existingOrder, orderCount, shipmentCount, existingCustomer, hub] =
-              await Promise.all([
-                // Check order number uniqueness
-                tx.order.findUnique({
-                  where: { order_number_user_id: { order_number: orderNumber, user_id: userId } },
-                  select: { id: true },
-                }),
-                // Get order count for sequence
-                tx.order.count({
-                  where: {
-                    user_id: userId,
-                    created_at: { gte: new Date(new Date().getFullYear(), 0, 1) },
-                  },
-                }),
-                // Get shipment count for sequence
-                tx.shipment.count({
-                  where: {
-                    user_id: userId,
-                    created_at: { gte: new Date(new Date().getFullYear(), 0, 1) },
-                  },
-                }),
-                // Check existing customer with single address
-                tx.customer.findUnique({
-                  where: { phone: data.deliveryDetails.mobileNumber },
-                  select: {
-                    id: true,
-                    address: {
-                      select: {
-                        id: true,
-                        address: true,
-                        address_2: true,
-                        city: true,
-                        state: true,
-                        pincode: true,
-                      },
+            const [existingOrder, orderCount, shipmentCount, existingCustomer, hub] = await Promise.all([
+              // Check order number uniqueness
+              tx.order.findUnique({
+                where: { order_number_user_id: { order_number: orderNumber, user_id: userId } },
+                select: { id: true },
+              }),
+              // Get order count for sequence
+              tx.order.count({
+                where: {
+                  user_id: userId,
+                  created_at: { gte: new Date(new Date().getFullYear(), 0, 1) },
+                },
+              }),
+              // Get shipment count for sequence
+              tx.shipment.count({
+                where: {
+                  user_id: userId,
+                  created_at: { gte: new Date(new Date().getFullYear(), 0, 1) },
+                },
+              }),
+              // Check existing customer with single address
+              tx.customer.findUnique({
+                where: { phone: data.deliveryDetails.mobileNumber },
+                select: {
+                  id: true,
+                  address: {
+                    select: {
+                      id: true,
+                      address: true,
+                      address_2: true,
+                      city: true,
+                      state: true,
+                      pincode: true,
                     },
                   },
-                }),
-                // Get hub for seller
-                tx.hub.findFirst({
-                  where: { id: data.pickupAddressId, user_id: userId, is_active: true },
-                  include: { address: true },
-                }),
-              ]);
+                },
+              }),
+              // Get hub for seller
+              tx.hub.findFirst({
+                where: { id: data.pickupAddressId, user_id: userId, is_active: true },
+                include: { address: true },
+              }),
+            ]);
 
             if (existingOrder) {
               throw new Error('Order Id already exists. Please try with another Order Id.');
@@ -490,13 +476,7 @@ export class OrderService {
             }).id;
 
             // OPTIMIZATION 3: Parallelize external API calls and DB operations
-            const [
-              sellerPincode,
-              customerPincode,
-              packageRecord,
-              sellerDetails,
-              orderChannelConfig,
-            ] = await Promise.all([
+            const [sellerPincode, customerPincode, packageRecord, sellerDetails, orderChannelConfig] = await Promise.all([
               // Fetch or use cached seller pincode
               (async () => {
                 const pin = data.sellerDetails?.pincode || hub.address.pincode || '000000';
@@ -631,8 +611,7 @@ export class OrderService {
             })();
 
             // Calculate COD amount
-            const codAmount =
-              data.paymentMethod.paymentMethod === 'cod' ? data.amountToCollect : 0;
+            const codAmount = data.paymentMethod.paymentMethod === 'cod' ? data.amountToCollect : 0;
 
             // OPTIMIZATION 5: Create order
             const order = await tx.order.create({
@@ -648,9 +627,7 @@ export class OrderService {
                 applicable_weight: applicableWeight,
                 order_reference_id: data.orderId,
                 ewaybill: data.ewaybill,
-                order_invoice_date: data.order_invoice_date
-                  ? new Date(data.order_invoice_date)
-                  : undefined,
+                order_invoice_date: data.order_invoice_date ? new Date(data.order_invoice_date) : undefined,
                 order_invoice_number: data.order_invoice_number,
                 // freight_type: data.orderDetails.freight || 0,
                 // pickup_type: data.orderDetails.pickup || 0,
@@ -667,9 +644,7 @@ export class OrderService {
                     status: ShipmentStatus.NEW,
                     bucket: ShipmentBucketManager.getBucketFromStatus(ShipmentStatus.NEW),
                     tracking_events: {
-                      create: [
-                        { description: 'Order Created', status: 'NEW', timestamp: new Date() },
-                      ],
+                      create: [{ description: 'Order Created', status: 'NEW', timestamp: new Date() }],
                     },
                   },
                 },
@@ -729,11 +704,7 @@ export class OrderService {
         );
       } catch (error: any) {
         // Handle duplicate code error with retry
-        if (
-          error instanceof Prisma.PrismaClientKnownRequestError &&
-          error.code === 'P2002' &&
-          (error.meta?.target as string[])?.includes?.('code')
-        ) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002' && (error.meta?.target as string[])?.includes?.('code')) {
           attempt += 1;
           await new Promise((res) => setTimeout(res, 10));
           continue;
@@ -751,15 +722,11 @@ export class OrderService {
             P2003: 'Foreign key constraint failed: Invalid reference to related record.',
             P2034: 'Transaction failed due to a write conflict or deadlock. Please retry.',
           } as const;
-          throw new Error(
-            errorMap[error.code as keyof typeof errorMap] || `Database error: ${error.message}`
-          );
+          throw new Error(errorMap[error.code as keyof typeof errorMap] || `Database error: ${error.message}`);
         }
 
         throw new Error(
-          error instanceof Error
-            ? `Failed to create order: ${error.message}`
-            : 'An unexpected error occurred while creating the order. Please try again.'
+          error instanceof Error ? `Failed to create order: ${error.message}` : 'An unexpected error occurred while creating the order. Please try again.'
         );
       }
     }
@@ -830,9 +797,7 @@ export class OrderService {
           const [sellerPincode, customerPincode] = await Promise.all([
             getPincodeDetails(data.sellerDetails.pincode || '000000'),
             getPincodeDetails(
-              data.deliveryDetails.billingIsSameAsDelivery || false
-                ? data.deliveryDetails.pincode || '000000'
-                : data.deliveryDetails.billingPincode || '000000'
+              data.deliveryDetails.billingIsSameAsDelivery || false ? data.deliveryDetails.pincode || '000000' : data.deliveryDetails.billingPincode || '000000'
             ),
           ]);
 
@@ -961,8 +926,7 @@ export class OrderService {
           const orderUpdates = await tx.order.update({
             where: { id: existingOrder.id },
             data: {
-              payment_method:
-                (data.paymentMethod.paymentMethod?.toUpperCase() as PaymentMethod) || 'COD',
+              payment_method: (data.paymentMethod.paymentMethod?.toUpperCase() as PaymentMethod) || 'COD',
               total_amount: data.productDetails.taxableValue,
               amount_to_collect: data.amountToCollect,
               applicable_weight: applicableWeight,
@@ -970,9 +934,7 @@ export class OrderService {
               hub_id: data.pickupAddressId,
               type: data.orderType === 'domestic' ? 'B2C' : 'B2B',
               order_invoice_number: data.order_invoice_number,
-              order_invoice_date: data.order_invoice_date
-                ? new Date(data.order_invoice_date)
-                : undefined,
+              order_invoice_date: data.order_invoice_date ? new Date(data.order_invoice_date) : undefined,
               order_reference_id: data.orderId,
             },
             select: {
@@ -990,13 +952,14 @@ export class OrderService {
 
           const financialYear = getFinancialYear(existingOrder.created_at);
           const orderItems = data.productDetails.products.map((item, idx) => ({
-            code: `${existingOrder.code}-${generateId({
-              tableName: 'order_item',
-              entityName: item.name,
-              lastUsedFinancialYear: financialYear,
-              lastSequenceNumber: idx,
-            }).id
-              }`,
+            code: `${existingOrder.code}-${
+              generateId({
+                tableName: 'order_item',
+                entityName: item.name,
+                lastUsedFinancialYear: financialYear,
+                lastSequenceNumber: idx,
+              }).id
+            }`,
             name: item.name,
             sku: item.sku,
             units: item.quantity,
@@ -1056,19 +1019,14 @@ export class OrderService {
           P2003: 'Foreign key constraint failed: Invalid reference to related record.',
           P2034: 'Transaction failed due to a write conflict or deadlock. Please retry.',
         };
-        throw new Error(
-          errorMap[error.code as keyof typeof errorMap] || `Database error: ${error.message}`
-        );
+        throw new Error(errorMap[error.code as keyof typeof errorMap] || `Database error: ${error.message}`);
       }
 
       throw new Error(
-        error instanceof Error
-          ? `Failed to update order: ${error.message}`
-          : 'An unexpected error occurred while updating the order. Please try again.'
+        error instanceof Error ? `Failed to update order: ${error.message}` : 'An unexpected error occurred while updating the order. Please try again.'
       );
     }
   }
-  
 
   /**
    * Update an order status
@@ -1142,11 +1100,7 @@ export class OrderService {
     });
 
     // Wait for all promises to resolve
-    const [total_orders, total_amount_result, status_counts_result] = await Promise.all([
-      total_orders_promise,
-      total_amount_promise,
-      status_counts_promise,
-    ]);
+    const [total_orders, total_amount_result, status_counts_result] = await Promise.all([total_orders_promise, total_amount_promise, status_counts_promise]);
 
     // Format status counts
     const status_counts: Record<string, number> = {};

@@ -38,13 +38,7 @@ export * from './navigation-menu';
 export * from './simple-data-table';
 export * from './data-table/data-table';
 export * from './data-table/data-table-column-header';
-export {
-  type ColumnDef,
-  type ColumnFiltersState,
-  type SortingState,
-  type VisibilityState,
-  type PaginationState,
-} from '@tanstack/react-table';
+export { type ColumnDef, type ColumnFiltersState, type SortingState, type VisibilityState, type PaginationState } from '@tanstack/react-table';
 
 export * from './command';
 

@@ -44,9 +44,7 @@ const registerSchema = z.object({
 });
 
 export class AuthController {
-  constructor(
-    private authService: AuthService
-  ) {}
+  constructor(private authService: AuthService) {}
 
   async register(request: FastifyRequest, reply: FastifyReply) {
     try {
@@ -139,11 +137,7 @@ export class AuthController {
 
       // Login with Google using service
       const body = request.body as any;
-      const result = await this.authService.loginWithGoogle(
-        { email, name, googleId, image },
-        request.ip,
-        body?.deviceInfo
-      );
+      const result = await this.authService.loginWithGoogle({ email, name, googleId, image }, request.ip, body?.deviceInfo);
 
       if ('error' in result) {
         return reply.code(401).send({
@@ -207,10 +201,10 @@ export class AuthController {
   async forgotPassword(request: FastifyRequest, reply: FastifyReply) {
     try {
       const { email } = request.body as any;
-      
+
       // Call auth service to check if user exists
       const result = await this.authService.forgotPassword(email);
-      
+
       // Generate and send OTP using notification system (if available)
       try {
         if (request.server.notification) {
@@ -225,35 +219,35 @@ export class AuthController {
           });
 
           if (otpResult.success) {
-            return reply.code(200).send({ 
+            return reply.code(200).send({
               success: true,
               message: 'OTP sent to your email address',
-              otpId: otpResult.otpId 
+              otpId: otpResult.otpId,
             });
           } else {
-            return reply.code(400).send({ 
+            return reply.code(400).send({
               success: false,
-              message: otpResult.message || 'Failed to send OTP' 
+              message: otpResult.message || 'Failed to send OTP',
             });
           }
         }
       } catch (otpError) {
         console.error('Failed to send OTP:', otpError);
-        return reply.code(500).send({ 
+        return reply.code(500).send({
           success: false,
-          message: 'Failed to send OTP. Please try again.' 
+          message: 'Failed to send OTP. Please try again.',
         });
       }
-      
-      return reply.code(200).send({ 
+
+      return reply.code(200).send({
         success: true,
-        message: result.message 
+        message: result.message,
       });
     } catch (error) {
       captureException(error as Error);
-      return reply.code(500).send({ 
+      return reply.code(500).send({
         success: false,
-        message: error instanceof Error ? error.message : 'Internal server error' 
+        message: error instanceof Error ? error.message : 'Internal server error',
       });
     }
   }
@@ -261,26 +255,26 @@ export class AuthController {
   async resetPassword(request: FastifyRequest, reply: FastifyReply) {
     try {
       const { email, otp, newPassword, confirmPassword } = request.body as any;
-      
+
       // Validate input
       if (!email || !otp || !newPassword || !confirmPassword) {
-        return reply.code(400).send({ 
+        return reply.code(400).send({
           success: false,
-          message: 'All fields are required' 
+          message: 'All fields are required',
         });
       }
 
       if (newPassword !== confirmPassword) {
-        return reply.code(400).send({ 
+        return reply.code(400).send({
           success: false,
-          message: 'Passwords do not match' 
+          message: 'Passwords do not match',
         });
       }
 
       if (newPassword.length < 6) {
-        return reply.code(400).send({ 
+        return reply.code(400).send({
           success: false,
-          message: 'Password must be at least 6 characters long' 
+          message: 'Password must be at least 6 characters long',
         });
       }
 
@@ -295,24 +289,24 @@ export class AuthController {
           });
 
           if (!otpResult.success) {
-            return reply.code(400).send({ 
+            return reply.code(400).send({
               success: false,
-              message: otpResult.message || 'Invalid OTP' 
+              message: otpResult.message || 'Invalid OTP',
             });
           }
         }
       } catch (otpError) {
         console.error('Failed to verify OTP:', otpError);
-        return reply.code(400).send({ 
+        return reply.code(400).send({
           success: false,
-          message: 'Failed to verify OTP' 
+          message: 'Failed to verify OTP',
         });
       }
 
       // Reset password using auth service
       try {
         await this.authService.resetPasswordWithOTP(email, newPassword);
-        
+
         // Consume the OTP after successful password reset
         if (request.server.notification) {
           try {
@@ -322,22 +316,22 @@ export class AuthController {
             // Don't fail the password reset if OTP consumption fails
           }
         }
-        
-        return reply.code(200).send({ 
+
+        return reply.code(200).send({
           success: true,
-          message: 'Password reset successfully' 
+          message: 'Password reset successfully',
         });
       } catch (resetError) {
-        return reply.code(400).send({ 
+        return reply.code(400).send({
           success: false,
-          message: resetError instanceof Error ? resetError.message : 'Failed to reset password' 
+          message: resetError instanceof Error ? resetError.message : 'Failed to reset password',
         });
       }
     } catch (error) {
       captureException(error as Error);
-      return reply.code(500).send({ 
+      return reply.code(500).send({
         success: false,
-        message: 'Internal server error' 
+        message: 'Internal server error',
       });
     }
   }
@@ -345,19 +339,19 @@ export class AuthController {
   async verifyToken(request: FastifyRequest, reply: FastifyReply) {
     try {
       if (!request.userPayload) {
-        return reply.code(401).send({ 
+        return reply.code(401).send({
           success: false,
-          message: 'Invalid token' 
+          message: 'Invalid token',
         });
       }
 
       // Get user data from database
       const user = await this.authService.getMe(request.userPayload.id);
-      
+
       if (!user) {
-        return reply.code(401).send({ 
+        return reply.code(401).send({
           success: false,
-          message: 'User not found' 
+          message: 'User not found',
         });
       }
 
@@ -373,9 +367,9 @@ export class AuthController {
       });
     } catch (error) {
       captureException(error as Error);
-      return reply.code(500).send({ 
+      return reply.code(500).send({
         success: false,
-        message: 'Internal server error' 
+        message: 'Internal server error',
       });
     }
   }
@@ -387,7 +381,7 @@ export class AuthController {
     try {
       const { shop } = request.query as any;
       const authUrl = this.authService.generateShopifyAuthUrl(shop);
-      
+
       return reply.code(200).send({
         success: true,
         authUrl,
@@ -443,7 +437,7 @@ export class AuthController {
       return reply.code(500).send({
         success: false,
         message: 'Failed to authenticate with Shopify',
-        error: process.env.NODE_ENV === 'development' ? error instanceof Error ? error.message : 'Unknown error' : undefined,
+        error: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : 'Unknown error') : undefined,
       });
     }
   }

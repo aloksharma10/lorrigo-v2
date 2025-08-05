@@ -7,12 +7,12 @@ import { useAuthToken } from '@/components/providers/token-provider';
 export interface UserProfile {
   id: string;
   user_id: string;
-  
+
   // Company Details
   company?: string;
   company_name?: string;
   logo_url?: string;
-  
+
   // KYC Details
   business_type?: string;
   pan?: string;
@@ -20,13 +20,13 @@ export interface UserProfile {
   gst_no?: string;
   kyc_submitted: boolean;
   kyc_verified: boolean;
-  
+
   // Bank Details
   acc_holder_name?: string;
   acc_number?: string;
   ifsc_number?: string;
   acc_type?: string;
-  
+
   // Seller Config
   is_d2c: boolean;
   is_b2b: boolean;
@@ -35,10 +35,10 @@ export interface UserProfile {
   is_rto: boolean;
   is_cod: boolean;
   is_cod_reversal: boolean;
-  
+
   // Notification Settings
   notification_settings: Record<string, boolean>;
-  
+
   // Billing and Remittance Configuration
   payment_method: string;
   remittance_cycle: string;
@@ -48,18 +48,18 @@ export interface UserProfile {
   remittance_days_after_delivery: number;
   early_remittance_charge: number;
   ndr_boost?: Record<string, any>;
-  
+
   // Billing Cycle Configuration
   billing_cycle_type: string;
   billing_days_of_week: number[];
   billing_day_of_month?: number;
   billing_week_of_month?: number;
   billing_days: number[];
-  
+
   // Label/Manifest Format
   label_format: string;
   manifest_format: string;
-  
+
   created_at: string;
   updated_at: string;
 }
@@ -158,7 +158,7 @@ export const usersAPI = {
   updateUser: async (id: string, data: Partial<User>): Promise<{ success: boolean; user: User }> => {
     return await axios.put(`/users/${id}`, data);
   },
-  
+
   // Update user profile
   updateUserProfile: async (userId: string, data: Partial<UserProfile>): Promise<{ success: boolean; profile: UserProfile }> => {
     return await axios.put(`/users/${userId}/profile`, data);
@@ -177,10 +177,10 @@ export const usersAPI = {
       sort: params.sort,
       filters: params.filters,
     };
-    
-    const response = await axios.get<{ 
-      success: boolean; 
-      data: UserBankAccount[]; 
+
+    const response = await axios.get<{
+      success: boolean;
+      data: UserBankAccount[];
       pagination: {
         total: number;
         page: number;
@@ -188,7 +188,7 @@ export const usersAPI = {
         totalPages: number;
       };
     }>(`/users/${userId}/bank-accounts`, { params: queryParams });
-    
+
     return {
       success: response.success,
       data: response.data,
@@ -266,11 +266,10 @@ export function useUserOperations(params: PaginationParams = {}) {
       toast.error(error.response?.data?.error || 'Failed to update user');
     },
   });
-  
+
   // Update user profile
   const updateUserProfile = useMutation({
-    mutationFn: ({ userId, data }: { userId: string; data: Partial<UserProfile> }) => 
-      usersAPI.updateUserProfile(userId, data),
+    mutationFn: ({ userId, data }: { userId: string; data: Partial<UserProfile> }) => usersAPI.updateUserProfile(userId, data),
     onSuccess: (data) => {
       toast.success('User profile updated successfully');
       queryClient.invalidateQueries({ queryKey: ['user'] });
@@ -310,8 +309,7 @@ export const useUserBankAccounts = (userId: string, params: BankAccountParams = 
 export const useAddUserBankAccount = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ userId, data }: { userId: string; data: BankAccountFormData }) =>
-      usersAPI.addUserBankAccount(userId, data),
+    mutationFn: ({ userId, data }: { userId: string; data: BankAccountFormData }) => usersAPI.addUserBankAccount(userId, data),
     onSuccess: (data, { userId }) => {
       if (data.success) {
         toast.success('Bank account added successfully');
@@ -348,8 +346,7 @@ export const useUpdateUserBankAccount = () => {
 export const useDeleteUserBankAccount = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ userId, bankAccountId }: { userId: string; bankAccountId: string }) =>
-      usersAPI.deleteUserBankAccount(userId, bankAccountId),
+    mutationFn: ({ userId, bankAccountId }: { userId: string; bankAccountId: string }) => usersAPI.deleteUserBankAccount(userId, bankAccountId),
     onSuccess: (data, { userId }) => {
       if (data.success) {
         toast.success('Bank account deleted successfully');
@@ -413,4 +410,4 @@ export const useGoogleLogin = () => {
   });
 };
 
-export default usersAPI; 
+export default usersAPI;

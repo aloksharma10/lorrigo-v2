@@ -72,10 +72,7 @@ export default function CouriersPage() {
       id: 'select',
       header: ({ table }) => (
         <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && 'indeterminate')
-          }
+          checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all"
           disabled={isLoading}
@@ -143,9 +140,7 @@ export default function CouriersPage() {
       header: ({ column }) => <DataTableColumnHeader column={column} title="Weight Slab" />,
       cell: ({ row }) => {
         const courier = row.original;
-        return (
-          <div className="text-sm">{courier.weight_slab ? `${courier.weight_slab} kg` : 'N/A'}</div>
-        );
+        return <div className="text-sm">{courier.weight_slab ? `${courier.weight_slab} kg` : 'N/A'}</div>;
       },
       enableSorting: true,
       enableHiding: true,
@@ -155,11 +150,7 @@ export default function CouriersPage() {
       header: ({ column }) => <DataTableColumnHeader column={column} title="Increment Weight" />,
       cell: ({ row }) => {
         const courier = row.original;
-        return (
-          <div className="text-sm">
-            {courier.increment_weight ? `${courier.increment_weight} kg` : 'N/A'}
-          </div>
-        );
+        return <div className="text-sm">{courier.increment_weight ? `${courier.increment_weight} kg` : 'N/A'}</div>;
       },
       enableSorting: true,
       enableHiding: true,
@@ -171,9 +162,7 @@ export default function CouriersPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Couriers</h1>
-          <p className="text-muted-foreground">
-            List of your available courier services and shipping options
-          </p>
+          <p className="text-muted-foreground">List of your available courier services and shipping options</p>
         </div>
       </div>
 

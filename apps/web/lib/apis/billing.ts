@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from '@lorrigo/ui/components';
 import { ApiResponse } from '@/lib/type/response-types';
-import { api as axios,apiDownload } from './axios';
+import { api as axios, apiDownload } from './axios';
 import { useAuthToken } from '@/components/providers/token-provider';
 import { useDebounce } from '../hooks/use-debounce';
 
@@ -274,7 +274,7 @@ export interface BillingRecord {
       name: string;
       phone: string;
       email: string;
-    },
+    };
     hub: {
       name: string;
       address: {
@@ -366,22 +366,22 @@ const billingAPI = {
 
   // Get billing records for a specific user and month
   getUserBillingByMonth: async (userId: string, month: string, params?: PaginationParams): Promise<BillingRecordsResponse> => {
-    return await axios.get(`/billing/history`, { 
+    return await axios.get(`/billing/history`, {
       params: {
         ...params,
         userId,
-        month
-      }
+        month,
+      },
     });
   },
 
   // Get billing records for the current user by month
   getCurrentUserBillingByMonth: async (month: string, params?: PaginationParams): Promise<BillingRecordsResponse> => {
-    return await axios.get(`/billing/history`, { 
+    return await axios.get(`/billing/history`, {
       params: {
         ...params,
-        month
-      }
+        month,
+      },
     });
   },
 };
@@ -401,11 +401,7 @@ interface BillingOperationsParams {
   disputes?: BillingOperationsPaginationParams & { userId?: string; status?: string };
 }
 
-export function useBillingOperations({
-  billingCycles = {},
-  billingHistory = {},
-  disputes = {},
-}: BillingOperationsParams = {}) {
+export function useBillingOperations({ billingCycles = {}, billingHistory = {}, disputes = {} }: BillingOperationsParams = {}) {
   const { isTokenReady } = useAuthToken();
   const queryClient = useQueryClient();
 
@@ -419,11 +415,12 @@ export function useBillingOperations({
   // Fetch billing cycles
   const billingCyclesQuery = useQuery({
     queryKey: ['billing-cycles', billingCycles.page, billingCycles.pageSize, billingCycles.userId, billingCycles.billingCycleId, billingCycles.status],
-    queryFn: () => billingAPI.getBillingCycles({
-      page: billingCycles.page || 1,
-      limit: billingCycles.pageSize || 10,
-      userId: billingCycles.userId
-    }),
+    queryFn: () =>
+      billingAPI.getBillingCycles({
+        page: billingCycles.page || 1,
+        limit: billingCycles.pageSize || 10,
+        userId: billingCycles.userId,
+      }),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
     enabled: isTokenReady, // Only fetch if page is defined and token is ready
@@ -432,11 +429,12 @@ export function useBillingOperations({
   // Fetch billing history
   const billingHistoryQuery = useQuery({
     queryKey: ['billing-history', billingHistory.page, billingHistory.pageSize, billingHistory.userId, billingHistory.billingCycleId, billingHistory.status],
-    queryFn: () => billingAPI.getBillingHistory({
-      page: billingHistory.page || 1,
-      limit: billingHistory.pageSize || 10,
-      billingCycleId: billingHistory.billingCycleId
-    }),
+    queryFn: () =>
+      billingAPI.getBillingHistory({
+        page: billingHistory.page || 1,
+        limit: billingHistory.pageSize || 10,
+        billingCycleId: billingHistory.billingCycleId,
+      }),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
     enabled: isTokenReady, // Only fetch if page is defined and token is ready
@@ -444,25 +442,27 @@ export function useBillingOperations({
 
   const disputesQuery = useQuery({
     queryKey: ['disputes', debouncedDisputes.page, debouncedDisputes.pageSize, debouncedDisputes.userId, debouncedDisputes.status, debouncedDisputes.search],
-    queryFn: () => billingAPI.getDisputes({
-      page: debouncedDisputes.page || 1,
-      limit: debouncedDisputes.pageSize || 10,
-      status: debouncedDisputes.status,
-      awb: debouncedDisputes.search
-    }),
+    queryFn: () =>
+      billingAPI.getDisputes({
+        page: debouncedDisputes.page || 1,
+        limit: debouncedDisputes.pageSize || 10,
+        status: debouncedDisputes.status,
+        awb: debouncedDisputes.search,
+      }),
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 5 * 60 * 1000, // 5 minutes
-    enabled: isTokenReady // Only fetch if page is defined and token is ready
+    enabled: isTokenReady, // Only fetch if page is defined and token is ready
   });
 
   // Fetch billing summary by month
   const getBillingSummaryByMonthQuery = (month: string, options: any = {}) => {
     return useQuery({
       queryKey: ['billing-summary', month, options],
-      queryFn: () => billingAPI.getBillingSummaryByMonth(month, {
-        page: (options.page + 1) || 1,
-        limit: options.pageSize || 15
-      }),
+      queryFn: () =>
+        billingAPI.getBillingSummaryByMonth(month, {
+          page: options.page + 1 || 1,
+          limit: options.pageSize || 15,
+        }),
       staleTime: 5 * 60 * 1000, // 5 minutes
       gcTime: 10 * 60 * 1000, // 10 minutes
       enabled: isTokenReady && !!month,
@@ -487,14 +487,14 @@ export function useBillingOperations({
   const processManualBilling = useMutation({
     mutationFn: ({ userId, params }: { userId: string; params: ManualBillingParams }) => {
       const request: ManualBillingRequest = { userId };
-      
+
       if (params.awbs) {
         request.awbs = params.awbs;
       } else if (params.dateRange) {
         request.startDate = params.dateRange.from;
         request.endDate = params.dateRange.to;
       }
-      
+
       return billingAPI.createManualBilling(request);
     },
     onSuccess: (data) => {
@@ -508,7 +508,7 @@ export function useBillingOperations({
       toast.error(error.response?.data?.error || 'Failed to process manual billing');
     },
   });
-  
+
   // Generate manual billing (direct API call with awbs or date range)
   const generateManualBilling = useMutation({
     mutationFn: (params: ManualBillingRequest) => {
@@ -541,8 +541,7 @@ export function useBillingOperations({
 
   // Update billing cycle
   const updateBillingCycle = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<BillingCycleRequest> }) => 
-      billingAPI.updateBillingCycle(id, data),
+    mutationFn: ({ id, data }: { id: string; data: Partial<BillingCycleRequest> }) => billingAPI.updateBillingCycle(id, data),
     onSuccess: (data) => {
       toast.success('Billing cycle updated successfully');
       queryClient.invalidateQueries({ queryKey: ['billing-cycles'] });
@@ -555,8 +554,7 @@ export function useBillingOperations({
 
   // Act on dispute
   const actOnDispute = useMutation({
-    mutationFn: ({ disputeId, request }: { disputeId: string; request: DisputeActionRequest }) =>
-      billingAPI.actOnDispute(disputeId, request),
+    mutationFn: ({ disputeId, request }: { disputeId: string; request: DisputeActionRequest }) => billingAPI.actOnDispute(disputeId, request),
     onSuccess: (data) => {
       toast.success('Dispute action completed successfully');
       queryClient.invalidateQueries({ queryKey: ['disputes'] });
@@ -570,8 +568,7 @@ export function useBillingOperations({
 
   // Resolve weight dispute
   const resolveWeightDispute = useMutation({
-    mutationFn: ({ disputeId, resolution }: { disputeId: string; resolution: any }) =>
-      billingAPI.resolveWeightDispute(disputeId, resolution),
+    mutationFn: ({ disputeId, resolution }: { disputeId: string; resolution: any }) => billingAPI.resolveWeightDispute(disputeId, resolution),
     onSuccess: (data) => {
       toast.success('Weight dispute resolved successfully');
       queryClient.invalidateQueries({ queryKey: ['disputes'] });
@@ -619,10 +616,11 @@ export function useBillingOperations({
   const getUserBillingByMonthQuery = (userId: string, month: string, options: any = {}) => {
     return useQuery({
       queryKey: ['user-billing', userId, month, options],
-      queryFn: () => billingAPI.getUserBillingByMonth(userId, month, {
-        page: (options.page + 1) || 1,
-        limit: options.pageSize || 15
-      }),
+      queryFn: () =>
+        billingAPI.getUserBillingByMonth(userId, month, {
+          page: options.page + 1 || 1,
+          limit: options.pageSize || 15,
+        }),
       staleTime: 5 * 60 * 1000, // 5 minutes
       gcTime: 10 * 60 * 1000, // 10 minutes
       enabled: isTokenReady && !!userId && !!month,
@@ -633,10 +631,11 @@ export function useBillingOperations({
   const getCurrentUserBillingQuery = (month: string, options: any = {}) => {
     return useQuery({
       queryKey: ['current-user-billing', month, options],
-      queryFn: () => billingAPI.getCurrentUserBillingByMonth(month, {
-        page: (options.page + 1) || 1,
-        limit: options.pageSize || 15
-      }),
+      queryFn: () =>
+        billingAPI.getCurrentUserBillingByMonth(month, {
+          page: options.page + 1 || 1,
+          limit: options.pageSize || 15,
+        }),
       staleTime: 5 * 60 * 1000, // 5 minutes
       gcTime: 10 * 60 * 1000, // 10 minutes
       enabled: isTokenReady && !!month,

@@ -128,10 +128,7 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
       onSuccess?.();
       onClose();
     } catch (error: any) {
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        `Failed to ${isEditMode ? 'update' : 'create'} courier`;
+      const errorMessage = error?.response?.data?.message || error?.message || `Failed to ${isEditMode ? 'update' : 'create'} courier`;
       toast.error(errorMessage);
     }
   };
@@ -167,14 +164,8 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
     <div className="flex max-h-[85vh] flex-col overflow-hidden">
       <div className="flex items-center justify-between border-b p-6">
         <div>
-          <h2 className="text-xl font-semibold">
-            {isEditMode ? 'Edit Courier' : 'Create New Courier'}
-          </h2>
-          {isEditMode && (
-            <p className="text-muted-foreground mt-1 text-sm">
-              Update courier configuration and settings
-            </p>
-          )}
+          <h2 className="text-xl font-semibold">{isEditMode ? 'Edit Courier' : 'Create New Courier'}</h2>
+          {isEditMode && <p className="text-muted-foreground mt-1 text-sm">Update courier configuration and settings</p>}
         </div>
         <button onClick={onClose} className="rounded-full p-1 hover:bg-neutral-100">
           <X className="h-5 w-5 text-neutral-500" />
@@ -221,9 +212,7 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
                 <Input
                   id="courier_code"
                   value={formData.courier_code}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, courier_code: e.target.value }))
-                  }
+                  onChange={(e) => setFormData((prev) => ({ ...prev, courier_code: e.target.value }))}
                   required
                   disabled={isSubmitting}
                   placeholder="Internal courier identifier"
@@ -231,11 +220,7 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
               </div>
               <div>
                 <Label htmlFor="type">Service Type</Label>
-                <Select
-                  value={formData.type}
-                  onValueChange={(value) => setFormData((prev) => ({ ...prev, type: value }))}
-                  disabled={isSubmitting}
-                >
+                <Select value={formData.type} onValueChange={(value) => setFormData((prev) => ({ ...prev, type: value }))} disabled={isSubmitting}>
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
@@ -260,13 +245,7 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
                 <h3 className="font-medium">Channel Configuration</h3>
                 <Info className="text-muted-foreground h-4 w-4" />
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setShowCreateChannel(!showCreateChannel)}
-                disabled={isSubmitting}
-              >
+              <Button type="button" variant="outline" size="sm" onClick={() => setShowCreateChannel(!showCreateChannel)} disabled={isSubmitting}>
                 <Plus className="mr-2 h-4 w-4" />
                 New Channel
               </Button>
@@ -283,9 +262,7 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
                     <Input
                       id="channel_name"
                       value={newChannelData.name}
-                      onChange={(e) =>
-                        setNewChannelData((prev) => ({ ...prev, name: e.target.value }))
-                      }
+                      onChange={(e) => setNewChannelData((prev) => ({ ...prev, name: e.target.value }))}
                       placeholder="e.g., E-commerce Platform"
                       disabled={isCreatingChannel}
                       className="h-8"
@@ -298,9 +275,7 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
                     <Input
                       id="channel_nickname"
                       value={newChannelData.nickname}
-                      onChange={(e) =>
-                        setNewChannelData((prev) => ({ ...prev, nickname: e.target.value }))
-                      }
+                      onChange={(e) => setNewChannelData((prev) => ({ ...prev, nickname: e.target.value }))}
                       placeholder="e.g., ECOM"
                       disabled={isCreatingChannel}
                       className="h-8"
@@ -312,9 +287,7 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
                     <Switch
                       id="channel_active"
                       checked={newChannelData.is_active}
-                      onCheckedChange={(checked) =>
-                        setNewChannelData((prev) => ({ ...prev, is_active: checked }))
-                      }
+                      onCheckedChange={(checked) => setNewChannelData((prev) => ({ ...prev, is_active: checked }))}
                       disabled={isCreatingChannel}
                     />
                     <Label htmlFor="channel_active" className="text-xs">
@@ -322,21 +295,10 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
                     </Label>
                   </div>
                   <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowCreateChannel(false)}
-                      disabled={isCreatingChannel}
-                    >
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setShowCreateChannel(false)} disabled={isCreatingChannel}>
                       Cancel
                     </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={handleCreateChannel}
-                      disabled={isCreatingChannel || !newChannelData.name.trim()}
-                    >
+                    <Button type="button" size="sm" onClick={handleCreateChannel} disabled={isCreatingChannel || !newChannelData.name.trim()}>
                       {isCreatingChannel ? (
                         <>
                           <Loader2 className="mr-1 h-3 w-3 animate-spin" />
@@ -355,36 +317,21 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
               <Label htmlFor="channel">Select Channel *</Label>
               <Select
                 value={formData.channel_config_id}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, channel_config_id: value }))
-                }
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, channel_config_id: value }))}
                 disabled={isLoadingChannels || isSubmitting}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue
-                    placeholder={
-                      isLoadingChannels
-                        ? 'Loading channels...'
-                        : channels.length === 0
-                          ? 'No channels available'
-                          : 'Select a channel'
-                    }
-                  />
+                  <SelectValue placeholder={isLoadingChannels ? 'Loading channels...' : channels.length === 0 ? 'No channels available' : 'Select a channel'} />
                 </SelectTrigger>
                 <SelectContent>
                   {channels.map((channel) => (
                     <SelectItem key={channel.id} value={channel.id}>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{channel.name}</span>
-                        <Badge
-                          variant={channel.is_active ? 'default' : 'secondary'}
-                          className="text-xs"
-                        >
+                        <Badge variant={channel.is_active ? 'default' : 'secondary'} className="text-xs">
                           {channel.nickname}
                         </Badge>
-                        {!channel.is_active && (
-                          <span className="text-muted-foreground text-xs">(Inactive)</span>
-                        )}
+                        {!channel.is_active && <span className="text-muted-foreground text-xs">(Inactive)</span>}
                       </div>
                     </SelectItem>
                   ))}
@@ -394,9 +341,7 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
               {channelsError && (
                 <Alert className="mt-2">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Failed to load channels. Please refresh and try again.
-                  </AlertDescription>
+                  <AlertDescription>Failed to load channels. Please refresh and try again.</AlertDescription>
                 </Alert>
               )}
 
@@ -420,9 +365,7 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
                 <Switch
                   id="is_active"
                   checked={formData.is_active}
-                  onCheckedChange={(checked) =>
-                    setFormData((prev) => ({ ...prev, is_active: checked }))
-                  }
+                  onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, is_active: checked }))}
                   disabled={isSubmitting}
                 />
                 <Label htmlFor="is_active">Active Status</Label>
@@ -431,9 +374,7 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
                 <Switch
                   id="is_reversed_courier"
                   checked={formData.is_reversed_courier}
-                  onCheckedChange={(checked) =>
-                    setFormData((prev) => ({ ...prev, is_reversed_courier: checked }))
-                  }
+                  onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, is_reversed_courier: checked }))}
                   disabled={isSubmitting}
                 />
                 <Label htmlFor="is_reversed_courier">Reverse Courier</Label>
@@ -456,9 +397,7 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
                   min="0"
                   step="0.01"
                   value={formData.cod_charge_hard}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, cod_charge_hard: Number(e.target.value) }))
-                  }
+                  onChange={(e) => setFormData((prev) => ({ ...prev, cod_charge_hard: Number(e.target.value) }))}
                   disabled={isSubmitting}
                 />
               </div>
@@ -471,9 +410,7 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
                   max="100"
                   step="0.1"
                   value={formData.cod_charge_percent}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, cod_charge_percent: Number(e.target.value) }))
-                  }
+                  onChange={(e) => setFormData((prev) => ({ ...prev, cod_charge_percent: Number(e.target.value) }))}
                   disabled={isSubmitting}
                 />
               </div>
@@ -483,9 +420,7 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
                   id="pickup_time"
                   type="time"
                   value={formData.pickup_time}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, pickup_time: e.target.value }))
-                  }
+                  onChange={(e) => setFormData((prev) => ({ ...prev, pickup_time: e.target.value }))}
                   disabled={isSubmitting}
                 />
               </div>
@@ -500,9 +435,7 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
                   min="0.1"
                   step="0.1"
                   value={formData.weight_slab}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, weight_slab: Number(e.target.value) }))
-                  }
+                  onChange={(e) => setFormData((prev) => ({ ...prev, weight_slab: Number(e.target.value) }))}
                   disabled={isSubmitting}
                 />
               </div>
@@ -514,9 +447,7 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
                   min="0.1"
                   step="0.1"
                   value={formData.increment_weight}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, increment_weight: Number(e.target.value) }))
-                  }
+                  onChange={(e) => setFormData((prev) => ({ ...prev, increment_weight: Number(e.target.value) }))}
                   disabled={isSubmitting}
                 />
               </div>
@@ -524,9 +455,7 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
                 <Label htmlFor="weight_unit">Weight Unit</Label>
                 <Select
                   value={formData.weight_unit}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, weight_unit: value }))
-                  }
+                  onValueChange={(value) => setFormData((prev) => ({ ...prev, weight_unit: value }))}
                   disabled={isSubmitting}
                 >
                   <SelectTrigger className="w-full">
@@ -551,13 +480,7 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
         </Button>
         <Button
           type="submit"
-          disabled={
-            isSubmitting ||
-            !formData.name.trim() ||
-            !formData.code.trim() ||
-            !formData.courier_code.trim() ||
-            !formData.channel_config_id
-          }
+          disabled={isSubmitting || !formData.name.trim() || !formData.code.trim() || !formData.courier_code.trim() || !formData.channel_config_id}
           onClick={handleSubmit}
         >
           {isSubmitting ? (

@@ -41,7 +41,7 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
           limit: { type: 'integer', default: 10 },
           status: {
             type: ['string', 'array'],
-          
+
             items: {
               type: ['string', 'number'],
             },
@@ -248,8 +248,7 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    handler: (request: FastifyRequest<{ Params: { id: string } }>, reply) =>
-      orderController.getOrderById(request, reply),
+    handler: (request: FastifyRequest<{ Params: { id: string } }>, reply) => orderController.getOrderById(request, reply),
   });
 
   // Create a new order
@@ -261,14 +260,7 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
       security: [{ bearerAuth: [] }],
       body: {
         type: 'object',
-        required: [
-          'pickupAddressId',
-          'paymentMethod',
-          'deliveryDetails',
-          'sellerDetails',
-          'packageDetails',
-          'productDetails',
-        ],
+        required: ['pickupAddressId', 'paymentMethod', 'deliveryDetails', 'sellerDetails', 'packageDetails', 'productDetails'],
         properties: {
           pickupAddressId: { type: 'string' },
           paymentMethod: { type: 'object' },
@@ -351,14 +343,7 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
       },
       body: {
         type: 'object',
-        required: [
-          'pickupAddressId',
-          'paymentMethod',
-          'deliveryDetails',
-          'sellerDetails',
-          'packageDetails',
-          'productDetails',
-        ],
+        required: ['pickupAddressId', 'paymentMethod', 'deliveryDetails', 'sellerDetails', 'packageDetails', 'productDetails'],
         properties: {
           pickupAddressId: { type: 'string' },
           paymentMethod: { type: 'object' },
@@ -369,8 +354,6 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    handler: (request: FastifyRequest<{ Params: { id: string } }>, reply) =>
-      orderController.updateOrder(request, reply),
+    handler: (request: FastifyRequest<{ Params: { id: string } }>, reply) => orderController.updateOrder(request, reply),
   });
-
 }

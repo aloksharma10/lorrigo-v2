@@ -12,7 +12,6 @@ export async function getUserProfile() {
   return response.json();
 }
 
-
 export async function getUserProfileById(userId: string) {
   const session = await auth();
   const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/users/${userId}`, {
@@ -20,11 +19,11 @@ export async function getUserProfileById(userId: string) {
       Authorization: `Bearer ${session?.user?.token}`,
     },
   });
-  
+
   if (!response.ok) {
     throw new Error('Failed to fetch user profile');
   }
-  
+
   const data = await response.json();
   return data.success ? data.user.profile : null;
 }

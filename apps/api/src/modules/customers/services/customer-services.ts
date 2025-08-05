@@ -34,7 +34,7 @@ export class CustomerService {
 
   async getAllCustomers(page: number, limit: number, search: string, isAdmin: boolean, userId: string) {
     const skip = (page - 1) * limit;
-  
+
     // Build search filter
     const searchCondition: Prisma.CustomerWhereInput = search
       ? {
@@ -45,7 +45,7 @@ export class CustomerService {
           ],
         }
       : {};
-  
+
     // Add user-based filtering if not admin
     const whereCondition = isAdmin
       ? searchCondition
@@ -53,7 +53,7 @@ export class CustomerService {
           ...searchCondition,
           orders: { some: { user_id: userId } },
         };
-  
+
     // Parallel query for customers and count
     const [customers, total] = await Promise.all([
       this.fastify.prisma.customer.findMany({
@@ -85,7 +85,7 @@ export class CustomerService {
     ]);
 
     const totalPages = Math.ceil(total / limit);
-  
+
     return {
       customers,
       total,

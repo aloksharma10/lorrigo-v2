@@ -46,19 +46,19 @@ export class EmailService {
   private loadTemplates(): void {
     try {
       const templateDir = path.join(process.cwd(), './src/template');
-      
+
       if (!fs.existsSync(templateDir)) {
         console.warn('Template directory not found');
         return;
       }
 
-      const templateFiles = fs.readdirSync(templateDir).filter(file => file.endsWith('.html'));
-      
+      const templateFiles = fs.readdirSync(templateDir).filter((file) => file.endsWith('.html'));
+
       for (const file of templateFiles) {
         const templateName = path.basename(file, '.html');
         const templatePath = path.join(templateDir, file);
         const templateContent = fs.readFileSync(templatePath, 'utf-8');
-        
+
         this.templates.set(templateName, Handlebars.compile(templateContent));
         console.log(`Loaded email template: ${templateName}`);
       }
@@ -83,7 +83,7 @@ export class EmailService {
   ): Promise<{ success: boolean; message: string; messageId?: string }> {
     try {
       const template = this.templates.get(templateName);
-      
+
       if (!template) {
         return {
           success: false,
@@ -119,7 +119,7 @@ export class EmailService {
     html?: string;
     text?: string;
     from?: string;
-      attachments?: any;
+    attachments?: any;
   }): Promise<{ success: boolean; message: string; messageId?: string }> {
     try {
       const mailOptions: nodemailer.SendMailOptions = {
@@ -132,7 +132,7 @@ export class EmailService {
       };
 
       const info = await this.transporter?.sendMail(mailOptions);
-      
+
       return {
         success: true,
         message: 'Email sent successfully',
@@ -168,14 +168,9 @@ export class EmailService {
       companyName: APP_CONFIG.NOTIFICATION.EMAIL.FROM_NAME,
     };
 
-    return await this.sendTemplateEmail(
-      to,
-      'otp-email',
-      templateData,
-      {
-        subject: `${APP_CONFIG.NOTIFICATION.EMAIL.FROM_NAME} - Your OTP for ${type}`,
-      }
-    );
+    return await this.sendTemplateEmail(to, 'otp-email', templateData, {
+      subject: `${APP_CONFIG.NOTIFICATION.EMAIL.FROM_NAME} - Your OTP for ${type}`,
+    });
   }
 
   /**
@@ -190,7 +185,7 @@ export class EmailService {
     }
   ): Promise<{ success: boolean; message: string; messageId?: string }> {
     const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
-    
+
     const templateData = {
       resetUrl,
       userName: options?.userName || 'User',
@@ -199,14 +194,9 @@ export class EmailService {
       companyName: APP_CONFIG.NOTIFICATION.EMAIL.FROM_NAME,
     };
 
-    return await this.sendTemplateEmail(
-      to,
-      'password-reset',
-      templateData,
-      {
-        subject: `${APP_CONFIG.NOTIFICATION.EMAIL.FROM_NAME} - Password Reset Request`,
-      }
-    );
+    return await this.sendTemplateEmail(to, 'password-reset', templateData, {
+      subject: `${APP_CONFIG.NOTIFICATION.EMAIL.FROM_NAME} - Password Reset Request`,
+    });
   }
 
   /**
@@ -226,14 +216,9 @@ export class EmailService {
       companyName: APP_CONFIG.NOTIFICATION.EMAIL.FROM_NAME,
     };
 
-    return await this.sendTemplateEmail(
-      to,
-      'welcome',
-      templateData,
-      {
-        subject: `Welcome to ${APP_CONFIG.NOTIFICATION.EMAIL.FROM_NAME}!`,
-      }
-    );
+    return await this.sendTemplateEmail(to, 'welcome', templateData, {
+      subject: `Welcome to ${APP_CONFIG.NOTIFICATION.EMAIL.FROM_NAME}!`,
+    });
   }
 
   /**
@@ -264,14 +249,9 @@ export class EmailService {
       companyName: APP_CONFIG.NOTIFICATION.EMAIL.FROM_NAME,
     };
 
-    return await this.sendTemplateEmail(
-      to,
-      'order-confirmation',
-      templateData,
-      {
-        subject: `${APP_CONFIG.NOTIFICATION.EMAIL.FROM_NAME} - Order Confirmation #${orderData.orderNumber}`,
-      }
-    );
+    return await this.sendTemplateEmail(to, 'order-confirmation', templateData, {
+      subject: `${APP_CONFIG.NOTIFICATION.EMAIL.FROM_NAME} - Order Confirmation #${orderData.orderNumber}`,
+    });
   }
 
   /**
@@ -281,7 +261,7 @@ export class EmailService {
     const subjects: Record<string, string> = {
       'otp-email': `${APP_CONFIG.NOTIFICATION.EMAIL.FROM_NAME} - Your OTP`,
       'password-reset': `${APP_CONFIG.NOTIFICATION.EMAIL.FROM_NAME} - Password Reset`,
-      'welcome': `Welcome to ${APP_CONFIG.NOTIFICATION.EMAIL.FROM_NAME}!`,
+      welcome: `Welcome to ${APP_CONFIG.NOTIFICATION.EMAIL.FROM_NAME}!`,
       'order-confirmation': `${APP_CONFIG.NOTIFICATION.EMAIL.FROM_NAME} - Order Confirmation`,
     };
 
@@ -320,4 +300,4 @@ export class EmailService {
 }
 
 // Export singleton instance
-export const emailService = new EmailService(); 
+export const emailService = new EmailService();

@@ -6,11 +6,5 @@ import { useLinkStatus } from 'next/link';
 
 export default function LoadingIndicator({ className }: { className?: string }) {
   const { pending } = useLinkStatus();
-  return pending ? (
-    <Loader2Icon
-      role="status"
-      aria-label="Loading"
-      className={cn('size-4 animate-spin', className)}
-    />
-  ) : null;
+  return pending ? <Loader2Icon role="status" aria-label="Loading" className={cn('size-4 animate-spin', className)} /> : null;
 }

@@ -1,13 +1,13 @@
 import { FastifyInstance } from 'fastify';
-import { 
-  NotificationType, 
-  NotificationPayload, 
-  NotificationPriority, 
+import {
+  NotificationType,
+  NotificationPayload,
+  NotificationPriority,
   NotificationStatus,
   OTPPayload,
   OTPVerificationPayload,
   SystemNotification,
-  NotificationJob
+  NotificationJob,
 } from '@/types/notification';
 import { emailService } from './email';
 import { otpService } from './otp';
@@ -79,10 +79,10 @@ export class NotificationService {
       switch (payload.type) {
         case NotificationType.EMAIL:
           return await this.sendEmailNotification(payload);
-        
+
         case NotificationType.SYSTEM:
           return await this.sendSystemNotification(payload);
-        
+
         default:
           return {
             success: false,
@@ -133,10 +133,7 @@ export class NotificationService {
         data: payload.metadata,
       };
 
-      await redis.lpush(
-        `system_notifications:${payload.recipient}`,
-        JSON.stringify(notification)
-      );
+      await redis.lpush(`system_notifications:${payload.recipient}`, JSON.stringify(notification));
 
       // Set expiry for system notifications (7 days)
       await redis.expire(`system_notifications:${payload.recipient}`, 7 * 24 * 60 * 60);
@@ -161,7 +158,7 @@ export class NotificationService {
     try {
       // Generate OTP
       const otpResult = await otpService.generateOTP(payload);
-      
+
       if (!otpResult.success) {
         return otpResult;
       }
@@ -169,7 +166,7 @@ export class NotificationService {
       // Get OTP data to send
       const otpKey = `otp:${payload.identifier}:${payload.type}`;
       const otpDataString = await redis.get(otpKey);
-      
+
       if (!otpDataString) {
         return {
           success: false,
@@ -181,15 +178,10 @@ export class NotificationService {
 
       // Send OTP through email
       if (payload.identifierType === 'email') {
-        const sendResult = await emailService.sendOTPEmail(
-          payload.identifier,
-          otpData.otp,
-          payload.type,
-          {
-            userName: payload.metadata?.userName,
-            expiryMinutes: APP_CONFIG.NOTIFICATION.OTP.EXPIRY_MINUTES,
-          }
-        );
+        const sendResult = await emailService.sendOTPEmail(payload.identifier, otpData.otp, payload.type, {
+          userName: payload.metadata?.userName,
+          expiryMinutes: APP_CONFIG.NOTIFICATION.OTP.EXPIRY_MINUTES,
+        });
 
         if (!sendResult.success) {
           // If sending failed, invalidate the OTP
@@ -238,7 +230,7 @@ export class NotificationService {
   async resendOTP(payload: OTPPayload): Promise<{ success: boolean; message: string; otpId?: string }> {
     try {
       const resendResult = await otpService.resendOTP(payload);
-      
+
       if (!resendResult.success) {
         return resendResult;
       }
@@ -246,7 +238,7 @@ export class NotificationService {
       // Get updated OTP data
       const otpKey = `otp:${payload.identifier}:${payload.type}`;
       const otpDataString = await redis.get(otpKey);
-      
+
       if (!otpDataString) {
         return {
           success: false,
@@ -258,15 +250,10 @@ export class NotificationService {
 
       // Send new OTP via email
       if (payload.identifierType === 'email') {
-        const sendResult = await emailService.sendOTPEmail(
-          payload.identifier,
-          otpData.otp,
-          payload.type,
-          {
-            userName: payload.metadata?.userName,
-            expiryMinutes: APP_CONFIG.NOTIFICATION.OTP.EXPIRY_MINUTES,
-          }
-        );
+        const sendResult = await emailService.sendOTPEmail(payload.identifier, otpData.otp, payload.type, {
+          userName: payload.metadata?.userName,
+          expiryMinutes: APP_CONFIG.NOTIFICATION.OTP.EXPIRY_MINUTES,
+        });
 
         if (!sendResult.success) {
           return sendResult;
@@ -298,7 +285,7 @@ export class NotificationService {
   async getSystemNotifications(userId: string, limit: number = 50): Promise<SystemNotification[]> {
     try {
       const notifications = await redis.lrange(`system_notifications:${userId}`, 0, limit - 1);
-      return notifications.map(n => JSON.parse(n));
+      return notifications.map((n) => JSON.parse(n));
     } catch (error) {
       captureException(error as Error);
       return [];
@@ -311,7 +298,7 @@ export class NotificationService {
   async markNotificationAsRead(userId: string, notificationIndex: number): Promise<boolean> {
     try {
       const notifications = await redis.lrange(`system_notifications:${userId}`, 0, -1);
-      
+
       if (notificationIndex >= notifications.length) {
         return false;
       }
@@ -319,11 +306,7 @@ export class NotificationService {
       const notification: SystemNotification = JSON.parse(notifications[notificationIndex] || '{}');
       notification.data = { ...notification.data, read: true };
 
-      await redis.lset(
-        `system_notifications:${userId}`,
-        notificationIndex,
-        JSON.stringify(notification)
-      );
+      await redis.lset(`system_notifications:${userId}`, notificationIndex, JSON.stringify(notification));
 
       return true;
     } catch (error) {
@@ -398,4 +381,4 @@ export class NotificationService {
         return 3;
     }
   }
-} 
+}

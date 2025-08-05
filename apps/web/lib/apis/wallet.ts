@@ -14,7 +14,14 @@ export const useWalletOperations = () => {
   const getWalletBalance = useQuery({
     queryKey: ['wallet', 'balance'],
     queryFn: async () => {
-      const response = await api.get<{ balance: number, hold_amount: number, usable_amount: number, max_negative_amount: number, available_amount: number, can_create_shipment: boolean }>('/transactions/wallet/balance');
+      const response = await api.get<{
+        balance: number;
+        hold_amount: number;
+        usable_amount: number;
+        max_negative_amount: number;
+        available_amount: number;
+        can_create_shipment: boolean;
+      }>('/transactions/wallet/balance');
       return response;
     },
     enabled: status === 'authenticated' && isTokenReady,
@@ -44,19 +51,19 @@ export const useWalletOperations = () => {
   });
 
   // Get transaction history
-  const getTransactionHistory = ({ 
-    page, 
-    limit, 
-    userId, 
-    search, 
-    type, 
+  const getTransactionHistory = ({
+    page,
+    limit,
+    userId,
+    search,
+    type,
     dateRange,
     transactionType,
-    status: transactionStatus
-  }: { 
-    page: number; 
-    limit: number; 
-    userId?: string; 
+    status: transactionStatus,
+  }: {
+    page: number;
+    limit: number;
+    userId?: string;
     search?: string;
     type?: 'SHIPMENT' | 'INVOICE' | 'WALLET' | string[] | string;
     dateRange?: { from: Date; to: Date };
@@ -67,7 +74,7 @@ export const useWalletOperations = () => {
       queryKey: ['wallet', 'transactions', { page, limit, userId, search, type, dateRange, transactionType, status: transactionStatus }],
       queryFn: async () => {
         const params: any = { page, limit, userId, search };
-        
+
         // Handle comma-separated values for filters
         if (type) {
           params.type = Array.isArray(type) ? type.join(',') : type;
@@ -78,15 +85,18 @@ export const useWalletOperations = () => {
         if (transactionStatus) {
           params.status = Array.isArray(transactionStatus) ? transactionStatus.join(',') : transactionStatus;
         }
-        
+
         if (dateRange?.from && dateRange?.to) {
           params.startDate = dateRange.from.toISOString();
           params.endDate = dateRange.to.toISOString();
         }
-        
-        const response = await api.get<{ transactions: any[], pagination: { total: number, page: number, limit: number, totalPages: number } }>('/transactions/history', {
-          params,
-        });
+
+        const response = await api.get<{ transactions: any[]; pagination: { total: number; page: number; limit: number; totalPages: number } }>(
+          '/transactions/history',
+          {
+            params,
+          }
+        );
         return response;
       },
       enabled: status === 'authenticated' && isTokenReady,
@@ -99,12 +109,9 @@ export const useWalletOperations = () => {
   const verifyWalletRecharge = useMutation({
     mutationFn: async (data: { merchantTransactionId: string }) => {
       // Using GET with query params like in the old code
-      const response = await api.get<{ valid: boolean; message: string }>(
-        `/transactions/wallet/verify`,
-        {
-          params: data,
-        }
-      );
+      const response = await api.get<{ valid: boolean; message: string }>(`/transactions/wallet/verify`, {
+        params: data,
+      });
       return response;
     },
     onSuccess: () => {

@@ -1,12 +1,4 @@
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  Badge,
-  Button,
-  Skeleton,
-} from '@lorrigo/ui/components';
+import { Card, CardContent, CardHeader, CardTitle, Badge, Button, Skeleton } from '@lorrigo/ui/components';
 import { CircleHelp, ExternalLink } from 'lucide-react';
 import ActionTooltip from '../action-tooltip';
 
@@ -20,22 +12,12 @@ interface ChartCardProps {
   onExternalLinkClick?: () => void;
 }
 
-export function ChartCard({
-  title,
-  badge,
-  helpText,
-  children,
-  className,
-  isLoading = false,
-  onExternalLinkClick,
-}: ChartCardProps) {
+export function ChartCard({ title, badge, helpText, children, className, isLoading = false, onExternalLinkClick }: ChartCardProps) {
   return (
     <Card className={className}>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div className="flex items-center gap-2">
-          <CardTitle className="text-sm font-medium">
-            {isLoading ? <Skeleton className="h-4 w-32" /> : title}
-          </CardTitle>
+          <CardTitle className="text-sm font-medium">{isLoading ? <Skeleton className="h-4 w-32" /> : title}</CardTitle>
           {badge && !isLoading && (
             <Badge variant="outline" className="text-xs">
               {badge}
@@ -64,7 +46,7 @@ export function ChartCard({
             </div>
           </div>
         ) : !isLoading && !children ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex h-full items-center justify-center">
             <p className="text-muted-foreground">No data available</p>
           </div>
         ) : (

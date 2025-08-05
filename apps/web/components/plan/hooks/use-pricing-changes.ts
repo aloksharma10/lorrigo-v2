@@ -3,10 +3,7 @@
 import { useMemo } from 'react';
 import type { CourierPricing } from '../types/shipping-plan';
 
-export function usePricingChanges(
-  currentPricing: CourierPricing[],
-  originalPricing: CourierPricing[]
-) {
+export function usePricingChanges(currentPricing: CourierPricing[], originalPricing: CourierPricing[]) {
   return useMemo(() => {
     if (!originalPricing.length || !currentPricing.length) {
       return { hasChanges: false, changedCouriers: new Set<number>() };

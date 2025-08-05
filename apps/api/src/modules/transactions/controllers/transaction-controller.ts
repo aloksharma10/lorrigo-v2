@@ -1,9 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import {
-  TransactionService,
-  TransactionType,
-  TransactionEntityType,
-} from '../services/transaction-service';
+import { TransactionService, TransactionType, TransactionEntityType } from '../services/transaction-service';
 import { z } from 'zod';
 import { Role, TransactionStatus } from '@lorrigo/db';
 
@@ -17,14 +13,7 @@ export const CreateShipmentTransactionSchema = z.object({
   srShipmentId: z.string().optional(),
   paymentId: z.string().optional(),
   currency: z.string().optional(),
-  status: z
-    .enum([
-      TransactionStatus.PENDING,
-      TransactionStatus.COMPLETED,
-      TransactionStatus.FAILED,
-      TransactionStatus.REFUNDED,
-    ])
-    .optional(),
+  status: z.enum([TransactionStatus.PENDING, TransactionStatus.COMPLETED, TransactionStatus.FAILED, TransactionStatus.REFUNDED]).optional(),
   merchantTransactionId: z.string().optional(),
 });
 
@@ -36,14 +25,7 @@ export const CreateInvoiceTransactionSchema = z.object({
   invoiceNumber: z.string().optional(),
   paymentId: z.string().optional(),
   currency: z.string().optional(),
-  status: z
-    .enum([
-      TransactionStatus.PENDING,
-      TransactionStatus.COMPLETED,
-      TransactionStatus.FAILED,
-      TransactionStatus.REFUNDED,
-    ])
-    .optional(),
+  status: z.enum([TransactionStatus.PENDING, TransactionStatus.COMPLETED, TransactionStatus.FAILED, TransactionStatus.REFUNDED]).optional(),
   merchantTransactionId: z.string().optional(),
 });
 
@@ -53,14 +35,7 @@ export const CreateWalletRechargeTransactionSchema = z.object({
   description: z.string(),
   paymentId: z.string().optional(),
   currency: z.string().optional(),
-  status: z
-    .enum([
-      TransactionStatus.PENDING,
-      TransactionStatus.COMPLETED,
-      TransactionStatus.FAILED,
-      TransactionStatus.REFUNDED,
-    ])
-    .optional(),
+  status: z.enum([TransactionStatus.PENDING, TransactionStatus.COMPLETED, TransactionStatus.FAILED, TransactionStatus.REFUNDED]).optional(),
   merchantTransactionId: z.string().optional(),
 });
 
@@ -311,16 +286,19 @@ export class TransactionController {
       // }
 
       // Parse comma-separated values and cast to proper types
-      const entityType = query.type ? query.type.split(',') as TransactionEntityType[] : undefined;
-      const transactionType = query.transactionType ? query.transactionType.split(',') as TransactionType[] : undefined;
-      const status = query.status ? query.status.split(',') as TransactionStatus[] : undefined;
-      
+      const entityType = query.type ? (query.type.split(',') as TransactionEntityType[]) : undefined;
+      const transactionType = query.transactionType ? (query.transactionType.split(',') as TransactionType[]) : undefined;
+      const status = query.status ? (query.status.split(',') as TransactionStatus[]) : undefined;
+
       // Create dateRange object from separate parameters
-      const dateRange = query.startDate && query.endDate ? {
-        startDate: query.startDate,
-        endDate: query.endDate,
-      } : undefined;
-      
+      const dateRange =
+        query.startDate && query.endDate
+          ? {
+              startDate: query.startDate,
+              endDate: query.endDate,
+            }
+          : undefined;
+
       const result = await this.transactionService.getTransactionHistory(
         userId,
         entityType,
@@ -421,15 +399,9 @@ export class TransactionController {
   async verifyInvoicePayment(request: FastifyRequest, reply: FastifyReply) {
     try {
       const userId = request.userPayload!.id;
-      const { merchantTransactionId, invoiceId } = request.query as z.infer<
-        typeof VerifyInvoicePaymentSchema
-      >;
+      const { merchantTransactionId, invoiceId } = request.query as z.infer<typeof VerifyInvoicePaymentSchema>;
 
-      const result = await this.transactionService.verifyInvoicePayment(
-        userId,
-        merchantTransactionId,
-        invoiceId
-      );
+      const result = await this.transactionService.verifyInvoicePayment(userId, merchantTransactionId, invoiceId);
 
       if (!result.success) {
         return reply.code(400).send({

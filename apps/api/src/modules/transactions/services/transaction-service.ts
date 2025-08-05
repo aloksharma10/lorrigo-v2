@@ -124,11 +124,7 @@ export class TransactionService {
       }
 
       // Update wallet balance
-      const walletUpdateResult = await this.updateWalletBalance(
-        walletResult.walletId!,
-        data.amount,
-        data.type
-      );
+      const walletUpdateResult = await this.updateWalletBalance(walletResult.walletId!, data.amount, data.type);
 
       if (!walletUpdateResult.success) {
         return { success: false, error: walletUpdateResult.error };
@@ -198,11 +194,7 @@ export class TransactionService {
       }
 
       // Update wallet balance
-      const walletUpdateResult = await this.updateWalletBalance(
-        walletResult.walletId!,
-        data.amount,
-        data.type
-      );
+      const walletUpdateResult = await this.updateWalletBalance(walletResult.walletId!, data.amount, data.type);
 
       if (!walletUpdateResult.success) {
         return { success: false, error: walletUpdateResult.error };
@@ -288,10 +280,7 @@ export class TransactionService {
           where: { id: wallet.id },
           data: {
             hold_amount: newHoldAmount,
-            usable_amount:
-              data.type === TransactionType.HOLD
-                ? wallet.usable_amount - data.amount
-                : wallet.usable_amount + data.amount,
+            usable_amount: data.type === TransactionType.HOLD ? wallet.usable_amount - data.amount : wallet.usable_amount + data.amount,
           },
         });
 
@@ -299,19 +288,12 @@ export class TransactionService {
           success: true,
           balance: {
             hold_amount: newHoldAmount,
-            usable_amount:
-              data.type === TransactionType.HOLD
-                ? wallet.usable_amount - data.amount
-                : wallet.usable_amount + data.amount,
+            usable_amount: data.type === TransactionType.HOLD ? wallet.usable_amount - data.amount : wallet.usable_amount + data.amount,
           },
         };
       } else {
         // Existing logic for other transaction types
-        walletUpdateResult = await this.updateWalletBalance(
-          walletResult.walletId!,
-          data.amount,
-          data.type
-        );
+        walletUpdateResult = await this.updateWalletBalance(walletResult.walletId!, data.amount, data.type);
 
         if (!walletUpdateResult.success) {
           return { success: false, error: walletUpdateResult.error };
@@ -354,10 +336,7 @@ export class TransactionService {
    * @param data Transaction data
    * @returns Transaction details or error
    */
-  async createTransaction(
-    entityType: TransactionEntityType,
-    data: ShipmentTransactionData | InvoiceTransactionData | WalletRechargeTransactionData
-  ) {
+  async createTransaction(entityType: TransactionEntityType, data: ShipmentTransactionData | InvoiceTransactionData | WalletRechargeTransactionData) {
     try {
       switch (entityType) {
         case TransactionEntityType.SHIPMENT:
@@ -415,10 +394,7 @@ export class TransactionService {
       const transactionCode = `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
 
       // Update wallet balance
-      const newBalance =
-        data.type === TransactionType.CREDIT
-          ? wallet.balance + data.amount
-          : wallet.balance - data.amount;
+      const newBalance = data.type === TransactionType.CREDIT ? wallet.balance + data.amount : wallet.balance - data.amount;
 
       // Check if balance would go negative
       if (newBalance < 0) {
@@ -577,12 +553,7 @@ export class TransactionService {
       const phonePeService = new PhonePeService(this.fastify);
 
       // Generate payment link using PhonePe
-      const paymentResult = await phonePeService.generatePaymentLink(
-        amount,
-        merchantTransactionId,
-        userId,
-        `${redirectUrl}/${merchantTransactionId}`
-      );
+      const paymentResult = await phonePeService.generatePaymentLink(amount, merchantTransactionId, userId, `${redirectUrl}/${merchantTransactionId}`);
 
       if (!paymentResult.success) {
         // If payment link generation fails, mark transaction as failed
@@ -616,11 +587,7 @@ export class TransactionService {
    * @param gatewayReference Gateway reference ID
    * @returns Updated transaction details
    */
-  async verifyWalletRecharge(
-    merchantTransactionId: string,
-    paymentStatus: 'SUCCESS' | 'FAILURE',
-    gatewayReference: string
-  ) {
+  async verifyWalletRecharge(merchantTransactionId: string, paymentStatus: 'SUCCESS' | 'FAILURE', gatewayReference: string) {
     try {
       // Find the pending transaction
       const transaction = await this.prisma.walletRechargeTransaction.findUnique({
@@ -644,9 +611,7 @@ export class TransactionService {
       const verificationResult = await phonePeService.checkPaymentStatus(merchantTransactionId);
 
       // If verification fails, use the provided status
-      const finalPaymentStatus = verificationResult.success
-        ? verificationResult.paymentStatus
-        : paymentStatus;
+      const finalPaymentStatus = verificationResult.success ? verificationResult.paymentStatus : paymentStatus;
 
       // Process the transaction based on payment status
       if (finalPaymentStatus === 'SUCCESS') {
@@ -713,7 +678,7 @@ export class TransactionService {
       if (!wallet) {
         return { success: false, error: 'Wallet not found' };
       }
-      
+
       return {
         success: true,
         balance: wallet.balance,
@@ -744,8 +709,8 @@ export class TransactionService {
     limit: number = 10,
     search?: string,
     dateRange?: {
-      startDate: string,
-      endDate: string,
+      startDate: string;
+      endDate: string;
     },
     transactionType?: TransactionType | TransactionType[],
     status?: TransactionStatus | TransactionStatus[]
@@ -755,19 +720,23 @@ export class TransactionService {
       let transactions: any[] = [];
       let total = 0;
 
-      const dateRangeClause = dateRange ? {
-        created_at: {
-          gte: new Date(dateRange.startDate),
-          lte: new Date(dateRange.endDate),
-        },
-      } : {};
+      const dateRangeClause = dateRange
+        ? {
+            created_at: {
+              gte: new Date(dateRange.startDate),
+              lte: new Date(dateRange.endDate),
+            },
+          }
+        : {};
 
-      const searchClause = search ? {
-        OR: [
-          { description: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
-          { code: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
-        ],
-      } : {};
+      const searchClause = search
+        ? {
+            OR: [
+              { description: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
+              { code: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
+            ],
+          }
+        : {};
 
       // Build additional filters
       const additionalFilters: any = {};
@@ -786,33 +755,35 @@ export class TransactionService {
         }
       }
 
-      const whereClause = userId ? { 
-        user_id: userId, 
-        ...dateRangeClause, 
-        ...searchClause,
-        ...additionalFilters
-      } : { 
-        ...dateRangeClause, 
-        ...searchClause,
-        ...additionalFilters
-      };
+      const whereClause = userId
+        ? {
+            user_id: userId,
+            ...dateRangeClause,
+            ...searchClause,
+            ...additionalFilters,
+          }
+        : {
+            ...dateRangeClause,
+            ...searchClause,
+            ...additionalFilters,
+          };
       // Get transactions based on type
-              if (!type || type.includes(TransactionEntityType.SHIPMENT)) {
-          const shipmentTransactions = await this.prisma.shipmentTransaction.findMany({
-            where: {...whereClause, awb: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
-            skip,
-            // take: type ? limit : Math.floor(limit / 3),
-            orderBy: { created_at: 'desc' },
-            include: {
-              shipment: {
-                select: {
-                  code: true,
-                  awb: true,
-                  status: true,
-                },
+      if (!type || type.includes(TransactionEntityType.SHIPMENT)) {
+        const shipmentTransactions = await this.prisma.shipmentTransaction.findMany({
+          where: { ...whereClause, awb: { contains: search, mode: 'insensitive' as Prisma.QueryMode } },
+          skip,
+          // take: type ? limit : Math.floor(limit / 3),
+          orderBy: { created_at: 'desc' },
+          include: {
+            shipment: {
+              select: {
+                code: true,
+                awb: true,
+                status: true,
               },
             },
-          });
+          },
+        });
 
         const shipmentCount = await this.prisma.shipmentTransaction.count({
           where: whereClause,
@@ -907,7 +878,7 @@ export class TransactionService {
       return {
         success: true,
         transactions,
-        _stats: { 
+        _stats: {
           total_debit: transactions.filter((t) => t.type === TransactionType.DEBIT).reduce((acc, t) => acc + t.amount, 0),
           total_credit: transactions.filter((t) => t.type === TransactionType.CREDIT).reduce((acc, t) => acc + t.amount, 0),
         },
@@ -937,16 +908,16 @@ export class TransactionService {
       const results = [];
       let successCount = 0;
       let failedCount = 0;
-  
+
       for (let i = 0; i < transactions.length; i += batchSize) {
         const batch = transactions.slice(i, i + batchSize);
-        
+
         // Process batch sequentially to maintain wallet balance consistency
         const batchResults = [];
         for (let j = 0; j < batch.length; j++) {
           const transaction = batch[j];
           const index = j;
-          
+
           try {
             let result;
             switch (entityType) {
@@ -962,7 +933,7 @@ export class TransactionService {
               default:
                 result = { success: false, error: 'Invalid entity type' };
             }
-  
+
             if (result.success && result.transaction) {
               successCount++;
               batchResults.push({
@@ -994,10 +965,10 @@ export class TransactionService {
             });
           }
         }
-        
+
         results.push(...batchResults);
       }
-  
+
       return {
         success: true,
         results,
@@ -1080,11 +1051,7 @@ export class TransactionService {
    * @param type Transaction type (CREDIT or DEBIT)
    * @returns Updated balance or error
    */
-  private async updateWalletBalance(
-    walletId: string,
-    amount: number,
-    type: TransactionType
-  ): Promise<WalletUpdateResult> {
+  private async updateWalletBalance(walletId: string, amount: number, type: TransactionType): Promise<WalletUpdateResult> {
     try {
       const wallet = await this.prisma.userWallet.findUnique({
         where: { id: walletId },
@@ -1095,8 +1062,7 @@ export class TransactionService {
       }
 
       // Calculate new balance
-      const newBalance =
-        type === TransactionType.CREDIT ? wallet.balance + amount : wallet.balance - amount;
+      const newBalance = type === TransactionType.CREDIT ? wallet.balance + amount : wallet.balance - amount;
 
       // Check if balance would go negative
       if (newBalance < 0) {
@@ -1214,9 +1180,7 @@ export class TransactionService {
         const phonePeService = new PhonePeService(this.fastify);
 
         // Check payment status with PhonePe
-        const statusResult = await phonePeService.checkPaymentStatus(
-          transaction.merchant_transaction_id
-        );
+        const statusResult = await phonePeService.checkPaymentStatus(transaction.merchant_transaction_id);
 
         if (!statusResult.success) continue;
 
@@ -1326,12 +1290,7 @@ export class TransactionService {
 
       // Generate payment link using PhonePe
       const redirectUrl = `${origin}/seller/invoice/callback/${invoiceId}`;
-      const paymentResult = await phonePeService.generatePaymentLink(
-        amount,
-        merchantTransactionId,
-        userId,
-        redirectUrl
-      );
+      const paymentResult = await phonePeService.generatePaymentLink(amount, merchantTransactionId, userId, redirectUrl);
 
       if (!paymentResult.success) {
         // If payment link generation fails, mark transaction as failed

@@ -24,20 +24,8 @@ export default function Redirecting() {
     <div className="flex min-h-screen flex-col items-center justify-center">
       <div className="text-center">
         <div className="mb-4 flex justify-center">
-          <svg
-            className="h-12 w-12 animate-spin text-red-600 dark:text-red-400"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            ></circle>
+          <svg className="h-12 w-12 animate-spin text-red-600 dark:text-red-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path
               className="opacity-75"
               fill="currentColor"
@@ -45,12 +33,8 @@ export default function Redirecting() {
             ></path>
           </svg>
         </div>
-        <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-          Redirecting to your dashboard...
-        </h2>
-        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          Please wait while we take you to your personalized dashboard
-        </p>
+        <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Redirecting to your dashboard...</h2>
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Please wait while we take you to your personalized dashboard</p>
       </div>
     </div>
   );

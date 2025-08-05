@@ -49,14 +49,14 @@ export default function ManageBankAccountsModal() {
           <AlertDescription>{message}</AlertDescription>
         </Alert>
       )}
-      <ScrollArea className="h-[500px] overflow-hidden space-y-2">
+      <ScrollArea className="h-[500px] space-y-2 overflow-hidden">
         {isBankLoading ? (
           <div className="flex h-full items-center justify-center">
             <Loader2Icon className="h-4 w-4 animate-spin" />
           </div>
         ) : (
           bankAccounts.map((bankAccount: any) => (
-            <Card key={bankAccount.id} className='mt-3'>
+            <Card key={bankAccount.id} className="mt-3">
               {isAdmin && (
                 <>
                   <CardHeader>
@@ -81,11 +81,11 @@ export default function ManageBankAccountsModal() {
                 </>
               )}
               <CardContent>
-                  <div className="flex justify-end">
-                    <Badge variant={bankAccount.is_verified ? 'status_success' : ('status_warning' as any)} className="ml-auto">
-                      {bankAccount.is_verified ? 'Verified' : 'Unverified'}
-                    </Badge>
-                  </div>
+                <div className="flex justify-end">
+                  <Badge variant={bankAccount.is_verified ? 'status_success' : ('status_warning' as any)} className="ml-auto">
+                    {bankAccount.is_verified ? 'Verified' : 'Unverified'}
+                  </Badge>
+                </div>
                 <div className="grid grid-cols-2 items-center gap-2 text-base">
                   <div className="font-semibold">Bank Name</div>
                   <CopyBtn tooltipText={'Copy Bank Name'} label={bankAccount.bank_name} text={bankAccount.bank_name} />

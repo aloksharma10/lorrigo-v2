@@ -15,11 +15,7 @@ export function RatingBadgeCircle({ rating, className = '' }: RatingBadgeProps) 
   };
 
   return (
-    <div
-      className={`h-12 w-12 rounded-full ${getRatingColor(
-        rating
-      )} flex items-center justify-center text-sm font-bold text-white ${className}`}
-    >
+    <div className={`h-12 w-12 rounded-full ${getRatingColor(rating)} flex items-center justify-center text-sm font-bold text-white ${className}`}>
       {rating.toFixed(1)}
     </div>
   );

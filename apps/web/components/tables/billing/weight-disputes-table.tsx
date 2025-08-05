@@ -220,13 +220,12 @@ export function WeightDisputesTable({ className, userRole = 'ADMIN', userId, sta
                   {Math.ceil((new Date(dispute.deadline_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} Working Days left
                 </div>
               )}
-              {
-                dispute.status === 'RESOLVED' && dispute.resolution_date && (
-                  <div className="text-muted-foreground text-xs">
-                    Resolved on: {new Date(dispute.resolution_date).toLocaleDateString()} | {new Date(dispute.resolution_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </div>
-                )
-              }
+              {dispute.status === 'RESOLVED' && dispute.resolution_date && (
+                <div className="text-muted-foreground text-xs">
+                  Resolved on: {new Date(dispute.resolution_date).toLocaleDateString()} |{' '}
+                  {new Date(dispute.resolution_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
+              )}
             </div>
           </div>
         );

@@ -21,10 +21,7 @@ export default function ManagePlansPage() {
   const totalPlans = useMemo(() => plans.length, [plans]);
   const defaultPlansCount = useMemo(() => plans.filter((p: any) => p.isDefault).length, [plans]);
 
-  const assignedUsersCount = useMemo(
-    () => plans.reduce((acc: number, plan: any) => acc + (plan.users?.length || 0), 0),
-    [plans]
-  );
+  const assignedUsersCount = useMemo(() => plans.reduce((acc: number, plan: any) => acc + (plan.users?.length || 0), 0), [plans]);
 
   // Memoized handlers to prevent recreating functions on each render
   const refreshAllData = useCallback(() => {
@@ -89,19 +86,10 @@ export default function ManagePlansPage() {
       <div className="items-center justify-between lg:flex">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Manage Plans</h1>
-          <p className="text-muted-foreground">
-            Create and manage shipping plans, assign users, and configure couriers & channels
-          </p>
+          <p className="text-muted-foreground">Create and manage shipping plans, assign users, and configure couriers & channels</p>
         </div>
         <div className="mt-2 flex items-center gap-2 overflow-x-auto lg:mt-0 lg:overflow-x-hidden">
-          <Button
-            isLoading={isLoading}
-            onClick={refreshAllData}
-            variant="outline"
-            size="sm"
-            disabled={isLoading}
-            icon={RefreshCw}
-          >
+          <Button isLoading={isLoading} onClick={refreshAllData} variant="outline" size="sm" disabled={isLoading} icon={RefreshCw}>
             Refresh
           </Button>
           <Button icon={Plus} onClick={handleCreatePlan} variant="outline">
@@ -112,18 +100,8 @@ export default function ManagePlansPage() {
 
       {/* Analytics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <CardItems
-          title="Total Plans"
-          value={totalPlans}
-          description={`${defaultPlansCount} default plans`}
-          icon={Package}
-        />
-        <CardItems
-          title="Assigned Users"
-          value={assignedUsersCount}
-          description="Across all plans"
-          icon={Users}
-        />
+        <CardItems title="Total Plans" value={totalPlans} description={`${defaultPlansCount} default plans`} icon={Package} />
+        <CardItems title="Assigned Users" value={assignedUsersCount} description="Across all plans" icon={Users} />
       </div>
 
       {/* Main Content */}

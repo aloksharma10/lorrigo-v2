@@ -8,8 +8,7 @@ import { cn } from '../lib/utils';
 // Define the expected size prop for the Input component
 type InputSize = 'sm' | 'md' | 'lg' | undefined;
 
-export interface LoadingInputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'size'> {
+export interface LoadingInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'size'> {
   isLoading?: boolean;
   icon?: React.ElementType;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -97,13 +96,7 @@ const LoadingInput = React.forwardRef<HTMLInputElement, LoadingInputProps>(
           )}
         >
           {showLoading ? (
-            <LoaderCircle
-              className="animate-spin"
-              size={16}
-              strokeWidth={2}
-              role="status"
-              aria-label="Loading..."
-            />
+            <LoaderCircle className="animate-spin" size={16} strokeWidth={2} role="status" aria-label="Loading..." />
           ) : (
             Icon && <Icon size={16} strokeWidth={2} aria-hidden="true" />
           )}

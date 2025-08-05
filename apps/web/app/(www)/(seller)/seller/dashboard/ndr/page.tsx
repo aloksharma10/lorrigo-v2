@@ -36,8 +36,7 @@ export default function NDRPage() {
       <div className="flex flex-col">
         <h1 className="text-2xl font-bold">NDR</h1>
         <div className="text-muted-foreground mb-6 text-sm">
-          The NDR dashboard is showing you the realtime data of last 30 days till today based on
-          shipment assigned date.
+          The NDR dashboard is showing you the realtime data of last 30 days till today based on shipment assigned date.
         </div>
         {/* Date Range, Zone, Courier, Payment Mode, Shipment Mode Filters */}
         {/* <div className="flex items-center gap-4 mb-4">
@@ -68,31 +67,11 @@ export default function NDRPage() {
         <div className="mb-6">
           <ChartCard title="NDR Summary">
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-              <MetricCard
-                title="NDR Raised"
-                value={metrics.raised}
-                className="bg-gray-50 dark:bg-neutral-900"
-              />
-              <MetricCard
-                title="NDR Raised Percentage"
-                value={metrics.percentage}
-                className="bg-gray-50 dark:bg-neutral-900"
-              />
-              <MetricCard
-                title="Action Required"
-                value={metrics.actionRequired}
-                className="bg-gray-50 dark:bg-neutral-900"
-              />
-              <MetricCard
-                title="Delivered"
-                value={metrics.delivered}
-                className="bg-gray-50 dark:bg-neutral-900"
-              />
-              <MetricCard
-                title="Your RTO"
-                value={metrics.rto}
-                className="bg-gray-50 dark:bg-neutral-900"
-              />
+              <MetricCard title="NDR Raised" value={metrics.raised} className="bg-gray-50 dark:bg-neutral-900" />
+              <MetricCard title="NDR Raised Percentage" value={metrics.percentage} className="bg-gray-50 dark:bg-neutral-900" />
+              <MetricCard title="Action Required" value={metrics.actionRequired} className="bg-gray-50 dark:bg-neutral-900" />
+              <MetricCard title="Delivered" value={metrics.delivered} className="bg-gray-50 dark:bg-neutral-900" />
+              <MetricCard title="Your RTO" value={metrics.rto} className="bg-gray-50 dark:bg-neutral-900" />
             </div>
           </ChartCard>
         </div>
@@ -110,32 +89,20 @@ export default function NDRPage() {
                 <div className="text-muted-foreground text-sm">Buyer Response</div>
               </div>
               <div className="flex flex-col items-center justify-center rounded-md border p-4">
-                <div className="text-2xl font-bold">
-                  {responseSummary.sellerPositiveResponse}
-                </div>
+                <div className="text-2xl font-bold">{responseSummary.sellerPositiveResponse}</div>
                 <div className="text-muted-foreground text-sm">Seller Positive Response</div>
               </div>
               <div className="flex flex-col items-center justify-center rounded-md border p-4">
-                <div className="text-2xl font-bold">
-                  {responseSummary.buyerPositiveResponse}
-                </div>
+                <div className="text-2xl font-bold">{responseSummary.buyerPositiveResponse}</div>
                 <div className="text-muted-foreground text-sm">Buyer Positive Response</div>
               </div>
               <div className="flex flex-col items-center justify-center rounded-md border p-4">
-                <div className="text-2xl font-bold">
-                  {responseSummary.sellerPositiveResponseDelivered}
-                </div>
-                <div className="text-muted-foreground text-sm">
-                  Seller Positive Response Delivered
-                </div>
+                <div className="text-2xl font-bold">{responseSummary.sellerPositiveResponseDelivered}</div>
+                <div className="text-muted-foreground text-sm">Seller Positive Response Delivered</div>
               </div>
               <div className="flex flex-col items-center justify-center rounded-md border p-4">
-                <div className="text-2xl font-bold">
-                  {responseSummary.buyerPositiveResponseDelivered}
-                </div>
-                <div className="text-muted-foreground text-sm">
-                  Buyer Positive Response Delivered
-                </div>
+                <div className="text-2xl font-bold">{responseSummary.buyerPositiveResponseDelivered}</div>
+                <div className="text-muted-foreground text-sm">Buyer Positive Response Delivered</div>
               </div>
             </div>
           </ChartCard>
@@ -151,15 +118,11 @@ export default function NDRPage() {
                   </div>
                   <div className="flex flex-col items-center justify-center rounded-md p-2">
                     <div className="text-sm font-medium">{funnel.firstNDR?.pending}</div>
-                    <div className="text-muted-foreground text-center text-xs">
-                      Pending Shipments
-                    </div>
+                    <div className="text-muted-foreground text-center text-xs">Pending Shipments</div>
                   </div>
                   <div className="flex flex-col items-center justify-center rounded-md p-2">
                     <div className="text-sm font-medium">{funnel.firstNDR?.delivered}</div>
-                    <div className="text-muted-foreground text-center text-xs">
-                      Delivered Shipments
-                    </div>
+                    <div className="text-muted-foreground text-center text-xs">Delivered Shipments</div>
                   </div>
                 </div>
               </div>
@@ -172,15 +135,11 @@ export default function NDRPage() {
                   </div>
                   <div className="flex flex-col items-center justify-center rounded-md p-2">
                     <div className="text-sm font-medium">{funnel.secondNDR?.pending}</div>
-                    <div className="text-muted-foreground text-center text-xs">
-                      Pending Shipments
-                    </div>
+                    <div className="text-muted-foreground text-center text-xs">Pending Shipments</div>
                   </div>
                   <div className="flex flex-col items-center justify-center rounded-md p-2">
                     <div className="text-sm font-medium">{funnel.secondNDR?.delivered}</div>
-                    <div className="text-muted-foreground text-center text-xs">
-                      Delivered Shipments
-                    </div>
+                    <div className="text-muted-foreground text-center text-xs">Delivered Shipments</div>
                   </div>
                 </div>
               </div>
@@ -193,15 +152,11 @@ export default function NDRPage() {
                   </div>
                   <div className="flex flex-col items-center justify-center rounded-md p-2">
                     <div className="text-sm font-medium">{funnel.thirdNDR?.pending}</div>
-                    <div className="text-muted-foreground text-center text-xs">
-                      Pending Shipments
-                    </div>
+                    <div className="text-muted-foreground text-center text-xs">Pending Shipments</div>
                   </div>
                   <div className="flex flex-col items-center justify-center rounded-md p-2">
                     <div className="text-sm font-medium">{funnel.thirdNDR?.delivered}</div>
-                    <div className="text-muted-foreground text-center text-xs">
-                      Delivered Shipments
-                    </div>
+                    <div className="text-muted-foreground text-center text-xs">Delivered Shipments</div>
                   </div>
                 </div>
               </div>
@@ -328,9 +283,7 @@ export default function NDRPage() {
           />
         </div>
 
-        <div className="text-muted-foreground text-xs">
-          Note: Last updated on 21 May 2025. There might be a slight mismatch in the data.
-        </div>
+        <div className="text-muted-foreground text-xs">Note: Last updated on 21 May 2025. There might be a slight mismatch in the data.</div>
       </div>
     </div>
   );

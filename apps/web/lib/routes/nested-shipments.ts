@@ -3,7 +3,7 @@ export const SHIPMENT_TAB_ROUTES = [
   { name: 'Ready To Ship', path: '/seller/orders/forward-shipments/ready-to-ship', iconName: 'PackageCheck' },
   { name: 'In Transit', path: '/seller/orders/forward-shipments/transit', iconName: 'Truck' },
   { name: 'Delivered', path: '/seller/orders/forward-shipments/delivered', iconName: 'CheckCircle' },
-  { name : "NDR", path: '/seller/orders/ndr/action-required', iconName: 'AlertTriangle' },
+  { name: 'NDR', path: '/seller/orders/ndr/action-required', iconName: 'AlertTriangle' },
   { name: 'RTO', path: '/seller/orders/forward-shipments/rto', iconName: 'RotateCcw' },
   { name: 'All', path: '/seller/orders/forward-shipments/all', iconName: 'List' },
 ];

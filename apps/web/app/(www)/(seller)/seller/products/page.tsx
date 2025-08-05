@@ -38,7 +38,6 @@ export default function ProductsPage() {
 
   const { data, isLoading, isError } = productsQuery;
 
-
   // Define the columns for the data table
   const columns: ColumnDef<Product>[] = [
     // {
@@ -117,11 +116,7 @@ export default function ProductsPage() {
       header: ({ column }) => <DataTableColumnHeader column={column} title="Dimensions (L×W×H)" />,
       cell: ({ row }) => {
         const product = row.original;
-        return (
-          <div className="text-sm">
-            {product.dimensions}
-          </div>
-        );
+        return <div className="text-sm">{product.dimensions}</div>;
       },
       enableSorting: false,
       enableHiding: true,
@@ -145,7 +140,7 @@ export default function ProductsPage() {
       header: ({ column }) => <DataTableColumnHeader column={column} title="Created At" />,
       cell: ({ row }) => {
         const product = row.original;
-        return <div className="text-muted-foreground text-sm">{product.created_at.split("T")[0]}</div>;
+        return <div className="text-muted-foreground text-sm">{product.created_at.split('T')[0]}</div>;
       },
       enableSorting: true,
       enableHiding: true,
@@ -155,8 +150,8 @@ export default function ProductsPage() {
   return (
     <div className="container mx-auto">
       <div className="mb-6">
-          <h1 className="text-2xl font-bold">Products</h1>
-          <p className="text-muted-foreground">Manage your product catalog and inventory</p>
+        <h1 className="text-2xl font-bold">Products</h1>
+        <p className="text-muted-foreground">Manage your product catalog and inventory</p>
       </div>
 
       <DataTable

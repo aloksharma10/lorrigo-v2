@@ -109,8 +109,7 @@ export const useShippingOperations = () => {
   const getShippingRates = (orderId: string) => {
     return useQuery({
       queryKey: ['shipping-rates', orderId],
-      queryFn: () =>
-        api.get(`/shipments/${orderId}/rates`).then((res: any) => res as ShippingRatesResponse),
+      queryFn: () => api.get(`/shipments/${orderId}/rates`).then((res: any) => res as ShippingRatesResponse),
       enabled: !!orderId && isTokenReady,
       staleTime: 1000 * 60 * 5,
       gcTime: 1000 * 60 * 10,
@@ -119,15 +118,8 @@ export const useShippingOperations = () => {
 
   // Ship order with selected courier
   const shipOrder = useMutation({
-    mutationFn: ({
-      order_id,
-      courier_id,
-      is_schedule_pickup,
-    }: {
-      order_id: string;
-      courier_id: string;
-      is_schedule_pickup: boolean;
-    }) => api.post<any>(`/shipments`, { order_id, courier_id, is_schedule_pickup }),
+    mutationFn: ({ order_id, courier_id, is_schedule_pickup }: { order_id: string; courier_id: string; is_schedule_pickup: boolean }) =>
+      api.post<any>(`/shipments`, { order_id, courier_id, is_schedule_pickup }),
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['reverse-orders'] });
@@ -157,15 +149,8 @@ export const useShippingOperations = () => {
 
   // Cancel a shipment
   const cancelShipment = useMutation({
-    mutationFn: ({
-      shipmentId,
-      reason,
-      cancelType,
-    }: {
-      shipmentId: string;
-      reason: string;
-      cancelType: 'shipment' | 'order';
-    }) => api.post(`/shipments/${shipmentId}/cancel`, { reason, cancelType }),
+    mutationFn: ({ shipmentId, reason, cancelType }: { shipmentId: string; reason: string; cancelType: 'shipment' | 'order' }) =>
+      api.post(`/shipments/${shipmentId}/cancel`, { reason, cancelType }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['reverse-orders'] });
@@ -179,13 +164,7 @@ export const useShippingOperations = () => {
   });
 
   // Get all bulk operations with pagination and filters
-  const getAllBulkOperations = (params: {
-    page?: number;
-    pageSize?: number;
-    type?: string;
-    status?: string;
-    dateRange?: [Date, Date];
-  }) => {
+  const getAllBulkOperations = (params: { page?: number; pageSize?: number; type?: string; status?: string; dateRange?: [Date, Date] }) => {
     return useQuery({
       enabled: isTokenReady,
       queryKey: ['bulk-operations', params],
@@ -212,10 +191,7 @@ export const useShippingOperations = () => {
   };
 
   // Download bulk operation file (report or PDF)
-  const downloadBulkOperationFile = async (
-    operationId: string,
-    type: 'report' | 'file'
-  ): Promise<AxiosResponse<any>> => {
+  const downloadBulkOperationFile = async (operationId: string, type: 'report' | 'file'): Promise<AxiosResponse<any>> => {
     const response = await apiDownload.get(`/bulk-operations/${operationId}/download?type=${type}`);
     return response;
   };
@@ -240,10 +216,7 @@ export const useShippingOperations = () => {
 
         if (!result) return 2000;
 
-        const isDone =
-          result.progress >= 100 ||
-          result.data.status === 'COMPLETED' ||
-          result.data.status === 'FAILED';
+        const isDone = result.progress >= 100 || result.data.status === 'COMPLETED' || result.data.status === 'FAILED';
 
         return isDone ? false : 2000;
       },
@@ -317,9 +290,7 @@ export const useShippingOperations = () => {
       queryClient.invalidateQueries({ queryKey: ['bulk-operations'] });
     },
     onError: (error: any) => {
-      toast.error(
-        `Failed to start bulk shipment cancellation: ${error.message || 'Unknown error'}`
-      );
+      toast.error(`Failed to start bulk shipment cancellation: ${error.message || 'Unknown error'}`);
     },
   });
 
@@ -354,25 +325,18 @@ export const useShippingOperations = () => {
       queryClient.invalidateQueries({ queryKey: ['bulk-operations'] });
     },
     onError: (error: any) => {
-      toast.error(
-        `Failed to start bulk pickup address update: ${error.message || 'Unknown error'}`
-      );
+      toast.error(`Failed to start bulk pickup address update: ${error.message || 'Unknown error'}`);
     },
   });
 
   // Get serviceable couriers (rate calculator)
   const getServiceableCouriers = useMutation({
     mutationFn: async (params: RateCalculationParams) => {
-      const response = await api.post<any>(
-        '/shipments/serviceable-couriers',
-        params
-      );
+      const response = await api.post<any>('/shipments/serviceable-couriers', params);
       return response;
     },
     onError: (error: any) => {
-      toast.error(
-        error.response?.message || error.message || 'Failed to fetch courier rates'
-      );
+      toast.error(error.response?.message || error.message || 'Failed to fetch courier rates');
     },
   });
 
@@ -380,7 +344,7 @@ export const useShippingOperations = () => {
   const downloadLabels = useMutation({
     mutationFn: async (data: { awbs: string[]; format: 'A4' | 'THERMAL' }) => {
       const response = await apiDownload.post<any>('/shipments/labels/bulk', data, { responseType: 'blob' });
-      return response.data ;
+      return response.data;
     },
   });
 
@@ -450,10 +414,7 @@ export const useShippingOperations = () => {
 // }
 
 // Set user label/manifest config
-export async function setLabelManifestConfig(config: {
-  label_format?: 'A4' | 'THERMAL';
-  manifest_format?: 'A4' | 'THERMAL';
-}): Promise<any> {
+export async function setLabelManifestConfig(config: { label_format?: 'A4' | 'THERMAL'; manifest_format?: 'A4' | 'THERMAL' }): Promise<any> {
   const response: AxiosResponse<any> = await api.post('/shipments/user/label-config', config);
   return response.data;
 }

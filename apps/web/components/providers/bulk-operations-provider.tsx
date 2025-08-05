@@ -22,10 +22,7 @@ interface BulkOperationsProviderProps {
 /**
  * Provider component for bulk operations modal
  */
-export function BulkOperationsProvider({
-  children,
-  onOperationComplete,
-}: BulkOperationsProviderProps) {
+export function BulkOperationsProvider({ children, onOperationComplete }: BulkOperationsProviderProps) {
   const {
     operationType,
     selectedRows,

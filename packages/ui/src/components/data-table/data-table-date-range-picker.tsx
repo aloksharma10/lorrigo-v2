@@ -17,12 +17,7 @@ interface DataTableDateRangePickerProps {
   disabled?: boolean;
 }
 
-export function DataTableDateRangePicker({
-  dateRange,
-  setDateRange,
-  className,
-  disabled = false,
-}: DataTableDateRangePickerProps) {
+export function DataTableDateRangePicker({ dateRange, setDateRange, className, disabled = false }: DataTableDateRangePickerProps) {
   const [open, setOpen] = React.useState(false);
 
   return (
@@ -33,10 +28,7 @@ export function DataTableDateRangePicker({
             id="date"
             variant="outline"
             size="sm"
-            className={cn(
-              'h-9 justify-start text-left font-normal',
-              !dateRange && 'text-muted-foreground'
-            )}
+            className={cn('h-9 justify-start text-left font-normal', !dateRange && 'text-muted-foreground')}
             disabled={disabled}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />

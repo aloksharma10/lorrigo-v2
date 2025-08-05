@@ -69,8 +69,7 @@ export default function ShopifyCallbackPage() {
         }
       } catch (err: any) {
         console.error('Error handling Shopify callback:', err);
-        const errorMessage =
-          err.response?.data?.error || 'An error occurred while connecting to Shopify';
+        const errorMessage = err.response?.data?.error || 'An error occurred while connecting to Shopify';
         setError(errorMessage);
         setIsLoading(false);
       }
@@ -92,10 +91,7 @@ export default function ShopifyCallbackPage() {
           <AlertTitle>Connection Error</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
-        <button
-          onClick={() => router.push('/seller/channels')}
-          className="bg-primary hover:bg-primary/90 mt-4 rounded-md px-4 py-2 text-white"
-        >
+        <button onClick={() => router.push('/seller/channels')} className="bg-primary hover:bg-primary/90 mt-4 rounded-md px-4 py-2 text-white">
           Return to Channels
         </button>
       </div>
@@ -108,9 +104,7 @@ export default function ShopifyCallbackPage() {
         <Loader2 className="text-primary h-8 w-8 animate-spin" />
         <h1 className="text-xl font-medium">Connecting to Shopify...</h1>
         <p className="text-muted-foreground">Please wait while we complete your connection</p>
-        {sessionStatus === 'loading' && (
-          <p className="text-muted-foreground text-sm">Waiting for authentication...</p>
-        )}
+        {sessionStatus === 'loading' && <p className="text-muted-foreground text-sm">Waiting for authentication...</p>}
       </div>
     </div>
   );

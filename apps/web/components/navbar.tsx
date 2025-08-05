@@ -19,25 +19,14 @@ export function Navbar() {
         </Link>
 
         <nav className="hidden items-center space-x-8 md:flex">
-          <Link
-            href="/"
-            className={`text-sm font-medium ${
-              pathname === '/'
-                ? 'text-blue-600 dark:text-blue-500'
-                : 'text-gray-700 dark:text-gray-300'
-            }`}
-          >
+          <Link href="/" className={`text-sm font-medium ${pathname === '/' ? 'text-blue-600 dark:text-blue-500' : 'text-gray-700 dark:text-gray-300'}`}>
             Home
           </Link>
           {isAuthenticated && (
             <>
               <Link
                 href={role === 'ADMIN' ? '/admin/dashboard' : '/seller/dashboard'}
-                className={`text-sm font-medium ${
-                  pathname === '/dashboard'
-                    ? 'text-blue-600 dark:text-blue-500'
-                    : 'text-gray-700 dark:text-gray-300'
-                }`}
+                className={`text-sm font-medium ${pathname === '/dashboard' ? 'text-blue-600 dark:text-blue-500' : 'text-gray-700 dark:text-gray-300'}`}
               >
                 Dashboard
               </Link>
@@ -69,10 +58,7 @@ export function Navbar() {
               </button>
             </div>
           ) : (
-            <Link
-              href="/auth/signin"
-              className="bg-primary rounded-md px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
-            >
+            <Link href="/auth/signin" className="bg-primary rounded-md px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">
               Sign In
             </Link>
           )}

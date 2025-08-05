@@ -2,7 +2,6 @@ import { FastifyInstance } from 'fastify';
 import { ChargeType, TransactionStatus } from '@lorrigo/db';
 import { TransactionService, TransactionType, TransactionEntityType } from '../../transactions/services/transaction-service';
 
-
 interface ChargeProcessingResult {
   success: boolean;
   chargeType: ChargeType;
@@ -29,7 +28,7 @@ export class ChargeProcessingService {
    */
   async processRtoShipmentCharges(shipment: any): Promise<ChargeProcessingResult[]> {
     const results: ChargeProcessingResult[] = [];
-    
+
     // Only process RTO charges for shipments that are actually in RTO status
     if (!this.isRtoStatus(shipment.status)) {
       return results;
@@ -55,9 +54,9 @@ export class ChargeProcessingService {
    */
   async hasChargeBeenApplied(shipmentId: string, chargeType: ChargeType): Promise<boolean> {
     const existingTx = await this.fastify.prisma.shipmentTransaction.findFirst({
-      where: { 
-        shipment_id: shipmentId, 
-        charge_type: chargeType 
+      where: {
+        shipment_id: shipmentId,
+        charge_type: chargeType,
       },
     });
     return !!existingTx;
@@ -70,24 +69,24 @@ export class ChargeProcessingService {
     try {
       // Get RTO charge from shipment record or pricing
       const rtoAmount = shipment.rto_charge || shipment.pricing?.rto_base_price || 0;
-      
+
       if (rtoAmount <= 0) {
-        return { 
-          success: true, 
-          chargeType: ChargeType.RTO_CHARGE, 
-          amount: 0, 
-          message: 'No RTO charge applicable' 
+        return {
+          success: true,
+          chargeType: ChargeType.RTO_CHARGE,
+          amount: 0,
+          message: 'No RTO charge applicable',
         };
       }
 
       // Check if already processed
       const exists = await this.hasChargeBeenApplied(shipment.id, ChargeType.RTO_CHARGE);
       if (exists) {
-        return { 
-          success: true, 
-          chargeType: ChargeType.RTO_CHARGE, 
-          amount: rtoAmount, 
-          message: 'RTO charge already processed' 
+        return {
+          success: true,
+          chargeType: ChargeType.RTO_CHARGE,
+          amount: rtoAmount,
+          message: 'RTO charge already processed',
         };
       }
 
@@ -106,28 +105,28 @@ export class ChargeProcessingService {
       });
 
       if (txResult.success) {
-        return { 
-          success: true, 
-          chargeType: ChargeType.RTO_CHARGE, 
-          amount: rtoAmount, 
-          message: 'RTO charge processed successfully' 
+        return {
+          success: true,
+          chargeType: ChargeType.RTO_CHARGE,
+          amount: rtoAmount,
+          message: 'RTO charge processed successfully',
         };
       } else {
-        return { 
-          success: false, 
-          chargeType: ChargeType.RTO_CHARGE, 
-          amount: rtoAmount, 
-          message: 'Failed to process RTO charge', 
-          error: txResult.error 
+        return {
+          success: false,
+          chargeType: ChargeType.RTO_CHARGE,
+          amount: rtoAmount,
+          message: 'Failed to process RTO charge',
+          error: txResult.error,
         };
       }
     } catch (error) {
-      return { 
-        success: false, 
-        chargeType: ChargeType.RTO_CHARGE, 
-        amount: 0, 
-        message: 'Error processing RTO charge', 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        chargeType: ChargeType.RTO_CHARGE,
+        amount: 0,
+        message: 'Error processing RTO charge',
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -136,13 +135,13 @@ export class ChargeProcessingService {
     try {
       // Get COD amount to refund
       const codAmount = shipment.order?.amount_to_collect || shipment.order?.total_amount || 0;
-      
+
       if (codAmount <= 0) {
-        return { 
-          success: true, 
-          chargeType: ChargeType.COD_REVERSAL, 
-          amount: 0, 
-          message: 'No COD amount to refund' 
+        return {
+          success: true,
+          chargeType: ChargeType.COD_REVERSAL,
+          amount: 0,
+          message: 'No COD amount to refund',
         };
       }
 
@@ -157,11 +156,11 @@ export class ChargeProcessingService {
       });
 
       if (existingRefund) {
-        return { 
-          success: true, 
-          chargeType: ChargeType.COD_REVERSAL, 
-          amount: codAmount, 
-          message: 'COD refund already processed' 
+        return {
+          success: true,
+          chargeType: ChargeType.COD_REVERSAL,
+          amount: codAmount,
+          message: 'COD refund already processed',
         };
       }
 
@@ -180,28 +179,28 @@ export class ChargeProcessingService {
       });
 
       if (txResult.success) {
-        return { 
-          success: true, 
-          chargeType: ChargeType.COD_REVERSAL, 
-          amount: codAmount, 
-          message: 'COD refund processed successfully' 
+        return {
+          success: true,
+          chargeType: ChargeType.COD_REVERSAL,
+          amount: codAmount,
+          message: 'COD refund processed successfully',
         };
       } else {
-        return { 
-          success: false, 
-          chargeType: ChargeType.COD_REVERSAL, 
-          amount: codAmount, 
-          message: 'Failed to process COD refund', 
-          error: txResult.error 
+        return {
+          success: false,
+          chargeType: ChargeType.COD_REVERSAL,
+          amount: codAmount,
+          message: 'Failed to process COD refund',
+          error: txResult.error,
         };
       }
     } catch (error) {
-      return { 
-        success: false, 
-        chargeType: ChargeType.COD_REVERSAL, 
-        amount: 0, 
-        message: 'Error processing COD refund', 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        chargeType: ChargeType.COD_REVERSAL,
+        amount: 0,
+        message: 'Error processing COD refund',
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -212,14 +211,14 @@ export class ChargeProcessingService {
   }
 
   private shouldProcessRtoCharge(shipment: any): boolean {
-    return this.isRtoStatus(shipment.status) && 
-           (shipment.rto_charge > 0 || shipment.pricing?.is_rto_applicable);
+    return this.isRtoStatus(shipment.status) && (shipment.rto_charge > 0 || shipment.pricing?.is_rto_applicable);
   }
 
   private shouldProcessCodRefund(shipment: any): boolean {
-    return this.isRtoStatus(shipment.status) && 
-           shipment.order?.payment_method === 'COD' &&
-           (shipment.order?.amount_to_collect > 0 || shipment.order?.total_amount > 0);
+    return (
+      this.isRtoStatus(shipment.status) &&
+      shipment.order?.payment_method === 'COD' &&
+      (shipment.order?.amount_to_collect > 0 || shipment.order?.total_amount > 0)
+    );
   }
-
-} 
+}

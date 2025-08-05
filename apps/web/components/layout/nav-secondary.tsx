@@ -4,13 +4,7 @@ import * as React from 'react';
 import { IconBrightness, type Icon } from '@tabler/icons-react';
 import { useTheme } from 'next-themes';
 
-import {
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from '@lorrigo/ui/components';
+import { SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@lorrigo/ui/components';
 import { Skeleton } from '@lorrigo/ui/components';
 import { Switch } from '@lorrigo/ui/components';
 import { useModalStore } from '@/modal/modal-store';
@@ -37,7 +31,7 @@ export function NavSecondary({
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map((item) => (
-            <SidebarMenuItem key={item.title} className='flex flex-col items-center justify-center'>
+            <SidebarMenuItem key={item.title} className="flex flex-col items-center justify-center">
               <SidebarMenuButton asChild>
                 <div onClick={() => openModal('all-policies', { type: item.url.split('/').pop(), title: item.title, className: 'max-w-4xl p-4' })}>
                   <item.icon />

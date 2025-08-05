@@ -1,13 +1,6 @@
 import { ReactNode } from 'react';
 import { LucideIcon } from 'lucide-react';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@lorrigo/ui/components';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@lorrigo/ui/components';
 
 interface ChannelCardProps {
   title: string;
@@ -43,11 +36,7 @@ export function ChannelCard({
 
       <CardContent className="pt-6">{children}</CardContent>
 
-      {footer && (
-        <CardFooter className="bg-muted/50 flex justify-between border-t px-6 py-4">
-          {footer}
-        </CardFooter>
-      )}
+      {footer && <CardFooter className="bg-muted/50 flex justify-between border-t px-6 py-4">{footer}</CardFooter>}
     </Card>
   );
 }

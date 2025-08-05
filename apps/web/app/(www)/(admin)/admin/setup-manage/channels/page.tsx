@@ -58,11 +58,7 @@ export default function ManageChannelsPage() {
   const { deleteChannel, toggleChannelStatus, getChannels } = useChannelOperations();
 
   // Fetch channels with React Query
-  const { data, isLoading, isError, error, refetch } = getChannels(
-    pagination.pageIndex + 1,
-    pagination.pageSize,
-    globalFilter
-  );
+  const { data, isLoading, isError, error, refetch } = getChannels(pagination.pageIndex + 1, pagination.pageSize, globalFilter);
 
   const channels = data?.channelConfigs || [];
   const totalCount = data?.total || 0;
@@ -144,11 +140,7 @@ export default function ManageChannelsPage() {
       header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
       cell: ({ row }) => {
         const isActive = row.getValue('is_active');
-        return (
-          <Badge variant={isActive ? 'success' : 'secondary'}>
-            {isActive ? 'Active' : 'Inactive'}
-          </Badge>
-        );
+        return <Badge variant={isActive ? 'success' : 'secondary'}>{isActive ? 'Active' : 'Inactive'}</Badge>;
       },
       filterFn: (row, id, value) => {
         if (value === 'all') return true;
@@ -189,11 +181,7 @@ export default function ManageChannelsPage() {
               onClick={() => handleToggleChannelStatus(channel.id, channel.is_active)}
               title={channel.is_active ? 'Deactivate' : 'Activate'}
             >
-              {channel.is_active ? (
-                <PowerOff className="h-4 w-4 text-red-500" />
-              ) : (
-                <Power className="h-4 w-4 text-green-500" />
-              )}
+              {channel.is_active ? <PowerOff className="h-4 w-4 text-red-500" /> : <Power className="h-4 w-4 text-green-500" />}
             </Button>
             <Button variant="ghost" size="icon" onClick={() => handleEditChannel(channel)}>
               <Edit className="h-4 w-4" />
@@ -232,9 +220,7 @@ export default function ManageChannelsPage() {
       <div className="items-center justify-between lg:flex">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Manage Channels</h1>
-          <p className="text-muted-foreground">
-            Create and manage channel configurations for your shipping integrations
-          </p>
+          <p className="text-muted-foreground">Create and manage channel configurations for your shipping integrations</p>
         </div>
         <div className="mt-4 flex items-center gap-2 lg:mt-0">
           <Button variant="outline" size="icon" onClick={() => refetch()}>

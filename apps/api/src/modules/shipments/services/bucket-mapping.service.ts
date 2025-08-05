@@ -341,11 +341,7 @@ export class BucketMappingService {
    * @param courierName Courier name
    * @returns Bucket number
    */
-  public async detectBucket(
-    status: string,
-    statusCode: string,
-    courierName: string
-  ): Promise<number> {
+  public async detectBucket(status: string, statusCode: string, courierName: string): Promise<number> {
     try {
       // First try exact mapping
       const exactBucket = await this.getBucketMapping(courierName, statusCode);
@@ -362,18 +358,12 @@ export class BucketMappingService {
       }
 
       // Fall back to keyword-based detection
-      const fallbackBucket = ShipmentBucketManager.detectBucketFromVendorStatus(
-        status || '',
-        statusCode || '',
-        courierName
-      );
+      const fallbackBucket = ShipmentBucketManager.detectBucketFromVendorStatus(status || '', statusCode || '', courierName);
 
       // If we got a meaningful bucket from keyword detection, consider caching it
       // But don't auto-cache as admin should review and approve mappings
       if (fallbackBucket > 0) {
-        console.log(
-          `Keyword detection found bucket ${fallbackBucket} for ${courierName}:${statusCode}`
-        );
+        console.log(`Keyword detection found bucket ${fallbackBucket} for ${courierName}:${statusCode}`);
       }
 
       return fallbackBucket;
@@ -448,11 +438,7 @@ export class BucketMappingService {
    * @param filters Optional filters
    * @returns Array of courier status mappings
    */
-  public async getAllMappings(filters?: {
-    courier_name?: string;
-    is_mapped?: boolean;
-    bucket?: number;
-  }): Promise<any[]> {
+  public async getAllMappings(filters?: { courier_name?: string; is_mapped?: boolean; bucket?: number }): Promise<any[]> {
     try {
       const whereClause: any = {};
 

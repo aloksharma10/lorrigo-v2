@@ -31,12 +31,7 @@ export class SmartShipVendor extends BaseVendor {
 
   constructor(bucketMappingService?: BucketMappingService) {
     const vendorConfig = APP_CONFIG.VENDOR.SMART_SHIP;
-    super(
-      'SmartShip',
-      vendorConfig.API_BASEURL || '',
-      vendorConfig.API_KEY,
-      CACHE_KEYS.SMARTSHIP_TOKEN
-    );
+    super('SmartShip', vendorConfig.API_BASEURL || '', vendorConfig.API_KEY, CACHE_KEYS.SMARTSHIP_TOKEN);
     this.email = vendorConfig.EMAIL || '';
     this.password = vendorConfig.PASSWORD || '';
     this.bucketMappingService = bucketMappingService;
@@ -99,7 +94,7 @@ export class SmartShipVendor extends BaseVendor {
     paymentType: 0 | 1,
     orderValue: number,
     collectableAmount: number = 0,
-    couriers: string[] = [],
+    couriers: string[] = []
   ): Promise<VendorServiceabilityResult> {
     try {
       const token = await this.getAuthToken();
@@ -133,12 +128,7 @@ export class SmartShipVendor extends BaseVendor {
         request_info: { extra_info: true, cost_info: false },
       };
 
-      const response = await this.makeRequest(
-        APIs.SMART_SHIP.RATE_CALCULATION,
-        'POST',
-        payload,
-        apiConfig
-      );
+      const response = await this.makeRequest(APIs.SMART_SHIP.RATE_CALCULATION, 'POST', payload, apiConfig);
 
       // Check if the response has serviceable couriers
       if (!response.data || response.data.status === false) {
@@ -150,22 +140,17 @@ export class SmartShipVendor extends BaseVendor {
       }
 
       // Extract serviceable couriers from the response
-      const serviceableCouriers = Object.values(response.data.data.carrier_info || {}).map(
-        (carrier: any) => ({
-          id: carrier.carrier_id.toString(),
-          name: carrier.carrier_name,
-          code: carrier.carrier_code || carrier.carrier_name.toLowerCase().replace(/\s+/g, '_'),
-          serviceability: true,
-          data: carrier,
-        })
-      );
+      const serviceableCouriers = Object.values(response.data.data.carrier_info || {}).map((carrier: any) => ({
+        id: carrier.carrier_id.toString(),
+        name: carrier.carrier_name,
+        code: carrier.carrier_code || carrier.carrier_name.toLowerCase().replace(/\s+/g, '_'),
+        serviceability: true,
+        data: carrier,
+      }));
 
       return {
         success: true,
-        message:
-          serviceableCouriers.length > 0
-            ? 'Serviceable couriers found'
-            : 'No serviceable couriers found',
+        message: serviceableCouriers.length > 0 ? 'Serviceable couriers found' : 'No serviceable couriers found',
         serviceableCouriers,
       };
     } catch (error: any) {
@@ -185,10 +170,7 @@ export class SmartShipVendor extends BaseVendor {
    * @param deliveryTypeId Delivery type ID (1 for express, 2 for surface)
    * @returns Promise resolving to registration result
    */
-  public async registerHub(
-    hubData: PickupAddress,
-    deliveryTypeId: number = 2
-  ): Promise<VendorRegistrationResult> {
+  public async registerHub(hubData: PickupAddress, deliveryTypeId: number = 2): Promise<VendorRegistrationResult> {
     try {
       const token = await this.getAuthToken();
 
@@ -228,12 +210,7 @@ export class SmartShipVendor extends BaseVendor {
         },
       };
 
-      const response = await this.makeRequest(
-        APIs.SMART_SHIP.HUB_REGISTRATION,
-        'POST',
-        payload,
-        apiConfig
-      );
+      const response = await this.makeRequest(APIs.SMART_SHIP.HUB_REGISTRATION, 'POST', payload, apiConfig);
 
       const smartShipData = response.data as {
         status: boolean;
@@ -273,9 +250,7 @@ export class SmartShipVendor extends BaseVendor {
    * @param hubData Hub data for registration
    * @returns Promise resolving to registration result
    */
-  public async registerHubWithBothDeliveryTypes(
-    hubData: PickupAddress
-  ): Promise<VendorRegistrationResult> {
+  public async registerHubWithBothDeliveryTypes(hubData: PickupAddress): Promise<VendorRegistrationResult> {
     try {
       // Register with surface delivery type (3)
       const heavyResult = await this.registerHub(hubData, 3);
@@ -288,12 +263,9 @@ export class SmartShipVendor extends BaseVendor {
 
       // If either registration was successful, consider it a success
       const success = surfaceResult.success || expressResult.success;
-      const surfaceHubId =
-        surfaceResult.success && surfaceResult.data?.hubId ? surfaceResult.data.hubId : '0';
-      const expressHubId =
-        expressResult.success && expressResult.data?.hubId ? expressResult.data.hubId : '0';
-      const heavyHubId =
-        heavyResult.success && heavyResult.data?.hubId ? heavyResult.data.hubId : '0';
+      const surfaceHubId = surfaceResult.success && surfaceResult.data?.hubId ? surfaceResult.data.hubId : '0';
+      const expressHubId = expressResult.success && expressResult.data?.hubId ? expressResult.data.hubId : '0';
+      const heavyHubId = heavyResult.success && heavyResult.data?.hubId ? heavyResult.data.hubId : '0';
 
       return {
         success,
@@ -343,23 +315,13 @@ export class SmartShipVendor extends BaseVendor {
       const isExpressCourier = [DeliveryType.EXPRESS, DeliveryType.AIR].includes(courier.type);
       const isHeavyCouier = courier.weight_slab >= 10;
 
-      const hubCode = isHeavyCouier
-        ? hub.smart_ship_codes.heavy
-        : isExpressCourier
-          ? hub.smart_ship_codes.express
-          : hub.smart_ship_codes.surface;
+      const hubCode = isHeavyCouier ? hub.smart_ship_codes.heavy : isExpressCourier ? hub.smart_ship_codes.express : hub.smart_ship_codes.surface;
 
       const productValueWithTax = orderItems.reduce((acc: number, item: any) => {
-        return (
-          acc +
-          (Number(item.selling_price || 0) +
-            (Number(item.tax_rate || 0) / 100) * Number(item.selling_price || 0))
-        );
+        return acc + (Number(item.selling_price || 0) + (Number(item.tax_rate || 0) / 100) * Number(item.selling_price || 0));
       }, 0);
 
-      const totalOrderValue =
-        productValueWithTax *
-        Number(orderItems.reduce((acc: number, item: any) => acc + Number(item.units || 1), 0));
+      const totalOrderValue = productValueWithTax * Number(orderItems.reduce((acc: number, item: any) => acc + Number(item.units || 1), 0));
 
       const paymentType = paymentMethod === 'COD' ? 1 : 0;
 
@@ -417,12 +379,7 @@ export class SmartShipVendor extends BaseVendor {
         ],
       };
 
-      const response = await this.makeRequest(
-        APIs.SMART_SHIP.CREATE_SHIPMENT,
-        'POST',
-        payload,
-        apiConfig
-      );
+      const response = await this.makeRequest(APIs.SMART_SHIP.CREATE_SHIPMENT, 'POST', payload, apiConfig);
 
       const smartShipResponse = response.data;
 
@@ -439,9 +396,8 @@ export class SmartShipVendor extends BaseVendor {
         return {
           success: false,
           message:
-            smartShipResponse?.data?.errors?.data_discrepancy
-              .flatMap((error: any) => error.error.map((err: any) => err))
-              .join(', ') || 'Courier not serviceable',
+            smartShipResponse?.data?.errors?.data_discrepancy.flatMap((error: any) => error.error.map((err: any) => err)).join(', ') ||
+            'Courier not serviceable',
           data: response.data,
         };
       }
@@ -488,12 +444,7 @@ export class SmartShipVendor extends BaseVendor {
    * @param pickupData Pickup data
    * @returns Promise resolving to pickup scheduling result
    */
-  public async schedulePickup(pickupData: {
-    awb: string;
-    pickupDate: string;
-    hub: any;
-    shipment: any;
-  }): Promise<VendorPickupResult> {
+  public async schedulePickup(pickupData: { awb: string; pickupDate: string; hub: any; shipment: any }): Promise<VendorPickupResult> {
     try {
       const token = await this.getAuthToken();
 
@@ -572,10 +523,7 @@ export class SmartShipVendor extends BaseVendor {
    * @param cancelData Cancellation data
    * @returns Promise resolving to cancellation result
    */
-  public async cancelShipment(cancelData: {
-    awb: string;
-    shipment: any;
-  }): Promise<VendorCancellationResult> {
+  public async cancelShipment(cancelData: { awb: string; shipment: any }): Promise<VendorCancellationResult> {
     try {
       const token = await this.getAuthToken();
 
@@ -598,12 +546,7 @@ export class SmartShipVendor extends BaseVendor {
       };
 
       // Make the API request
-      const response = await this.makeRequest(
-        APIs.SMART_SHIP.CANCEL_SHIPMENT,
-        'POST',
-        requestBody,
-        { Authorization: token }
-      );
+      const response = await this.makeRequest(APIs.SMART_SHIP.CANCEL_SHIPMENT, 'POST', requestBody, { Authorization: token });
 
       // Check for errors in the response
       if (!response.data?.status) {
@@ -732,11 +675,7 @@ export class SmartShipVendor extends BaseVendor {
 
           // Map to bucket using helper method
           const bucket = this.bucketMappingService
-            ? await this.bucketMappingService.detectBucket(
-                statusText,
-                statusCode,
-                this.name.toUpperCase()
-              )
+            ? await this.bucketMappingService.detectBucket(statusText, statusCode, this.name.toUpperCase())
             : await this.mapStatusToBucket(statusText, statusCode);
 
           trackingEvents.push({
@@ -754,20 +693,12 @@ export class SmartShipVendor extends BaseVendor {
       }
 
       // Add current status if not already included in status history
-      if (
-        trackingData.current_status &&
-        !trackingEvents.some((e) => e.status === trackingData.current_status)
-      ) {
+      if (trackingData.current_status && !trackingEvents.some((e) => e.status === trackingData.current_status)) {
         const currentStatus = trackingData.current_status;
-        const currentStatusCode =
-          trackingData.current_status_code || currentStatus.toUpperCase().replace(/\s+/g, '_');
+        const currentStatusCode = trackingData.current_status_code || currentStatus.toUpperCase().replace(/\s+/g, '_');
 
         const currentBucket = this.bucketMappingService
-          ? await this.bucketMappingService.detectBucket(
-              currentStatus,
-              currentStatusCode,
-              this.name.toUpperCase()
-            )
+          ? await this.bucketMappingService.detectBucket(currentStatus, currentStatusCode, this.name.toUpperCase())
           : await this.mapStatusToBucket(currentStatus, currentStatusCode);
 
         trackingEvents.push({
@@ -895,20 +826,13 @@ export class SmartShipVendor extends BaseVendor {
       }
 
       // Extract customer details from shipment data or use provided data
-      const customerName = String(
-        ndrData.customer_name ?? ndrData.shipment?.order?.customer?.name ?? 'Customer'
-      );
+      const customerName = String(ndrData.customer_name ?? ndrData.shipment?.order?.customer?.name ?? 'Customer');
       const customerPhone = String(ndrData.phone ?? ndrData.shipment?.order?.customer?.phone ?? '');
-      const customerAddress = String(
-        ndrData.address ?? ndrData.shipment?.order?.customer?.address?.address ?? ''
-      );
+      const customerAddress = String(ndrData.address ?? ndrData.shipment?.order?.customer?.address?.address ?? '');
 
       // Get the client order reference ID
       const clientOrderReferenceId = String(
-        ndrData.client_order_reference_id ??
-          ndrData.shipment?.order?.order_reference_id ??
-          ndrData.shipment?.order?.code ??
-          ''
+        ndrData.client_order_reference_id ?? ndrData.shipment?.order?.order_reference_id ?? ndrData.shipment?.order?.code ?? ''
       );
 
       const requestBody = {
@@ -926,12 +850,7 @@ export class SmartShipVendor extends BaseVendor {
       };
 
       // Make API request to SmartShip NDR endpoint
-      const response = await this.makeRequest(
-        APIs.SMART_SHIP.ORDER_REATTEMPT,
-        'POST',
-        requestBody,
-        { Authorization: token }
-      );
+      const response = await this.makeRequest(APIs.SMART_SHIP.ORDER_REATTEMPT, 'POST', requestBody, { Authorization: token });
 
       // Check for authentication or authorization errors
       if (response.data?.status === '403') {

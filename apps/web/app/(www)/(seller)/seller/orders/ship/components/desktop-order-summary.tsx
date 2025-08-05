@@ -12,25 +12,9 @@ import {
   Separator,
 } from '@lorrigo/ui/components';
 import { currencyFormatter } from '@lorrigo/utils';
-import {
-  ChevronDown,
-  ChevronUp,
-  CreditCard,
-  MapPin,
-  Package,
-  TrendingUp,
-  Weight,
-} from 'lucide-react';
+import { ChevronDown, ChevronUp, CreditCard, MapPin, Package, TrendingUp, Weight } from 'lucide-react';
 
-export const DesktopOrderDetails = ({
-  order,
-  isOpen,
-  setIsOpen,
-}: {
-  order: any;
-  isOpen: boolean;
-  setIsOpen: (open: boolean) => void;
-}) => {
+export const DesktopOrderDetails = ({ order, isOpen, setIsOpen }: { order: any; isOpen: boolean; setIsOpen: (open: boolean) => void }) => {
   return (
     <div className="scrollbar-hide sticky top-0 hidden h-screen w-80 overflow-y-auto border-r border-gray-200 md:block dark:border-gray-800">
       <div className="space-y-6 p-6 lg:p-4 lg:pt-1">
@@ -46,12 +30,7 @@ export const DesktopOrderDetails = ({
             {/* Order ID */}
             <div className="rounded-lg p-3">
               <div className="text-sm font-medium text-blue-600 dark:text-white">Order ID</div>
-              <CopyBtn
-                text={order.order_number}
-                label={order.order_number}
-                labelClassName="text-blue-900 dark:text-white"
-                className="font-semibold"
-              />
+              <CopyBtn text={order.order_number} label={order.order_number} labelClassName="text-blue-900 dark:text-white" className="font-semibold" />
             </div>
 
             {/* Pickup Location */}
@@ -64,9 +43,7 @@ export const DesktopOrderDetails = ({
                 <div className="font-medium">
                   {order.hub.address.pincode}, {order.hub.address.city}
                 </div>
-                <div className="text-muted-foreground text-sm">
-                  {order.hub.address.state}, India
-                </div>
+                <div className="text-muted-foreground text-sm">{order.hub.address.state}, India</div>
               </div>
             </div>
 
@@ -82,9 +59,7 @@ export const DesktopOrderDetails = ({
                 <div className="font-medium">
                   {order.customer.address.pincode}, {order.customer.address.city}
                 </div>
-                <div className="text-muted-foreground text-sm">
-                  {order.customer.address.state}, India
-                </div>
+                <div className="text-muted-foreground text-sm">{order.customer.address.state}, India</div>
               </div>
             </div>
 
@@ -96,9 +71,7 @@ export const DesktopOrderDetails = ({
                 <CreditCard className="h-4 w-4" />
                 Order Value
               </div>
-              <div className="text-lg font-semibold text-green-600">
-                {currencyFormatter(order.total_amount)}
-              </div>
+              <div className="text-lg font-semibold text-green-600">{currencyFormatter(order.total_amount)}</div>
             </div>
 
             {/* Amount to collect */}
@@ -109,9 +82,7 @@ export const DesktopOrderDetails = ({
                     <CreditCard className="h-4 w-4" />
                     Amount to Collect
                   </div>
-                  <div className="text-lg font-semibold text-orange-600">
-                    {currencyFormatter(order.amount_to_collect)}
-                  </div>
+                  <div className="text-lg font-semibold text-orange-600">{currencyFormatter(order.amount_to_collect)}</div>
                 </div>
                 <Separator />
               </>
@@ -120,9 +91,7 @@ export const DesktopOrderDetails = ({
             {/* Payment Mode */}
             <div className="flex items-center justify-between">
               <div className="text-muted-foreground text-sm">Payment Mode</div>
-                        <Badge variant={order.payment_method === 'COD' ? 'destructive' : 'default'}>
-            {order.payment_method}
-              </Badge>
+              <Badge variant={order.payment_method === 'COD' ? 'destructive' : 'default'}>{order.payment_method}</Badge>
             </div>
 
             <Separator />

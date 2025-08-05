@@ -3,7 +3,6 @@ import { CustomerController } from './controller/customers-controller';
 import { CustomerService } from './services/customer-services';
 
 export default async function customerRoutes(fastify: FastifyInstance) {
-
   fastify.addHook('onRequest', fastify.authenticate);
   // Initialize services and controllers
   const customerService = new CustomerService(fastify);

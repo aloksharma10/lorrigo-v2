@@ -304,4 +304,4 @@ export interface PerformanceMetrics {
   activeConnections: number;
   queueSize: number;
   errorRate: number;
-} 
+}

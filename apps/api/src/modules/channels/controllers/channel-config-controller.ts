@@ -38,12 +38,7 @@ export class ChannelConfigController {
       const query = querySchema.parse(request.query);
       const { page, limit, search, is_active } = query;
 
-      const result = await this.channelConfigService.getAllChannelConfigs(
-        page,
-        limit,
-        search,
-        is_active
-      );
+      const result = await this.channelConfigService.getAllChannelConfigs(page, limit, search, is_active);
 
       return result;
     } catch (error) {
@@ -95,8 +90,7 @@ export class ChannelConfigController {
         return reply.code(400).send({ message: 'Invalid identifier' });
       }
 
-      const channelConfig =
-        await this.channelConfigService.getChannelConfigByIdentifier(identifier);
+      const channelConfig = await this.channelConfigService.getChannelConfigByIdentifier(identifier);
 
       if ('error' in channelConfig) {
         return reply.code(channelConfig.status).send({ message: channelConfig.error });

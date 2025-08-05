@@ -6,13 +6,7 @@ import { DataTable } from '@lorrigo/ui/components';
 import { DataTableColumnHeader } from '@lorrigo/ui/components';
 import { Button } from '@lorrigo/ui/components';
 import { MoreHorizontal, Plus, Edit, Trash2, User, Mail, Phone, MapPin } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from '@lorrigo/ui/components';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@lorrigo/ui/components';
 import { toast } from '@lorrigo/ui/components';
 import type { ColumnDef } from '@lorrigo/ui/components';
 import { useDebounce } from '@/lib/hooks/use-debounce';
@@ -46,14 +40,9 @@ export default function CustomersPage() {
   const debouncedGlobalFilter = useDebounce(globalFilter, 500);
 
   // API hooks
-  const { getCustomersQuery } =
-    useCustomerOperations();
+  const { getCustomersQuery } = useCustomerOperations();
 
-  const customersQuery = getCustomersQuery(
-    pagination.pageIndex + 1,
-    pagination.pageSize,
-    debouncedGlobalFilter
-  );
+  const customersQuery = getCustomersQuery(pagination.pageIndex + 1, pagination.pageSize, debouncedGlobalFilter);
 
   const { data, isLoading, isError } = customersQuery;
 
@@ -133,9 +122,7 @@ export default function CustomersPage() {
                 <span className="text-sm">{customer.phone}</span>
               </div>
             )}
-            {!customer.email && !customer.phone && (
-              <span className="text-muted-foreground text-sm">No contact info</span>
-            )}
+            {!customer.email && !customer.phone && <span className="text-muted-foreground text-sm">No contact info</span>}
           </div>
         );
       },
@@ -158,7 +145,7 @@ export default function CustomersPage() {
         return (
           <div className="flex max-w-xs items-start space-x-2">
             <MapPin className="mt-1 h-3 w-3 flex-shrink-0 text-gray-500" />
-            <HoverCardToolTip label="Customer Address" side='bottom' className='text-wrap w-80 max-w-xs'>
+            <HoverCardToolTip label="Customer Address" side="bottom" className="w-80 max-w-xs text-wrap">
               <div>{fullAddress}</div>
             </HoverCardToolTip>
           </div>
@@ -181,7 +168,7 @@ export default function CustomersPage() {
       header: ({ column }) => <DataTableColumnHeader column={column} title="Created" />,
       cell: ({ row }) => {
         const customer = row.original;
-        return <div className="text-muted-foreground text-sm">{customer.created_at.split("T")[0]}</div>;
+        return <div className="text-muted-foreground text-sm">{customer.created_at.split('T')[0]}</div>;
       },
       enableSorting: true,
       enableHiding: true,
@@ -193,9 +180,7 @@ export default function CustomersPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Customers</h1>
-          <p className="text-muted-foreground">
-            Manage your customer database and contact information
-          </p>
+          <p className="text-muted-foreground">Manage your customer database and contact information</p>
         </div>
       </div>
 

@@ -1,12 +1,7 @@
 'use client';
 import type { Table } from '@tanstack/react-table';
 import { Button } from '../button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '../dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../dropdown-menu';
 import { ChevronDown, X, Loader2 } from 'lucide-react';
 
 interface DataTableSelectedActionsProps<TData> {
@@ -19,10 +14,7 @@ interface DataTableSelectedActionsProps<TData> {
   }[];
 }
 
-export function DataTableSelectedActions<TData>({
-  table,
-  bulkActions = [],
-}: DataTableSelectedActionsProps<TData>) {
+export function DataTableSelectedActions<TData>({ table, bulkActions = [] }: DataTableSelectedActionsProps<TData>) {
   const selectedRowIds = Object.keys(table.getState().rowSelection);
   const selectedCount = selectedRowIds.length;
 
@@ -40,13 +32,7 @@ export function DataTableSelectedActions<TData>({
 
   return (
     <div className="bg-muted/50 flex items-center gap-2 rounded-md p-2">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => table.resetRowSelection()}
-        className="h-8 px-2"
-        disabled={isAnyActionLoading}
-      >
+      <Button variant="ghost" size="sm" onClick={() => table.resetRowSelection()} className="h-8 px-2" disabled={isAnyActionLoading}>
         <X className="mr-2 h-4 w-4" />
         Clear selection
       </Button>
@@ -76,12 +62,7 @@ export function DataTableSelectedActions<TData>({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               {bulkActions.map((action, index) => (
-                <DropdownMenuItem
-                  key={index}
-                  onClick={() => action.action(selectedRows)}
-                  disabled={action.isLoading}
-                  className="flex items-center"
-                >
+                <DropdownMenuItem key={index} onClick={() => action.action(selectedRows)} disabled={action.isLoading} className="flex items-center">
                   {action.isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {action.label}
                 </DropdownMenuItem>

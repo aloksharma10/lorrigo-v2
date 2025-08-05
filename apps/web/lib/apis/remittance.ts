@@ -39,24 +39,20 @@ export const fetchAdminRemittances = (params: {
 /**
  * Seller: Fetch remittance by ID
  */
-export const fetchSellerRemittanceById = (id: string) =>
-  api.get(`/remittance/${id}`);
+export const fetchSellerRemittanceById = (id: string) => api.get(`/remittance/${id}`);
 
 /**
  * Admin: Fetch remittance by ID
  */
-export const fetchAdminRemittanceById = (id: string) =>
-  api.get<any>(`/remittance/${id}`);
+export const fetchAdminRemittanceById = (id: string) => api.get<any>(`/remittance/${id}`);
 
 /**
  * Export remittances (admin or seller, based on endpoint)
  * @param params - All filters and 'type' (csv|xlsx)
  */
-export const exportAdminRemittances = (params: any): Promise<AxiosResponse<Blob>> =>
-  apiDownload.get('/export/remittances', { params });
+export const exportAdminRemittances = (params: any): Promise<AxiosResponse<Blob>> => apiDownload.get('/export/remittances', { params });
 
-export const exportSellerRemittances = (params: any): Promise<AxiosResponse<Blob>> =>
-  apiDownload.get('/remittance/export', { params });
+export const exportSellerRemittances = (params: any): Promise<AxiosResponse<Blob>> => apiDownload.get('/remittance/export', { params });
 
 /**
  * Export remittance detail (admin or seller, based on endpoint)
@@ -72,13 +68,12 @@ export const exportSellerRemittanceDetail = (id: string, type: 'csv' | 'xlsx' = 
 /**
  * Seller: Fetch own bank accounts
  */
-export const fetchUserBankAccounts = (params: { search?: string, page?: number; limit?: number } = {}) =>
-  api.get('/remittance/bank-accounts', { params });
+export const fetchUserBankAccounts = (params: { search?: string; page?: number; limit?: number } = {}) => api.get('/remittance/bank-accounts', { params });
 
 /**
  * Seller: Select a bank account for remittance
  */
-export const useSelectUserBankAccount = () =>{
+export const useSelectUserBankAccount = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: any) => api.post('/remittance/bank-accounts/select', data).then((res: any) => res),
@@ -95,7 +90,7 @@ export const useSelectUserBankAccount = () =>{
       toast.error((error as Error).message);
     },
   });
-}
+};
 // React Query hooks for remittance list/detail (admin & seller)
 export function useSellerRemittances(params: any) {
   const { isTokenReady } = useAuthToken();
@@ -154,14 +149,14 @@ export function useAdminRemittanceDetail(id: string) {
 /**
  * React Query hook: Fetch user bank accounts
  */
-export function useUserBankAccounts(params: { search?: string, page?: number; limit?: number } = {}) {
+export function useUserBankAccounts(params: { search?: string; page?: number; limit?: number } = {}) {
   const { isTokenReady } = useAuthToken();
   return useQuery({
     queryKey: ['user-bank-accounts', params],
     queryFn: () => fetchUserBankAccounts(params).then((res: any) => res),
     enabled: isTokenReady,
   });
-} 
+}
 
 export function useVerifyBankAccount() {
   return useMutation({

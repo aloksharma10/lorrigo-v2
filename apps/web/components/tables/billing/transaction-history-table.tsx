@@ -2,15 +2,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { History, ArrowUpDown, FileText, CreditCard } from 'lucide-react';
-import {
-  DataTable,
-  DataTableColumnHeader,
-  type ColumnDef,
-  type ColumnFiltersState,
-  Badge,
-  Alert,
-  AlertDescription,
-} from '@lorrigo/ui/components';
+import { DataTable, DataTableColumnHeader, type ColumnDef, type ColumnFiltersState, Badge, Alert, AlertDescription } from '@lorrigo/ui/components';
 import { CopyBtn } from '@/components/copy-btn';
 import { currencyFormatter } from '@lorrigo/utils';
 import { useWalletOperations } from '@/lib/apis/wallet';
@@ -21,11 +13,7 @@ interface TransactionHistoryTableProps {
   userId?: string;
 }
 
-export function TransactionHistoryTable({ 
-  className, 
-  entityType,
-  userId,
-}: TransactionHistoryTableProps) {
+export function TransactionHistoryTable({ className, entityType, userId }: TransactionHistoryTableProps) {
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 15,
@@ -38,9 +26,9 @@ export function TransactionHistoryTable({
   });
 
   // Get filter values - handle both single values and arrays
-  const transactionTypeFilter = filters.find(f => f.id === 'type')?.value as string[] | string | undefined;
-  const statusFilter = filters.find(f => f.id === 'status')?.value as string[] | string | undefined;
-  const entityTypeFilter = filters.find(f => f.id === 'entity_type')?.value as string[] | string | undefined;
+  const transactionTypeFilter = filters.find((f) => f.id === 'type')?.value as string[] | string | undefined;
+  const statusFilter = filters.find((f) => f.id === 'status')?.value as string[] | string | undefined;
+  const entityTypeFilter = filters.find((f) => f.id === 'entity_type')?.value as string[] | string | undefined;
 
   // Fetch transaction history
   const { getTransactionHistory } = useWalletOperations();
@@ -100,13 +88,11 @@ export function TransactionHistoryTable({
             <CopyBtn
               label={transaction.code}
               text={transaction.code}
-              className="text-blue-600 font-medium"
+              className="font-medium text-blue-600"
               labelClassName="text-blue-600 hover:underline"
               tooltipText="Copy Transaction ID"
             />
-            <div className="text-xs text-muted-foreground">
-              {new Date(transaction.created_at).toLocaleDateString()}
-            </div>
+            <div className="text-muted-foreground text-xs">{new Date(transaction.created_at).toLocaleDateString()}</div>
           </div>
         );
       },
@@ -121,11 +107,7 @@ export function TransactionHistoryTable({
         return (
           <div className="max-w-xs">
             <span className="font-medium">{transaction.description}</span>
-            {transaction.awb && (
-              <div className="text-xs text-muted-foreground mt-1">
-                AWB: {transaction.awb}
-              </div>
-            )}
+            {transaction.awb && <div className="text-muted-foreground mt-1 text-xs">AWB: {transaction.awb}</div>}
           </div>
         );
       },
@@ -138,14 +120,10 @@ export function TransactionHistoryTable({
       cell: ({ row }) => {
         const transaction = row.original;
         const isCredit = transaction.type === 'CREDIT';
-        
+
         return (
-          <Badge 
-            className={`flex items-center gap-1 w-fit ${
-              isCredit 
-                ? 'bg-green-100 text-green-800 border-green-200' 
-                : 'bg-red-100 text-red-800 border-red-200'
-            }`}
+          <Badge
+            className={`flex w-fit items-center gap-1 ${isCredit ? 'border-green-200 bg-green-100 text-green-800' : 'border-red-200 bg-red-100 text-red-800'}`}
           >
             <ArrowUpDown className={`h-3 w-3 ${isCredit ? 'rotate-180' : ''}`} />
             {transaction.type}
@@ -161,12 +139,11 @@ export function TransactionHistoryTable({
       cell: ({ row }) => {
         const transaction = row.original;
         const isCredit = transaction.type === 'CREDIT';
-        
+
         return (
-          <div className={`font-bold ${
-            isCredit ? 'text-green-600' : 'text-red-600'
-          }`}>
-            {isCredit ? '+' : '-'}{currencyFormatter(transaction.amount)}
+          <div className={`font-bold ${isCredit ? 'text-green-600' : 'text-red-600'}`}>
+            {isCredit ? '+' : '-'}
+            {currencyFormatter(transaction.amount)}
           </div>
         );
       },
@@ -178,44 +155,40 @@ export function TransactionHistoryTable({
       header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
       cell: ({ row }) => {
         const transaction = row.original;
-        
+
         const getStatusConfig = (status: string) => {
           switch (status) {
             case 'COMPLETED':
               return {
                 className: 'bg-green-100 text-green-800 border-green-200',
-                label: 'Completed'
+                label: 'Completed',
               };
             case 'PENDING':
               return {
                 className: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-                label: 'Pending'
+                label: 'Pending',
               };
             case 'FAILED':
               return {
                 className: 'bg-red-100 text-red-800 border-red-200',
-                label: 'Failed'
+                label: 'Failed',
               };
             case 'REFUNDED':
               return {
                 className: 'bg-blue-100 text-blue-800 border-blue-200',
-                label: 'Refunded'
+                label: 'Refunded',
               };
             default:
               return {
                 className: 'bg-gray-100 text-gray-800 border-gray-200',
-                label: status
+                label: status,
               };
           }
         };
 
         const config = getStatusConfig(transaction.status);
-        
-        return (
-          <Badge className={`${config.className} w-fit`}>
-            {config.label}
-          </Badge>
-        );
+
+        return <Badge className={`${config.className} w-fit`}>{config.label}</Badge>;
       },
       enableSorting: true,
       enableHiding: true,
@@ -225,7 +198,7 @@ export function TransactionHistoryTable({
       header: ({ column }) => <DataTableColumnHeader column={column} title="Entity" />,
       cell: ({ row }) => {
         const transaction = row.original;
-        
+
         const getEntityIcon = (entityType: string) => {
           switch (entityType) {
             case 'SHIPMENT':
@@ -240,10 +213,10 @@ export function TransactionHistoryTable({
         };
 
         const Icon = getEntityIcon(transaction.entity_type);
-        
+
         return (
           <div className="flex items-center gap-2">
-            <Icon className="h-4 w-4 text-muted-foreground" />
+            <Icon className="text-muted-foreground h-4 w-4" />
             <span className="text-sm">{transaction.entity_type}</span>
           </div>
         );
@@ -254,12 +227,9 @@ export function TransactionHistoryTable({
   ];
 
   // Handle pagination change
-  const handlePaginationChange = useCallback(
-    (newPagination: { pageIndex: number; pageSize: number }) => {
-      setPagination(newPagination);
-    },
-    []
-  );
+  const handlePaginationChange = useCallback((newPagination: { pageIndex: number; pageSize: number }) => {
+    setPagination(newPagination);
+  }, []);
 
   // Handle filters change
   const handleFiltersChange = useCallback((newFilters: ColumnFiltersState) => {
@@ -279,9 +249,7 @@ export function TransactionHistoryTable({
   if (isError) {
     return (
       <Alert className="m-4">
-        <AlertDescription>
-          Error loading transaction history. Please try again.
-        </AlertDescription>
+        <AlertDescription>Error loading transaction history. Please try again.</AlertDescription>
       </Alert>
     );
   }
@@ -325,4 +293,4 @@ export function TransactionHistoryTable({
       />
     </>
   );
-} 
+}

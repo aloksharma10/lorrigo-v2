@@ -108,9 +108,7 @@ export const PickupScheduleModal = () => {
           </div>
         )}
 
-        <p className="mb-4 text-sm text-gray-600">
-          Please select a suitable date for your order to be picked up
-        </p>
+        <p className="mb-4 text-sm text-gray-600">Please select a suitable date for your order to be picked up</p>
       </div>
 
       <Form {...form}>
@@ -129,11 +127,7 @@ export const PickupScheduleModal = () => {
                         className={`w-full pl-3 text-left font-normal ${!field.value && 'text-muted-foreground'}`}
                         disabled={isSubmitting}
                       >
-                        {field.value ? (
-                          format(field.value, 'PPP')
-                        ) : (
-                          <span>Please select a date</span>
-                        )}
+                        {field.value ? format(field.value, 'PPP') : <span>Please select a date</span>}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                       </Button>
                     </FormControl>
@@ -155,10 +149,7 @@ export const PickupScheduleModal = () => {
 
           <div className="mt-4">
             <div className="rounded-md bg-blue-50 p-4 text-sm text-blue-800">
-              <p>
-                In case you schedule the pick up for today, you will not be able to reschedule this
-                pick up.
-              </p>
+              <p>In case you schedule the pick up for today, you will not be able to reschedule this pick up.</p>
             </div>
           </div>
 
@@ -166,11 +157,7 @@ export const PickupScheduleModal = () => {
             <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
               I'll do it later
             </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="bg-indigo-600 hover:bg-indigo-700"
-            >
+            <Button type="submit" disabled={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700">
               {isSubmitting ? 'Scheduling...' : 'Schedule Pick Up'}
             </Button>
           </DialogFooter>

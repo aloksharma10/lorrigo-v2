@@ -59,7 +59,7 @@ export class AuthService {
     this.fastify = fastify;
   }
 
-    async register(data: RegisterData): Promise<AuthResponse> {
+  async register(data: RegisterData): Promise<AuthResponse> {
     // Check if user already exists
     const existingUser = await this.prisma.user.findUnique({
       where: { email: data.email },
@@ -85,99 +85,94 @@ export class AuthService {
       lastSequenceNumber: lastUserSequenceNumber,
     }).id;
 
-     const result = await this.prisma.$transaction(async (tx) => {
-       const user = await tx.user.create({
-         data: {
-           code,
-           email: data.email,
-           password: data.password,
-           name: data.name,
-           phone: data.phone,
-           role: 'SELLER', // Default role for new registrations
-         },
-       });
-
-       const lastWalletSequenceNumber = await tx.userWallet.count({
-         where: {
-           created_at: {
-             gte: new Date(new Date().getFullYear(), 0, 1),
-             lte: new Date(new Date().getFullYear(), 11, 31),
-           },
-         },
-       });
-
-       await tx.userWallet.create({
-         data: {
-           code: generateId({
-             tableName: 'wallet',
-             entityName: user.name,
-             lastUsedFinancialYear: getFinancialYear(new Date()),
-             lastSequenceNumber: lastWalletSequenceNumber,
-           }).id,
-           balance: 0,
-           hold_amount: 0,
-           usable_amount: 0,
-           user_id: user.id,
-         },
-       });
-
-       // Create user profile if business details provided
-       if (data.business_name || data.company || data.gst_no) {
-         await tx.userProfile.create({
-           data: {
-             user_id: user.id,
-             company: data.company || data.business_name,
-             gst_no: data.gst_no,
-             notification_settings: { 
-               whatsapp: true,
-               email: true,
-               sms: true,
-               push: true,
-             }
-           },
-         });
-       }
-
-       return user;
-     });
-
-            // Send welcome email using notification system (if available)
-       try {
-         if (this.fastify.notification) {
-           await this.fastify.notification.sendWelcomeEmail(data.email, {
-             userName: data.name,
-             loginUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login`,
-           });
-         }
-       } catch (emailError) {
-         console.error('Failed to send welcome email:', emailError);
-         // Don't fail registration if email fails
-       }
-
-      // Create JWT token for the new user
-      const token = this.fastify.jwt.sign({
-        id: result.id,
-        email: result.email,
-        role: result.role,
+    const result = await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          code,
+          email: data.email,
+          password: data.password,
+          name: data.name,
+          phone: data.phone,
+          role: 'SELLER', // Default role for new registrations
+        },
       });
 
-      return {
-        user: {
-          id: result.id,
-          email: result.email,
-          name: result.name,
-          role: result.role,
+      const lastWalletSequenceNumber = await tx.userWallet.count({
+        where: {
+          created_at: {
+            gte: new Date(new Date().getFullYear(), 0, 1),
+            lte: new Date(new Date().getFullYear(), 11, 31),
+          },
         },
-        token,
-      };
+      });
+
+      await tx.userWallet.create({
+        data: {
+          code: generateId({
+            tableName: 'wallet',
+            entityName: user.name,
+            lastUsedFinancialYear: getFinancialYear(new Date()),
+            lastSequenceNumber: lastWalletSequenceNumber,
+          }).id,
+          balance: 0,
+          hold_amount: 0,
+          usable_amount: 0,
+          user_id: user.id,
+        },
+      });
+
+      // Create user profile if business details provided
+      if (data.business_name || data.company || data.gst_no) {
+        await tx.userProfile.create({
+          data: {
+            user_id: user.id,
+            company: data.company || data.business_name,
+            gst_no: data.gst_no,
+            notification_settings: {
+              whatsapp: true,
+              email: true,
+              sms: true,
+              push: true,
+            },
+          },
+        });
+      }
+
+      return user;
+    });
+
+    // Send welcome email using notification system (if available)
+    try {
+      if (this.fastify.notification) {
+        await this.fastify.notification.sendWelcomeEmail(data.email, {
+          userName: data.name,
+          loginUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login`,
+        });
+      }
+    } catch (emailError) {
+      console.error('Failed to send welcome email:', emailError);
+      // Don't fail registration if email fails
     }
 
-  async login(
-    email: string,
-    password: string,
-    ipAddress: string,
-    deviceInfo?: any
-  ): Promise<LoginResult | LoginError> {
+    // Create JWT token for the new user
+    const token = this.fastify.jwt.sign({
+      id: result.id,
+      email: result.email,
+      role: result.role,
+    });
+
+    return {
+      user: {
+        id: result.id,
+        email: result.email,
+        name: result.name,
+        role: result.role,
+      },
+      token,
+    };
+  }
+
+  async login(email: string, password: string, ipAddress: string, deviceInfo?: any): Promise<LoginResult | LoginError> {
     // Find user by email
     const user = await this.prisma.user.findUnique({
       where: { email },
@@ -203,11 +198,7 @@ export class AuthService {
     return this.createUserSession(user, ipAddress, deviceInfo, 'credentials');
   }
 
-  async loginWithGoogle(
-    googleData: GoogleOAuthData,
-    ipAddress: string,
-    deviceInfo?: any
-  ): Promise<LoginResult | LoginError> {
+  async loginWithGoogle(googleData: GoogleOAuthData, ipAddress: string, deviceInfo?: any): Promise<LoginResult | LoginError> {
     try {
       // Check if user exists by email
       let user = await this.prisma.user.findUnique({
@@ -275,12 +266,12 @@ export class AuthService {
           await tx.userProfile.create({
             data: {
               user_id: newUser.id,
-              notification_settings: { 
+              notification_settings: {
                 whatsapp: true,
                 email: true,
                 sms: true,
                 push: true,
-              }
+              },
             },
           });
 
@@ -320,12 +311,7 @@ export class AuthService {
     }
   }
 
-  private async createUserSession(
-    user: any,
-    ipAddress: string,
-    deviceInfo?: any,
-    loginMethod: string = 'credentials'
-  ): Promise<LoginResult> {
+  private async createUserSession(user: any, ipAddress: string, deviceInfo?: any, loginMethod: string = 'credentials'): Promise<LoginResult> {
     // Create API request log
     await this.prisma.apiRequest.create({
       data: {
@@ -498,7 +484,7 @@ export class AuthService {
     if (!user.password) {
       throw new Error('User has no password set');
     }
-    
+
     const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
 
     if (!isCurrentPasswordValid) {
@@ -526,13 +512,7 @@ export class AuthService {
    * @param deviceInfo Device information
    * @returns Promise resolving to auth response
    */
-  public async handleShopifyOAuth(
-    code: string,
-    state: string,
-    shop: string,
-    ipAddress: string,
-    deviceInfo?: any
-  ): Promise<LoginResult | LoginError> {
+  public async handleShopifyOAuth(code: string, state: string, shop: string, ipAddress: string, deviceInfo?: any): Promise<LoginResult | LoginError> {
     try {
       // Create Shopify channel instance for OAuth
       const shopifyChannel = new ShopifyChannel(shop, '', this.fastify);
@@ -558,14 +538,14 @@ export class AuthService {
 
         // Delete OAuth state after successful authentication
         await shopifyChannel.deleteState(state);
-        
+
         return result;
       } catch (oauthError: any) {
         // Handle OAuth code already used error
         if (oauthError.message === 'OAUTH_CODE_ALREADY_USED') {
           // Try to find existing user by shop domain and create session
           const result = await shopifyChannel.handleExistingUserLogin(shop, ipAddress);
-          
+
           if ('error' in result) {
             await shopifyChannel.deleteState(state);
             return result;

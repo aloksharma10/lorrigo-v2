@@ -17,80 +17,36 @@ export async function bulkOperationsRoutes(fastify: FastifyInstance) {
   const preHandler = [checkAuth, authorizeRoles([Role.ADMIN, Role.SELLER])];
 
   // Get all bulk operations with pagination and filters
-  fastify.get(
-    '/',
-    { preHandler },
-    bulkOperationsController.getAllBulkOperations.bind(bulkOperationsController)
-  );
+  fastify.get('/', { preHandler }, bulkOperationsController.getAllBulkOperations.bind(bulkOperationsController));
 
   // Get bulk operation by ID
-  fastify.get(
-    '/:id',
-    { preHandler },
-    bulkOperationsController.getBulkOperation.bind(bulkOperationsController)
-  );
+  fastify.get('/:id', { preHandler }, bulkOperationsController.getBulkOperation.bind(bulkOperationsController));
 
   // Download bulk operation report or file
-  fastify.get(
-    '/:id/download',
-    { preHandler },
-    bulkOperationsController.downloadFile.bind(bulkOperationsController)
-  );
+  fastify.get('/:id/download', { preHandler }, bulkOperationsController.downloadFile.bind(bulkOperationsController));
 
   // POST routes
   // Create bulk shipments
-  fastify.post(
-    '/shipments',
-    { preHandler },
-    bulkOperationsController.createBulkShipments.bind(bulkOperationsController)
-  );
+  fastify.post('/shipments', { preHandler }, bulkOperationsController.createBulkShipments.bind(bulkOperationsController));
 
   // Schedule bulk pickups
-  fastify.post(
-    '/pickups',
-    { preHandler },
-    bulkOperationsController.scheduleBulkPickups.bind(bulkOperationsController)
-  );
+  fastify.post('/pickups', { preHandler }, bulkOperationsController.scheduleBulkPickups.bind(bulkOperationsController));
 
   // Cancel bulk shipments
-  fastify.post(
-    '/cancel',
-    { preHandler },
-    bulkOperationsController.cancelBulkShipments.bind(bulkOperationsController)
-  );
+  fastify.post('/cancel', { preHandler }, bulkOperationsController.cancelBulkShipments.bind(bulkOperationsController));
 
   // Generate bulk labels
-  fastify.post(
-    '/labels',
-    { preHandler },
-    bulkOperationsController.generateBulkLabels.bind(bulkOperationsController)
-  );
+  fastify.post('/labels', { preHandler }, bulkOperationsController.generateBulkLabels.bind(bulkOperationsController));
 
   // Edit bulk pickup addresses
-  fastify.post(
-    '/pickup-addresses',
-    { preHandler },
-    bulkOperationsController.editBulkPickupAddresses.bind(bulkOperationsController)
-  );
+  fastify.post('/pickup-addresses', { preHandler }, bulkOperationsController.editBulkPickupAddresses.bind(bulkOperationsController));
 
   // Bulk upload orders
-  fastify.post(
-    '/orders',
-    { preHandler },
-    bulkOperationsController.bulkUploadOrders.bind(bulkOperationsController)
-  );
+  fastify.post('/orders', { preHandler }, bulkOperationsController.bulkUploadOrders.bind(bulkOperationsController));
 
   // Upload weight dispute CSV (admin)
-  fastify.post(
-    '/billing-weight-csv',
-    { preHandler },
-    bulkOperationsController.uploadWeightCsv.bind(bulkOperationsController)
-  );
+  fastify.post('/billing-weight-csv', { preHandler }, bulkOperationsController.uploadWeightCsv.bind(bulkOperationsController));
 
   // Upload dispute actions CSV (seller/admin)
-  fastify.post(
-    '/dispute-actions-csv',
-    { preHandler },
-    bulkOperationsController.uploadDisputeActionsCsv.bind(bulkOperationsController)
-  );
+  fastify.post('/dispute-actions-csv', { preHandler }, bulkOperationsController.uploadDisputeActionsCsv.bind(bulkOperationsController));
 }

@@ -8,7 +8,6 @@ export default async function passkeyRoutes(fastify: FastifyInstance) {
 
   // Generate registration options
   fastify.post('/register/:userId/options', {
-  
     handler: (request, reply) => passkeyController.generateRegistrationOptions(request, reply),
   });
 
@@ -91,7 +90,7 @@ export default async function passkeyRoutes(fastify: FastifyInstance) {
   fastify.get('/:userId', {
     schema: {
       tags: ['Passkey'],
-      summary: 'Get user\'s passkeys',
+      summary: "Get user's passkeys",
       params: {
         type: 'object',
         properties: {
@@ -152,4 +151,4 @@ export default async function passkeyRoutes(fastify: FastifyInstance) {
     },
     handler: (request, reply) => passkeyController.deletePasskey(request, reply),
   });
-} 
+}

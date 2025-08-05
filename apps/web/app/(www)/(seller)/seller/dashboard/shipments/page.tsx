@@ -14,7 +14,9 @@ export default function ShipmentsPage() {
   const isLoading = performance.isLoading;
 
   // Map courier performance to table format
-  const courierTableData = (Array.isArray((analytics as ShipmentPerformanceAnalytics).courierPerformance) ? (analytics as ShipmentPerformanceAnalytics).courierPerformance : []).map((item: any) => ({
+  const courierTableData = (
+    Array.isArray((analytics as ShipmentPerformanceAnalytics).courierPerformance) ? (analytics as ShipmentPerformanceAnalytics).courierPerformance : []
+  ).map((item: any) => ({
     courier: item.courierName,
     totalShipments: item.totalShipments,
     delivered: item.delivered,
@@ -27,7 +29,9 @@ export default function ShipmentsPage() {
   }));
 
   // Map zone performance to chart format
-  const zoneChartData = (Array.isArray((analytics as ShipmentPerformanceAnalytics).zonePerformance) ? (analytics as ShipmentPerformanceAnalytics).zonePerformance : []).map((item: any) => ({
+  const zoneChartData = (
+    Array.isArray((analytics as ShipmentPerformanceAnalytics).zonePerformance) ? (analytics as ShipmentPerformanceAnalytics).zonePerformance : []
+  ).map((item: any) => ({
     name: item.zone,
     Delivered: item.delivered,
     RTO: item.rto,
@@ -35,19 +39,25 @@ export default function ShipmentsPage() {
   }));
 
   // Map channel analysis to table format
-  const channelTableData = (Array.isArray((analytics as ShipmentPerformanceAnalytics).channelAnalysis) ? (analytics as ShipmentPerformanceAnalytics).channelAnalysis : []).map((item: any) => ({
+  const channelTableData = (
+    Array.isArray((analytics as ShipmentPerformanceAnalytics).channelAnalysis) ? (analytics as ShipmentPerformanceAnalytics).channelAnalysis : []
+  ).map((item: any) => ({
     channel: item.channel,
     orders: item.totalOrders,
   }));
 
   // Map weight analysis to pie chart format
-  const weightProfileData = (Array.isArray((analytics as ShipmentPerformanceAnalytics).weightAnalysis) ? (analytics as ShipmentPerformanceAnalytics).weightAnalysis : []).map((item: any) => ({
+  const weightProfileData = (
+    Array.isArray((analytics as ShipmentPerformanceAnalytics).weightAnalysis) ? (analytics as ShipmentPerformanceAnalytics).weightAnalysis : []
+  ).map((item: any) => ({
     name: item.weightRange,
     value: item.count,
   }));
 
   // Map zone performance to pie chart format
-  const shipmentZoneData = (Array.isArray((analytics as ShipmentPerformanceAnalytics).zonePerformance) ? (analytics as ShipmentPerformanceAnalytics).zonePerformance : []).map((item: any) => ({
+  const shipmentZoneData = (
+    Array.isArray((analytics as ShipmentPerformanceAnalytics).zonePerformance) ? (analytics as ShipmentPerformanceAnalytics).zonePerformance : []
+  ).map((item: any) => ({
     name: item.zone,
     value: item.totalShipments,
   }));
@@ -82,9 +92,7 @@ export default function ShipmentsPage() {
                   </div>
                </div> */}
 
-          <div className="text-muted-foreground mb-6 text-sm">
-            All data in the Dashboard is displayed based on the Shipment assignment date.
-          </div>
+          <div className="text-muted-foreground mb-6 text-sm">All data in the Dashboard is displayed based on the Shipment assignment date.</div>
 
           {/* Courier-wise Shipments Table */}
           <div className="mb-6">
@@ -162,9 +170,7 @@ export default function ShipmentsPage() {
             </ChartCard>
           </div>
 
-          <div className="text-muted-foreground text-xs">
-            Note: Last updated on 21 May 2025. There might be a slight mismatch in the data.
-          </div>
+          <div className="text-muted-foreground text-xs">Note: Last updated on 21 May 2025. There might be a slight mismatch in the data.</div>
         </div>
       </div>
     </>

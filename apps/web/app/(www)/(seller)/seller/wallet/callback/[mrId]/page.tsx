@@ -5,9 +5,7 @@ import { useParams } from 'next/navigation';
 export default function WalletRechargeCallback() {
   const params = useParams();
   const [shouldClose, setShouldClose] = useState(false);
-  const [messageStatus, setMessageStatus] = useState<'processing' | 'success' | 'error'>(
-    'processing'
-  );
+  const [messageStatus, setMessageStatus] = useState<'processing' | 'success' | 'error'>('processing');
 
   useEffect(() => {
     const merchantTransactionId = params.mrId;
@@ -96,18 +94,8 @@ export default function WalletRechargeCallback() {
           {messageStatus === 'success' && (
             <>
               <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
-                <svg
-                  className="h-5 w-5 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
+                <svg className="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
               <h2 className="mb-2 text-lg font-semibold text-gray-800">Payment Detected! ✅</h2>
@@ -118,18 +106,8 @@ export default function WalletRechargeCallback() {
           {messageStatus === 'error' && (
             <>
               <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
-                <svg
-                  className="h-5 w-5 text-red-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
+                <svg className="h-5 w-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </div>
               <h2 className="mb-2 text-lg font-semibold text-gray-800">Processing Error ❌</h2>

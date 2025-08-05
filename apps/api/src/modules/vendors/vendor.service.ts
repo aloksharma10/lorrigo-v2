@@ -3,13 +3,7 @@ import { BaseVendor } from './base-vendor';
 import { ShiprocketVendor } from './shiprocket.vendor';
 import { DelhiveryVendorFactory, DelhiveryVendor } from './delhivery.vendor';
 import { SmartShipVendor } from './smart-ship.vendor';
-import {
-  VendorServiceabilityResult,
-  ShipmentTrackingData,
-  TrackingEventData,
-  NDRData,
-  VendorNDRResult,
-} from '@/types/vendor';
+import { VendorServiceabilityResult, ShipmentTrackingData, TrackingEventData, NDRData, VendorNDRResult } from '@/types/vendor';
 import { FastifyInstance } from 'fastify';
 import { Courier, Order, ShipmentStatus } from '@lorrigo/db';
 import { ShipmentBucketManager } from '@lorrigo/utils';
@@ -106,9 +100,7 @@ export class VendorService {
     try {
       // Determine which vendors to check
       const vendorsToCheck =
-        vendorNames && vendorNames.length > 0
-          ? (vendorNames.map((name) => this.vendors.get(name)).filter(Boolean) as BaseVendor[])
-          : this.getAllVendors();
+        vendorNames && vendorNames.length > 0 ? (vendorNames.map((name) => this.vendors.get(name)).filter(Boolean) as BaseVendor[]) : this.getAllVendors();
 
       if (vendorsToCheck.length === 0) {
         return {
@@ -130,7 +122,7 @@ export class VendorService {
             dimensions,
             paymentType,
             orderValue,
-            collectableAmount,
+            collectableAmount
           );
           return { vendorName, result };
         } catch (error) {
@@ -155,15 +147,11 @@ export class VendorService {
       });
 
       // Determine overall success
-      const anyServiceable = results.some(
-        ({ result }) => result.success && result.serviceableCouriers.length > 0
-      );
+      const anyServiceable = results.some(({ result }) => result.success && result.serviceableCouriers.length > 0);
 
       return {
         success: anyServiceable,
-        message: anyServiceable
-          ? 'Serviceable couriers found'
-          : 'No serviceable couriers found across vendors',
+        message: anyServiceable ? 'Serviceable couriers found' : 'No serviceable couriers found across vendors',
         serviceableVendors,
       };
     } catch (error) {
@@ -305,105 +293,94 @@ export class VendorService {
       });
 
       // Check serviceability for each vendor with their associated couriers
-      const serviceabilityPromises = Object.entries(couriersByVendor).map(
-        async ([vendorName, couriers]) => {
-          const vendor = this.getVendor(vendorName);
-          if (!vendor) return null;
+      const serviceabilityPromises = Object.entries(couriersByVendor).map(async ([vendorName, couriers]) => {
+        const vendor = this.getVendor(vendorName);
+        if (!vendor) return null;
 
-          const courierIds = couriers.map((c) => c.courierId);
-          try {
-            // Different vendors have different parameter requirements
-            // We need to adapt based on the vendor name
-            let result;
+        const courierIds = couriers.map((c) => c.courierId);
+        try {
+          // Different vendors have different parameter requirements
+          // We need to adapt based on the vendor name
+          let result;
 
-            if (vendorName.startsWith('DELHIVERY')) {
-              // Delhivery vendors have extended the base interface with additional parameters
-              // Use type assertion to call with the extended parameter list
-              const delhiveryVendor = vendor as DelhiveryVendor;
-              result = await delhiveryVendor.checkServiceability(
-                isReverseOrder,
-                pickupPincode,
-                deliveryPincode,
-                volumeWeight,
-                dimensions,
-                paymentType,
-                orderValue,
-                collectableAmount,
-                courierIds,
-                couriers
-              );
-            } else {
-              // Default call for other vendors that follow the base interface
-              result = await vendor.checkServiceability(
-                isReverseOrder,
-                pickupPincode,
-                deliveryPincode,
-                volumeWeight,
-                dimensions,
-                paymentType,
-                orderValue,
-                collectableAmount,
-                courierIds,
-              );
-            }
-
-            // Match serviceability results with courier pricing
-            return {
-              vendorName,
-              result: {
-                ...result,
-                serviceableCouriers: result.serviceableCouriers.map((sc: any) => {
-                  // Find courier in the plan
-                  const courierInfo = couriers.find(
-                    (c) => c.courierId === sc.id || c.courier.code === sc.code
-                  );
-                  // Find pricing for this courier
-                  const pricing = user?.plan?.plan_courier_pricings?.find(
-                    (p) => p.courier_id === courierInfo?.courier.id
-                  );
-
-                  return {
-                    id: courierInfo?.courier.id,
-                    name: courierInfo?.courier.name,
-                    code: courierInfo?.courier.code,
-                    serviceability: sc.serviceability,
-                    data: {
-                      min_weight: sc.data.min_weight,
-                      estimated_delivery_days: sc.data.estimated_delivery_days,
-                      etd: sc.data.etd,
-                      rating: sc.data.rating ?? 4,
-                      pickup_performance: sc.data.pickup_performance,
-                      rto_performance: sc.data.rto_performance,
-                      delivery_performance: sc.data.delivery_performance,
-                      zone: sc.data.zone,
-                    },
-                    pricing: pricing || null,
-                    vendor: vendorName,
-                    recommended: courierInfo?.courier.is_recommended,
-                  };
-                }),
-              },
-            };
-          } catch (error) {
-            console.error(`Error checking serviceability for ${vendorName}:`, error);
-            return null;
+          if (vendorName.startsWith('DELHIVERY')) {
+            // Delhivery vendors have extended the base interface with additional parameters
+            // Use type assertion to call with the extended parameter list
+            const delhiveryVendor = vendor as DelhiveryVendor;
+            result = await delhiveryVendor.checkServiceability(
+              isReverseOrder,
+              pickupPincode,
+              deliveryPincode,
+              volumeWeight,
+              dimensions,
+              paymentType,
+              orderValue,
+              collectableAmount,
+              courierIds,
+              couriers
+            );
+          } else {
+            // Default call for other vendors that follow the base interface
+            result = await vendor.checkServiceability(
+              isReverseOrder,
+              pickupPincode,
+              deliveryPincode,
+              volumeWeight,
+              dimensions,
+              paymentType,
+              orderValue,
+              collectableAmount,
+              courierIds
+            );
           }
+
+          // Match serviceability results with courier pricing
+          return {
+            vendorName,
+            result: {
+              ...result,
+              serviceableCouriers: result.serviceableCouriers.map((sc: any) => {
+                // Find courier in the plan
+                const courierInfo = couriers.find((c) => c.courierId === sc.id || c.courier.code === sc.code);
+                // Find pricing for this courier
+                const pricing = user?.plan?.plan_courier_pricings?.find((p) => p.courier_id === courierInfo?.courier.id);
+
+                return {
+                  id: courierInfo?.courier.id,
+                  name: courierInfo?.courier.name,
+                  code: courierInfo?.courier.code,
+                  serviceability: sc.serviceability,
+                  data: {
+                    min_weight: sc.data.min_weight,
+                    estimated_delivery_days: sc.data.estimated_delivery_days,
+                    etd: sc.data.etd,
+                    rating: sc.data.rating ?? 4,
+                    pickup_performance: sc.data.pickup_performance,
+                    rto_performance: sc.data.rto_performance,
+                    delivery_performance: sc.data.delivery_performance,
+                    zone: sc.data.zone,
+                  },
+                  pricing: pricing || null,
+                  vendor: vendorName,
+                  recommended: courierInfo?.courier.is_recommended,
+                };
+              }),
+            },
+          };
+        } catch (error) {
+          console.error(`Error checking serviceability for ${vendorName}:`, error);
+          return null;
         }
-      );
+      });
 
       const results = await Promise.all(serviceabilityPromises);
 
       // Combine serviceable couriers from all vendors
-      const allServiceableCouriers = results
-        .filter(Boolean)
-        .flatMap((result) => result?.result.serviceableCouriers || []);
+      const allServiceableCouriers = results.filter(Boolean).flatMap((result) => result?.result.serviceableCouriers || []);
 
       const finalResult = {
         success: allServiceableCouriers.length > 0,
-        message:
-          allServiceableCouriers.length > 0
-            ? 'Serviceable couriers found'
-            : 'No serviceable couriers found for the plan',
+        message: allServiceableCouriers.length > 0 ? 'Serviceable couriers found' : 'No serviceable couriers found for the plan',
         serviceableCouriers: allServiceableCouriers,
       };
 
@@ -544,8 +521,7 @@ export class VendorService {
       console.error(`Error creating shipment with vendor ${vendorName}:`, error);
       return {
         success: false,
-        message:
-          error instanceof Error ? error.message : `Failed to create shipment with ${vendorName}`,
+        message: error instanceof Error ? error.message : `Failed to create shipment with ${vendorName}`,
         data: null,
       };
     }
@@ -595,8 +571,7 @@ export class VendorService {
       console.error(`Error scheduling pickup with vendor ${vendorName}:`, error);
       return {
         success: false,
-        message:
-          error instanceof Error ? error.message : `Failed to schedule pickup with ${vendorName}`,
+        message: error instanceof Error ? error.message : `Failed to schedule pickup with ${vendorName}`,
         pickup_date: null,
         data: null,
       };
@@ -642,8 +617,7 @@ export class VendorService {
       console.error(`Error cancelling shipment with vendor ${vendorName}:`, error);
       return {
         success: false,
-        message:
-          error instanceof Error ? error.message : `Failed to cancel shipment with ${vendorName}`,
+        message: error instanceof Error ? error.message : `Failed to cancel shipment with ${vendorName}`,
         data: null,
       };
     }
@@ -741,8 +715,7 @@ export class VendorService {
       console.error(`Error tracking shipment with vendor ${vendorName}:`, error);
       return {
         success: false,
-        message:
-          error instanceof Error ? error.message : `Failed to track shipment with ${vendorName}`,
+        message: error instanceof Error ? error.message : `Failed to track shipment with ${vendorName}`,
         trackingEvents: [],
         data: null,
       };
@@ -840,9 +813,7 @@ export class VendorService {
         }
 
         // Get status from bucket
-        const newStatus = ShipmentBucketManager.getStatusFromBucket(
-          trackingResult.latestBucket
-        ) as ShipmentStatus;
+        const newStatus = ShipmentBucketManager.getStatusFromBucket(trackingResult.latestBucket) as ShipmentStatus;
 
         // If status has changed, update it
         if (newStatus && newStatus !== shipment.status) {
@@ -977,8 +948,7 @@ export class VendorService {
       console.error(`Error handling NDR action with vendor ${vendorName}:`, error);
       return {
         success: false,
-        message:
-          error instanceof Error ? error.message : `Failed to handle NDR action with ${vendorName}`,
+        message: error instanceof Error ? error.message : `Failed to handle NDR action with ${vendorName}`,
         data: null,
       };
     }
@@ -1055,10 +1025,7 @@ export class VendorService {
           failed++;
         }
       } catch (error) {
-        console.error(
-          `Error processing NDR action for order ${ndrAction.ndrData.order_id}:`,
-          error
-        );
+        console.error(`Error processing NDR action for order ${ndrAction.ndrData.order_id}:`, error);
         results.push({
           vendorName: ndrAction.vendorName,
           orderId: ndrAction.ndrData.order_id,

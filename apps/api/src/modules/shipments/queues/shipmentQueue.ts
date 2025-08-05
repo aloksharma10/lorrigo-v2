@@ -5,22 +5,12 @@ import { CreateShipmentSchema, ShipmentBucketManager } from '@lorrigo/utils';
 import { QueueNames, addJob, initQueueEvents } from '@/lib/queue';
 import { APP_CONFIG } from '@/config/app';
 import { redis } from '@/lib/redis';
-import {
-  generateCsvReport,
-  mergePdfBuffers,
-  BulkOperationResult,
-} from '@/modules/bulk-operations/utils/file-utils';
+import { generateCsvReport, mergePdfBuffers, BulkOperationResult } from '@/modules/bulk-operations/utils/file-utils';
 import pLimit from 'p-limit';
 import csv from 'csvtojson';
 import { TransactionEntityType, TransactionType } from '@/modules/transactions/services/transaction-service';
 import { mapShipmentToBilling } from '@/modules/billing/utils/billing-mapper';
-import {
-  processShipmentTracking,
-  processTrackingRetry,
-  TrackingProcessor,
-  TrackingProcessorConfig,
-  processBulkShipmentTracking,
-} from '../batch/processor';
+import { processShipmentTracking, processTrackingRetry, TrackingProcessor, TrackingProcessorConfig, processBulkShipmentTracking } from '../batch/processor';
 import { ChargeType, ShipmentStatus } from '@lorrigo/db';
 import { calculateExcessCharges, getOrderZoneFromCourierZone } from '@/utils/calculate-order-price';
 import { TransactionService } from '@/modules/transactions/services/transaction-service';
@@ -240,23 +230,11 @@ export function initShipmentQueue(fastify: FastifyInstance, shipmentService: Shi
             return await TrackingProcessor.processRtoShipments(fastify, rtoBatchSize || 100);
 
           case JobType.PROCESS_NDR_DETAILS:
-            const {
-              shipmentId: ndrShipmentId,
-              awb,
-              vendorName,
-              orderId: ndrOrderId,
-            } = job.data as NdrDetailsJobData;
+            const { shipmentId: ndrShipmentId, awb, vendorName, orderId: ndrOrderId } = job.data as NdrDetailsJobData;
             if (!ndrShipmentId || !awb || !vendorName) {
               throw new Error('Missing required data for NDR details processing');
             }
-            return await TrackingProcessor.processNdrDetails(
-              fastify,
-              shipmentService,
-              ndrShipmentId,
-              awb,
-              vendorName,
-              ndrOrderId
-            );
+            return await TrackingProcessor.processNdrDetails(fastify, shipmentService, ndrShipmentId, awb, vendorName, ndrOrderId);
 
           case JobType.PROCESS_BULK_TRACKING_EVENTS:
             return await TrackingProcessor.processBulkTrackingEvents(fastify);
@@ -315,9 +293,7 @@ export function initShipmentQueue(fastify: FastifyInstance, shipmentService: Shi
       try {
         // Attempt to recover by cleaning up orphaned repeat jobs
         // const { cleanupOrphanedRepeatJobs } = require('@/lib/queue');
-        fastify.log.warn(
-          `Detected "Missing key for job repeat" error for job ${job?.id}, attempting recovery...`
-        );
+        fastify.log.warn(`Detected "Missing key for job repeat" error for job ${job?.id}, attempting recovery...`);
         // cleanupOrphanedRepeatJobs().then(() => {
         //   fastify.log.info(`Recovery attempt completed for job ${job?.id}`);
         // }).catch((cleanupErr: Error) => {
@@ -390,12 +366,12 @@ async function processVendorShipmentCreation(jobData: any, fastify: FastifyInsta
     codCharges,
     userId,
     isReverseOrder,
-    vendorResult
+    vendorResult,
   } = jobData;
 
   try {
     // Step 1: Create shipment on vendor's platform
-   
+
     const awb = vendorResult.awb;
     const hubCity = order.hub?.address?.city || 'Unknown';
     const orderZone = getOrderZoneFromCourierZone(selectedCourierRate.zoneName);
@@ -409,9 +385,7 @@ async function processVendorShipmentCreation(jobData: any, fastify: FastifyInsta
           awb,
           sr_shipment_id: vendorResult.data?.sr_shipment_id?.toString() || '',
           status: isSchedulePickup ? ShipmentStatus.PICKUP_SCHEDULED : ShipmentStatus.COURIER_ASSIGNED,
-          bucket: ShipmentBucketManager.getBucketFromStatus(
-            isSchedulePickup ? ShipmentStatus.PICKUP_SCHEDULED : ShipmentStatus.COURIER_ASSIGNED
-          ),
+          bucket: ShipmentBucketManager.getBucketFromStatus(isSchedulePickup ? ShipmentStatus.PICKUP_SCHEDULED : ShipmentStatus.COURIER_ASSIGNED),
           pickup_date: isSchedulePickup && vendorResult.pickup_date ? new Date(vendorResult.pickup_date) : null,
           routing_code: vendorResult.routingCode,
         },
@@ -423,9 +397,7 @@ async function processVendorShipmentCreation(jobData: any, fastify: FastifyInsta
           shipment_id: shipmentId,
           status: isSchedulePickup ? ShipmentStatus.PICKUP_SCHEDULED : ShipmentStatus.COURIER_ASSIGNED,
           location: hubCity,
-          description: isSchedulePickup
-            ? 'Shipment created and pickup scheduled'
-            : 'Shipment created and ready for pickup',
+          description: isSchedulePickup ? 'Shipment created and pickup scheduled' : 'Shipment created and ready for pickup',
         },
       });
 
@@ -492,10 +464,9 @@ async function processVendorShipmentCreation(jobData: any, fastify: FastifyInsta
     //   status: isSchedulePickup ? ShipmentStatus.PICKUP_SCHEDULED : ShipmentStatus.COURIER_ASSIGNED,
     //   pickup_date: isSchedulePickup && vendorResult.pickup_date ? vendorResult.pickup_date : null,
     // });
-
   } catch (error) {
     fastify.log.error(`Error in background vendor shipment creation for shipment ${shipmentId}:`, error);
-    
+
     // Update shipment status to indicate failure
     await fastify.prisma.shipment.update({
       where: { id: shipmentId },
@@ -519,11 +490,7 @@ async function processVendorShipmentCreation(jobData: any, fastify: FastifyInsta
  * @param fastify Fastify instance
  * @param shipmentService Shipment service
  */
-async function processBulkCreateShipment(
-  job: Job<BulkOperationJobData>,
-  fastify: FastifyInstance,
-  shipmentService: ShipmentService
-) {
+async function processBulkCreateShipment(job: Job<BulkOperationJobData>, fastify: FastifyInstance, shipmentService: ShipmentService) {
   const { data, userId, operationId } = job.data;
   const results: BulkOperationResult[] = [];
   let successCount = 0;
@@ -585,14 +552,10 @@ async function processBulkCreateShipment(
         // Try each courier in order until one succeeds
         for (const courierId of courierIds) {
           // Find the courier rate that matches the courier ID
-          const selectedRate = ratesResult.rates.find(
-            (rate: { id: string }) => rate.id === courierId
-          );
+          const selectedRate = ratesResult.rates.find((rate: { id: string }) => rate.id === courierId);
 
           if (!selectedRate) {
-            fastify.log.info(
-              `Courier ${courierId} not available for order ${orderId}, trying next courier`
-            );
+            fastify.log.info(`Courier ${courierId} not available for order ${orderId}, trying next courier`);
             continue; // Try next courier
           }
 
@@ -615,9 +578,7 @@ async function processBulkCreateShipment(
           const result = await shipmentService.createShipment(shipmentCreateData, userId);
 
           if (result.error) {
-            fastify.log.error(
-              `Failed to create shipment for order ${orderId} with courier ${courierId}: ${result.error}`
-            );
+            fastify.log.error(`Failed to create shipment for order ${orderId} with courier ${courierId}: ${result.error}`);
             // Continue to next courier if this one failed
             continue;
           } else {
@@ -625,9 +586,7 @@ async function processBulkCreateShipment(
             return {
               id: orderId,
               success: true,
-              message: shipmentData.is_schedule_pickup
-                ? 'Shipment created and pickup scheduled successfully'
-                : 'Shipment created successfully',
+              message: shipmentData.is_schedule_pickup ? 'Shipment created and pickup scheduled successfully' : 'Shipment created successfully',
               data: result.shipment,
               timestamp: new Date(),
             };
@@ -694,11 +653,7 @@ async function processBulkCreateShipment(
  * @param fastify Fastify instance
  * @param shipmentService Shipment service
  */
-async function processBulkSchedulePickup(
-  job: Job<BulkOperationJobData>,
-  fastify: FastifyInstance,
-  shipmentService: ShipmentService
-) {
+async function processBulkSchedulePickup(job: Job<BulkOperationJobData>, fastify: FastifyInstance, shipmentService: ShipmentService) {
   const { data, userId, operationId, pickup_date } = job.data;
   const results: BulkOperationResult[] = [];
   let successCount = 0;
@@ -720,11 +675,7 @@ async function processBulkSchedulePickup(
     return limit(async () => {
       try {
         // Schedule the pickup
-        const result = await shipmentService.schedulePickup(
-          item.shipment_id,
-          userId,
-          pickup_date
-        );
+        const result = await shipmentService.schedulePickup(item.shipment_id, userId, pickup_date);
 
         if (result.error) {
           return {
@@ -795,11 +746,7 @@ async function processBulkSchedulePickup(
  * @param fastify Fastify instance
  * @param shipmentService Shipment service
  */
-async function processBulkCancelShipment(
-  job: Job<BulkOperationJobData>,
-  fastify: FastifyInstance,
-  shipmentService: ShipmentService
-) {
+async function processBulkCancelShipment(job: Job<BulkOperationJobData>, fastify: FastifyInstance, shipmentService: ShipmentService) {
   const { data, userId, operationId, reason } = job.data;
   const results: BulkOperationResult[] = [];
   let successCount = 0;
@@ -821,12 +768,7 @@ async function processBulkCancelShipment(
     return limit(async () => {
       try {
         // Cancel the shipment
-        const result = await shipmentService.cancelShipment(
-          item.shipment_id,
-          'shipment',
-          userId,
-          reason
-        );
+        const result = await shipmentService.cancelShipment(item.shipment_id, 'shipment', userId, reason);
 
         if (result.error) {
           return {
@@ -897,11 +839,7 @@ async function processBulkCancelShipment(
  * @param fastify Fastify instance
  * @param shipmentService Shipment service
  */
-async function processBulkDownloadLabel(
-  job: Job<BulkOperationJobData>,
-  fastify: FastifyInstance,
-  shipmentService: ShipmentService
-) {
+async function processBulkDownloadLabel(job: Job<BulkOperationJobData>, fastify: FastifyInstance, shipmentService: ShipmentService) {
   const { data, userId, operationId } = job.data;
   const results: BulkOperationResult[] = [];
   let successCount = 0;
@@ -956,13 +894,10 @@ async function processBulkDownloadLabel(
         const vendorService = new VendorServiceClass(fastify);
 
         // Generate label using vendor service
-        const labelResult = await vendorService.generateLabel(
-          shipment.courier?.channel_config?.name || '',
-          {
-            awb: shipment.awb,
-            shipment,
-          }
-        );
+        const labelResult = await vendorService.generateLabel(shipment.courier?.channel_config?.name || '', {
+          awb: shipment.awb,
+          shipment,
+        });
 
         if (!labelResult.success || !labelResult.pdfBuffer) {
           return {
@@ -1044,11 +979,7 @@ async function processBulkDownloadLabel(
  * @param fastify Fastify instance
  * @param shipmentService Shipment service
  */
-async function processBulkEditPickupAddress(
-  job: Job<BulkOperationJobData>,
-  fastify: FastifyInstance,
-  shipmentService: ShipmentService
-) {
+async function processBulkEditPickupAddress(job: Job<BulkOperationJobData>, fastify: FastifyInstance, shipmentService: ShipmentService) {
   const { data, userId, operationId } = job.data;
   const results: BulkOperationResult[] = [];
   let successCount = 0;
@@ -1187,18 +1118,13 @@ async function processOptimizedBulkStatusUpdates(fastify: FastifyInstance): Prom
 }> {
   try {
     const BATCH_SIZE = 100;
-    
+
     // Get shipments that need status updates
     const shipments = await fastify.prisma.shipment.findMany({
       where: {
         awb: { not: null },
         status: {
-          notIn: [
-            ShipmentStatus.DELIVERED,
-            ShipmentStatus.RTO_DELIVERED,
-            ShipmentStatus.CANCELLED_SHIPMENT,
-            ShipmentStatus.CANCELLED_ORDER,
-          ],
+          notIn: [ShipmentStatus.DELIVERED, ShipmentStatus.RTO_DELIVERED, ShipmentStatus.CANCELLED_SHIPMENT, ShipmentStatus.CANCELLED_ORDER],
         },
       },
       select: {
@@ -1237,7 +1163,7 @@ async function processOptimizedBulkStatusUpdates(fastify: FastifyInstance): Prom
       fastify,
       new (await import('../../orders/services/order-service')).OrderService(fastify)
     );
-    
+
     const result = await processBulkShipmentTracking(fastify, shipmentService, shipments);
 
     fastify.log.info(`Optimized bulk status update completed: ${result.updated} updated, ${result.rtoProcessed} RTO processed`);
@@ -1302,7 +1228,10 @@ async function processDisputeActionsCsv(job: Job, fastify: FastifyInstance) {
       processed++;
     }
 
-    await fastify.prisma.bulkOperation.update({ where: { id: operationId }, data: { status: 'COMPLETED', processed_count: processed, success_count: processed } });
+    await fastify.prisma.bulkOperation.update({
+      where: { id: operationId },
+      data: { status: 'COMPLETED', processed_count: processed, success_count: processed },
+    });
     return { processed };
   } catch (err) {
     fastify.log.error(err);

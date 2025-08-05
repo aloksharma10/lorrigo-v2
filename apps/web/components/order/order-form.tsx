@@ -50,16 +50,7 @@ export interface OrderFormRef {
 }
 
 export const OrderForm = forwardRef<OrderFormRef, OrderFormProps>(
-  (
-    {
-      initialValues,
-      onSubmit,
-      isSubmitting = false,
-      submitButtonText = 'Create Order',
-      mode = 'create',
-    },
-    ref
-  ) => {
+  ({ initialValues, onSubmit, isSubmitting = false, submitButtonText = 'Create Order', mode = 'create' }, ref) => {
     const isEditMode = mode === 'edit';
     const isCloneMode = mode === 'clone';
 
@@ -142,16 +133,8 @@ export const OrderForm = forwardRef<OrderFormRef, OrderFormProps>(
       getFormValues: () => form.getValues(),
     }));
 
-    const {
-      cityState,
-      isTyping,
-      loading: isPincodeLoading,
-    } = useFetchCityState(form.watch('deliveryDetails.pincode'));
-    const {
-      cityState: sellerCityState,
-      isTyping: isSellerTyping,
-      loading: isSellerPincodeLoading,
-    } = useFetchCityState(form.watch('sellerDetails.pincode'));
+    const { cityState, isTyping, loading: isPincodeLoading } = useFetchCityState(form.watch('deliveryDetails.pincode'));
+    const { cityState: sellerCityState, isTyping: isSellerTyping, loading: isSellerPincodeLoading } = useFetchCityState(form.watch('sellerDetails.pincode'));
     const loading = isPincodeLoading || isTyping || isSellerPincodeLoading || isSellerTyping;
 
     // Set form values when initialValues change
@@ -248,10 +231,7 @@ export const OrderForm = forwardRef<OrderFormRef, OrderFormProps>(
         const validatedData = orderFormSchema.parse(values);
         await onSubmit(validatedData);
       } catch (error: any) {
-        toast.error(
-          error.response.data.message ||
-            'Failed to create order, Please Report us at support@lorrigo.in'
-        );
+        toast.error(error.response.data.message || 'Failed to create order, Please Report us at support@lorrigo.in');
         if (error instanceof z.ZodError) {
           // Set form errors
           error.errors.forEach((err) => {
@@ -307,11 +287,7 @@ export const OrderForm = forwardRef<OrderFormRef, OrderFormProps>(
                     </FormLabel>
                     <div className="flex flex-wrap gap-2">
                       {ORDER_CHANNELS.map((channel) => (
-                        <div
-                          key={channel.name}
-                          onClick={() => field.onChange(channel.name)}
-                          className="flex cursor-pointer items-center gap-2 capitalize"
-                        >
+                        <div key={channel.name} onClick={() => field.onChange(channel.name)} className="flex cursor-pointer items-center gap-2 capitalize">
                           <Badge variant={field.value === channel.name ? 'default' : 'outline'}>
                             {channel.icon} {channel.name.toLocaleLowerCase()}
                           </Badge>
@@ -328,9 +304,7 @@ export const OrderForm = forwardRef<OrderFormRef, OrderFormProps>(
                 name="orderId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="flex items-center text-sm font-medium">
-                      Order ID
-                    </FormLabel>
+                    <FormLabel className="flex items-center text-sm font-medium">Order ID</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Enter the order id"
@@ -370,9 +344,7 @@ export const OrderForm = forwardRef<OrderFormRef, OrderFormProps>(
           <Card>
             <CardHeader>
               <CardTitle>Delivery Details</CardTitle>
-              <p className="text-muted-foreground text-sm">
-                Enter the Delivery Details of your buyer for whom you are making this order
-              </p>
+              <p className="text-muted-foreground text-sm">Enter the Delivery Details of your buyer for whom you are making this order</p>
             </CardHeader>
             <CardContent>
               <DeliveryDetailsForm control={form.control} watch={form.watch} isLoading={loading} />
@@ -391,9 +363,7 @@ export const OrderForm = forwardRef<OrderFormRef, OrderFormProps>(
           <Card>
             <CardHeader>
               <CardTitle>Payment Details</CardTitle>
-              <p className="text-muted-foreground text-sm">
-                Select and enter the payment details, chosen by the buyer for this order.
-              </p>
+              <p className="text-muted-foreground text-sm">Select and enter the payment details, chosen by the buyer for this order.</p>
             </CardHeader>
             <CardContent>
               <PaymentMethodSelector control={form.control} watch={form.watch} />
@@ -403,9 +373,7 @@ export const OrderForm = forwardRef<OrderFormRef, OrderFormProps>(
           <Card>
             <CardHeader>
               <CardTitle>Invoice Details</CardTitle>
-              <p className="text-muted-foreground text-sm">
-                Provide the details of the invoice that includes all the ordered items
-              </p>
+              <p className="text-muted-foreground text-sm">Provide the details of the invoice that includes all the ordered items</p>
             </CardHeader>
             <CardContent>
               <InvoiceDetailsForm control={form.control} watch={form.watch} />
@@ -415,10 +383,7 @@ export const OrderForm = forwardRef<OrderFormRef, OrderFormProps>(
           <Card>
             <CardHeader>
               <CardTitle>Package Details</CardTitle>
-              <p className="text-muted-foreground text-sm">
-                Provide the details of the final package that includes all the ordered items packed
-                together.
-              </p>
+              <p className="text-muted-foreground text-sm">Provide the details of the final package that includes all the ordered items packed together.</p>
             </CardHeader>
             <CardContent>
               <PackageDetailsForm control={form.control} watch={form.watch} />

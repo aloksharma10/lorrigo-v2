@@ -15,11 +15,11 @@ export class OTPService {
   async generateOTP(payload: OTPPayload): Promise<{ success: boolean; message: string; otpId?: string }> {
     try {
       const { type, identifier, identifierType, purpose, metadata } = payload;
-      
+
       // Check cooldown period
       const cooldownKey = `${this.cooldownPrefix}${identifier}:${type}`;
       const cooldownRemaining = await redis.ttl(cooldownKey);
-      
+
       if (cooldownRemaining > 0) {
         const minutes = Math.ceil(cooldownRemaining / 60);
         return {
@@ -31,11 +31,11 @@ export class OTPService {
       // Check if there's an existing unexpired OTP
       const existingOTPKey = `${this.prefix}${identifier}:${type}`;
       const existingOTP = await redis.get(existingOTPKey);
-      
+
       if (existingOTP) {
         const otpData: OTPData = JSON.parse(existingOTP);
         const now = new Date();
-        
+
         if (otpData.expiresAt > now) {
           return {
             success: false,
@@ -65,18 +65,10 @@ export class OTPService {
 
       // Store OTP in Redis with expiry
       const otpKey = `${this.prefix}${identifier}:${type}`;
-      await redis.setex(
-        otpKey,
-        APP_CONFIG.NOTIFICATION.OTP.EXPIRY_MINUTES * 60,
-        JSON.stringify(otpData)
-      );
+      await redis.setex(otpKey, APP_CONFIG.NOTIFICATION.OTP.EXPIRY_MINUTES * 60, JSON.stringify(otpData));
 
       // Set cooldown period
-      await redis.setex(
-        cooldownKey,
-        APP_CONFIG.NOTIFICATION.OTP.COOLDOWN_MINUTES * 60,
-        '1'
-      );
+      await redis.setex(cooldownKey, APP_CONFIG.NOTIFICATION.OTP.COOLDOWN_MINUTES * 60, '1');
 
       return {
         success: true,
@@ -152,11 +144,7 @@ export class OTPService {
       // Verify OTP
       if (otpData.otp !== otp) {
         // Update attempts in Redis
-        await redis.setex(
-          otpKey,
-          APP_CONFIG.NOTIFICATION.OTP.EXPIRY_MINUTES * 60,
-          JSON.stringify(otpData)
-        );
+        await redis.setex(otpKey, APP_CONFIG.NOTIFICATION.OTP.EXPIRY_MINUTES * 60, JSON.stringify(otpData));
 
         const remainingAttempts = otpData.maxAttempts - otpData.attempts;
         return {
@@ -168,7 +156,7 @@ export class OTPService {
       // OTP is valid - mark as verified but keep for password reset
       otpData.verifiedAt = new Date();
       otpData.verified = true;
-      
+
       // Keep OTP for a short period (5 minutes) to allow password reset
       await redis.setex(
         otpKey,
@@ -239,11 +227,7 @@ export class OTPService {
       otpData.attempts = 0; // Reset attempts
 
       // Store updated OTP
-      await redis.setex(
-        otpKey,
-        APP_CONFIG.NOTIFICATION.OTP.EXPIRY_MINUTES * 60,
-        JSON.stringify(otpData)
-      );
+      await redis.setex(otpKey, APP_CONFIG.NOTIFICATION.OTP.EXPIRY_MINUTES * 60, JSON.stringify(otpData));
 
       return {
         success: true,
@@ -272,7 +256,7 @@ export class OTPService {
       }
 
       const otpData: OTPData = JSON.parse(otpDataString);
-      
+
       return {
         exists: true,
         expiresAt: otpData.expiresAt,
@@ -291,10 +275,10 @@ export class OTPService {
     try {
       const otpKey = `${this.prefix}${identifier}:${type}`;
       const cooldownKey = `${this.cooldownPrefix}${identifier}:${type}`;
-      
+
       await redis.del(otpKey);
       await redis.del(cooldownKey);
-      
+
       return true;
     } catch (error) {
       captureException(error as Error);
@@ -309,19 +293,19 @@ export class OTPService {
     try {
       const otpKey = `${this.prefix}${identifier}:${type}`;
       const otpDataString = await redis.get(otpKey);
-      
+
       if (!otpDataString) {
         return false;
       }
 
       const otpData: OTPData = JSON.parse(otpDataString);
-      
+
       // Only consume if OTP is verified
       if (otpData.verified) {
         await redis.del(otpKey);
         return true;
       }
-      
+
       return false;
     } catch (error) {
       captureException(error as Error);
@@ -370,4 +354,4 @@ export class OTPService {
 }
 
 // Export singleton instance
-export const otpService = new OTPService(); 
+export const otpService = new OTPService();

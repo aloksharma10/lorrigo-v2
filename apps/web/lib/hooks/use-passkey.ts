@@ -1,10 +1,5 @@
 import { useState } from 'react';
-import { 
-  startRegistration, 
-  startAuthentication,
-  type RegistrationResponseJSON,
-  type AuthenticationResponseJSON
-} from '@simplewebauthn/browser';
+import { startRegistration, startAuthentication, type RegistrationResponseJSON, type AuthenticationResponseJSON } from '@simplewebauthn/browser';
 import { api } from '@/lib/apis/axios';
 import { toast } from '@lorrigo/ui/components';
 
@@ -22,12 +17,12 @@ export const usePasskey = () => {
   // Register a new passkey
   const registerPasskey = async (userId: string) => {
     if (isLoading) return false; // Prevent duplicate requests
-    
+
     setIsLoading(true);
     try {
       // Get registration options from server
       const optionsResponse = await api.post(`/auth/passkey/register/${userId}/options`);
-      
+
       if (!(optionsResponse as any).success) {
         throw new Error('Failed to get registration options');
       }
@@ -62,7 +57,7 @@ export const usePasskey = () => {
     try {
       // Get authentication options from server
       const optionsResponse = await api.post('/auth/passkey/authenticate/options', { email });
-      
+
       if (!(optionsResponse as any).success) {
         throw new Error('Failed to get authentication options');
       }
@@ -78,7 +73,7 @@ export const usePasskey = () => {
 
       if ((verificationResponse as any).success) {
         toast.success('Authentication successful');
-        return (verificationResponse as any);
+        return verificationResponse as any;
       } else {
         throw new Error((verificationResponse as any).message || 'Authentication failed');
       }
@@ -127,10 +122,12 @@ export const usePasskey = () => {
 
   // Check if passkeys are supported
   const isPasskeySupported = () => {
-    return typeof window !== 'undefined' && 
-           window.PublicKeyCredential && 
-           typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === 'function' &&
-           typeof PublicKeyCredential.isConditionalMediationAvailable === 'function';
+    return (
+      typeof window !== 'undefined' &&
+      window.PublicKeyCredential &&
+      typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === 'function' &&
+      typeof PublicKeyCredential.isConditionalMediationAvailable === 'function'
+    );
   };
 
   return {
@@ -141,4 +138,4 @@ export const usePasskey = () => {
     isPasskeySupported,
     isLoading,
   };
-}; 
+};

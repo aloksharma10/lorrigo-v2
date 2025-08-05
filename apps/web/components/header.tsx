@@ -15,7 +15,7 @@ import { usePathname } from 'next/navigation';
 import { ChevronLeft, ChevronRight, LucideIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-export const Header = ({ menuItems }: { menuItems: { name: string; path: string, icon?: LucideIcon }[] }) => {
+export const Header = ({ menuItems }: { menuItems: { name: string; path: string; icon?: LucideIcon }[] }) => {
   const pathname = usePathname();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftShadow, setShowLeftShadow] = useState(false);
@@ -82,11 +82,7 @@ export const Header = ({ menuItems }: { menuItems: { name: string; path: string,
           )}
 
           {/* Scrollable navigation container */}
-          <div
-            ref={scrollContainerRef}
-            className="scrollbar-hide w-full overflow-x-auto"
-            onScroll={checkScrollPosition}
-          >
+          <div ref={scrollContainerRef} className="scrollbar-hide w-full overflow-x-auto" onScroll={checkScrollPosition}>
             <NavigationMenu>
               <NavigationMenuList className="flex w-full">
                 {menuItems.map((item) => (

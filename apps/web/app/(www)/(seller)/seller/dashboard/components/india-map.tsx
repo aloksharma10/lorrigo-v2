@@ -9,8 +9,7 @@ export function IndiaMap() {
       <div className="text-center">
         <p className="text-muted-foreground text-sm">India Map Visualization</p>
         <p className="text-muted-foreground mt-2 text-xs">
-          (In a real implementation, this would be an interactive map of India showing shipment
-          distribution)
+          (In a real implementation, this would be an interactive map of India showing shipment distribution)
         </p>
       </div>
     </div>

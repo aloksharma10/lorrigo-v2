@@ -57,10 +57,7 @@ export default function PlansTable({ onAssignPlan }: PlansTableProps) {
       id: 'select',
       header: ({ table }) => (
         <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && 'indeterminate')
-          }
+          checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all"
           disabled={isLoading}
@@ -94,9 +91,7 @@ export default function PlansTable({ onAssignPlan }: PlansTableProps) {
               )}
             </div>
             <div className="text-muted-foreground text-sm">{plan.description}</div>
-            <div className="text-muted-foreground mt-1 text-xs">
-              Created: {new Date(plan.createdAt).toLocaleDateString()}
-            </div>
+            <div className="text-muted-foreground mt-1 text-xs">Created: {new Date(plan.createdAt).toLocaleDateString()}</div>
           </div>
         );
       },
@@ -228,9 +223,7 @@ export default function PlansTable({ onAssignPlan }: PlansTableProps) {
       searchPlaceholder="Search plans..."
       isLoading={isLoading}
       isError={isError}
-      errorMessage={
-        error instanceof Error ? error.message : 'Failed to fetch plans. Please try again.'
-      }
+      errorMessage={error instanceof Error ? error.message : 'Failed to fetch plans. Please try again.'}
       manualPagination={false}
       manualSorting={false}
       manualFiltering={false}

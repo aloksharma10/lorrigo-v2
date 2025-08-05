@@ -15,10 +15,7 @@ export default function Page() {
             A powerful platform for managing your business operations, logistics, and more.
           </p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-            <Link
-              href="/auth/signin"
-              className="rounded-md bg-blue-600 px-8 py-3 text-base font-medium text-white hover:bg-blue-700"
-            >
+            <Link href="/auth/signin" className="rounded-md bg-blue-600 px-8 py-3 text-base font-medium text-white hover:bg-blue-700">
               Get Started
             </Link>
             <Link

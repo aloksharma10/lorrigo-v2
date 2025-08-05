@@ -75,8 +75,7 @@ async function insertOrderData(mongoData: any) {
         data: {
           weight: mongoData.orderWeight,
           dead_weight: mongoData.orderWeight,
-          volumetric_weight:
-            (mongoData.orderBoxLength * mongoData.orderBoxWidth * mongoData.orderBoxHeight) / 5000, // Example volumetric calculation
+          volumetric_weight: (mongoData.orderBoxLength * mongoData.orderBoxWidth * mongoData.orderBoxHeight) / 5000, // Example volumetric calculation
           length: mongoData.orderBoxLength,
           breadth: mongoData.orderBoxWidth,
           height: mongoData.orderBoxHeight,

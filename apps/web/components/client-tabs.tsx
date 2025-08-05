@@ -1,9 +1,9 @@
-"use client"
+'use client';
 
-import { useRef, useState, useEffect, type ForwardRefExoticComponent, type RefAttributes, useMemo } from "react"
-import { Box, ChevronLeft, ChevronRight, FileText, type LucideProps } from "lucide-react"
-import { Tabs, TabsList, TabsTrigger, Button } from "@lorrigo/ui/components"
-import { useRouter, usePathname } from "next/navigation"
+import { useRef, useState, useEffect, type ForwardRefExoticComponent, type RefAttributes, useMemo } from 'react';
+import { Box, ChevronLeft, ChevronRight, FileText, type LucideProps } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, Button } from '@lorrigo/ui/components';
+import { useRouter, usePathname } from 'next/navigation';
 import {
   Bell,
   Menu,
@@ -27,8 +27,8 @@ import {
   Truck,
   CheckCircle,
   RotateCcw,
-  List
-} from "lucide-react"
+  List,
+} from 'lucide-react';
 
 // Icon mapping to convert string names to components
 const iconMap = {
@@ -57,24 +57,24 @@ const iconMap = {
   List,
   Box,
   FileText,
-} as const
+} as const;
 
 interface ClientTabsProps {
   menuItems: {
-    name: string
-    path?: string
-    iconName?: string // Changed from icon to iconName
-    icon?: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>
-  }[]
-  onValueChange?: (value: string) => void
+    name: string;
+    path?: string;
+    iconName?: string; // Changed from icon to iconName
+    icon?: ForwardRefExoticComponent<Omit<LucideProps, 'ref'> & RefAttributes<SVGSVGElement>>;
+  }[];
+  onValueChange?: (value: string) => void;
 }
 
 export default function ClientTabs({ menuItems, onValueChange }: ClientTabsProps) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const tabsListRef = useRef<HTMLDivElement>(null)
-  const [showLeftArrow, setShowLeftArrow] = useState(false)
-  const [showRightArrow, setShowRightArrow] = useState(false)
+  const router = useRouter();
+  const pathname = usePathname();
+  const tabsListRef = useRef<HTMLDivElement>(null);
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(false);
 
   // Memoized mapping of iconName to icon component
   const processedMenuItems = useMemo(
@@ -84,74 +84,68 @@ export default function ClientTabs({ menuItems, onValueChange }: ClientTabsProps
         icon: item.iconName ? iconMap[item.iconName as keyof typeof iconMap] : item.icon,
       })),
     [menuItems]
-  )
+  );
 
   // Active tab value
-  const currentPath =
-    processedMenuItems.find((item) => item.path === pathname)?.path ||
-    processedMenuItems[0]?.path ||
-    ''
+  const currentPath = processedMenuItems.find((item) => item.path === pathname)?.path || processedMenuItems[0]?.path || '';
 
   // Route/tab change
   const handleValueChange = (value: string) => {
     if (value.includes('/')) {
-      router.push(value, { scroll: false })
+      router.push(value, { scroll: false });
     } else {
-      onValueChange?.(value)
+      onValueChange?.(value);
     }
-  }
+  };
 
   const checkScroll = () => {
-    if (!tabsListRef.current) return
-    const { scrollLeft, scrollWidth, clientWidth } = tabsListRef.current
-    setShowLeftArrow(scrollLeft > 0)
-    setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 1)
-  }
+    if (!tabsListRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = tabsListRef.current;
+    setShowLeftArrow(scrollLeft > 0);
+    setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 1);
+  };
 
   const scroll = (direction: 'left' | 'right') => {
-    if (!tabsListRef.current) return
-    const scrollAmount = 200
-    const newScrollLeft =
-      direction === 'left'
-        ? tabsListRef.current.scrollLeft - scrollAmount
-        : tabsListRef.current.scrollLeft + scrollAmount
+    if (!tabsListRef.current) return;
+    const scrollAmount = 200;
+    const newScrollLeft = direction === 'left' ? tabsListRef.current.scrollLeft - scrollAmount : tabsListRef.current.scrollLeft + scrollAmount;
 
     tabsListRef.current.scrollTo({
       left: newScrollLeft,
       behavior: 'smooth',
-    })
-  }
+    });
+  };
 
   useEffect(() => {
-    checkScroll()
-    window.addEventListener('resize', checkScroll)
-    return () => window.removeEventListener('resize', checkScroll)
-  }, [])
+    checkScroll();
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
+  }, []);
 
   useEffect(() => {
-    const tabsList = tabsListRef.current
+    const tabsList = tabsListRef.current;
     if (tabsList) {
-      tabsList.addEventListener('scroll', checkScroll)
-      return () => tabsList.removeEventListener('scroll', checkScroll)
+      tabsList.addEventListener('scroll', checkScroll);
+      return () => tabsList.removeEventListener('scroll', checkScroll);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
     if (tabsListRef.current) {
-      tabsListRef.current.scrollLeft = 0
-      const activeTab = tabsListRef.current.querySelector('[data-state="active"]')
+      tabsListRef.current.scrollLeft = 0;
+      const activeTab = tabsListRef.current.querySelector('[data-state="active"]');
       if (activeTab && !pathname.includes(processedMenuItems[0]?.path || '')) {
         setTimeout(() => {
           activeTab.scrollIntoView({
             behavior: 'smooth',
             block: 'nearest',
             inline: 'center',
-          })
-        }, 100)
+          });
+        }, 100);
       }
-      setTimeout(checkScroll, 200)
+      setTimeout(checkScroll, 200);
     }
-  }, [currentPath, pathname, processedMenuItems])
+  }, [currentPath, pathname, processedMenuItems]);
 
   return (
     <header className="dark:border-gray-800">
@@ -168,14 +162,14 @@ export default function ClientTabs({ menuItems, onValueChange }: ClientTabsProps
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-8 bg-gradient-to-r from-background to-transparent" />
+              <div className="from-background pointer-events-none absolute left-0 top-0 z-10 h-full w-8 bg-gradient-to-r to-transparent" />
             </>
           )}
 
           {/* Scrollable tab list */}
           <div ref={tabsListRef} className="scrollbar-hide w-full overflow-x-auto md:w-auto" onScroll={checkScroll}>
             <Tabs value={currentPath} onValueChange={handleValueChange} className="w-full">
-              <TabsList className="scrollbar-hide inline-flex w-max whitespace-nowrap gap-4 px-1 overflow-x-auto">
+              <TabsList className="scrollbar-hide inline-flex w-max gap-4 overflow-x-auto whitespace-nowrap px-1">
                 {processedMenuItems.map((item, index) => (
                   <TabsTrigger
                     key={index}
@@ -183,7 +177,7 @@ export default function ClientTabs({ menuItems, onValueChange }: ClientTabsProps
                     onClick={() => handleValueChange(item.path?.toLowerCase() || '')}
                     className="whitespace-nowrap"
                   >
-                    {item.icon && <item.icon className="h-4 w-4 mr-1" />}
+                    {item.icon && <item.icon className="mr-1 h-4 w-4" />}
                     {item.name}
                   </TabsTrigger>
                 ))}
@@ -202,11 +196,11 @@ export default function ClientTabs({ menuItems, onValueChange }: ClientTabsProps
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
-              <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-8 bg-gradient-to-l from-background to-transparent" />
+              <div className="from-background pointer-events-none absolute right-0 top-0 z-10 h-full w-8 bg-gradient-to-l to-transparent" />
             </>
           )}
         </div>
       </div>
     </header>
-  )
+  );
 }

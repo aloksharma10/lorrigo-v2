@@ -53,26 +53,18 @@ export const bucketToStatusMap: Record<number, string> = {
 };
 
 // Generate status-to-bucket mapping from bucket-to-status mapping
-export const statusToBucketMap: Record<string, number> = Object.entries(bucketToStatusMap)
-  .reduce((acc, [bucket, status]) => {
+export const statusToBucketMap: Record<string, number> = Object.entries(bucketToStatusMap).reduce(
+  (acc, [bucket, status]) => {
     acc[status] = parseInt(bucket, 10);
     return acc;
-  }, {} as Record<string, number>);
+  },
+  {} as Record<string, number>
+);
 
 // Add special mappings for getStatusBuckets function
 const statusToMultipleBucketsMap: Record<string, number[]> = {
-  'READY-TO-SHIP': [
-    ShipmentBucket.READY_TO_SHIP,
-    ShipmentBucket.COURIER_ASSIGNED,
-    ShipmentBucket.PICKUP_SCHEDULED,
-    ShipmentBucket.PICKED_UP,
-  ],
-  READY_TO_SHIP: [
-    ShipmentBucket.READY_TO_SHIP,
-    ShipmentBucket.COURIER_ASSIGNED,
-    ShipmentBucket.PICKUP_SCHEDULED,
-    ShipmentBucket.PICKED_UP,
-  ],
+  'READY-TO-SHIP': [ShipmentBucket.READY_TO_SHIP, ShipmentBucket.COURIER_ASSIGNED, ShipmentBucket.PICKUP_SCHEDULED, ShipmentBucket.PICKED_UP],
+  READY_TO_SHIP: [ShipmentBucket.READY_TO_SHIP, ShipmentBucket.COURIER_ASSIGNED, ShipmentBucket.PICKUP_SCHEDULED, ShipmentBucket.PICKED_UP],
   TRANSIT: [ShipmentBucket.IN_TRANSIT, ShipmentBucket.OUT_FOR_DELIVERY],
   IN_TRANSIT: [ShipmentBucket.IN_TRANSIT, ShipmentBucket.OUT_FOR_DELIVERY, ShipmentBucket.NDR],
   RTO: [ShipmentBucket.RTO_INITIATED, ShipmentBucket.RTO_IN_TRANSIT, ShipmentBucket.RTO_DELIVERED],
@@ -82,17 +74,17 @@ const statusToMultipleBucketsMap: Record<string, number[]> = {
 
 export const getStatusBuckets = (status: string): number[] => {
   const normalizedStatus = status.toUpperCase();
-  
+
   // Check for multiple bucket mappings first
   if (statusToMultipleBucketsMap[normalizedStatus]) {
     return statusToMultipleBucketsMap[normalizedStatus];
   }
-  
+
   // Check for single bucket mapping
   if (statusToBucketMap[normalizedStatus]) {
     return [statusToBucketMap[normalizedStatus]];
   }
-  
+
   return [];
 };
 
@@ -109,12 +101,12 @@ export const getBucketStatus = (bucket: number | null | undefined): string => {
  */
 export const getShipmentBucket = (status: string): number => {
   const normalizedStatus = status.toUpperCase();
-  
+
   // Handle special cases
   if (normalizedStatus === 'CANCELLED') {
     return ShipmentBucket.CANCELLED_ORDER;
   }
-  
+
   return statusToBucketMap[normalizedStatus] ?? ShipmentBucket.NEW;
 };
 
@@ -123,11 +115,7 @@ export const statusKeywordPatterns: Record<number, RegExp[]> = {
   [ShipmentBucket.ALL]: [/all/i],
   [ShipmentBucket.NEW]: [/new/i, /created/i, /placed/i, /manifested/i],
   [ShipmentBucket.COURIER_ASSIGNED]: [/assigned/i, /pending/i, /ready/i],
-  [ShipmentBucket.PICKUP_SCHEDULED]: [
-    /pickup[_ ]scheduled/i,
-    /scheduled[_ ]pickup/i,
-    /out[_ ]for[_ ]pickup/i,
-  ],
+  [ShipmentBucket.PICKUP_SCHEDULED]: [/pickup[_ ]scheduled/i, /scheduled[_ ]pickup/i, /out[_ ]for[_ ]pickup/i],
   [ShipmentBucket.PICKED_UP]: [/picked[_ ]up/i, /pickup[_ ]complete/i],
   [ShipmentBucket.IN_TRANSIT]: [/transit/i, /shipped/i, /dispatched/i, /intransit/i],
   [ShipmentBucket.OUT_FOR_DELIVERY]: [/out[_ ]for[_ ]delivery/i],
@@ -237,7 +225,7 @@ export class ShipmentBucketManager {
    */
   static getBucketFromStatus(status: string): number {
     if (!status) return ShipmentBucket.NEW;
-    
+
     const normalizedStatus = status.toUpperCase().trim();
     return statusToBucketMap[normalizedStatus] || ShipmentBucket.NEW;
   }
@@ -303,11 +291,7 @@ export class ShipmentBucketManager {
   /**
    * Detect bucket from vendor status using keyword matching
    */
-  static detectBucketFromVendorStatus(
-    status: string,
-    statusCode?: string,
-    vendorName?: string
-  ): number {
+  static detectBucketFromVendorStatus(status: string, statusCode?: string, vendorName?: string): number {
     if (!status && !statusCode) return ShipmentBucket.NEW;
 
     // Try direct vendor mapping first if vendor and status code are provided

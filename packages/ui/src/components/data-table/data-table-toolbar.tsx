@@ -96,34 +96,42 @@ export function DataTableToolbar<TData>({
             {dateRangeFilter && (
               <DataTableDateRangePicker
                 dateRange={dateRange}
-                setDateRange={(dateRange) =>
-                  setDateRange({ from: dateRange.from!, to: dateRange.to! })
-                }
+                setDateRange={(dateRange) => setDateRange({ from: dateRange.from!, to: dateRange.to! })}
                 disabled={isLoading}
               />
             )}
 
             {advancedFilter && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-9 items-center gap-1 lg:flex"
-                onClick={() => setShowFilters(!showFilters)}
-                disabled={isLoading}
-              >
+              <Button variant="outline" size="sm" className="h-9 items-center gap-1 lg:flex" onClick={() => setShowFilters(!showFilters)} disabled={isLoading}>
                 <Filter className="h-4 w-4" />
                 <span className="hidden sm:inline">More Filters</span>
               </Button>
             )}
 
             {showDownload && handleDownload && (
-              <Button icon={Download} variant="outline" size="sm" className="h-9" onClick={handleDownload} isLoading={isDownloading} disabled={isLoading || isDownloading}/>
+              <Button
+                icon={Download}
+                variant="outline"
+                size="sm"
+                className="h-9"
+                onClick={handleDownload}
+                isLoading={isDownloading}
+                disabled={isLoading || isDownloading}
+              />
             )}
           </div>
 
           {handleUpload && (
             <div className="flex items-center gap-2">
-              <Button icon={Upload} variant="outline" size="sm" className="h-9" onClick={handleUpload} isLoading={isUploading} disabled={isLoading || isUploading} />
+              <Button
+                icon={Upload}
+                variant="outline"
+                size="sm"
+                className="h-9"
+                onClick={handleUpload}
+                isLoading={isUploading}
+                disabled={isLoading || isUploading}
+              />
             </div>
           )}
         </div>

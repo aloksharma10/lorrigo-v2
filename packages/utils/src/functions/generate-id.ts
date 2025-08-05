@@ -26,7 +26,7 @@ export function generateId({
   prefix = 'LS',
   baseNumber = 1,
   suffixLength = 7,
-  suffix = "",
+  suffix = '',
 }: GenerateIdOptions): GeneratedIdResult {
   const today = new Date();
 
@@ -76,7 +76,6 @@ function generate3LetterTimestamp(date: Date): string {
   return compact.padEnd(4, 'X').slice(0, 4);
 }
 
-
 export function getFinancialYearStartDate(financialYear: string): Date {
   const [startYear] = financialYear.split('-').map(Number);
   return new Date(`${startYear}-04-01T00:00:00.000Z`);
@@ -86,6 +85,8 @@ export function getFinancialYearStartDate(financialYear: string): Date {
 export function generateBillingId(date = new Date()) {
   const year = date.getFullYear().toString().slice(-2);
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const randomNumber = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
+  const randomNumber = Math.floor(Math.random() * 100000)
+    .toString()
+    .padStart(5, '0');
   return `BL-${year}${month}-${randomNumber}`;
 }

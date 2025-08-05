@@ -4,10 +4,7 @@ import { PlanService } from '../plan/services/plan.service';
 export async function setupSellerHooks(fastify: FastifyInstance) {
   fastify.addHook('onSend', async (request: FastifyRequest, reply: FastifyReply, payload: any) => {
     const isRegisterRoute =
-      request.method === 'POST' &&
-      request.url.includes('/api') &&
-      request.url.includes('/auth/register') &&
-      !request.url.includes('/login');
+      request.method === 'POST' && request.url.includes('/api') && request.url.includes('/auth/register') && !request.url.includes('/login');
 
     if (!isRegisterRoute) return;
 

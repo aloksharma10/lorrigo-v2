@@ -2,18 +2,7 @@
 
 import React from 'react';
 import { Badge, Card, CardContent, CardHeader, CardTitle, Separator } from '@lorrigo/ui/components';
-import {
-  Package,
-  Weight,
-  DollarSign,
-  Truck,
-  CreditCard,
-  Clock,
-  AlertTriangle,
-  AlertCircle,
-  CheckCircle,
-  Calculator,
-} from 'lucide-react';
+import { Package, Weight, DollarSign, Truck, CreditCard, Clock, AlertTriangle, AlertCircle, CheckCircle, Calculator } from 'lucide-react';
 import { currencyFormatter, formatDateTimeSmart } from '@lorrigo/utils';
 import { CopyBtn } from '@/components/copy-btn';
 import type { BillingRecord } from '@/lib/apis/billing';
@@ -60,27 +49,15 @@ export function OrderDetailsCell({ record }: OrderDetailsCellProps) {
       <div className="text-muted-foreground text-sm">
         <div className="flex items-center gap-1">
           <Package className="h-3 w-3" />
-          <CopyBtn
-            label={record.order.customer.name}
-            tooltipText="Copy Customer Name"
-            text={record.order.customer.name}
-          />
+          <CopyBtn label={record.order.customer.name} tooltipText="Copy Customer Name" text={record.order.customer.name} />
         </div>
       </div>
       <div className="text-muted-foreground text-xs">
-        <CopyBtn
-          label={record.order.customer.phone}
-          tooltipText="Copy Phone"
-          text={record.order.customer.phone}
-        />
+        <CopyBtn label={record.order.customer.phone} tooltipText="Copy Phone" text={record.order.customer.phone} />
       </div>
       {record.order.customer.email && (
         <div className="text-muted-foreground text-xs">
-          <CopyBtn
-            label={record.order.customer.email}
-            tooltipText="Copy Email"
-            text={record.order.customer.email}
-          />
+          <CopyBtn label={record.order.customer.email} tooltipText="Copy Email" text={record.order.customer.email} />
         </div>
       )}
     </div>
@@ -95,25 +72,18 @@ export function ShipmentDetailsCell({ record }: ShipmentDetailsCellProps) {
   return (
     <div className="flex flex-col space-y-1">
       <div className="text-sm font-medium">
-        AWB:{' '}
-        <CopyBtn
-          label={record.awb}
-          tooltipText="Copy AWB"
-          text={record.awb}
-          className="text-blue-600"
-        />
+        AWB: <CopyBtn label={record.awb} tooltipText="Copy AWB" text={record.awb} className="text-blue-600" />
       </div>
       <div className="text-muted-foreground flex items-center gap-1 text-sm">
         <Truck className="h-3 w-3" />
         {record.courier_name}
       </div>
-      <div className="text-muted-foreground text-xs">Hub: {record.order.hub.name}, Pincode: ({record.order.hub.address.pincode})</div>
+      <div className="text-muted-foreground text-xs">
+        Hub: {record.order.hub.name}, Pincode: ({record.order.hub.address.pincode})
+      </div>
       {(record.order_zone || record.charged_zone) && (
         <div className="text-muted-foreground text-xs">
-          Zone: {record.order_zone}{' '}
-          {record.charged_zone &&
-            record.order_zone !== record.charged_zone &&
-            `→ ${record.charged_zone}`}
+          Zone: {record.order_zone} {record.charged_zone && record.order_zone !== record.charged_zone && `→ ${record.charged_zone}`}
         </div>
       )}
     </div>
@@ -141,9 +111,7 @@ export function WeightDetailsCell({ record }: WeightDetailsCellProps) {
             Disputed
           </Badge>
         )}
-        {isWeightChanged && !hasWeightDispute && (
-          <AlertTriangle className="h-3 w-3 text-orange-500" />
-        )}
+        {isWeightChanged && !hasWeightDispute && <AlertTriangle className="h-3 w-3 text-orange-500" />}
       </div>
 
       <div className="text-muted-foreground text-sm">Original: {originalWeight}kg</div>
@@ -151,9 +119,7 @@ export function WeightDetailsCell({ record }: WeightDetailsCellProps) {
       <div className="text-muted-foreground text-xs">Base Weight: {record.base_weight}kg</div>
 
       {weightDifference > 0 && (
-        <div className={`text-xs ${hasWeightDispute ? 'text-red-600' : 'text-orange-600'}`}>
-          Weight difference: +{weightDifference.toFixed(2)}kg
-        </div>
+        <div className={`text-xs ${hasWeightDispute ? 'text-red-600' : 'text-orange-600'}`}>Weight difference: +{weightDifference.toFixed(2)}kg</div>
       )}
 
       {record.has_weight_dispute && (
@@ -177,14 +143,8 @@ interface BasePricingCellProps {
 export function BasePricingCell({ record }: BasePricingCellProps) {
   return (
     <div className="space-y-1 text-right">
-      <div className="text-muted-foreground text-sm">
-        Base {currencyFormatter(record.base_price)}
-      </div>
-      {record.increment_price > 0 && (
-        <div className="text-muted-foreground text-sm">
-          Increment: +{currencyFormatter(record.increment_price)}
-        </div>
-      )}
+      <div className="text-muted-foreground text-sm">Base {currencyFormatter(record.base_price)}</div>
+      {record.increment_price > 0 && <div className="text-muted-foreground text-sm">Increment: +{currencyFormatter(record.increment_price)}</div>}
     </div>
   );
 }
@@ -239,17 +199,12 @@ interface TotalAmountCellProps {
 }
 
 export function TotalAmountCell({ record }: TotalAmountCellProps) {
-  const extraCharges =
-    record.fw_excess_charge + record.rto_excess_charge + record.zone_change_charge;
+  const extraCharges = record.fw_excess_charge + record.rto_excess_charge + record.zone_change_charge;
 
   return (
     <div className="space-y-1 text-right">
-      <div className="text-primary text-xl font-bold">
-        {currencyFormatter(record.billing_amount)}
-      </div>
-      <div className="text-muted-foreground text-xs">
-        Extras: +{currencyFormatter(extraCharges)}
-      </div>
+      <div className="text-primary text-xl font-bold">{currencyFormatter(record.billing_amount)}</div>
+      <div className="text-muted-foreground text-xs">Extras: +{currencyFormatter(extraCharges)}</div>
     </div>
   );
 }
@@ -311,14 +266,7 @@ interface BillingSummaryCardProps {
   };
 }
 
-export function BillingSummaryCard({
-  title,
-  value,
-  description,
-  icon: Icon,
-  textColor,
-  trend,
-}: BillingSummaryCardProps) {
+export function BillingSummaryCard({ title, value, description, icon: Icon, textColor, trend }: BillingSummaryCardProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -329,9 +277,7 @@ export function BillingSummaryCard({
         <div className={`text-2xl font-bold ${textColor || ''}`}>{value}</div>
         {description && <p className="text-muted-foreground text-xs">{description}</p>}
         {trend && (
-          <div
-            className={`mt-1 flex items-center gap-1 text-xs ${trend.isPositive ? 'text-green-600' : 'text-red-600'}`}
-          >
+          <div className={`mt-1 flex items-center gap-1 text-xs ${trend.isPositive ? 'text-green-600' : 'text-red-600'}`}>
             <span>{trend.isPositive ? '↗' : '↘'}</span>
             <span>
               {trend.value}% {trend.label}
@@ -350,12 +296,7 @@ interface DetailedBillingCardProps {
   onViewShipment?: () => void;
 }
 
-export function DetailedBillingCard({
-  record,
-  showActions = false,
-  onViewOrder,
-  onViewShipment,
-}: DetailedBillingCardProps) {
+export function DetailedBillingCard({ record, showActions = false, onViewOrder, onViewShipment }: DetailedBillingCardProps) {
   return (
     <Card className="w-full">
       <CardHeader>

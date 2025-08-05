@@ -64,7 +64,7 @@ export interface OverviewAnalytics {
   // Add more fields as needed
 }
 
-// Add more interfaces for each analytics endpoint/component 
+// Add more interfaces for each analytics endpoint/component
 
 // Shipments Analytics Types
 export interface CourierWiseShipmentItem {
@@ -292,4 +292,4 @@ export interface RtoAnalytics {
   topByCity: RtoTopByCityItem[];
   topByCourier: RtoTopByCourierItem[];
   topByCustomer: RtoTopByCustomerItem[];
-} 
+}

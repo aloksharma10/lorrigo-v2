@@ -1,25 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  TrendingUp,
-  Percent,
-  Zap,
-  RotateCcw,
-  Users,
-  Loader2,
-  ChevronDownIcon,
-  ChevronUpIcon,
-} from 'lucide-react';
-import {
-  Button,
-  Card,
-  CardHeader,
-  Input,
-  Badge,
-  Alert,
-  AlertDescription,
-} from '@lorrigo/ui/components';
+import { TrendingUp, Percent, Zap, RotateCcw, Users, Loader2, ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
+import { Button, Card, CardHeader, Input, Badge, Alert, AlertDescription } from '@lorrigo/ui/components';
 import { Info } from 'lucide-react';
 import type { Courier } from '../types/shipping-plan';
 
@@ -64,9 +47,7 @@ export function BulkAdjustmentPanel({
             </div>
             <div>
               <h3 className="text-lg font-semibold">Selective Price Adjustment</h3>
-              <p className="text-secondary-foreground/80 text-sm">
-                Select couriers and apply percentage changes to their pricing
-              </p>
+              <p className="text-secondary-foreground/80 text-sm">Select couriers and apply percentage changes to their pricing</p>
             </div>
           </div>
           <div className="flex items-center space-x-3">
@@ -102,16 +83,8 @@ export function BulkAdjustmentPanel({
                 max="1000"
               />
             </div>
-            <Button
-              onClick={handleApply}
-              disabled={isApplying || selectedCourierIndices.size === 0}
-              className="hover:bg-background/90 font-semibold"
-            >
-              {isApplying ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Zap className="mr-2 h-4 w-4" />
-              )}
+            <Button onClick={handleApply} disabled={isApplying || selectedCourierIndices.size === 0} className="hover:bg-background/90 font-semibold">
+              {isApplying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
               Apply to Selected ({selectedCourierIndices.size})
             </Button>
             {hasUnsavedChanges && (
@@ -136,8 +109,7 @@ export function BulkAdjustmentPanel({
               <div className="flex items-center space-x-2">
                 <Users className="text-secondary h-4 w-4" />
                 <span className="text-sm font-medium">
-                  Courier Selection ({selectedCourierIndices.size} of {selectedCouriers.length}{' '}
-                  selected)
+                  Courier Selection ({selectedCourierIndices.size} of {selectedCouriers.length} selected)
                 </span>
               </div>
               {selectedCourierIndices.size > 0 && (
@@ -151,20 +123,10 @@ export function BulkAdjustmentPanel({
               )}
             </div>
             <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onSelectAll}
-                className="border-secondary/20 hover:bg-secondary/10"
-              >
+              <Button variant="outline" size="sm" onClick={onSelectAll} className="border-secondary/20 hover:bg-secondary/10">
                 Select All
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onDeselectAll}
-                className="border-secondary/20 hover:bg-secondary/10"
-              >
+              <Button variant="outline" size="sm" onClick={onDeselectAll} className="border-secondary/20 hover:bg-secondary/10">
                 Deselect All
               </Button>
             </div>
@@ -176,10 +138,7 @@ export function BulkAdjustmentPanel({
         <div className="border-b bg-amber-50 p-4 dark:bg-amber-950/20">
           <Alert>
             <Info className="h-4 w-4" />
-            <AlertDescription>
-              You have unsaved pricing changes. Don't forget to save your plan or reset to original
-              values.
-            </AlertDescription>
+            <AlertDescription>You have unsaved pricing changes. Don't forget to save your plan or reset to original values.</AlertDescription>
           </Alert>
         </div>
       )}

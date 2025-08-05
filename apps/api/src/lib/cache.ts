@@ -29,7 +29,7 @@ export class CacheService {
   async set(key: string, value: any, ttl?: number, prefix?: string): Promise<void> {
     const cacheKey = this.key(key, prefix);
     const serializedValue = JSON.stringify(value);
-    
+
     if (ttl) {
       await redis.setex(cacheKey, ttl, serializedValue);
     } else {
@@ -43,9 +43,9 @@ export class CacheService {
   async get<T>(key: string, prefix?: string): Promise<T | null> {
     const cacheKey = this.key(key, prefix);
     const value = await redis.get(cacheKey);
-    
+
     if (!value) return null;
-    
+
     try {
       return JSON.parse(value);
     } catch {
@@ -67,9 +67,9 @@ export class CacheService {
   async delPattern(pattern: string, prefix?: string): Promise<number> {
     const fullPattern = this.key(pattern, prefix);
     const keys = await redis.keys(fullPattern);
-    
+
     if (keys.length === 0) return 0;
-    
+
     return redis.del(...keys);
   }
 
@@ -100,21 +100,16 @@ export class CacheService {
   /**
    * Get or set pattern - fetch from cache or execute function and cache result
    */
-  async getOrSet<T>(
-    key: string,
-    fetchFunction: () => Promise<T>,
-    ttl = 300,
-    prefix?: string
-  ): Promise<T> {
+  async getOrSet<T>(key: string, fetchFunction: () => Promise<T>, ttl = 300, prefix?: string): Promise<T> {
     const cached = await this.get<T>(key, prefix);
-    
+
     if (cached !== null) {
       return cached;
     }
 
     const fresh = await fetchFunction();
     await this.set(key, fresh, ttl, prefix);
-    
+
     return fresh;
   }
 
@@ -123,7 +118,7 @@ export class CacheService {
    */
   async invalidateByTags(tags: string[]): Promise<void> {
     const keys: string[] = [];
-    
+
     for (const tag of tags) {
       const tagKeys = await redis.smembers(this.key(`tag:${tag}`));
       keys.push(...tagKeys);
@@ -138,18 +133,12 @@ export class CacheService {
   /**
    * Set cache with tags for invalidation
    */
-  async setWithTags(
-    key: string,
-    value: any,
-    tags: string[],
-    ttl?: number,
-    prefix?: string
-  ): Promise<void> {
+  async setWithTags(key: string, value: any, tags: string[], ttl?: number, prefix?: string): Promise<void> {
     const cacheKey = this.key(key, prefix);
-    
+
     // Set the main cache entry
     await this.set(key, value, ttl, prefix);
-    
+
     // Add key to each tag set
     for (const tag of tags) {
       await redis.sadd(this.key(`tag:${tag}`), cacheKey);
@@ -163,10 +152,10 @@ export class CacheService {
    * Batch get multiple keys
    */
   async mget<T>(keys: string[], prefix?: string): Promise<(T | null)[]> {
-    const cacheKeys = keys.map(key => this.key(key, prefix));
+    const cacheKeys = keys.map((key) => this.key(key, prefix));
     const values = await redis.mget(...cacheKeys);
-    
-    return values.map(value => {
+
+    return values.map((value) => {
       if (!value) return null;
       try {
         return JSON.parse(value);
@@ -296,20 +285,24 @@ export class ApplicationCacheService extends CacheService {
   }
 
   // Rate limiting cache
-  async checkRateLimit(identifier: string, limit: number, window: number): Promise<{
+  async checkRateLimit(
+    identifier: string,
+    limit: number,
+    window: number
+  ): Promise<{
     allowed: boolean;
     remaining: number;
     resetTime: number;
   }> {
     const key = `ratelimit:${identifier}`;
     const current = await redis.incr(key);
-    
+
     if (current === 1) {
       await redis.expire(key, window);
     }
 
     const ttl = await redis.ttl(key);
-    const resetTime = Date.now() + (ttl * 1000);
+    const resetTime = Date.now() + ttl * 1000;
 
     return {
       allowed: current <= limit,
@@ -346,31 +339,28 @@ export class ApplicationCacheService extends CacheService {
 
   // Bulk metrics tracking
   async trackMetric(metricName: string, labels: Record<string, string> = {}): Promise<void> {
-    const labelStr = Object.entries(labels).map(([k, v]) => `${k}:${v}`).join(',');
+    const labelStr = Object.entries(labels)
+      .map(([k, v]) => `${k}:${v}`)
+      .join(',');
     const key = `metric:${metricName}:${labelStr}`;
     await this.incr(key);
     await this.expire(key, 86400); // 24 hours
   }
 
   // Lock implementation for critical sections
-  async acquireLock(
-    resource: string,
-    ttl: number = 10,
-    retryCount: number = 3,
-    retryDelay: number = 100
-  ): Promise<string | null> {
+  async acquireLock(resource: string, ttl: number = 10, retryCount: number = 3, retryDelay: number = 100): Promise<string | null> {
     const lockId = `${Date.now()}-${Math.random()}`;
     const lockKey = `lock:${resource}`;
 
     for (let i = 0; i < retryCount; i++) {
       const result = await redis.set(lockKey, lockId, 'PX', ttl * 1000, 'NX');
-      
+
       if (result === 'OK') {
         return lockId;
       }
 
       if (i < retryCount - 1) {
-        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
       }
     }
 
@@ -417,4 +407,4 @@ export class ApplicationCacheService extends CacheService {
 }
 
 // Export singleton instance
-export const appCache = new ApplicationCacheService(); 
+export const appCache = new ApplicationCacheService();

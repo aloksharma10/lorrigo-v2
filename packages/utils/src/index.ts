@@ -7,11 +7,7 @@ export * from './db-utils';
 export * from './types';
 
 // Export schemas
-export {
-  CreateShipmentSchema,
-  UpdateShipmentSchema,
-  AddTrackingEventSchema,
-} from './schemas/shipment';
+export { CreateShipmentSchema, UpdateShipmentSchema, AddTrackingEventSchema } from './schemas/shipment';
 
 // Export transaction schemas
 export {

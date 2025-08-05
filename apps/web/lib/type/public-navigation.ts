@@ -1,41 +1,41 @@
-import type React from "react"
+import type React from 'react';
 export interface NavigationItem {
-  title: string
-  href?: string
-  type: "link" | "dropdown" | "mega"
-  content?: NavigationContent
+  title: string;
+  href?: string;
+  type: 'link' | 'dropdown' | 'mega';
+  content?: NavigationContent;
 }
 
 export interface NavigationContent {
   featured?: {
-    title: string
-    description: string
-    href: string
-  }
+    title: string;
+    description: string;
+    href: string;
+  };
   links?: Array<{
-    title: string
-    href: string
-    description?: string
-  }>
+    title: string;
+    href: string;
+    description?: string;
+  }>;
   sections?: Array<{
-    title: string
+    title: string;
     links: Array<{
-      title: string
-      href: string
-      description?: string
-      icon?: any
-    }>
-  }>
+      title: string;
+      href: string;
+      description?: string;
+      icon?: any;
+    }>;
+  }>;
 }
 
 export interface NavigationConfig {
-  items: NavigationItem[]
+  items: NavigationItem[];
   brand?: {
-    title: string
-    description: string
-    href: string
-    logo: string
-  }
-  className?: string
-  viewport?: boolean
+    title: string;
+    description: string;
+    href: string;
+    logo: string;
+  };
+  className?: string;
+  viewport?: boolean;
 }

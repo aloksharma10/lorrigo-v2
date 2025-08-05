@@ -37,14 +37,12 @@ export const searchSellers = async (query: string, signal?: AbortSignal): Promis
 
 // React Query hooks for seller operations
 export const useSellerOperations = () => {
-
-  const {isTokenReady} = useAuthToken();
+  const { isTokenReady } = useAuthToken();
   // Fetch all sellers with pagination
   const getSellersQuery = (page = 1, limit = 10, search = '', role = 'SELLER') =>
     useQuery({
       queryKey: ['sellers', page, limit, search, role],
-      queryFn: () =>
-        api.get<any>(`/sellers?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&role=${role}`),
+      queryFn: () => api.get<any>(`/sellers?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&role=${role}`),
       staleTime: 1000 * 60 * 5, // 5 minutes: data is considered fresh
       enabled: isTokenReady,
     });

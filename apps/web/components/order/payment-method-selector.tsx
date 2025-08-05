@@ -1,17 +1,6 @@
 'use client';
 
-import {
-  RadioGroup,
-  RadioGroupItem,
-  Label,
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
-  Input,
-  FormLabel,
-} from '@lorrigo/ui/components';
+import { RadioGroup, RadioGroupItem, Label, Form, FormControl, FormField, FormItem, FormMessage, Input, FormLabel } from '@lorrigo/ui/components';
 import { Info } from 'lucide-react';
 import { Control, UseFormWatch } from 'react-hook-form';
 import { OrderFormValues } from '@lorrigo/utils/validations';
@@ -38,7 +27,7 @@ export function PaymentMethodSelector({ control, watch }: PaymentMethodSelectorP
               <RadioGroup
                 onValueChange={field.onChange}
                 defaultValue={field.value}
-                value={watch('is_reverse_order') ? 'prepaid' : (field.value || 'prepaid')}
+                value={watch('is_reverse_order') ? 'prepaid' : field.value || 'prepaid'}
                 className="flex gap-4"
                 disabled={watch('is_reverse_order')}
               >
@@ -71,9 +60,7 @@ export function PaymentMethodSelector({ control, watch }: PaymentMethodSelectorP
               <FormItem>
                 <FormLabel>Amount to Collect</FormLabel>
                 <div className="mt-1 flex items-center">
-                  <span className="bg-muted text-muted-foreground flex h-9 w-10 items-center justify-center rounded-l-md border border-r-0">
-                    ₹
-                  </span>
+                  <span className="bg-muted text-muted-foreground flex h-9 w-10 items-center justify-center rounded-l-md border border-r-0">₹</span>
                   <FormControl>
                     <Input
                       id="amountToCollect"

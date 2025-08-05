@@ -24,13 +24,9 @@ export default function ShopifySuccessPage() {
         </div>
         <h1 className="text-2xl font-bold">Shopify Connected Successfully!</h1>
         <p className="text-muted-foreground">
-          Your Shopify store has been connected to Lorrigo. You can now manage your Shopify orders
-          directly from the Lorrigo dashboard.
+          Your Shopify store has been connected to Lorrigo. You can now manage your Shopify orders directly from the Lorrigo dashboard.
         </p>
-        <button
-          onClick={() => router.push('/seller/channels')}
-          className="bg-primary hover:bg-primary/90 mt-4 rounded-md px-4 py-2 text-white"
-        >
+        <button onClick={() => router.push('/seller/channels')} className="bg-primary hover:bg-primary/90 mt-4 rounded-md px-4 py-2 text-white">
           Return to Channels
         </button>
       </div>

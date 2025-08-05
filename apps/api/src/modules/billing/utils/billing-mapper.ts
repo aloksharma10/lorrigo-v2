@@ -25,16 +25,8 @@ export interface BillingOverride {
   [key: string]: any;
 }
 
-export function mapShipmentToBilling(
-  shipment: any,
-  pricing: PricingLike = {},
-  overrides: BillingOverride = {}
-) {
-  const isRtoApplicable = [
-    ShipmentStatus.RTO_DELIVERED,
-    ShipmentStatus.RTO_IN_TRANSIT,
-    ShipmentStatus.RTO_INITIATED,
-  ].includes(shipment.status);
+export function mapShipmentToBilling(shipment: any, pricing: PricingLike = {}, overrides: BillingOverride = {}) {
+  const isRtoApplicable = [ShipmentStatus.RTO_DELIVERED, ShipmentStatus.RTO_IN_TRANSIT, ShipmentStatus.RTO_INITIATED].includes(shipment.status);
   const order = shipment.order;
   const fw = shipment.fw_charge || 0;
   const rto = shipment.rto_charge || 0;
@@ -44,8 +36,7 @@ export function mapShipmentToBilling(
 
   const billingAmount = fw + rto + fwEx + rtoEx;
 
-  const chargedWeight =
-    overrides.charged_weight ?? pricing.charged_weight ?? 0;
+  const chargedWeight = overrides.charged_weight ?? pricing.charged_weight ?? 0;
   const originalWeight = order.applicable_weight ?? 0;
   const weightDiff = chargedWeight > originalWeight ? chargedWeight - originalWeight : 0;
 
@@ -68,11 +59,7 @@ export function mapShipmentToBilling(
     fw_charge: fw,
     rto_charge: rto,
     cod_charge: cod,
-    courier_name:
-      (shipment.courier?.name || '') +
-      (shipment.courier?.channel_config?.nickname
-        ? ' ' + shipment.courier.channel_config.nickname
-        : ''),
+    courier_name: (shipment.courier?.name || '') + (shipment.courier?.channel_config?.nickname ? ' ' + shipment.courier.channel_config.nickname : ''),
     ...overrides,
   };
-} 
+}

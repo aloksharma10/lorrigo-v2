@@ -18,12 +18,7 @@ export class ChannelConfigService {
   /**
    * Get all channel configurations with pagination and search
    */
-  async getAllChannelConfigs(
-    page: number = 1,
-    limit: number = 10,
-    search?: string,
-    is_active?: boolean
-  ) {
+  async getAllChannelConfigs(page: number = 1, limit: number = 10, search?: string, is_active?: boolean) {
     const skip = (page - 1) * limit;
 
     // Build the where clause based on search parameter and active status
@@ -217,10 +212,7 @@ export class ChannelConfigService {
   /**
    * Update a channel configuration
    */
-  async updateChannelConfig(
-    id: string,
-    data: Partial<ChannelConfigData>
-  ): Promise<any | ErrorResponse> {
+  async updateChannelConfig(id: string, data: Partial<ChannelConfigData>): Promise<any | ErrorResponse> {
     try {
       // Check if channel config exists
       const existingConfig = await prisma.channelConfig.findUnique({
@@ -242,9 +234,7 @@ export class ChannelConfigService {
               { id: { not: id } },
               {
                 OR: [
-                  ...(data.name
-                    ? [{ name: { equals: data.name, mode: 'insensitive' as Prisma.QueryMode } }]
-                    : []),
+                  ...(data.name ? [{ name: { equals: data.name, mode: 'insensitive' as Prisma.QueryMode } }] : []),
                   ...(data.nickname
                     ? [
                         {
@@ -345,8 +335,7 @@ export class ChannelConfigService {
     // Check if channel config has associated couriers
     if (channelConfig._count.couriers > 0) {
       return {
-        error:
-          'Cannot delete channel configuration. It has associated couriers. Please remove or reassign the couriers first.',
+        error: 'Cannot delete channel configuration. It has associated couriers. Please remove or reassign the couriers first.',
         status: 409,
       };
     }
@@ -424,14 +413,7 @@ export class ChannelConfigService {
         });
 
         // 5. Flush both serviceability and rates cache for affected users
-        await Promise.all(
-          users.map((user) =>
-            Promise.all([
-              flushKeysByPattern(`serviceability-${user.id}-*`),
-              flushKeysByPattern(`rates-${user.id}-*`),
-            ])
-          )
-        );
+        await Promise.all(users.map((user) => Promise.all([flushKeysByPattern(`serviceability-${user.id}-*`), flushKeysByPattern(`rates-${user.id}-*`)])));
       }
     }
 

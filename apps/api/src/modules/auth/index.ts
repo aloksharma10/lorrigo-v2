@@ -370,6 +370,4 @@ export default async function auth(fastify: FastifyInstance) {
     },
     handler: (request, reply) => authController.handleShopifyCallback(request, reply),
   });
-
-
 }

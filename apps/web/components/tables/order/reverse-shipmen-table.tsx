@@ -33,12 +33,8 @@ export default function ReverseShipmentsTable({ initialParams }: ReverseShipment
     pageIndex: initialParams.page || 0,
     pageSize: initialParams.pageSize || 15,
   });
-  const [sorting, setSorting] = React.useState<{ id: string; desc: boolean }[]>(
-    initialParams.sort || []
-  );
-  const [filters, setFilters] = React.useState<{ id: string; value: any }[]>(
-    initialParams.filters || []
-  );
+  const [sorting, setSorting] = React.useState<{ id: string; desc: boolean }[]>(initialParams.sort || []);
+  const [filters, setFilters] = React.useState<{ id: string; value: any }[]>(initialParams.filters || []);
   const [globalFilter, setGlobalFilter] = React.useState(initialParams.globalFilter || '');
   const debouncedGlobalFilter = useDebounce(globalFilter, 500);
   const [dateRange, setDateRange] = React.useState<{ from: Date; to: Date }>(
@@ -60,16 +56,7 @@ export default function ReverseShipmentsTable({ initialParams }: ReverseShipment
 
   // Fetch shipments with React Query
   const { data, isLoading, isError, isFetching, error } = useQuery({
-    queryKey: [
-      'reverse-orders',
-      pagination.pageIndex,
-      pagination.pageSize,
-      sorting,
-      filters,
-      debouncedGlobalFilter,
-      dateRange,
-      activeTab,
-    ],
+    queryKey: ['reverse-orders', pagination.pageIndex, pagination.pageSize, sorting, filters, debouncedGlobalFilter, dateRange, activeTab],
     queryFn: () =>
       fetchReverseShipments({
         page: pagination.pageIndex,
@@ -98,10 +85,7 @@ export default function ReverseShipmentsTable({ initialParams }: ReverseShipment
       id: 'select',
       header: ({ table }) => (
         <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && 'indeterminate')
-          }
+          checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all"
           disabled={isLoading}
@@ -145,11 +129,7 @@ export default function ReverseShipmentsTable({ initialParams }: ReverseShipment
               <Package className="text-muted-foreground mr-1 h-4 w-4" />
               <span className="text-xs font-medium uppercase">{shipment.channel}</span>
             </div>
-            <Button
-              variant="link"
-              size="sm"
-              className="mt-1 h-auto justify-start p-0 text-blue-600"
-            >
+            <Button variant="link" size="sm" className="mt-1 h-auto justify-start p-0 text-blue-600">
               Package Details
             </Button>
           </div>
@@ -172,16 +152,8 @@ export default function ReverseShipmentsTable({ initialParams }: ReverseShipment
               <div className="flex flex-col">
                 <div className="font-medium">{shipment.customer?.name}</div>
                 <div className="text-muted-foreground text-sm">
-                  <CopyBtn
-                    label={shipment.customer?.phone}
-                    tooltipText="Copy Phone"
-                    text={shipment.customer?.phone || ''}
-                  />
-                  <CopyBtn
-                    label={shipment.customer?.email}
-                    tooltipText="Copy Email"
-                    text={shipment.customer?.email || ''}
-                  />
+                  <CopyBtn label={shipment.customer?.phone} tooltipText="Copy Phone" text={shipment.customer?.phone || ''} />
+                  <CopyBtn label={shipment.customer?.email} tooltipText="Copy Email" text={shipment.customer?.email || ''} />
                 </div>
               </div>
             }
@@ -197,8 +169,7 @@ export default function ReverseShipmentsTable({ initialParams }: ReverseShipment
               </div>
             </div>
             <div className="text-muted-foreground text-sm">
-              {shipment.customer?.address}, {shipment.customer?.city}, {shipment.customer?.state},{' '}
-              {shipment.customer?.pincode}
+              {shipment.customer?.address}, {shipment.customer?.city}, {shipment.customer?.state}, {shipment.customer?.pincode}
             </div>
           </HoverCardToolTip>
         );
@@ -215,8 +186,7 @@ export default function ReverseShipmentsTable({ initialParams }: ReverseShipment
         return (
           <div className="mt-1 flex flex-col text-xs">
             <span>
-              {shipment.packageDetails.length} x {shipment.packageDetails.breadth} x{' '}
-              {shipment.packageDetails.height} cm
+              {shipment.packageDetails.length} x {shipment.packageDetails.breadth} x {shipment.packageDetails.height} cm
             </span>
             <span>Dead Weight: {shipment.packageDetails.deadWeight} kg</span>
             <span>Volumetric Weight: {shipment.packageDetails.volumetricWeight} kg</span>
@@ -255,9 +225,7 @@ export default function ReverseShipmentsTable({ initialParams }: ReverseShipment
     {
       id: 'hub.name',
       accessorKey: 'pickupAddress',
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Pickup / RTO Addresses" />
-      ),
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Pickup / RTO Addresses" />,
       cell: ({ row }) => {
         const shipment = row.original;
         return (
@@ -274,8 +242,7 @@ export default function ReverseShipmentsTable({ initialParams }: ReverseShipment
                 </div>
               </div>
               <div className="text-muted-foreground mt-1 text-xs">
-                {shipment?.hub?.address}, {shipment?.hub?.city}, {shipment?.hub?.state},{' '}
-                {shipment?.hub?.pincode}
+                {shipment?.hub?.address}, {shipment?.hub?.city}, {shipment?.hub?.state}, {shipment?.hub?.pincode}
               </div>
             </HoverCardToolTip>
           </div>
@@ -324,21 +291,13 @@ export default function ReverseShipmentsTable({ initialParams }: ReverseShipment
 
         return (
           <div className="flex flex-col">
-            <Badge className={`${statusColorMap[shipment.status]} w-fit`}>
-              {shipment?.trackingEvents[0]?.status?.toUpperCase() || 'AWAITING'}
-            </Badge>
+            <Badge className={`${statusColorMap[shipment.status]} w-fit`}>{shipment?.trackingEvents[0]?.status?.toUpperCase() || 'AWAITING'}</Badge>
 
-            <div className="mt-1 text-xs">
-              {formatDateTimeSmart(shipment.trackingEvents[0]?.timestamp || shipment.updatedAt)}
-            </div>
+            <div className="mt-1 text-xs">{formatDateTimeSmart(shipment.trackingEvents[0]?.timestamp || shipment.updatedAt)}</div>
 
-            {shipment.pickupDate && (
-              <div className="mt-1 text-xs">For: {shipment.pickupDate.split('T')[0]}</div>
-            )}
+            {shipment.pickupDate && <div className="mt-1 text-xs">For: {shipment.pickupDate.split('T')[0]}</div>}
             {shipment.edd && <div className="mt-1 text-xs">EDD: {shipment.edd.split('T')[0]}</div>}
-            {shipment.pickupId && (
-              <div className="mt-1 text-xs">Pickup ID: {shipment.pickupId}</div>
-            )}
+            {shipment.pickupId && <div className="mt-1 text-xs">Pickup ID: {shipment.pickupId}</div>}
           </div>
         );
       },
@@ -444,12 +403,9 @@ export default function ReverseShipmentsTable({ initialParams }: ReverseShipment
   };
 
   // Handle pagination change
-  const handlePaginationChange = React.useCallback(
-    (newPagination: { pageIndex: number; pageSize: number }) => {
-      setPagination(newPagination);
-    },
-    []
-  );
+  const handlePaginationChange = React.useCallback((newPagination: { pageIndex: number; pageSize: number }) => {
+    setPagination(newPagination);
+  }, []);
 
   // Handle sorting change
   const handleSortingChange = React.useCallback((newSorting: { id: string; desc: boolean }[]) => {
@@ -500,9 +456,7 @@ export default function ReverseShipmentsTable({ initialParams }: ReverseShipment
         searchPlaceholder="Search for AWB, Order ID, Buyer Mobile Number, Email, SKU, Pickup ID"
         isLoading={isLoading || isFetching}
         isError={isError}
-        errorMessage={
-          error instanceof Error ? error.message : 'Failed to fetch orders. Please try again.'
-        }
+        errorMessage={error instanceof Error ? error.message : 'Failed to fetch orders. Please try again.'}
         onPaginationChange={handlePaginationChange}
         onSortingChange={handleSortingChange}
         onFiltersChange={handleFiltersChange}

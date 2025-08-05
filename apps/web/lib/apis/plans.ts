@@ -30,15 +30,7 @@ export const usePlanOperations = () => {
     });
   };
 
-  const getUsersQuery = ({
-    queryKey,
-    search,
-    enabled = true,
-  }: {
-    queryKey: string[];
-    search?: string;
-    enabled?: boolean;
-  }) =>
+  const getUsersQuery = ({ queryKey, search, enabled = true }: { queryKey: string[]; search?: string; enabled?: boolean }) =>
     useQuery({
       queryKey,
       enabled: enabled && isTokenReady,
@@ -111,8 +103,7 @@ export const usePlanOperations = () => {
 
   // Assign Plan to User
   const assignPlanToUser = useMutation({
-    mutationFn: ({ planId, userId }: { planId: string; userId: string }) =>
-      api.post(`/plans/assign/${planId}/user/${userId}`, { userId }),
+    mutationFn: ({ planId, userId }: { planId: string; userId: string }) => api.post(`/plans/assign/${planId}/user/${userId}`, { userId }),
     onSuccess: () => {
       toast.success('Plan assigned to user successfully');
       queryClient.invalidateQueries({ queryKey: ['plans'] });

@@ -86,9 +86,7 @@ export function authorizePermissions(requiredPermissions: string[]) {
       }
 
       // Check if the user has all required permissions
-      const hasAllPermissions = requiredPermissions.every((permission) =>
-        user_permissions.some((p) => p.name === permission && p.isActive)
-      );
+      const hasAllPermissions = requiredPermissions.every((permission) => user_permissions.some((p) => p.name === permission && p.isActive));
 
       if (!hasAllPermissions) {
         return reply.code(403).send({

@@ -2,12 +2,7 @@
 
 import type * as React from 'react';
 import { Button } from '../button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '../dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../dropdown-menu';
 import { ChevronDown } from 'lucide-react';
 
 interface BulkAction<TData> {
@@ -21,10 +16,7 @@ interface DataTableBulkActionsMenuProps<TData> {
   actions: BulkAction<TData>[];
 }
 
-export function DataTableBulkActionsMenu<TData>({
-  selectedRows,
-  actions,
-}: DataTableBulkActionsMenuProps<TData>) {
+export function DataTableBulkActionsMenu<TData>({ selectedRows, actions }: DataTableBulkActionsMenuProps<TData>) {
   if (!selectedRows.length || !actions.length) return null;
 
   return (

@@ -152,16 +152,10 @@ export function AssignPlanModal({ planId, userId, onClose, onSuccess }: AssignPl
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Select Plan</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    disabled={isLoadingPlans}
-                  >
+                  <Select onValueChange={field.onChange} value={field.value} disabled={isLoadingPlans}>
                     <FormControl>
                       <SelectTrigger className="w-full">
-                        <SelectValue
-                          placeholder={isLoadingPlans ? 'Loading plans...' : 'Choose a plan'}
-                        />
+                        <SelectValue placeholder={isLoadingPlans ? 'Loading plans...' : 'Choose a plan'} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -199,25 +193,16 @@ export function AssignPlanModal({ planId, userId, onClose, onSuccess }: AssignPl
                           variant="outline"
                           role="combobox"
                           aria-expanded={open}
-                          className={cn(
-                            'flex w-full justify-between text-left',
-                            !field.value && 'text-muted-foreground'
-                          )}
+                          className={cn('flex w-full justify-between text-left', !field.value && 'text-muted-foreground')}
                         >
-                          {field.value && selectedUser
-                            ? `${selectedUser.name} (${selectedUser.phone})`
-                            : 'Select user'}
+                          {field.value && selectedUser ? `${selectedUser.name} (${selectedUser.phone})` : 'Select user'}
                           <ChevronsUpDown className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
                     <PopoverContent className="w-[400px] p-0">
                       <Command>
-                        <CommandInput
-                          placeholder="Search users by name, email, or phone..."
-                          value={searchQuery}
-                          onValueChange={setSearchQuery}
-                        />
+                        <CommandInput placeholder="Search users by name, email, or phone..." value={searchQuery} onValueChange={setSearchQuery} />
                         <CommandList>
                           <CommandEmpty>
                             {isLoadingUsers ? (
@@ -241,20 +226,11 @@ export function AssignPlanModal({ planId, userId, onClose, onSuccess }: AssignPl
                                   setOpen(false);
                                 }}
                               >
-                                <Check
-                                  className={cn(
-                                    'mr-2 h-4 w-4',
-                                    user.id === field.value ? 'opacity-100' : 'opacity-0'
-                                  )}
-                                />
+                                <Check className={cn('mr-2 h-4 w-4', user.id === field.value ? 'opacity-100' : 'opacity-0')} />
                                 <div className="flex flex-col">
                                   <span className="font-medium">{user.name}</span>
-                                  <span className="text-muted-foreground text-xs">
-                                    {user.email}
-                                  </span>
-                                  <span className="text-muted-foreground text-xs">
-                                    {user.phone}
-                                  </span>
+                                  <span className="text-muted-foreground text-xs">{user.email}</span>
+                                  <span className="text-muted-foreground text-xs">{user.phone}</span>
                                 </div>
                               </CommandItem>
                             ))}
@@ -276,11 +252,7 @@ export function AssignPlanModal({ planId, userId, onClose, onSuccess }: AssignPl
           <Button type="button" variant="outline" onClick={onClose} disabled={isAssigning}>
             Cancel
           </Button>
-          <Button
-            onClick={form.handleSubmit(handleSubmit)}
-            disabled={isAssigning}
-            isLoading={isAssigning}
-          >
+          <Button onClick={form.handleSubmit(handleSubmit)} disabled={isAssigning} isLoading={isAssigning}>
             Assign Plan
           </Button>
         </div>

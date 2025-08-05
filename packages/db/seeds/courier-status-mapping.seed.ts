@@ -1,21 +1,11 @@
 import { prisma } from '@lorrigo/db';
-import {
-  delhiveryStatusMappings,
-  shiprocketB2BStatusMappings,
-  shiprocketStatusMappings,
-  smartshipStatusMappings,
-} from './data/couriers';
+import { delhiveryStatusMappings, shiprocketB2BStatusMappings, shiprocketStatusMappings, smartshipStatusMappings } from './data/couriers';
 
 async function main() {
   console.log('Seeding courier status mappings...');
 
   // Define status mappings by bucket
-  const statusMappings = [
-    ...delhiveryStatusMappings,
-    ...shiprocketStatusMappings,
-    ...shiprocketB2BStatusMappings,
-    ...smartshipStatusMappings,
-  ];
+  const statusMappings = [...delhiveryStatusMappings, ...shiprocketStatusMappings, ...shiprocketB2BStatusMappings, ...smartshipStatusMappings];
   // Create or update status mappings
   for (const mapping of statusMappings) {
     await prisma.courierStatusMapping.upsert({

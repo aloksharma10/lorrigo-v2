@@ -9,4 +9,4 @@ export function downloadBlob(blob: Blob, filename: string) {
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
   }, 0);
-} 
+}

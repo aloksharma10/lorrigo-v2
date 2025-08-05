@@ -84,8 +84,7 @@ function SheetRoot({
           {...contentProps}
           onPointerDownOutside={(e) => {
             // Don't dismiss when clicking inside a toast
-            if (e.target instanceof Element && e.target.closest('[data-sonner-toast]'))
-              e.preventDefault();
+            if (e.target instanceof Element && e.target.closest('[data-sonner-toast]')) e.preventDefault();
 
             contentProps?.onPointerDownOutside?.(e);
           }}
@@ -112,9 +111,7 @@ function SheetRoot({
             } as React.CSSProperties
           }
         >
-          <div className="scrollbar-hide flex size-full grow flex-col overflow-y-auto rounded-lg bg-white dark:bg-stone-900">
-            {children}
-          </div>
+          <div className="scrollbar-hide flex size-full grow flex-col overflow-y-auto rounded-lg bg-white dark:bg-stone-900">{children}</div>
         </Drawer.Content>
       </Drawer.Portal>
     </RootComponent>
@@ -122,12 +119,7 @@ function SheetRoot({
 }
 
 function Title({ className, ...rest }: ComponentProps<typeof Drawer.Title>) {
-  return (
-    <Drawer.Title
-      className={cn('text-xl font-medium text-zinc-900 dark:text-white', className)}
-      {...rest}
-    />
-  );
+  return <Drawer.Title className={cn('text-xl font-medium text-zinc-900 dark:text-white', className)} {...rest} />;
 }
 
 function Description(props: ComponentProps<typeof Drawer.Description>) {

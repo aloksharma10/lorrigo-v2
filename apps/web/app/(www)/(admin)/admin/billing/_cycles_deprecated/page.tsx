@@ -30,9 +30,7 @@ export default function AdminBillingCyclesPage() {
     {
       accessorKey: 'code',
       header: 'Billing Code',
-      cell: ({ row }: any) => (
-        <span className="font-mono text-sm">{row.getValue('code')}</span>
-      ),
+      cell: ({ row }: any) => <span className="font-mono text-sm">{row.getValue('code')}</span>,
     },
     {
       accessorKey: 'user',
@@ -42,7 +40,7 @@ export default function AdminBillingCyclesPage() {
         return (
           <div>
             <div className="font-medium">{user?.name || 'N/A'}</div>
-            <div className="text-sm text-muted-foreground">{user?.email || 'N/A'}</div>
+            <div className="text-muted-foreground text-sm">{user?.email || 'N/A'}</div>
           </div>
         );
       },
@@ -52,11 +50,7 @@ export default function AdminBillingCyclesPage() {
       header: 'Cycle Type',
       cell: ({ row }: any) => {
         const cycleType = row.getValue('cycle_type') as string;
-        return (
-          <Badge variant={cycleType === 'MANUAL' ? 'secondary' : 'default'}>
-            {cycleType}
-          </Badge>
-        );
+        return <Badge variant={cycleType === 'MANUAL' ? 'secondary' : 'default'}>{cycleType}</Badge>;
       },
     },
     {
@@ -68,9 +62,7 @@ export default function AdminBillingCyclesPage() {
         return (
           <div className="text-sm">
             <div>{format(new Date(startDate), 'MMM dd, yyyy')}</div>
-            <div className="text-muted-foreground">
-              to {format(new Date(endDate), 'MMM dd, yyyy')}
-            </div>
+            <div className="text-muted-foreground">to {format(new Date(endDate), 'MMM dd, yyyy')}</div>
           </div>
         );
       },
@@ -82,14 +74,12 @@ export default function AdminBillingCyclesPage() {
         const total = row.getValue('total_orders') as number;
         const processed = row.original.processed_orders as number;
         const failed = row.original.failed_orders as number;
-        
+
         return (
           <div className="text-sm">
             <div className="font-medium">{total} Total</div>
             <div className="text-green-600">{processed} Processed</div>
-            {failed > 0 && (
-              <div className="text-red-600">{failed} Failed</div>
-            )}
+            {failed > 0 && <div className="text-red-600">{failed} Failed</div>}
           </div>
         );
       },
@@ -99,11 +89,7 @@ export default function AdminBillingCyclesPage() {
       header: 'Amount',
       cell: ({ row }: any) => {
         const amount = row.getValue('total_amount') as number;
-        return (
-          <div className="font-medium">
-            {currencyFormatter(amount)}
-          </div>
-        );
+        return <div className="font-medium">{currencyFormatter(amount)}</div>;
       },
     },
     {
@@ -112,17 +98,7 @@ export default function AdminBillingCyclesPage() {
       cell: ({ row }: any) => {
         const status = row.getValue('status') as string;
         return (
-          <Badge
-            variant={
-              status === 'COMPLETED'
-                ? 'default'
-                : status === 'PROCESSING'
-                ? 'secondary'
-                : status === 'FAILED'
-                ? 'destructive'
-                : 'outline'
-            }
-          >
+          <Badge variant={status === 'COMPLETED' ? 'default' : status === 'PROCESSING' ? 'secondary' : status === 'FAILED' ? 'destructive' : 'outline'}>
             {status}
           </Badge>
         );
@@ -133,11 +109,7 @@ export default function AdminBillingCyclesPage() {
       header: 'Created',
       cell: ({ row }: any) => {
         const date = row.getValue('created_at') as string;
-        return (
-          <span className="text-sm text-muted-foreground">
-            {format(new Date(date), 'MMM dd, yyyy HH:mm')}
-          </span>
-        );
+        return <span className="text-muted-foreground text-sm">{format(new Date(date), 'MMM dd, yyyy HH:mm')}</span>;
       },
     },
     {
@@ -175,26 +147,19 @@ export default function AdminBillingCyclesPage() {
   });
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Billing Cycles</h1>
-          <p className="text-muted-foreground">
-            View and manage all billing cycles across users
-          </p>
+          <p className="text-muted-foreground">View and manage all billing cycles across users</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => router.push('/admin/billing/cycles/new')}
-          >
+          <Button variant="outline" onClick={() => router.push('/admin/billing/cycles/new')}>
             <Plus className="mr-2 h-4 w-4" />
             Create Cycle
           </Button>
-          <Button
-            onClick={() => router.push('/admin/billing/manual')}
-          >
+          <Button onClick={() => router.push('/admin/billing/manual')}>
             <Plus className="mr-2 h-4 w-4" />
             Manual Billing
           </Button>
@@ -206,69 +171,59 @@ export default function AdminBillingCyclesPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Billing Cycles</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Calendar className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{pagination?.total || 0}</div>
-            <p className="text-xs text-muted-foreground">Across all users</p>
+            <p className="text-muted-foreground text-xs">Across all users</p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Orders Billed</CardTitle>
-            <Download className="h-4 w-4 text-muted-foreground" />
+            <Download className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {billingCycles.reduce((sum, cycle) => sum + cycle.total_orders, 0)}
-            </div>
-            <p className="text-xs text-muted-foreground">This period</p>
+            <div className="text-2xl font-bold">{billingCycles.reduce((sum, cycle) => sum + cycle.total_orders, 0)}</div>
+            <p className="text-muted-foreground text-xs">This period</p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <Download className="h-4 w-4 text-muted-foreground" />
+            <Download className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {currencyFormatter(
-                billingCycles.reduce((sum, cycle) => sum + cycle.total_amount, 0)
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground">Current cycles</p>
+            <div className="text-2xl font-bold">{currencyFormatter(billingCycles.reduce((sum, cycle) => sum + cycle.total_amount, 0))}</div>
+            <p className="text-muted-foreground text-xs">Current cycles</p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Cycles</CardTitle>
-            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Filter className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {billingCycles.filter(cycle => cycle.is_active).length}
-            </div>
-            <p className="text-xs text-muted-foreground">Currently active</p>
+            <div className="text-2xl font-bold">{billingCycles.filter((cycle) => cycle.is_active).length}</div>
+            <p className="text-muted-foreground text-xs">Currently active</p>
           </CardContent>
         </Card>
       </div>
-      
+
       {/* Filters and Search */}
       <Card>
         <CardHeader>
           <CardTitle>Billing Cycles</CardTitle>
-          <CardDescription>
-            View and manage all billing cycles across users
-          </CardDescription>
+          <CardDescription>View and manage all billing cycles across users</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-4 mb-6">
+          <div className="mb-6 flex items-center gap-4">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Search className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
                 <Input
                   placeholder="Search by code, user name, email, or cycle type..."
                   value={search}
@@ -302,4 +257,4 @@ export default function AdminBillingCyclesPage() {
       </Card>
     </div>
   );
-} 
+}

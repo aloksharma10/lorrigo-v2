@@ -11,16 +11,7 @@ interface HoverCardToolTipProps {
   triggerClassName?: string;
   triggerComponent?: React.ReactNode;
 }
-const HoverCardToolTip = ({
-  side,
-  align,
-  label,
-  children,
-  className,
-  Icon,
-  triggerClassName,
-  triggerComponent,
-}: HoverCardToolTipProps) => {
+const HoverCardToolTip = ({ side, align, label, children, className, Icon, triggerClassName, triggerComponent }: HoverCardToolTipProps) => {
   return (
     <HoverCard openDelay={50}>
       <HoverCardTrigger

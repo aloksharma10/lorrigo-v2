@@ -46,15 +46,9 @@ export class ShopifyWebhookService {
    */
   public verifyWebhookHmac(body: string, hmac: string): boolean {
     try {
-      const calculatedHmac = crypto
-        .createHmac('sha256', this.apiSecret)
-        .update(body, 'utf8')
-        .digest('base64');
+      const calculatedHmac = crypto.createHmac('sha256', this.apiSecret).update(body, 'utf8').digest('base64');
 
-      return crypto.timingSafeEqual(
-        Buffer.from(calculatedHmac),
-        Buffer.from(hmac)
-      );
+      return crypto.timingSafeEqual(Buffer.from(calculatedHmac), Buffer.from(hmac));
     } catch (error) {
       console.error('Error verifying webhook HMAC:', error);
       return false;
@@ -132,7 +126,7 @@ export class ShopifyWebhookService {
         // analytics: await this.getCustomerAnalytics(payload.customer.id),
         // preferences: await this.getCustomerPreferences(payload.customer.id),
         // settings: await this.getCustomerSettings(payload.customer.id),
-      }
+      },
     };
   }
 
@@ -157,7 +151,7 @@ export class ShopifyWebhookService {
         shop_domain: shopDomain,
         status,
         timestamp: new Date().toISOString(),
-        payload: JSON.stringify(payload).substring(0, 500) + '...' // Truncate for logging
+        payload: JSON.stringify(payload).substring(0, 500) + '...', // Truncate for logging
       });
     } catch (error) {
       console.error('Error logging webhook event:', error);
@@ -170,13 +164,8 @@ export class ShopifyWebhookService {
    * @returns boolean indicating if headers are valid
    */
   public validateWebhookHeaders(headers: any): boolean {
-    const requiredHeaders = [
-      'x-shopify-hmac-sha256',
-      'x-shopify-shop-domain',
-      'x-shopify-topic',
-      'x-shopify-api-version'
-    ];
+    const requiredHeaders = ['x-shopify-hmac-sha256', 'x-shopify-shop-domain', 'x-shopify-topic', 'x-shopify-api-version'];
 
-    return requiredHeaders.every(header => headers[header]);
+    return requiredHeaders.every((header) => headers[header]);
   }
-} 
+}

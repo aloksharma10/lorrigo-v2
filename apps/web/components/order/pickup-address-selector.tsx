@@ -2,16 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { ChevronDown, ChevronUp, Edit, Plus } from 'lucide-react';
-import {
-  Button,
-  Input,
-  Badge,
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
-} from '@lorrigo/ui/components';
+import { Button, Input, Badge, Form, FormControl, FormField, FormItem, FormMessage } from '@lorrigo/ui/components';
 import { useForm } from 'react-hook-form';
 import { useModal } from '@/modal/modal-provider';
 import { useHubOperations } from '@/lib/apis/hub';
@@ -37,11 +28,7 @@ interface AddressFormValues {
   address: string;
 }
 
-export function PickupAddressSelector({
-  onAddressSelect,
-  error,
-  initialAddressId,
-}: PickupAddressSelectorProps) {
+export function PickupAddressSelector({ onAddressSelect, error, initialAddressId }: PickupAddressSelectorProps) {
   const { openModal } = useModal();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -160,11 +147,7 @@ export function PickupAddressSelector({
                   <div className="relative">
                     <Input
                       placeholder="Search by pickup location"
-                      value={
-                        selectedAddress
-                          ? ` ${selectedAddress.name} | ${selectedAddress.address.address}`
-                          : searchQuery
-                      }
+                      value={selectedAddress ? ` ${selectedAddress.name} | ${selectedAddress.address.address}` : searchQuery}
                       onChange={(e) => {
                         setSearchQuery(e.target.value);
                         field.onChange(e.target.value);
@@ -175,18 +158,8 @@ export function PickupAddressSelector({
                       onClick={() => setIsOpen(true)}
                       className="pr-10"
                     />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0 h-full"
-                      onClick={() => setIsOpen(!isOpen)}
-                    >
-                      {isOpen ? (
-                        <ChevronUp className="h-4 w-4" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4" />
-                      )}
+                    <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-0 h-full" onClick={() => setIsOpen(!isOpen)}>
+                      {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                     </Button>
                   </div>
                 </FormControl>
@@ -206,11 +179,7 @@ export function PickupAddressSelector({
             ) : addresses.length > 0 ? (
               <ul className="max-h-80 overflow-auto py-1">
                 {addresses.map((address) => (
-                  <li
-                    key={address.id}
-                    className="hover:bg-muted cursor-pointer border-b px-4 py-3"
-                    onClick={() => handleAddressSelect(address)}
-                  >
+                  <li key={address.id} className="hover:bg-muted cursor-pointer border-b px-4 py-3" onClick={() => handleAddressSelect(address)}>
                     <div className="flex items-center justify-between">
                       <div>
                         <span className="text-base font-semibold">{address.name}</span>
@@ -222,9 +191,7 @@ export function PickupAddressSelector({
                 ))}
               </ul>
             ) : (
-              <div className="text-muted-foreground p-4 text-center text-sm">
-                No addresses found
-              </div>
+              <div className="text-muted-foreground p-4 text-center text-sm">No addresses found</div>
             )}
           </div>
         )}

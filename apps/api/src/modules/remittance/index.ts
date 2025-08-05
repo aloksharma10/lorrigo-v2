@@ -8,7 +8,6 @@ import { addRecurringJob, QueueNames } from '@/lib/queue';
 import { Queue } from 'bullmq';
 
 export async function remittanceRoutes(fastify: FastifyInstance) {
-
   fastify.addHook('onRequest', fastify.authenticate);
 
   const remittanceService = new RemittanceService(fastify);
@@ -36,13 +35,7 @@ export async function remittanceRoutes(fastify: FastifyInstance) {
   });
 
   // Nightly automation – every day at 00:05 AM
-  await addRecurringJob(
-    QueueNames.REMITTANCE_PROCESSING,
-    RemittanceJobType.CALCULATE_REMITTANCE,
-    {},
-    '5 0 * * *',
-    { jobId: 'remittance-nightly' }
-  );
+  await addRecurringJob(QueueNames.REMITTANCE_PROCESSING, RemittanceJobType.CALCULATE_REMITTANCE, {}, '5 0 * * *', { jobId: 'remittance-nightly' });
 
   // Shared routes (role-based access)
   fastify.get('/', {

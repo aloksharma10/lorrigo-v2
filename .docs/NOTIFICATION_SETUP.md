@@ -51,6 +51,7 @@ FRONTEND_URL=http://localhost:3000
 ## Installation
 
 1. Install dependencies:
+
 ```bash
 npm install
 ```
@@ -102,14 +103,14 @@ const result = await fastify.sendNotification({
   type: 'email',
   recipient: 'user@example.com',
   subject: 'Welcome!',
-  message: 'Welcome to our platform!'
+  message: 'Welcome to our platform!',
 });
 
 // Send immediate notification (bypass queue)
 const result = await fastify.sendImmediateNotification({
   type: 'sms',
   recipient: '+1234567890',
-  message: 'Urgent: Your order is ready!'
+  message: 'Urgent: Your order is ready!',
 });
 ```
 
@@ -199,19 +200,19 @@ The system includes pre-built email templates:
 // Send OTP email
 await fastify.sendOTPEmail('user@example.com', '123456', 'login', {
   userName: 'John Doe',
-  expiryMinutes: 10
+  expiryMinutes: 10,
 });
 
 // Send password reset email
 await fastify.sendPasswordResetEmail('user@example.com', 'reset-token', {
   userName: 'John Doe',
-  expiryHours: 24
+  expiryHours: 24,
 });
 
 // Send welcome email
 await fastify.sendWelcomeEmail('user@example.com', {
   userName: 'John Doe',
-  loginUrl: 'http://localhost:3000/login'
+  loginUrl: 'http://localhost:3000/login',
 });
 ```
 
@@ -220,13 +221,13 @@ await fastify.sendWelcomeEmail('user@example.com', {
 ```typescript
 // Send OTP SMS
 await fastify.sendOTPSMS('+1234567890', '123456', 'login', {
-  expiryMinutes: 10
+  expiryMinutes: 10,
 });
 
 // Send order status SMS
 await fastify.sendOrderStatusSMS('+1234567890', 'ORD-123', 'Shipped', {
   trackingNumber: 'TRK-456',
-  estimatedDelivery: '2024-01-15'
+  estimatedDelivery: '2024-01-15',
 });
 
 // Send delivery notification
@@ -236,22 +237,26 @@ await fastify.sendDeliveryNotificationSMS('+1234567890', 'ORD-123', 'FedEx', 'TR
 ## API Endpoints
 
 ### Notifications
+
 - `POST /api/v2/notifications/send` - Send queued notification
 - `POST /api/v2/notifications/send-immediate` - Send immediate notification
 - `GET /api/v2/notifications/job/:jobId` - Get job status
 - `GET /api/v2/notifications/status` - Get service status
 
 ### OTP
+
 - `POST /api/v2/notifications/otp/generate` - Generate and send OTP
 - `POST /api/v2/notifications/otp/verify` - Verify OTP
 - `POST /api/v2/notifications/otp/resend` - Resend OTP
 
 ### System Notifications
+
 - `GET /api/v2/notifications/system/:userId` - Get user notifications
 - `PUT /api/v2/notifications/system/:userId/read/:index` - Mark as read
 - `DELETE /api/v2/notifications/system/:userId` - Clear all notifications
 
 ### Health Check
+
 - `GET /health/notifications` - Notification services health check
 
 ## Configuration
@@ -301,6 +306,7 @@ curl http://localhost:4000/health/notifications
 ```
 
 Response:
+
 ```json
 {
   "status": "ok",
@@ -346,16 +352,19 @@ curl http://localhost:4000/api/v2/notifications/job/job-id-here
 ### Common Issues
 
 1. **Email not sending**
+
    - Check SMTP credentials
    - Verify email service settings
    - Check firewall/network restrictions
 
 2. **SMS not sending**
+
    - Verify Twilio credentials
    - Check phone number format (E.164)
    - Ensure sufficient Twilio credits
 
 3. **OTP not working**
+
    - Check Redis connection
    - Verify OTP configuration
    - Check rate limiting settings
@@ -368,6 +377,7 @@ curl http://localhost:4000/api/v2/notifications/job/job-id-here
 ### Debug Mode
 
 Enable debug logging by setting:
+
 ```env
 LOG_LEVEL=debug
 ```
@@ -375,7 +385,8 @@ LOG_LEVEL=debug
 ## Support
 
 For issues and questions:
+
 - Check the health endpoint: `/health/notifications`
 - Review application logs
 - Monitor Redis and queue status
-- Contact the development team 
+- Contact the development team

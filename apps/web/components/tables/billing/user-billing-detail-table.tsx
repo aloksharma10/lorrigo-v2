@@ -2,11 +2,7 @@
 
 import React, { useState } from 'react';
 import { AlertCircle } from 'lucide-react';
-import {
-  DataTable,
-  DataTableColumnHeader,
-  type ColumnDef,
-} from '@lorrigo/ui/components';
+import { DataTable, DataTableColumnHeader, type ColumnDef } from '@lorrigo/ui/components';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { useBillingOperations, type BillingRecord } from '@/lib/apis/billing';
 import { CopyBtn } from '@/components/copy-btn';
@@ -111,12 +107,9 @@ export function UserBillingDetailTable({ month }: UserBillingDetailTableProps) {
   ];
 
   // Handle pagination change
-  const handlePaginationChange = React.useCallback(
-    (newPagination: { pageIndex: number; pageSize: number }) => {
-      setPagination(newPagination);
-    },
-    []
-  );
+  const handlePaginationChange = React.useCallback((newPagination: { pageIndex: number; pageSize: number }) => {
+    setPagination(newPagination);
+  }, []);
 
   // Handle sorting change
   const handleSortingChange = React.useCallback((newSorting: { id: string; desc: boolean }[]) => {
@@ -165,9 +158,7 @@ export function UserBillingDetailTable({ month }: UserBillingDetailTableProps) {
         <div className="text-center">
           <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
           <h3 className="mt-2 text-sm font-semibold">Error loading billing details</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            There was an error loading your billing details. Please try again.
-          </p>
+          <p className="text-muted-foreground mt-1 text-sm">There was an error loading your billing details. Please try again.</p>
         </div>
       </div>
     );
@@ -220,4 +211,4 @@ export function UserBillingDetailTable({ month }: UserBillingDetailTableProps) {
       />
     </div>
   );
-} 
+}

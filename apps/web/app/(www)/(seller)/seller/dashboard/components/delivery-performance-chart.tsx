@@ -10,12 +10,7 @@ interface DeliveryPerformanceChartProps {
 
 export function DeliveryPerformanceChart({ data, isLoading = false }: DeliveryPerformanceChartProps) {
   return (
-    <ChartCard
-      title="Delivery Performance"
-      badge="Last 30 days"
-      helpText="Shows the distribution of delivery performance"
-      isLoading={isLoading}
-    >
+    <ChartCard title="Delivery Performance" badge="Last 30 days" helpText="Shows the distribution of delivery performance" isLoading={isLoading}>
       <PieChart data={data} tooltipFormatter={(value) => [`${value}`, 'Shipments']} />
     </ChartCard>
   );

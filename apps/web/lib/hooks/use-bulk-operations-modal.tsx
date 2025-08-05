@@ -19,9 +19,7 @@ interface UseBulkOperationsModalReturn {
  * @param onComplete Optional callback to be called when an operation completes
  * @returns Modal state and control functions
  */
-export function useBulkOperationsModal(
-  onComplete?: (result: BulkOperationResponse) => void
-): UseBulkOperationsModalReturn {
+export function useBulkOperationsModal(onComplete?: (result: BulkOperationResponse) => void): UseBulkOperationsModalReturn {
   const [isOpen, setIsOpen] = useState(false);
   const [operationType, setOperationType] = useState<BulkOperationType>('create-shipment');
   const [selectedRows, setSelectedRows] = useState<any[]>([]);

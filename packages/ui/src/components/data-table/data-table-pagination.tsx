@@ -23,7 +23,7 @@ export function DataTablePagination<TData>({
   showToolbar = true,
 }: DataTablePaginationProps<TData>) {
   return (
-    <div className="flex flex-col lg:flex-row items-center justify-between px-2">
+    <div className="flex flex-col items-center justify-between px-2 lg:flex-row">
       <div className="flex items-center space-x-6 lg:space-x-8">
         <div className={cn(`items-center space-x-2`, showToolbar ? 'flex' : 'hidden')}>
           <p className="text-sm font-medium">Items per page</p>
@@ -59,21 +59,11 @@ export function DataTablePagination<TData>({
             <span className="sr-only">Go to first page</span>
             <ChevronsLeft className="h-4 w-4" />
           </Button>
-          <Button
-            variant="outline"
-            className="h-8 w-8 p-0"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage() || isLoading}
-          >
+          <Button variant="outline" className="h-8 w-8 p-0" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage() || isLoading}>
             <span className="sr-only">Go to previous page</span>
             <ChevronLeftIcon className="h-4 w-4" />
           </Button>
-          <Button
-            variant="outline"
-            className="h-8 w-8 p-0"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage() || isLoading}
-          >
+          <Button variant="outline" className="h-8 w-8 p-0" onClick={() => table.nextPage()} disabled={!table.getCanNextPage() || isLoading}>
             <span className="sr-only">Go to next page</span>
             <ChevronRightIcon className="h-4 w-4" />
           </Button>
@@ -102,8 +92,7 @@ export function DataTablePagination<TData>({
               </span>
             ) : (
               <span>
-                {table.getFilteredRowModel().rows.length} of {table.getCoreRowModel().rows.length}{' '}
-                row(s) displayed
+                {table.getFilteredRowModel().rows.length} of {table.getCoreRowModel().rows.length} row(s) displayed
               </span>
             )}
           </>

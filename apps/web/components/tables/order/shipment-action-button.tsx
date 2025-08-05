@@ -3,13 +3,7 @@
 import Link from 'next/link';
 import React, { memo } from 'react';
 import { Button } from '@lorrigo/ui/components';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@lorrigo/ui/components';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@lorrigo/ui/components';
 import { MoreHorizontal } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from '@lorrigo/ui/components';
@@ -32,9 +26,7 @@ export const ShipmentActionButton: React.FC<ShipmentActionButtonProps> = ({ ship
   // Get shipment bucket from the bucket number in API response
   // If bucket is null/undefined, use the status to determine bucket
   const shipmentBucket =
-    shipment.bucket !== null && shipment.bucket !== undefined
-      ? shipment.bucket
-      : ShipmentBucketManager.getBucketFromStatus(shipment.status);
+    shipment.bucket !== null && shipment.bucket !== undefined ? shipment.bucket : ShipmentBucketManager.getBucketFromStatus(shipment.status);
 
   const latestTrackingEventStatus = shipment.trackingEvents?.[0]?.status;
 
@@ -144,11 +136,7 @@ export const ShipmentActionButton: React.FC<ShipmentActionButtonProps> = ({ ship
   }
 
   // IN_TRANSIT, PICKED_UP, OUT_FOR_DELIVERY statuses
-  if (
-    [ShipmentBucket.IN_TRANSIT, ShipmentBucket.PICKED_UP, ShipmentBucket.OUT_FOR_DELIVERY].includes(
-      shipmentBucket
-    )
-  ) {
+  if ([ShipmentBucket.IN_TRANSIT, ShipmentBucket.PICKED_UP, ShipmentBucket.OUT_FOR_DELIVERY].includes(shipmentBucket)) {
     return (
       <div className="flex items-center gap-2">
         {renderDropdown([
@@ -211,9 +199,7 @@ export const ShipmentActionButton: React.FC<ShipmentActionButtonProps> = ({ ship
   }
 
   // CANCELLED status
-  if (
-    [ShipmentBucket.CANCELLED_ORDER, ShipmentBucket.CANCELLED_SHIPMENT].includes(shipmentBucket)
-  ) {
+  if ([ShipmentBucket.CANCELLED_ORDER, ShipmentBucket.CANCELLED_SHIPMENT].includes(shipmentBucket)) {
     return (
       <div className="flex items-center gap-2">
         <Button
@@ -234,11 +220,7 @@ export const ShipmentActionButton: React.FC<ShipmentActionButtonProps> = ({ ship
   }
 
   // RTO and other statuses
-  if (
-    [ShipmentBucket.RTO_INITIATED, ShipmentBucket.RTO_IN_TRANSIT, ShipmentBucket.RTO_DELIVERED, ShipmentBucket.EXCEPTION].includes(
-      shipmentBucket
-    )
-  ) {
+  if ([ShipmentBucket.RTO_INITIATED, ShipmentBucket.RTO_IN_TRANSIT, ShipmentBucket.RTO_DELIVERED, ShipmentBucket.EXCEPTION].includes(shipmentBucket)) {
     return (
       <div className="flex items-center gap-2">
         {renderDropdown([

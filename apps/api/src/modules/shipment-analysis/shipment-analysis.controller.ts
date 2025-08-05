@@ -47,7 +47,7 @@ export class ShipmentAnalysisController {
       const userId = request.userPayload!.id;
 
       const filters: ShipmentAnalysisFilters = request.query as ShipmentAnalysisFilters;
-      
+
       const startTime = Date.now();
       const data = await this.shipmentAnalysisService.getShipmentPerformanceAnalytics(userId, filters);
       const executionTime = Date.now() - startTime;
@@ -280,4 +280,4 @@ export class ShipmentAnalysisController {
       });
     }
   }
-} 
+}

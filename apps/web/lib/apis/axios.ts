@@ -2,12 +2,7 @@ import { apiClient, fileDownloadClient } from '@/components/providers/token-prov
 import { AxiosResponse } from 'axios';
 
 // Generic API request function
-export const apiRequest = async <T>(
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
-  url: string,
-  data?: any,
-  config?: any
-): Promise<T> => {
+export const apiRequest = async <T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH', url: string, data?: any, config?: any): Promise<T> => {
   const response = await apiClient.request({
     method,
     url,

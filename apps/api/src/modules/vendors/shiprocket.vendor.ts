@@ -3,13 +3,7 @@ import { BaseVendor } from './base-vendor';
 import { APIs } from '@/config/api';
 import { CACHE_KEYS } from '@/config/cache';
 import { prisma } from '@lorrigo/db';
-import {
-  formatAddress,
-  formatPhoneNumber,
-  formatShiprocketAddress,
-  PickupAddress,
-  ShipmentBucketManager,
-} from '@lorrigo/utils';
+import { formatAddress, formatPhoneNumber, formatShiprocketAddress, PickupAddress, ShipmentBucketManager } from '@lorrigo/utils';
 import { BucketMappingService } from '../shipments/services/bucket-mapping.service';
 import {
   VendorRegistrationResult,
@@ -42,12 +36,7 @@ export class ShiprocketVendor extends BaseVendor {
 
   constructor(bucketMappingService?: BucketMappingService) {
     const vendorConfig = APP_CONFIG.VENDOR.SHIPROCKET;
-    super(
-      'Shiprocket',
-      vendorConfig.API_BASEURL || '',
-      vendorConfig.API_KEY,
-      CACHE_KEYS.SHIPROCKET_TOKEN
-    );
+    super('Shiprocket', vendorConfig.API_BASEURL || '', vendorConfig.API_KEY, CACHE_KEYS.SHIPROCKET_TOKEN);
     this.email = vendorConfig.EMAIL || '';
     this.password = vendorConfig.PASSWORD || '';
     this.bucketMappingService = bucketMappingService;
@@ -101,7 +90,7 @@ export class ShiprocketVendor extends BaseVendor {
     paymentType: 0 | 1,
     orderValue: number,
     collectableAmount?: number,
-    couriers?: string[],
+    couriers?: string[]
   ): Promise<VendorServiceabilityResult> {
     try {
       const token = await this.getAuthToken();
@@ -123,12 +112,8 @@ export class ShiprocketVendor extends BaseVendor {
 
       const response = await this.makeRequest(endpoint, 'GET', null, apiConfig);
 
-      console.log(response.data, "response.data")
-      if (
-        !response.data ||
-        !response.data.data ||
-        !response.data.data.available_courier_companies
-      ) {
+      console.log(response.data, 'response.data');
+      if (!response.data || !response.data.data || !response.data.data.available_courier_companies) {
         return {
           success: false,
           message: 'No serviceable couriers found',
@@ -150,16 +135,11 @@ export class ShiprocketVendor extends BaseVendor {
 
       // Filter by provided courier IDs if applicable
       const filteredCouriers =
-        couriers && couriers.length > 0
-          ? serviceableCouriers.filter((c: { id: string }) => couriers.includes(c.id))
-          : serviceableCouriers;
+        couriers && couriers.length > 0 ? serviceableCouriers.filter((c: { id: string }) => couriers.includes(c.id)) : serviceableCouriers;
 
       return {
         success: true,
-        message:
-          filteredCouriers.length > 0
-            ? 'Serviceable couriers found'
-            : 'No matching serviceable couriers found',
+        message: filteredCouriers.length > 0 ? 'Serviceable couriers found' : 'No matching serviceable couriers found',
         serviceableCouriers: filteredCouriers,
       };
     } catch (error: any) {
@@ -178,10 +158,7 @@ export class ShiprocketVendor extends BaseVendor {
    * @param hubData Hub data for registration
    * @returns Promise resolving to registration result
    */
-  public async registerHub(
-    hubData: PickupAddress,
-    lorrigoPickupId?: string
-  ): Promise<VendorRegistrationResult> {
+  public async registerHub(hubData: PickupAddress, lorrigoPickupId?: string): Promise<VendorRegistrationResult> {
     try {
       const token = await this.getAuthToken();
 
@@ -224,12 +201,7 @@ export class ShiprocketVendor extends BaseVendor {
         pin_code: pincodeConfig.pincode,
       };
 
-      const response = await this.makeRequest(
-        APIs.SHIPROCKET.CREATE_PICKUP_LOCATION,
-        'POST',
-        payload,
-        apiConfig
-      );
+      const response = await this.makeRequest(APIs.SHIPROCKET.CREATE_PICKUP_LOCATION, 'POST', payload, apiConfig);
 
       return {
         success: true,
@@ -263,8 +235,7 @@ export class ShiprocketVendor extends BaseVendor {
         Authorization: token,
       };
 
-      const { order, hub, orderItems, paymentMethod, dimensions, isSchedulePickup, pickupDate, isReverseOrder } =
-        shipmentData;
+      const { order, hub, orderItems, paymentMethod, dimensions, isSchedulePickup, pickupDate, isReverseOrder } = shipmentData;
 
       if (isReverseOrder) {
         // --- Shiprocket Return Shipment API ---
@@ -350,16 +321,9 @@ export class ShiprocketVendor extends BaseVendor {
           returnPayload.pickup_scheduled_date = new Date(pickupDate).toISOString().split('T')[0];
         }
         // Remove undefined fields
-        Object.keys(returnPayload).forEach(
-          (k) => returnPayload[k] === undefined && delete returnPayload[k]
-        );
+        Object.keys(returnPayload).forEach((k) => returnPayload[k] === undefined && delete returnPayload[k]);
         // Call Shiprocket return shipment API
-        const returnResponse = await this.makeRequest(
-          APIs.SHIPROCKET.CREATE_RETURN_SHIPMENT,
-          'POST',
-          returnPayload,
-          apiConfig
-        );
+        const returnResponse = await this.makeRequest(APIs.SHIPROCKET.CREATE_RETURN_SHIPMENT, 'POST', returnPayload, apiConfig);
         const returnData = returnResponse.data;
         if (!returnData?.payload?.order_id || !returnData?.payload?.shipment_id) {
           return {
@@ -370,9 +334,7 @@ export class ShiprocketVendor extends BaseVendor {
         }
         return {
           success: true,
-          message: isSchedulePickup
-            ? 'Return shipment created and scheduled successfully'
-            : 'Return shipment created successfully',
+          message: isSchedulePickup ? 'Return shipment created and scheduled successfully' : 'Return shipment created successfully',
           awb: returnData.payload.awb_code || '',
           routingCode: returnData.payload.routing_code || '',
           pickup_date: returnData.payload.pickup_scheduled_date ?? '',
@@ -466,8 +428,7 @@ export class ShiprocketVendor extends BaseVendor {
       if (isCOD) {
         wrapperPayload.cod_amount = order.total_amount || 0;
         wrapperPayload.partial_cod_payment_mode = 'Credit points';
-        wrapperPayload.partial_cod_collected =
-          Number(order.total_amount) - Number(order.amount_to_collect);
+        wrapperPayload.partial_cod_collected = Number(order.total_amount) - Number(order.amount_to_collect);
       }
 
       // Add ewaybill if provided and order value is high
@@ -476,12 +437,7 @@ export class ShiprocketVendor extends BaseVendor {
       }
 
       // Call the wrapper API
-      const wrapperResponse = await this.makeRequest(
-        APIs.SHIPROCKET.CREATE_FORWARD_SHIPMENT_WRAPPER,
-        'POST',
-        wrapperPayload,
-        apiConfig
-      );
+      const wrapperResponse = await this.makeRequest(APIs.SHIPROCKET.CREATE_FORWARD_SHIPMENT_WRAPPER, 'POST', wrapperPayload, apiConfig);
 
       const wrapperData = wrapperResponse.data.payload;
       if (!wrapperData?.order_id || !wrapperData?.shipment_id) {
@@ -494,9 +450,7 @@ export class ShiprocketVendor extends BaseVendor {
 
       return {
         success: true,
-        message: isSchedulePickup
-          ? 'Shipment created and scheduled successfully'
-          : 'Shipment created successfully',
+        message: isSchedulePickup ? 'Shipment created and scheduled successfully' : 'Shipment created successfully',
         awb: wrapperData.awb_code || '',
         routingCode: wrapperData.routing_code || '',
         pickup_date: wrapperData.pickup_scheduled_date ?? '',
@@ -538,9 +492,7 @@ export class ShiprocketVendor extends BaseVendor {
       const { pickupDate, shipment } = pickupData;
 
       // Format date to YYYY-MM-DD format if it's not already
-      const formattedDate = pickupDate.includes('-')
-        ? pickupDate
-        : new Date(pickupDate).toISOString().split('T')[0];
+      const formattedDate = pickupDate.includes('-') ? pickupDate : new Date(pickupDate).toISOString().split('T')[0];
 
       // Format the request body
       const requestBody = {
@@ -600,12 +552,7 @@ export class ShiprocketVendor extends BaseVendor {
 
       const { awb } = cancelData;
 
-      const response = await this.makeRequest(
-        APIs.SHIPROCKET.CANCEL_SHIPMENT,
-        'POST',
-        { awbs: [awb] },
-        { Authorization: token }
-      );
+      const response = await this.makeRequest(APIs.SHIPROCKET.CANCEL_SHIPMENT, 'POST', { awbs: [awb] }, { Authorization: token });
 
       return {
         success: true,
@@ -729,11 +676,7 @@ export class ShiprocketVendor extends BaseVendor {
         // Use optimized bucket detection with vendor-specific mappings
         const bucket = this.bucketMappingService
           ? await this.bucketMappingService.detectBucket(statusLabel, statusCode, 'SHIPROCKET')
-          : ShipmentBucketManager.detectBucketFromVendorStatus(
-              statusLabel,
-              statusCode,
-              'SHIPROCKET'
-            );
+          : ShipmentBucketManager.detectBucketFromVendorStatus(statusLabel, statusCode, 'SHIPROCKET');
 
         const status_code = ShipmentBucketManager.getStatusFromBucket(bucket);
         // If status code is not mapped, queue it for admin to map
@@ -748,10 +691,7 @@ export class ShiprocketVendor extends BaseVendor {
         }
 
         // Determine if this is an RTO status
-        const isNDR = ShipmentBucketManager.isNDRStatus(
-          statusLabel || activity.activity,
-          statusCode
-        );
+        const isNDR = ShipmentBucketManager.isNDRStatus(statusLabel || activity.activity, statusCode);
         const isRTO = ShipmentBucketManager.isRTOStatus(activity.activity, statusCode);
 
         // Create tracking event
@@ -784,7 +724,7 @@ export class ShiprocketVendor extends BaseVendor {
           //   priority: 2, // High priority for NDR processing
           //   delay: 5000, // 5 second delay to ensure tracking event is processed first
           // });
-          
+
           // Queue NDR processing if this is a new NDR status
           if (isNDR && trackingInput.awb) {
             // We'll need to get the order ID from the shipment in the processor
@@ -812,9 +752,7 @@ export class ShiprocketVendor extends BaseVendor {
       let latestBucket = 0;
       if (trackingEvents.length > 0) {
         // Sort events by timestamp (newest first)
-        const sortedEvents = [...trackingEvents].sort(
-          (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
-        );
+        const sortedEvents = [...trackingEvents].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
         latestBucket = sortedEvents?.[0]?.bucket ?? 0;
       }
@@ -845,12 +783,8 @@ export class ShiprocketVendor extends BaseVendor {
       };
 
       // Cache the result - use adaptive TTL based on status
-      const isDelivered = trackingEvents.some((event) =>
-        ShipmentBucketManager.isDeliveredStatus(event.status)
-      );
-      const isRTODelivered = trackingEvents.some(
-        (event) => event.isRTO && ShipmentBucketManager.isDeliveredStatus(event.status)
-      );
+      const isDelivered = trackingEvents.some((event) => ShipmentBucketManager.isDeliveredStatus(event.status));
+      const isRTODelivered = trackingEvents.some((event) => event.isRTO && ShipmentBucketManager.isDeliveredStatus(event.status));
 
       // Use longer TTL for final statuses
       const cacheTTL = isDelivered || isRTODelivered ? 86400 : 1800; // 24 hours or 30 minutes
@@ -912,12 +846,7 @@ export class ShiprocketVendor extends BaseVendor {
       }
 
       // Make API request to get NDR details
-      const response = await this.makeRequest(
-        `${APIs.SHIPROCKET.NDR_DETAILS}/${awb}`,
-        'GET',
-        null,
-        { Authorization: token }
-      );
+      const response = await this.makeRequest(`${APIs.SHIPROCKET.NDR_DETAILS}/${awb}`, 'GET', null, { Authorization: token });
 
       if (!response.data?.data || response.data.data.length === 0) {
         return {
@@ -1010,12 +939,7 @@ export class ShiprocketVendor extends BaseVendor {
       };
 
       // Make API request to Shiprocket NDR endpoint
-      const response = await this.makeRequest(
-        `${APIs.SHIPROCKET.NDR_DETAILS}/${ndrData.awb}/action`,
-        'POST',
-        orderReattemptPayload,
-        { Authorization: token }
-      );
+      const response = await this.makeRequest(`${APIs.SHIPROCKET.NDR_DETAILS}/${ndrData.awb}/action`, 'POST', orderReattemptPayload, { Authorization: token });
 
       // Check if the response was successful
       if (!response.data?.success) {
@@ -1052,12 +976,7 @@ export class ShiprocketB2BVendor extends BaseVendor {
 
   constructor() {
     const vendorConfig = APP_CONFIG.VENDOR.SHIPROCKET;
-    super(
-      'ShiprocketB2B',
-      vendorConfig.API_BASEURL || '',
-      vendorConfig.API_KEY,
-      CACHE_KEYS.SHIPROCKET_B2B_TOKEN
-    );
+    super('ShiprocketB2B', vendorConfig.API_BASEURL || '', vendorConfig.API_KEY, CACHE_KEYS.SHIPROCKET_B2B_TOKEN);
     this.clientId = ''; // Will be set dynamically
   }
 
@@ -1086,11 +1005,7 @@ export class ShiprocketB2BVendor extends BaseVendor {
    * @param token Pre-generated Shiprocket B2B token
    * @returns Promise resolving to registration result
    */
-  public async registerHub(
-    hubData: PickupAddress,
-    lorrigoPickupId?: string,
-    token?: string
-  ): Promise<VendorRegistrationResult> {
+  public async registerHub(hubData: PickupAddress, lorrigoPickupId?: string, token?: string): Promise<VendorRegistrationResult> {
     try {
       if (!token) {
         return {
@@ -1142,12 +1057,7 @@ export class ShiprocketB2BVendor extends BaseVendor {
         contact_person_contact_no: formatPhoneNumber(Number(hubData.phone)),
       };
 
-      const response = await this.makeRequest(
-        APIs.SHIPROCKET_B2B.CREATE_HUB,
-        'POST',
-        payload,
-        apiConfig
-      );
+      const response = await this.makeRequest(APIs.SHIPROCKET_B2B.CREATE_HUB, 'POST', payload, apiConfig);
 
       return {
         success: true,
@@ -1260,9 +1170,7 @@ export class ShiprocketB2BVendor extends BaseVendor {
       }
 
       // Sort history by timestamp (oldest first)
-      history.sort(
-        (a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-      );
+      history.sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
       // Try to fetch status mappings from database
       let statusMappings: any[] = [];
@@ -1293,11 +1201,7 @@ export class ShiprocketB2BVendor extends BaseVendor {
           bucket = mapping.bucket;
         } else {
           // Use ShipmentBucketManager to detect bucket from status
-          bucket = ShipmentBucketManager.detectBucketFromVendorStatus(
-            status,
-            statusCode,
-            'SHIPROCKET_B2B'
-          );
+          bucket = ShipmentBucketManager.detectBucketFromVendorStatus(status, statusCode, 'SHIPROCKET_B2B');
         }
 
         const isRTO = ShipmentBucketManager.isRTOStatus(status, statusCode);
@@ -1356,8 +1260,7 @@ export class ShiprocketB2BVendor extends BaseVendor {
 
       return {
         success: false,
-        message:
-          'Shiprocket B2B NDR actions are not yet implemented. Please use regular Shiprocket or contact support.',
+        message: 'Shiprocket B2B NDR actions are not yet implemented. Please use regular Shiprocket or contact support.',
         data: {
           vendor: 'ShiprocketB2B',
           awb: ndrData.awb,

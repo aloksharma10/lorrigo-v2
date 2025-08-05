@@ -34,9 +34,7 @@ export const shippingPlanSchema = z
     name: z.string().min(1, 'Plan name is required').max(100, 'Plan name too long'),
     description: z.string().min(1, 'Description is required').max(500, 'Description too long'),
     isDefault: z.boolean(),
-    features: z
-      .array(z.string().min(1, 'Feature cannot be empty'))
-      .min(1, 'At least one feature is required'),
+    features: z.array(z.string().min(1, 'Feature cannot be empty')).min(1, 'At least one feature is required'),
     courierPricing: z.array(courierPricingSchema),
   })
   .refine(

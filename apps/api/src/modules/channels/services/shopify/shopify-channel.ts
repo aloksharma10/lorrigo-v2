@@ -145,21 +145,10 @@ export class ShopifyChannel extends BaseChannel {
   private prisma: PrismaClient;
   private fastify: FastifyInstance;
 
-  constructor(
-    shop: string, 
-    userId: string, 
-    fastify: FastifyInstance,
-    accessToken?: string
-  ) {
+  constructor(shop: string, userId: string, fastify: FastifyInstance, accessToken?: string) {
     const shopifyConfig = APP_CONFIG.VENDOR.SHOPIFY;
 
-    super(
-      'Shopify',
-      `https://${shop}`,
-      shopifyConfig.API_KEY,
-      userId,
-      `${CACHE_KEYS.SHOPIFY_TOKEN}:${shop}:${userId}`
-    );
+    super('Shopify', `https://${shop}`, shopifyConfig.API_KEY, userId, `${CACHE_KEYS.SHOPIFY_TOKEN}:${shop}:${userId}`);
 
     this.shop = shop;
     this.apiSecret = shopifyConfig.API_SECRET;
@@ -202,7 +191,7 @@ export class ShopifyChannel extends BaseChannel {
     // For app installations, we need to use the shop-specific URL
     const baseUrl = shop ? `https://${shop}/admin/oauth/authorize` : 'https://www.shopify.com/admin/oauth/authorize';
     const authUrl = `${baseUrl}?${querystring.stringify(params)}`;
-    
+
     console.log('Generated Shopify OAuth URL:', { shop, authUrl });
     return authUrl;
   }
@@ -225,7 +214,7 @@ export class ShopifyChannel extends BaseChannel {
 
       // Exchange code for access token
       const tokenUrl = `https://${shop}/admin/oauth/access_token`;
-      
+
       const tokenResponse = await axios.post(tokenUrl, requestData, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -240,7 +229,7 @@ export class ShopifyChannel extends BaseChannel {
 
       // Get shop information
       const shopUrl = `https://${shop}/admin/api/${shopifyConfig.API_VERSION}/shop.json`;
-      
+
       const shopResponse = await axios.get(shopUrl, {
         headers: {
           'X-Shopify-Access-Token': tokenData.access_token,
@@ -260,11 +249,13 @@ export class ShopifyChannel extends BaseChannel {
       };
     } catch (error: any) {
       // Check if it's the specific OAuth error about code already used
-      if (error.response?.data?.error === 'invalid_request' && 
-          error.response?.data?.error_description?.includes('authorization code was not found or was already used')) {
+      if (
+        error.response?.data?.error === 'invalid_request' &&
+        error.response?.data?.error_description?.includes('authorization code was not found or was already used')
+      ) {
         throw new Error('OAUTH_CODE_ALREADY_USED');
       }
-      
+
       throw error;
     }
   }
@@ -276,11 +267,7 @@ export class ShopifyChannel extends BaseChannel {
    * @param deviceInfo Device information
    * @returns Promise resolving to auth response
    */
-  public async handleShopifyLogin(
-    oauthData: ShopifyOAuthData,
-    ipAddress: string,
-    deviceInfo?: any
-  ): Promise<{ user: any; token: string } | { error: string }> {
+  public async handleShopifyLogin(oauthData: ShopifyOAuthData, ipAddress: string, deviceInfo?: any): Promise<{ user: any; token: string } | { error: string }> {
     try {
       // First, check if there's already a Shopify connection for this shop
       let existingConnection = await this.prisma.shopifyConnection.findFirst({
@@ -300,7 +287,7 @@ export class ShopifyChannel extends BaseChannel {
       if (!user) {
         // Create new user with Shopify data
         const { generateId, getFinancialYear } = await import('@lorrigo/utils');
-        
+
         const lastUserSequenceNumber = await this.prisma.user.count({
           where: {
             created_at: {
@@ -362,12 +349,12 @@ export class ShopifyChannel extends BaseChannel {
               data: {
                 user_id: newUser.id,
                 company_name: oauthData.shop_name,
-                notification_settings: { 
+                notification_settings: {
                   whatsapp: true,
                   email: true,
                   sms: true,
                   push: true,
-                }
+                },
               },
             });
 
@@ -401,10 +388,10 @@ export class ShopifyChannel extends BaseChannel {
       } else {
         // Update existing Shopify connection
         const existingConnection = await this.prisma.shopifyConnection.findFirst({
-          where: { 
+          where: {
             shop: oauthData.shop,
-            user_id: user.id
-          }
+            user_id: user.id,
+          },
         });
 
         if (existingConnection) {
@@ -471,7 +458,7 @@ export class ShopifyChannel extends BaseChannel {
       if (!result.user.id || !result.user.email || !result.token) {
         return { error: 'Invalid login result from Shopify authentication' };
       }
-      
+
       return result;
     } catch (error) {
       if (error instanceof Error) {
@@ -487,10 +474,7 @@ export class ShopifyChannel extends BaseChannel {
    * @param ipAddress User's IP address
    * @returns Promise resolving to auth response
    */
-  public async handleExistingUserLogin(
-    shop: string,
-    ipAddress: string
-  ): Promise<{ user: any; token: string } | { error: string }> {
+  public async handleExistingUserLogin(shop: string, ipAddress: string): Promise<{ user: any; token: string } | { error: string }> {
     try {
       // Find existing user by shop domain
       const existingConnection = await this.prisma.shopifyConnection.findFirst({
@@ -503,7 +487,7 @@ export class ShopifyChannel extends BaseChannel {
       }
 
       const user = existingConnection.user;
-      
+
       // Ensure user is active
       if (!user.is_active) {
         return { error: 'User account is not active' };
@@ -657,14 +641,9 @@ export class ShopifyChannel extends BaseChannel {
 
       const endpoint = APIs.SHOPIFY_ORDERS.replace('{version}', this.apiVersion);
 
-      const response = await this.makeRequest(
-        endpoint + (Object.keys(params).length ? `?${querystring.stringify(params as any)}` : ''),
-        'GET',
-        undefined,
-        {
-          'X-Shopify-Access-Token': token,
-        }
-      );
+      const response = await this.makeRequest(endpoint + (Object.keys(params).length ? `?${querystring.stringify(params as any)}` : ''), 'GET', undefined, {
+        'X-Shopify-Access-Token': token,
+      });
 
       if (response.data && response.data.orders) {
         return response.data.orders;
@@ -689,10 +668,7 @@ export class ShopifyChannel extends BaseChannel {
         return null;
       }
 
-      const endpoint = APIs.SHOPIFY_ORDER.replace('{version}', this.apiVersion).replace(
-        '{id}',
-        orderId.toString()
-      );
+      const endpoint = APIs.SHOPIFY_ORDER.replace('{version}', this.apiVersion).replace('{id}', orderId.toString());
 
       const response = await this.makeRequest(endpoint, 'GET', undefined, {
         'X-Shopify-Access-Token': token,

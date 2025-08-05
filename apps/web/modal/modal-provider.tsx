@@ -37,8 +37,7 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
 
     modals.forEach((modal) => {
       // A modal is visible if it's in entering or entered state
-      newVisibleModals[modal.id] =
-        modal.animationState === 'entering' || modal.animationState === 'entered';
+      newVisibleModals[modal.id] = modal.animationState === 'entering' || modal.animationState === 'entered';
     });
 
     setVisibleModals(newVisibleModals);

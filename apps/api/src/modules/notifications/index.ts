@@ -11,13 +11,13 @@ export default async function notifications(fastify: FastifyInstance) {
         type: 'object',
         required: ['type', 'recipient', 'message'],
         properties: {
-          type: { 
-            type: 'string', 
-            enum: Object.values(NotificationType) 
+          type: {
+            type: 'string',
+            enum: Object.values(NotificationType),
           },
-          priority: { 
-            type: 'string', 
-            enum: Object.values(NotificationPriority) 
+          priority: {
+            type: 'string',
+            enum: Object.values(NotificationPriority),
           },
           recipient: { type: 'string' },
           subject: { type: 'string' },
@@ -43,7 +43,7 @@ export default async function notifications(fastify: FastifyInstance) {
     handler: async (request, reply) => {
       try {
         const result = await fastify.notification.send(request.body);
-        
+
         if (result.success) {
           return reply.code(200).send(result);
         } else {
@@ -67,13 +67,13 @@ export default async function notifications(fastify: FastifyInstance) {
         type: 'object',
         required: ['type', 'recipient', 'message'],
         properties: {
-          type: { 
-            type: 'string', 
-            enum: Object.values(NotificationType) 
+          type: {
+            type: 'string',
+            enum: Object.values(NotificationType),
           },
-          priority: { 
-            type: 'string', 
-            enum: Object.values(NotificationPriority) 
+          priority: {
+            type: 'string',
+            enum: Object.values(NotificationPriority),
           },
           recipient: { type: 'string' },
           subject: { type: 'string' },
@@ -98,7 +98,7 @@ export default async function notifications(fastify: FastifyInstance) {
     handler: async (request, reply) => {
       try {
         const result = await fastify.notification.sendImmediate(request.body);
-        
+
         if (result.success) {
           return reply.code(200).send(result);
         } else {
@@ -122,14 +122,14 @@ export default async function notifications(fastify: FastifyInstance) {
         type: 'object',
         required: ['type', 'identifier', 'identifierType', 'purpose'],
         properties: {
-          type: { 
-            type: 'string', 
-            enum: Object.values(OTPType) 
+          type: {
+            type: 'string',
+            enum: Object.values(OTPType),
           },
           identifier: { type: 'string' },
-          identifierType: { 
-            type: 'string', 
-            enum: ['email', 'phone'] 
+          identifierType: {
+            type: 'string',
+            enum: ['email', 'phone'],
           },
           purpose: { type: 'string' },
           metadata: { type: 'object' },
@@ -149,7 +149,7 @@ export default async function notifications(fastify: FastifyInstance) {
     handler: async (request, reply) => {
       try {
         const result = await fastify.notification.generateAndSendOTP(request.body);
-        
+
         if (result.success) {
           return reply.code(200).send(result);
         } else {
@@ -174,14 +174,14 @@ export default async function notifications(fastify: FastifyInstance) {
         required: ['identifier', 'identifierType', 'otp', 'type'],
         properties: {
           identifier: { type: 'string' },
-          identifierType: { 
-            type: 'string', 
-            enum: ['email', 'phone'] 
+          identifierType: {
+            type: 'string',
+            enum: ['email', 'phone'],
           },
           otp: { type: 'string' },
-          type: { 
-            type: 'string', 
-            enum: Object.values(OTPType) 
+          type: {
+            type: 'string',
+            enum: Object.values(OTPType),
           },
         },
       },
@@ -199,7 +199,7 @@ export default async function notifications(fastify: FastifyInstance) {
     handler: async (request, reply) => {
       try {
         const result = await fastify.notification.verifyOTP(request.body);
-        
+
         if (result.success) {
           return reply.code(200).send(result);
         } else {
@@ -223,14 +223,14 @@ export default async function notifications(fastify: FastifyInstance) {
         type: 'object',
         required: ['type', 'identifier', 'identifierType', 'purpose'],
         properties: {
-          type: { 
-            type: 'string', 
-            enum: Object.values(OTPType) 
+          type: {
+            type: 'string',
+            enum: Object.values(OTPType),
           },
           identifier: { type: 'string' },
-          identifierType: { 
-            type: 'string', 
-            enum: ['email', 'phone'] 
+          identifierType: {
+            type: 'string',
+            enum: ['email', 'phone'],
           },
           purpose: { type: 'string' },
           metadata: { type: 'object' },
@@ -250,7 +250,7 @@ export default async function notifications(fastify: FastifyInstance) {
     handler: async (request, reply) => {
       try {
         const result = await fastify.notification.resendOTP(request.body);
-        
+
         if (result.success) {
           return reply.code(200).send(result);
         } else {
@@ -303,7 +303,7 @@ export default async function notifications(fastify: FastifyInstance) {
       try {
         const { userId } = request.params as { userId: string };
         const { limit } = request.query as { limit?: number };
-        
+
         const notifications = await fastify.notification.getSystemNotifications(userId, limit);
         return reply.code(200).send(notifications);
       } catch (error) {
@@ -341,9 +341,9 @@ export default async function notifications(fastify: FastifyInstance) {
     handler: async (request, reply) => {
       try {
         const { userId, index } = request.params as { userId: string; index: number };
-        
+
         const success = await fastify.notification.markNotificationAsRead(userId, index);
-        
+
         if (success) {
           return reply.code(200).send({
             success: true,
@@ -389,9 +389,9 @@ export default async function notifications(fastify: FastifyInstance) {
     handler: async (request, reply) => {
       try {
         const { userId } = request.params as { userId: string };
-        
+
         const success = await fastify.notification.clearSystemNotifications(userId);
-        
+
         if (success) {
           return reply.code(200).send({
             success: true,
@@ -442,9 +442,9 @@ export default async function notifications(fastify: FastifyInstance) {
     handler: async (request, reply) => {
       try {
         const { jobId } = request.params as { jobId: string };
-        
+
         const job = await fastify.notification.getJobStatus(jobId);
-        
+
         if (job) {
           return reply.code(200).send(job);
         } else {
@@ -496,7 +496,7 @@ export default async function notifications(fastify: FastifyInstance) {
         const serviceStatus = await fastify.notification.getStatus();
         // Note: Worker status is not exposed through the notification interface
         // You can access it directly if needed
-        
+
         return reply.code(200).send({
           services: serviceStatus,
           worker: { isRunning: true, concurrency: 5, processedJobs: 0, failedJobs: 0 },
@@ -509,4 +509,4 @@ export default async function notifications(fastify: FastifyInstance) {
       }
     },
   });
-} 
+}

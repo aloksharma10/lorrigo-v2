@@ -24,11 +24,7 @@ export class PickupController {
       }
 
       // Create hub using service
-      const result = await this.pickupService.createPickup(
-        body,
-        request.userPayload!.id,
-        request.userPayload!.name
-      );
+      const result = await this.pickupService.createPickup(body, request.userPayload!.id, request.userPayload!.name);
 
       // Return result with appropriate status code
       if (!result.valid) {

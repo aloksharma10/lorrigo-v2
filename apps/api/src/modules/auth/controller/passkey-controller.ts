@@ -1,11 +1,11 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { 
-  generateRegistrationOptions, 
+import {
+  generateRegistrationOptions,
   generateAuthenticationOptions,
   verifyRegistrationResponse,
   verifyAuthenticationResponse,
   type VerifiedRegistrationResponse,
-  type VerifiedAuthenticationResponse
+  type VerifiedAuthenticationResponse,
 } from '@simplewebauthn/server';
 import { PrismaClient } from '@lorrigo/db';
 import { captureException } from '@/lib/sentry';
@@ -14,9 +14,7 @@ import crypto from 'crypto';
 // WebAuthn configuration
 const rpName = 'Lorrigo';
 const rpID = process.env.NODE_ENV === 'production' ? 'app.lorrigo.com' : 'localhost';
-const origin = process.env.NODE_ENV === 'production' 
-  ? process.env.FRONTEND_URL || 'https://app.lorrigo.com/'
-  : 'http://localhost:3000';
+const origin = process.env.NODE_ENV === 'production' ? process.env.FRONTEND_URL || 'https://app.lorrigo.com/' : 'http://localhost:3000';
 
 export class PasskeyController {
   private prisma: PrismaClient;
@@ -43,14 +41,14 @@ export class PasskeyController {
 
       // Get existing passkeys for this user (only if user has passkeys)
       let excludeCredentials: any[] = [];
-      
+
       if (user.hasPasskeys) {
         const existingPasskeys = await this.prisma.passkey.findMany({
           where: { userId },
           select: { credentialID: true },
         });
 
-        excludeCredentials = existingPasskeys.map(passkey => ({
+        excludeCredentials = existingPasskeys.map((passkey) => ({
           id: passkey.credentialID,
           type: 'public-key' as const,
         }));
@@ -155,7 +153,7 @@ export class PasskeyController {
       // Find user by email
       const user = await this.prisma.user.findUnique({
         where: { email },
-        select: { 
+        select: {
           id: true,
           name: true,
           email: true,
@@ -182,7 +180,7 @@ export class PasskeyController {
         return reply.code(400).send({ success: false, message: 'No passkeys found for this user' });
       }
 
-      const allowCredentials = passkeys.map(passkey => ({
+      const allowCredentials = passkeys.map((passkey) => ({
         id: passkey.credentialID,
         type: 'public-key' as const,
         transports: passkey.transports as any,
@@ -241,7 +239,7 @@ export class PasskeyController {
       }
 
       // Find the passkey
-      const passkey = user.passkeys.find(p => p.credentialID === credential.id);
+      const passkey = user.passkeys.find((p) => p.credentialID === credential.id);
       if (!passkey) {
         return reply.code(400).send({ success: false, message: 'Passkey not found' });
       }
@@ -389,7 +387,7 @@ export class PasskeyController {
    */
   private getDeviceType(request: FastifyRequest): string {
     const userAgent = request.headers['user-agent'] || '';
-    
+
     if (userAgent.includes('Mobile') || userAgent.includes('Android') || userAgent.includes('iPhone')) {
       return 'mobile';
     } else if (userAgent.includes('Tablet') || userAgent.includes('iPad')) {
@@ -398,4 +396,4 @@ export class PasskeyController {
       return 'desktop';
     }
   }
-} 
+}

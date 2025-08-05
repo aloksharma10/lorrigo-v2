@@ -66,8 +66,8 @@ export default function UsersPage() {
         return (
           <div className="flex flex-col">
             <div className="font-medium">{user.name}</div>
-            <div className="text-sm text-muted-foreground">{user.email}</div>
-            <div className="text-xs text-muted-foreground">{user.profile?.company_name}</div>
+            <div className="text-muted-foreground text-sm">{user.email}</div>
+            <div className="text-muted-foreground text-xs">{user.profile?.company_name}</div>
           </div>
         );
       },
@@ -77,13 +77,7 @@ export default function UsersPage() {
       header: ({ column }: any) => <DataTableColumnHeader column={column} title="Role" />,
       cell: ({ row }: any) => {
         const role = row.getValue('role') as string;
-        return (
-          <Badge
-            variant={role === 'ADMIN' ? 'default' : role === 'SELLER' ? 'secondary' : 'outline'}
-          >
-            {role}
-          </Badge>
-        );
+        return <Badge variant={role === 'ADMIN' ? 'default' : role === 'SELLER' ? 'secondary' : 'outline'}>{role}</Badge>;
       },
     },
     {
@@ -137,14 +131,8 @@ export default function UsersPage() {
         const user = row.original;
         return (
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              asChild
-            >
-              <Link href={`/admin/users/${user.id}/profile`}>
-                View Profile
-              </Link>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href={`/admin/users/${user.id}/profile`}>View Profile</Link>
             </Button>
           </div>
         );
@@ -153,19 +141,15 @@ export default function UsersPage() {
   ];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Users</h1>
-          <p className="text-muted-foreground">
-            Manage users and their configurations
-          </p>
+          <p className="text-muted-foreground">Manage users and their configurations</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            onClick={() => router.push('/admin/users/new')}
-          >
+          <Button onClick={() => router.push('/admin/users/new')}>
             <UserPlus className="mr-2 h-4 w-4" />
             Add User
           </Button>
@@ -177,78 +161,69 @@ export default function UsersPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <UserPlus className="h-4 w-4 text-muted-foreground" />
+            <UserPlus className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{pagination?.total || 0}</div>
-            <p className="text-xs text-muted-foreground">Active accounts</p>
+            <p className="text-muted-foreground text-xs">Active accounts</p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+            <Package className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {users.reduce((sum: number, user) => sum + (user._count?.orders || 0), 0)}
-            </div>
-            <p className="text-xs text-muted-foreground">Across all users</p>
+            <div className="text-2xl font-bold">{users.reduce((sum: number, user) => sum + (user._count?.orders || 0), 0)}</div>
+            <p className="text-muted-foreground text-xs">Across all users</p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Wallet Balance</CardTitle>
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
+            <CreditCard className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {currencyFormatter(
-                users.reduce((sum: number, user) => sum + (user.wallet_balance || 0), 0)
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground">Total balance</p>
+            <div className="text-2xl font-bold">{currencyFormatter(users.reduce((sum: number, user) => sum + (user.wallet_balance || 0), 0))}</div>
+            <p className="text-muted-foreground text-xs">Total balance</p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">New Users</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Calendar className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {users.filter((user) => {
-                const date = new Date(user.created_at);
-                const now = new Date();
-                const thirtyDaysAgo = new Date();
-                thirtyDaysAgo.setDate(now.getDate() - 30);
-                return date > thirtyDaysAgo;
-              }).length}
+              {
+                users.filter((user) => {
+                  const date = new Date(user.created_at);
+                  const now = new Date();
+                  const thirtyDaysAgo = new Date();
+                  thirtyDaysAgo.setDate(now.getDate() - 30);
+                  return date > thirtyDaysAgo;
+                }).length
+              }
             </div>
-            <p className="text-xs text-muted-foreground">Last 30 days</p>
+            <p className="text-muted-foreground text-xs">Last 30 days</p>
           </CardContent>
         </Card>
       </div>
-      
+
       {/* Users Table */}
       <Card>
         <CardHeader>
           <CardTitle>Users</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-4 mb-6">
+          <div className="mb-6 flex items-center gap-4">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search by name, email, or company..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10"
-                />
+                <Search className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
+                <Input placeholder="Search by name, email, or company..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
               </div>
             </div>
           </div>

@@ -81,7 +81,7 @@ export const CACHE_CONFIG = {
   MAX_MEMORY_POLICY: 'allkeys-lru',
   COMPRESSION_THRESHOLD: 1024, // 1KB
   BATCH_SIZE: 100,
-  
+
   // Redis key patterns
   PATTERNS: {
     USER_WILDCARD: `${CACHE_PREFIXES.USER}:*`,

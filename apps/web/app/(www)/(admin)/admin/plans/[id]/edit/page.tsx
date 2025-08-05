@@ -1,16 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  Button,
-  toast,
-  Skeleton,
-} from '@lorrigo/ui/components';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, toast, Skeleton } from '@lorrigo/ui/components';
 import { ArrowLeft } from 'lucide-react';
 import { usePlanOperations } from '@/lib/apis/plans';
 import { EnhancedCreatePlanForm } from '@/components/plan/enhanced-create-plan';
@@ -72,9 +63,7 @@ export default function EditPlanPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-red-500">Error Loading Plan</CardTitle>
-            <CardDescription>
-              {(error as Error)?.message || 'Failed to load plan details'}
-            </CardDescription>
+            <CardDescription>{(error as Error)?.message || 'Failed to load plan details'}</CardDescription>
           </CardHeader>
           <CardContent>
             <Button onClick={() => window.location.reload()}>Try Again</Button>
@@ -84,7 +73,5 @@ export default function EditPlanPage() {
     );
   }
 
-  return (
-      <EnhancedCreatePlanForm planData={plan} isEditing={true} />
-  );
+  return <EnhancedCreatePlanForm planData={plan} isEditing={true} />;
 }

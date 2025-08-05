@@ -21,7 +21,7 @@ import { Skeleton } from '@lorrigo/ui/components/skeleton';
 
 // Icon mapping for dynamic icons
 const iconMap = {
-  'truck': IconTruck,
+  truck: IconTruck,
   'truck-delivery': IconTruckDelivery,
   'truck-return': IconTruckReturn,
   'clock-pause': IconClockPause,
@@ -35,7 +35,7 @@ const iconMap = {
 
 // Loading skeleton for summary cards
 const SummarySkeleton = () => (
-  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
     {Array.from({ length: 4 }).map((_, i) => (
       <div key={i} className="flex items-center space-x-4">
         <Skeleton className="h-12 w-12 rounded-full" />
@@ -50,7 +50,7 @@ const SummarySkeleton = () => (
 
 // Loading skeleton for action items
 const ActionItemsSkeleton = () => (
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
     {Array.from({ length: 5 }).map((_, i) => (
       <div key={i} className="space-y-2">
         <Skeleton className="h-4 w-[120px]" />
@@ -63,12 +63,7 @@ const ActionItemsSkeleton = () => (
 
 export default function Home() {
   // Fetch analytics data using unified hook
-  const {
-    home,
-    actionItems,
-    upcomingPickups,
-    kycStatus,
-  } = useShipmentAnalysis();
+  const { home, actionItems, upcomingPickups, kycStatus } = useShipmentAnalysis();
 
   // Extract data from API responses
   const summary = home.data?.summary || [];
@@ -85,10 +80,10 @@ export default function Home() {
   if (hasError) {
     return (
       <div className="flex flex-1 flex-col gap-2 space-y-6">
-        <div className="flex items-center justify-center h-64">
+        <div className="flex h-64 items-center justify-center">
           <div className="text-center">
-            <IconAlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Analytics</h3>
+            <IconAlertTriangle className="mx-auto mb-4 h-12 w-12 text-red-500" />
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">Error Loading Analytics</h3>
             <p className="text-gray-600">There was an error loading the analytics data. Please try refreshing the page.</p>
           </div>
         </div>
@@ -101,9 +96,7 @@ export default function Home() {
       <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-4">
         <Card className="w-full">
           <CardHeader>
-            <CardTitle className="scroll-m-20 text-lg font-semibold tracking-tight md:text-xl">
-              Getting Started
-            </CardTitle>
+            <CardTitle className="scroll-m-20 text-lg font-semibold tracking-tight md:text-xl">Getting Started</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {kycStatus.isLoading ? (
@@ -116,17 +109,17 @@ export default function Home() {
               <>
                 <CardItems
                   title="Complete your KYC"
-                  value={kycStatusData?.isCompleted ? "Completed" : `${kycStatusData?.completionPercentage || 0}%`}
-                  description={kycStatusData?.nextAction || "Complete your KYC to start selling on Lorrigo"}
+                  value={kycStatusData?.isCompleted ? 'Completed' : `${kycStatusData?.completionPercentage || 0}%`}
+                  description={kycStatusData?.nextAction || 'Complete your KYC to start selling on Lorrigo'}
                   icon={kycStatusData?.isCompleted ? IconCircleCheck : IconUserCheck}
-                  className={kycStatusData?.isCompleted ? "bg-green-100" : "bg-yellow-100 dark:text-gray-600 "}
+                  className={kycStatusData?.isCompleted ? 'bg-green-100' : 'bg-yellow-100 dark:text-gray-600'}
                 />
                 <CardItems
                   title="Getting Started"
-                  value={kycStatusData?.isCompleted ? "Ready" : "Pending"}
-                  description={kycStatusData?.isCompleted ? "You're all set to start selling" : "Complete KYC to get started"}
+                  value={kycStatusData?.isCompleted ? 'Ready' : 'Pending'}
+                  description={kycStatusData?.isCompleted ? "You're all set to start selling" : 'Complete KYC to get started'}
                   icon={kycStatusData?.isCompleted ? IconCircleCheck : IconClockPause}
-                  className={kycStatusData?.isCompleted ? "bg-green-100" : "bg-gray-100 dark:text-gray-600"}
+                  className={kycStatusData?.isCompleted ? 'bg-green-100' : 'bg-gray-100 dark:text-gray-600'}
                 />
               </>
             )}
@@ -137,22 +130,20 @@ export default function Home() {
             <SummarySkeleton />
           </div>
         ) : (
-          <SectionCards 
-            items={summary.map(item => ({
+          <SectionCards
+            items={summary.map((item) => ({
               ...item,
               icon: iconMap[item.icon as keyof typeof iconMap] || IconTruck,
-            }))} 
-            title="Summary" 
-            className="col-span-2 p-4" 
+            }))}
+            title="Summary"
+            className="col-span-2 p-4"
           />
         )}
       </div>
       {actionItems.isLoading ? (
         <Card className="p-4">
           <CardHeader>
-            <CardTitle className="scroll-m-20 text-lg font-semibold tracking-tight md:text-xl">
-              Actions Needing Your Attention Today
-            </CardTitle>
+            <CardTitle className="scroll-m-20 text-lg font-semibold tracking-tight md:text-xl">Actions Needing Your Attention Today</CardTitle>
           </CardHeader>
           <CardContent>
             <ActionItemsSkeleton />
@@ -160,7 +151,7 @@ export default function Home() {
         </Card>
       ) : (
         <SectionCards
-          items={actionItemsList.map(item => ({
+          items={actionItemsList.map((item) => ({
             ...item,
             icon: iconMap[item.icon as keyof typeof iconMap] || IconTruck,
           }))}
@@ -171,16 +162,14 @@ export default function Home() {
       {upcomingPickups.isLoading ? (
         <Card className="p-4">
           <CardHeader>
-            <CardTitle className="scroll-m-20 text-lg font-semibold tracking-tight md:text-xl">
-              Upcoming Pickups
-            </CardTitle>
+            <CardTitle className="scroll-m-20 text-lg font-semibold tracking-tight md:text-xl">Upcoming Pickups</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className="flex items-center space-x-4">
                   <Skeleton className="h-12 w-12 rounded-full" />
-                  <div className="space-y-2 flex-1">
+                  <div className="flex-1 space-y-2">
                     <Skeleton className="h-4 w-[200px]" />
                     <Skeleton className="h-3 w-[150px]" />
                   </div>

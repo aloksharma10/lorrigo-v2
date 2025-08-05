@@ -1,13 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle 
-} from '@lorrigo/ui/components';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@lorrigo/ui/components';
 import { Button } from '@lorrigo/ui/components';
 import { X, Fingerprint, Shield, Zap } from 'lucide-react';
 import { usePasskey } from '@/lib/hooks/use-passkey';
@@ -21,12 +15,7 @@ interface PasskeySetupModalProps {
   onConfigure: () => void;
 }
 
-export function PasskeySetupModal({ 
-  isOpen, 
-  onClose, 
-  onSkip, 
-  onConfigure 
-}: PasskeySetupModalProps) {
+export function PasskeySetupModal({ isOpen, onClose, onSkip, onConfigure }: PasskeySetupModalProps) {
   const { data: session } = useSession();
   const { registerPasskey, isPasskeySupported, isLoading } = usePasskey();
   const [step, setStep] = useState<'intro' | 'configuring' | 'success'>('intro');
@@ -45,7 +34,7 @@ export function PasskeySetupModal({
     }
 
     setStep('configuring');
-    
+
     try {
       const success = await registerPasskey(session.user.id);
       if (success) {
@@ -87,12 +76,9 @@ export function PasskeySetupModal({
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900">
                 <Fingerprint className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
-              <DialogTitle className="text-xl font-semibold">
-                Secure Your Account with Passkeys
-              </DialogTitle>
-              <DialogDescription className="text-center text-sm text-muted-foreground">
-                Add an extra layer of security to your account with passkeys. 
-                Sign in faster and more securely with biometrics or PIN.
+              <DialogTitle className="text-xl font-semibold">Secure Your Account with Passkeys</DialogTitle>
+              <DialogDescription className="text-muted-foreground text-center text-sm">
+                Add an extra layer of security to your account with passkeys. Sign in faster and more securely with biometrics or PIN.
               </DialogDescription>
             </DialogHeader>
 
@@ -101,45 +87,31 @@ export function PasskeySetupModal({
                 <div className="flex items-start space-x-3 rounded-lg border p-3">
                   <Shield className="mt-0.5 h-5 w-5 text-green-600" />
                   <div>
-                    <h4 className="font-medium text-sm">Enhanced Security</h4>
-                    <p className="text-xs text-muted-foreground">
-                      Phishing-resistant authentication
-                    </p>
+                    <h4 className="text-sm font-medium">Enhanced Security</h4>
+                    <p className="text-muted-foreground text-xs">Phishing-resistant authentication</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start space-x-3 rounded-lg border p-3">
                   <Zap className="mt-0.5 h-5 w-5 text-blue-600" />
                   <div>
-                    <h4 className="font-medium text-sm">Faster Sign-in</h4>
-                    <p className="text-xs text-muted-foreground">
-                      No more typing passwords
-                    </p>
+                    <h4 className="text-sm font-medium">Faster Sign-in</h4>
+                    <p className="text-muted-foreground text-xs">No more typing passwords</p>
                   </div>
                 </div>
               </div>
 
               <div className="flex flex-col space-y-2">
-                <Button 
-                  onClick={handleConfigure}
-                  disabled={isLoading}
-                  className="w-full"
-                >
+                <Button onClick={handleConfigure} disabled={isLoading} className="w-full">
                   {isLoading ? 'Configuring...' : 'Configure Passkey'}
                 </Button>
-                
-                <Button 
-                  variant="outline" 
-                  onClick={handleSkip}
-                  className="w-full"
-                >
+
+                <Button variant="outline" onClick={handleSkip} className="w-full">
                   Skip for Now
                 </Button>
               </div>
 
-              <p className="text-xs text-center text-muted-foreground">
-                You can configure passkeys anytime in your account settings
-              </p>
+              <p className="text-muted-foreground text-center text-xs">You can configure passkeys anytime in your account settings</p>
             </div>
           </>
         )}
@@ -147,14 +119,11 @@ export function PasskeySetupModal({
         {step === 'configuring' && (
           <DialogHeader className="text-center">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900">
-              <Fingerprint className="h-6 w-6 text-blue-600 dark:text-blue-400 animate-pulse" />
+              <Fingerprint className="h-6 w-6 animate-pulse text-blue-600 dark:text-blue-400" />
             </div>
-            <DialogTitle className="text-xl font-semibold">
-              Setting Up Your Passkey
-            </DialogTitle>
-            <DialogDescription className="text-center text-sm text-muted-foreground">
-              Please follow the prompts on your device to create your passkey.
-              This may include using your fingerprint, face ID, or PIN.
+            <DialogTitle className="text-xl font-semibold">Setting Up Your Passkey</DialogTitle>
+            <DialogDescription className="text-muted-foreground text-center text-sm">
+              Please follow the prompts on your device to create your passkey. This may include using your fingerprint, face ID, or PIN.
             </DialogDescription>
           </DialogHeader>
         )}
@@ -164,16 +133,13 @@ export function PasskeySetupModal({
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
               <Shield className="h-6 w-6 text-green-600 dark:text-green-400" />
             </div>
-            <DialogTitle className="text-xl font-semibold text-green-600">
-              Passkey Configured Successfully!
-            </DialogTitle>
-            <DialogDescription className="text-center text-sm text-muted-foreground">
-              Your account is now secured with passkeys. You can use biometrics 
-              or PIN to sign in on this device.
+            <DialogTitle className="text-xl font-semibold text-green-600">Passkey Configured Successfully!</DialogTitle>
+            <DialogDescription className="text-muted-foreground text-center text-sm">
+              Your account is now secured with passkeys. You can use biometrics or PIN to sign in on this device.
             </DialogDescription>
           </DialogHeader>
         )}
       </DialogContent>
     </Dialog>
   );
-} 
+}

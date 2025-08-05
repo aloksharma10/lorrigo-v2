@@ -26,11 +26,11 @@ export const result = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
         params: {
-          prompt: "consent",
-          access_type: "offline",
-          response_type: "code"
-        }
-      }
+          prompt: 'consent',
+          access_type: 'offline',
+          response_type: 'code',
+        },
+      },
     }),
     CredentialsProvider({
       name: 'Credentials',
@@ -52,10 +52,10 @@ export const result = NextAuth({
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${credentials.password}`,
+                Authorization: `Bearer ${credentials.password}`,
               },
               body: JSON.stringify({
-                token: "verify",
+                token: 'verify',
               }),
             });
 
@@ -79,7 +79,7 @@ export const result = NextAuth({
           }
 
           const deviceInfo = await getDeviceInfo(req);
-          
+
           const response = await fetch(`${process.env.FASTIFY_BACKEND_URL}/auth/login`, {
             method: 'POST',
             headers: {
@@ -143,7 +143,6 @@ export const result = NextAuth({
             body: JSON.stringify(requestBody),
           });
 
-
           if (!response.ok) {
             const errorText = await response.text();
             console.error('Google OAuth login failed:', errorText);
@@ -155,12 +154,12 @@ export const result = NextAuth({
             console.error('Google OAuth login failed:', data.message);
             return false;
           }
-          
+
           (user as any).token = data.token;
           (user as any).role = data.user.role;
           (user as any).hasPasskeys = data.user.hasPasskeys;
           (user as any).id = data.user.id;
-          
+
           return true;
         } catch (error) {
           console.error('Error in Google OAuth signIn:', error);

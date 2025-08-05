@@ -8,20 +8,16 @@ export default function TestPasskeyPage() {
   const { resetSkipPreference, hasConfigured } = usePasskeySetupContext();
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto space-y-6 p-6">
       <div className="max-w-2xl">
-        <h1 className="text-2xl font-bold mb-4">Passkey Setup Test</h1>
-        
+        <h1 className="mb-4 text-2xl font-bold">Passkey Setup Test</h1>
+
         <div className="space-y-4">
-          <div className="p-4 border rounded-lg">
-            <h2 className="font-semibold mb-2">Test Controls</h2>
+          <div className="rounded-lg border p-4">
+            <h2 className="mb-2 font-semibold">Test Controls</h2>
             <div className="space-y-2">
-              <Button onClick={resetSkipPreference}>
-                Show Passkey Setup Modal
-              </Button>
-              <p className="text-sm text-muted-foreground">
-                Current status: {hasConfigured ? 'Configured' : 'Not configured'}
-              </p>
+              <Button onClick={resetSkipPreference}>Show Passkey Setup Modal</Button>
+              <p className="text-muted-foreground text-sm">Current status: {hasConfigured ? 'Configured' : 'Not configured'}</p>
             </div>
           </div>
 
@@ -30,4 +26,4 @@ export default function TestPasskeyPage() {
       </div>
     </div>
   );
-} 
+}

@@ -36,114 +36,129 @@ import {
   AlertDescription,
   toast,
 } from '@lorrigo/ui/components';
-import { User, CreditCard, FileCheck, Settings, Bell, DollarSign, Building, Package, Wallet, Truck, Printer, Save, Loader2, CheckCircle, Shield } from 'lucide-react';
+import {
+  User,
+  CreditCard,
+  FileCheck,
+  Settings,
+  Bell,
+  DollarSign,
+  Building,
+  Package,
+  Wallet,
+  Truck,
+  Printer,
+  Save,
+  Loader2,
+  CheckCircle,
+  Shield,
+} from 'lucide-react';
 import { UserProfile, useUserOperations } from '@/lib/apis/users';
 
 // Zod schema for form validation
-const userProfileSchema = z.object({
-  // Company Details
-  company: z.string().optional(),
-  company_name: z.string().optional(),
-  logo_url: z.string().url('Invalid URL format').optional().or(z.literal('')),
-  
-  // Notification Settings
-  notification_settings: z.object({
-    email: z.boolean(),
-    whatsapp: z.boolean(),
-    system: z.boolean(),
-  }),
-  
-  // KYC Details
-  business_type: z.string().optional(),
-  pan: z.string().optional(),
-  adhaar: z.string().optional(),
-  gst_no: z.string().optional(),
-  kyc_submitted: z.boolean(),
-  kyc_verified: z.boolean(),
-  
-  // Seller Config
-  is_d2c: z.boolean(),
-  is_b2b: z.boolean(),
-  is_prepaid: z.boolean(),
-  is_cod: z.boolean(),
-  is_fw: z.boolean(),
-  is_rto: z.boolean(),
-  is_cod_reversal: z.boolean(),
-  
-  // Billing and Remittance
-  remittance_cycle: z.enum(['DAILY', 'WEEKLY', 'FORTNIGHTLY', 'MONTHLY', 'CUSTOM']),
-  remittance_min_amount: z.number().min(0, 'Amount cannot be negative'),
-  remittance_days_after_delivery: z.number().min(0, 'Days cannot be negative'),
-  early_remittance_charge: z.number().min(0, 'Charge cannot be negative'),
-  remittance_days_of_week: z.array(z.number().min(0).max(6)),
-  billing_cycle_type: z.enum(['DAILY', 'WEEKLY', 'FORTNIGHTLY', 'MONTHLY', 'CUSTOM']),
-  billing_days_of_week: z.array(z.number().min(0).max(6)),
-  billing_day_of_month: z.number().min(1).max(31).optional(),
-  billing_week_of_month: z.number().min(1).max(4).optional(),
-  billing_days: z.array(z.number().min(0).max(31)).refine(
-    (days) => days.length > 0,
-    { message: 'At least one billing day must be selected' }
-  ),
-  
-  // Label/Manifest Format
-  label_format: z.enum(['THERMAL', 'A4']),
-  manifest_format: z.enum(['THERMAL', 'A4']),
-}).superRefine((data, ctx) => {
-  // Conditional validation based on billing cycle type
-  switch (data.billing_cycle_type) {
-    case 'WEEKLY':
-      // For weekly, billing_days should contain valid weekdays (0-6)
-      const invalidWeekDays = data.billing_days.filter(day => day < 0 || day > 6);
-      if (invalidWeekDays.length > 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Weekly billing days must be between 0 (Sunday) and 6 (Saturday)',
-          path: ['billing_days'],
-        });
-      }
-      if (data.billing_days.length === 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'At least one day of the week must be selected for weekly billing',
-          path: ['billing_days'],
-        });
-      }
-      break;
-      
-    case 'MONTHLY':
-      // For monthly, billing_day_of_month is required
-      if (!data.billing_day_of_month) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Day of month is required for monthly billing',
-          path: ['billing_day_of_month'],
-        });
-      }
-      break;
-      
-    case 'FORTNIGHTLY':
-      // For fortnightly, billing_week_of_month is required
-      if (!data.billing_week_of_month) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Week of month is required for fortnightly billing',
-          path: ['billing_week_of_month'],
-        });
-      }
-      break;
-      
-    case 'CUSTOM':
-      // For custom, at least one billing day is required
-      if (data.billing_days.length === 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'At least one billing day must be selected for custom billing',
-          path: ['billing_days'],
-        });
-      }
-      break;
-  }
-});
+const userProfileSchema = z
+  .object({
+    // Company Details
+    company: z.string().optional(),
+    company_name: z.string().optional(),
+    logo_url: z.string().url('Invalid URL format').optional().or(z.literal('')),
+
+    // Notification Settings
+    notification_settings: z.object({
+      email: z.boolean(),
+      whatsapp: z.boolean(),
+      system: z.boolean(),
+    }),
+
+    // KYC Details
+    business_type: z.string().optional(),
+    pan: z.string().optional(),
+    adhaar: z.string().optional(),
+    gst_no: z.string().optional(),
+    kyc_submitted: z.boolean(),
+    kyc_verified: z.boolean(),
+
+    // Seller Config
+    is_d2c: z.boolean(),
+    is_b2b: z.boolean(),
+    is_prepaid: z.boolean(),
+    is_cod: z.boolean(),
+    is_fw: z.boolean(),
+    is_rto: z.boolean(),
+    is_cod_reversal: z.boolean(),
+
+    // Billing and Remittance
+    remittance_cycle: z.enum(['DAILY', 'WEEKLY', 'FORTNIGHTLY', 'MONTHLY', 'CUSTOM']),
+    remittance_min_amount: z.number().min(0, 'Amount cannot be negative'),
+    remittance_days_after_delivery: z.number().min(0, 'Days cannot be negative'),
+    early_remittance_charge: z.number().min(0, 'Charge cannot be negative'),
+    remittance_days_of_week: z.array(z.number().min(0).max(6)),
+    billing_cycle_type: z.enum(['DAILY', 'WEEKLY', 'FORTNIGHTLY', 'MONTHLY', 'CUSTOM']),
+    billing_days_of_week: z.array(z.number().min(0).max(6)),
+    billing_day_of_month: z.number().min(1).max(31).optional(),
+    billing_week_of_month: z.number().min(1).max(4).optional(),
+    billing_days: z.array(z.number().min(0).max(31)).refine((days) => days.length > 0, { message: 'At least one billing day must be selected' }),
+
+    // Label/Manifest Format
+    label_format: z.enum(['THERMAL', 'A4']),
+    manifest_format: z.enum(['THERMAL', 'A4']),
+  })
+  .superRefine((data, ctx) => {
+    // Conditional validation based on billing cycle type
+    switch (data.billing_cycle_type) {
+      case 'WEEKLY':
+        // For weekly, billing_days should contain valid weekdays (0-6)
+        const invalidWeekDays = data.billing_days.filter((day) => day < 0 || day > 6);
+        if (invalidWeekDays.length > 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Weekly billing days must be between 0 (Sunday) and 6 (Saturday)',
+            path: ['billing_days'],
+          });
+        }
+        if (data.billing_days.length === 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'At least one day of the week must be selected for weekly billing',
+            path: ['billing_days'],
+          });
+        }
+        break;
+
+      case 'MONTHLY':
+        // For monthly, billing_day_of_month is required
+        if (!data.billing_day_of_month) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Day of month is required for monthly billing',
+            path: ['billing_day_of_month'],
+          });
+        }
+        break;
+
+      case 'FORTNIGHTLY':
+        // For fortnightly, billing_week_of_month is required
+        if (!data.billing_week_of_month) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Week of month is required for fortnightly billing',
+            path: ['billing_week_of_month'],
+          });
+        }
+        break;
+
+      case 'CUSTOM':
+        // For custom, at least one billing day is required
+        if (data.billing_days.length === 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'At least one billing day must be selected for custom billing',
+            path: ['billing_days'],
+          });
+        }
+        break;
+    }
+  });
 
 type UserProfileFormData = z.infer<typeof userProfileSchema>;
 
@@ -205,12 +220,12 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
   // Helper function to get billing configuration description
   const getBillingDescription = () => {
     const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    
+
     switch (billingCycleType) {
       case 'DAILY':
         return 'Billing will be processed every day for the last 24 hours';
       case 'WEEKLY':
-        const weekDays = watchedValues.billing_days?.map(day => weekdays[day]).join(', ') || 'No days selected';
+        const weekDays = watchedValues.billing_days?.map((day) => weekdays[day]).join(', ') || 'No days selected';
         return `Billing will be processed every ${weekDays} for the period since last billing`;
       case 'MONTHLY':
         const dayOfMonth = watchedValues.billing_day_of_month || 'Not set';
@@ -232,10 +247,14 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
     if (!day) return '';
     if (day >= 11 && day <= 13) return 'th';
     switch (day % 10) {
-      case 1: return 'st';
-      case 2: return 'nd';
-      case 3: return 'rd';
-      default: return 'th';
+      case 1:
+        return 'st';
+      case 2:
+        return 'nd';
+      case 3:
+        return 'rd';
+      default:
+        return 'th';
     }
   };
 
@@ -243,25 +262,53 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
     if (!week) return '';
     if (week >= 11 && week <= 13) return 'th';
     switch (week % 10) {
-      case 1: return 'st';
-      case 2: return 'nd';
-      case 3: return 'rd';
-      default: return 'th';
+      case 1:
+        return 'st';
+      case 2:
+        return 'nd';
+      case 3:
+        return 'rd';
+      default:
+        return 'th';
     }
   };
 
   // Calculate profile completion percentage
   const calculateCompletion = () => {
     const fields = [
-      'company', 'company_name', 'logo_url', 
-      'business_type', 'pan', 'adhaar', 'gst_no', 'kyc_submitted', 'kyc_verified',
-      'acc_holder_name', 'acc_number', 'ifsc_number', 'acc_type',
-      'is_d2c', 'is_b2b', 'is_prepaid', 'is_cod', 'is_fw', 'is_rto', 'is_cod_reversal',
-      'payment_method', 'remittance_cycle', 'remittance_min_amount', 'remittance_days_after_delivery',
-      'early_remittance_charge', 'billing_cycle_type', 'billing_days', 'billing_day_of_month',
-      'billing_week_of_month', 'label_format', 'manifest_format',
+      'company',
+      'company_name',
+      'logo_url',
+      'business_type',
+      'pan',
+      'adhaar',
+      'gst_no',
+      'kyc_submitted',
+      'kyc_verified',
+      'acc_holder_name',
+      'acc_number',
+      'ifsc_number',
+      'acc_type',
+      'is_d2c',
+      'is_b2b',
+      'is_prepaid',
+      'is_cod',
+      'is_fw',
+      'is_rto',
+      'is_cod_reversal',
+      'payment_method',
+      'remittance_cycle',
+      'remittance_min_amount',
+      'remittance_days_after_delivery',
+      'early_remittance_charge',
+      'billing_cycle_type',
+      'billing_days',
+      'billing_day_of_month',
+      'billing_week_of_month',
+      'label_format',
+      'manifest_format',
     ];
-    const filledFields = fields.filter(field => {
+    const filledFields = fields.filter((field) => {
       const value = watchedValues[field as keyof UserProfileFormData];
       if (typeof value === 'string') return value.trim() !== '';
       if (typeof value === 'boolean') return value;
@@ -331,13 +378,13 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
   useEffect(() => {
     if (isCodEnabled) {
       form.setValue('is_cod_reversal', true);
-    } else{
+    } else {
       form.setValue('is_cod_reversal', false);
     }
   }, [isCodEnabled]);
-  
+
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6">
       {/* Header with Progress */}
       <Card>
         <CardHeader>
@@ -349,9 +396,9 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
               </CardTitle>
               <CardDescription>Manage your complete business profile and settings</CardDescription>
             </div>
-            <div className="text-right space-y-2">
+            <div className="space-y-2 text-right">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Profile Completion</span>
+                <span className="text-muted-foreground text-sm">Profile Completion</span>
                 <Badge variant={completion === 100 ? 'default' : 'secondary'}>{completion}%</Badge>
               </div>
               <Progress value={completion} className="w-32" />
@@ -363,7 +410,7 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-5 mb-6">
+            <TabsList className="mb-6 grid w-full grid-cols-5">
               <TabsTrigger value="basic" className="flex items-center gap-2">
                 <Building className="h-4 w-4" />
                 <span className="hidden sm:inline">Company</span>
@@ -397,7 +444,7 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
                   <CardDescription>Basic company details and branding information</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <FormField
                       control={form.control}
                       name="company"
@@ -447,7 +494,7 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
                       <Bell className="h-4 w-4" />
                       <Label className="text-base font-semibold">Notification Preferences</Label>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                       <FormField
                         control={form.control}
                         name="notification_settings.email"
@@ -510,7 +557,7 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
                   <CardDescription>Know Your Customer details for compliance</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <FormField
                       control={form.control}
                       name="business_type"
@@ -624,7 +671,7 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
 
             {/* Seller Configuration Tab */}
             <TabsContent value="seller" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -716,7 +763,7 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
                     <CardDescription>Configure shipping and logistics options</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
                       <FormField
                         control={form.control}
                         name="is_fw"
@@ -785,7 +832,7 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
 
             {/* Billing Configuration Tab */}
             <TabsContent value="billing" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -819,16 +866,16 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
                         </FormItem>
                       )}
                     />
-                    
+
                     {/* Billing Configuration Description */}
                     {billingCycleType && (
-                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                      <div className="rounded-md border border-blue-200 bg-blue-50 p-3">
                         <p className="text-sm text-blue-800">
                           <strong>Configuration:</strong> {getBillingDescription()}
                         </p>
                       </div>
                     )}
-                    
+
                     {/* Conditional billing configuration based on cycle type */}
                     {watchedValues.billing_cycle_type === 'WEEKLY' && (
                       <FormField
@@ -851,7 +898,7 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
                                       }
                                     }}
                                   />
-                                  <Label className="text-xs text-center">{day}</Label>
+                                  <Label className="text-center text-xs">{day}</Label>
                                 </div>
                               ))}
                             </div>
@@ -861,7 +908,7 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
                         )}
                       />
                     )}
-                    
+
                     {watchedValues.billing_cycle_type === 'MONTHLY' && (
                       <FormField
                         control={form.control}
@@ -889,7 +936,7 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
                         )}
                       />
                     )}
-                    
+
                     {watchedValues.billing_cycle_type === 'FORTNIGHTLY' && (
                       <div className="space-y-4">
                         <FormField
@@ -1022,7 +1069,7 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
                                     }
                                   }}
                                 />
-                                <Label className="text-xs text-center">{day}</Label>
+                                <Label className="text-center text-xs">{day}</Label>
                               </div>
                             ))}
                           </div>
@@ -1046,7 +1093,7 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
                   <CardDescription>Configure printing and document formats</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <FormField
                       control={form.control}
                       name="label_format"
@@ -1100,15 +1147,10 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
           {/* Submit Button */}
           <Card>
             <CardContent className="pt-6">
-              <div className="flex justify-between items-center">
-                <div className="text-sm text-muted-foreground">Last updated: {new Date().toLocaleDateString()}</div>
+              <div className="flex items-center justify-between">
+                <div className="text-muted-foreground text-sm">Last updated: {new Date().toLocaleDateString()}</div>
                 <div className="flex gap-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => form.reset()}
-                    disabled={form.formState.isSubmitting}
-                  >
+                  <Button type="button" variant="outline" onClick={() => form.reset()} disabled={form.formState.isSubmitting}>
                     Reset
                   </Button>
                   <Button type="submit" disabled={form.formState.isSubmitting} size="lg">

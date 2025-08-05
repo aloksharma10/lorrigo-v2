@@ -74,18 +74,12 @@ export function calculateGstComponents(amount: number, gstPercentage: number = 1
  * @param maxRefundDays Maximum days allowed for refund (default: 30)
  * @returns Boolean indicating if the transaction can be refunded
  */
-export function canRefundTransaction(
-  status: TransactionStatus,
-  transactionDate: Date,
-  maxRefundDays: number = 30
-): boolean {
+export function canRefundTransaction(status: TransactionStatus, transactionDate: Date, maxRefundDays: number = 30): boolean {
   if (status !== TransactionStatus.COMPLETED) {
     return false;
   }
 
-  const daysSinceTransaction = Math.floor(
-    (Date.now() - transactionDate.getTime()) / (1000 * 60 * 60 * 24)
-  );
+  const daysSinceTransaction = Math.floor((Date.now() - transactionDate.getTime()) / (1000 * 60 * 60 * 24));
 
   return daysSinceTransaction <= maxRefundDays;
 }

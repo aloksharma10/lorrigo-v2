@@ -290,4 +290,4 @@ export interface RtoAnalytics {
   topByCity: RtoTopByCityItem[];
   topByCourier: RtoTopByCourierItem[];
   topByCustomer: RtoTopByCustomerItem[];
-} 
+}

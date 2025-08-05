@@ -27,14 +27,7 @@ export class BulkOperationsService {
   /**
    * Get all bulk operations with pagination and filters
    */
-  async getAllBulkOperations(
-    userId: string,
-    page: number = 1,
-    pageSize: number = 10,
-    type?: string,
-    status?: string,
-    dateRange?: [Date, Date]
-  ) {
+  async getAllBulkOperations(userId: string, page: number = 1, pageSize: number = 10, type?: string, status?: string, dateRange?: [Date, Date]) {
     try {
       // Build where clause
       const where: any = { user_id: userId };
@@ -204,7 +197,7 @@ export class BulkOperationsService {
   /**
    * Schedule bulk pickups
    */
-  async scheduleBulkPickups(data: { shipment_ids: any[], pickup_date: string }, userId: string) {
+  async scheduleBulkPickups(data: { shipment_ids: any[]; pickup_date: string }, userId: string) {
     try {
       // Validate input
       if (!data.shipment_ids || !Array.isArray(data.shipment_ids) || data.shipment_ids.length === 0) {
@@ -254,7 +247,7 @@ export class BulkOperationsService {
   /**
    * Cancel bulk shipments
    */
-  async cancelBulkShipments(data: { shipment_ids: any[], reason: string }, userId: string) {
+  async cancelBulkShipments(data: { shipment_ids: any[]; reason: string }, userId: string) {
     try {
       // Validate input
       if (!data.shipment_ids || !Array.isArray(data.shipment_ids) || data.shipment_ids.length === 0) {
@@ -410,13 +403,13 @@ export class BulkOperationsService {
 
   async createWeightChargeBulk(csvPath: string, userId: string) {
     const csvData = await csv().fromFile(csvPath);
-    
+
     // Enhanced logging for CSV processing
     this.fastify.log.info(`Processing weight charge CSV with ${csvData.length} rows from file: ${csvPath}`);
-    
+
     // Generate a unique ID for the operation
     const operationId = randomUUID();
-    
+
     // Create bulk operation record
     const operation = await this.fastify.prisma.bulkOperation.create({
       data: {
@@ -431,10 +424,10 @@ export class BulkOperationsService {
     });
 
     // Transform CSV data to ensure correct field names with improved handling
-    const formattedData = csvData.map(row => ({
+    const formattedData = csvData.map((row) => ({
       AWB: row.AWB || row.awb || row['Awb Number'] || row['AWB Number'] || '',
       Charged_Weight: parseFloat(row['Charged_Weight'] || row['Charged Weight'] || row['charged_weight'] || row['weight'] || '0'),
-      evidence_url: row.evidence_url || row.Evidence || row['Evidence URL'] || ''
+      evidence_url: row.evidence_url || row.Evidence || row['Evidence URL'] || '',
     }));
 
     // Log sample of formatted data for debugging
@@ -445,14 +438,14 @@ export class BulkOperationsService {
     const job = await addJob(
       QueueNames.BILLING_AUTOMATION,
       BillingJobType.PROCESS_WEIGHT_CSV,
-      { 
-        csvData: formattedData, 
-        operationId: operation.id 
+      {
+        csvData: formattedData,
+        operationId: operation.id,
       },
-      { 
+      {
         priority: 1,
         attempts: 5,
-        jobId: `weight-csv-${operation.id}`
+        jobId: `weight-csv-${operation.id}`,
       }
     );
 
@@ -473,12 +466,7 @@ export class BulkOperationsService {
       },
     });
 
-    await addJob(
-      QueueNames.BULK_OPERATION,
-      JobType.PROCESS_DISPUTE_ACTIONS_CSV,
-      { csvPath, operationId: operation.id },
-      { priority: 1 }
-    );
+    await addJob(QueueNames.BULK_OPERATION, JobType.PROCESS_DISPUTE_ACTIONS_CSV, { csvPath, operationId: operation.id }, { priority: 1 });
 
     return operation;
   }

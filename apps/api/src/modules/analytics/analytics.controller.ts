@@ -72,4 +72,4 @@ export class AnalyticsController {
   async getZoneDistributionAnalytics(request: FastifyRequest, reply: FastifyReply) {
     return reply.send({ success: true, data: { message: 'Zone distribution analytics (to be implemented)' } });
   }
-} 
+}

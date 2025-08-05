@@ -29,7 +29,6 @@ import { usersRoutes } from '@/modules/users';
 import analyticsRoutes from '@/modules/analytics';
 import shipmentAnalysisRoutes from '@/modules/shipment-analysis';
 
-
 // Hooks
 import { setupSellerHooks } from '@/modules/sellers/hooks';
 import { ensureDefaultPlan } from '@/modules/plan/services/default-plan';

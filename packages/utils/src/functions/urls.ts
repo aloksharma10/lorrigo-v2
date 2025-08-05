@@ -83,14 +83,7 @@ export const getParamsFromURL = (url: string) => {
   }
 };
 
-export const UTMTags = [
-  'utm_source',
-  'utm_medium',
-  'utm_campaign',
-  'utm_term',
-  'utm_content',
-  'ref',
-] as const;
+export const UTMTags = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'ref'] as const;
 
 export const constructURLFromUTMParams = (url: string, utmParams: Record<string, string>) => {
   if (!url) return '';

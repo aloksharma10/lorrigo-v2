@@ -1,12 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { generatePlanId } from '../utils/id-generator';
 import { getPincodeDetails } from '@/utils/pincode';
-import {
-  calculatePricesForCouriers,
-  CourierWithPricing,
-  PriceCalculationParams,
-  validateCalculationParams,
-} from '@/utils/calculate-order-price';
+import { calculatePricesForCouriers, CourierWithPricing, PriceCalculationParams, validateCalculationParams } from '@/utils/calculate-order-price';
 import { flushKeysByPattern } from '@/lib/upstash/flush-key-by-pattern';
 import { ZoneLabel } from '@lorrigo/db';
 
@@ -481,9 +476,7 @@ export class PlanService {
       return null;
     }
 
-    const courierPricing = defaultPlan.plan_courier_pricings.find(
-      (pricing) => pricing.courier_id === courierId
-    );
+    const courierPricing = defaultPlan.plan_courier_pricings.find((pricing) => pricing.courier_id === courierId);
 
     if (!courierPricing) {
       return null;
@@ -567,10 +560,7 @@ export class PlanService {
     }
   }
 
-  async calculateRates(
-    params: RateCalculationParams,
-    userId: string
-  ): Promise<RateCalculationResult[] | { message: string }[]> {
+  async calculateRates(params: RateCalculationParams, userId: string): Promise<RateCalculationResult[] | { message: string }[]> {
     try {
       // Convert to utility params format
       const utilityParams: PriceCalculationParams = {
@@ -647,12 +637,7 @@ export class PlanService {
       }));
 
       // Calculate prices using utility
-      const utilityResults = calculatePricesForCouriers(
-        utilityParams,
-        couriersWithPricing,
-        pickupDetails,
-        deliveryDetails
-      );
+      const utilityResults = calculatePricesForCouriers(utilityParams, couriersWithPricing, pickupDetails, deliveryDetails);
       // Convert utility results back to original format
       const rates: RateCalculationResult[] = utilityResults.map((result) => ({
         nickName: result.courier.nickname ?? 'LORRIGO',

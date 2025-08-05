@@ -1,15 +1,6 @@
 'use client';
 
-import {
-  Checkbox,
-  Input,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  Badge,
-} from '@lorrigo/ui/components';
+import { Checkbox, Input, FormControl, FormField, FormItem, FormLabel, FormMessage, Badge } from '@lorrigo/ui/components';
 import { OrderFormValues } from '@lorrigo/utils/validations';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Control, UseFormWatch, useFormContext } from 'react-hook-form';
@@ -209,9 +200,7 @@ export function DeliveryDetailsForm({ control, watch, isLoading }: DeliveryDetai
               <FormItem>
                 <FormLabel>Mobile Number</FormLabel>
                 <div className="flex">
-                  <div className="bg-muted flex items-center justify-center rounded-l-md border px-2 text-xs">
-                    +91
-                  </div>
+                  <div className="bg-muted flex items-center justify-center rounded-l-md border px-2 text-xs">+91</div>
                   <FormControl>
                     <Input
                       {...field}
@@ -253,11 +242,7 @@ export function DeliveryDetailsForm({ control, watch, isLoading }: DeliveryDetai
               ) : customerOptions.length > 0 ? (
                 <ul className="max-h-60 overflow-y-auto py-1">
                   {customerOptions.map((option) => (
-                    <li
-                      key={option.id}
-                      className="hover:bg-muted cursor-pointer px-4 py-2"
-                      onClick={() => handleCustomerSelect(option)}
-                    >
+                    <li key={option.id} className="hover:bg-muted cursor-pointer px-4 py-2" onClick={() => handleCustomerSelect(option)}>
                       <div className="flex items-center justify-between text-sm font-medium">
                         <Badge variant="outline">
                           <User2 className="h-4 w-4" /> {option.name}
@@ -275,13 +260,9 @@ export function DeliveryDetailsForm({ control, watch, isLoading }: DeliveryDetai
                   ))}
                 </ul>
               ) : searchQuery.length >= 2 ? (
-                <div className="text-muted-foreground p-4 text-center text-sm">
-                  No customers found
-                </div>
+                <div className="text-muted-foreground p-4 text-center text-sm">No customers found</div>
               ) : (
-                <div className="text-muted-foreground p-4 text-center text-sm">
-                  Type at least 2 characters to search
-                </div>
+                <div className="text-muted-foreground p-4 text-center text-sm">Type at least 2 characters to search</div>
               )}
             </div>
           )}

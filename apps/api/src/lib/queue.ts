@@ -272,8 +272,7 @@ export const addJob = async (
   }
 ): Promise<Job> => {
   // Generate a unique job ID if not provided
-  const jobId =
-    options?.jobId || `${jobName}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  const jobId = options?.jobId || `${jobName}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
   // Merge options with defaults
   const jobOptions: JobsOptions = {
@@ -315,14 +314,11 @@ export const addRecurringJob = async (
 ): Promise<Job> => {
   try {
     // Generate a stable job ID for recurring jobs to prevent duplicates
-    const stableJobId =
-      options?.jobId || `${jobName}-recurring-${cronPattern.replace(/\s+/g, '-')}`;
+    const stableJobId = options?.jobId || `${jobName}-recurring-${cronPattern.replace(/\s+/g, '-')}`;
 
     // First, check if this recurring job already exists
     const existingJobs = await queues[queueName].getJobSchedulers();
-    const existingJob = existingJobs.find(
-      (job: any) => job.id === stableJobId || (job.name === jobName && job.pattern === cronPattern)
-    );
+    const existingJob = existingJobs.find((job: any) => job.id === stableJobId || (job.name === jobName && job.pattern === cronPattern));
 
     // If it exists, remove it first to prevent orphaned keys
     if (existingJob) {

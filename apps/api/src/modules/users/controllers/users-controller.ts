@@ -6,7 +6,12 @@ export class UsersController {
 
   async getUsersWithPagination(request: FastifyRequest, reply: FastifyReply) {
     try {
-      const { page = 1, limit = 10, search, role } = request.query as {
+      const {
+        page = 1,
+        limit = 10,
+        search,
+        role,
+      } = request.query as {
         page?: number;
         limit?: number;
         search?: string;
@@ -20,12 +25,12 @@ export class UsersController {
 
       // Build the where clause
       const where: any = {};
-      
+
       // Filter by role if provided
       if (role) {
         where.role = role;
       }
-      
+
       // Add search filter if provided
       if (search) {
         where.OR = [
@@ -74,7 +79,7 @@ export class UsersController {
 
       // Map wallets to users
       const walletMap = new Map(wallets.map((wallet) => [wallet.user_id, wallet.balance]));
-      
+
       // Add wallet balance to each user
       const usersWithWallet = users.map((user) => ({
         ...user,
@@ -100,7 +105,7 @@ export class UsersController {
   async getUserById(request: FastifyRequest, reply: FastifyReply) {
     try {
       const { id } = request.params as { id: string };
-      
+
       const user = await prisma.user.findUnique({
         where: { id },
         include: {
@@ -150,15 +155,7 @@ export class UsersController {
   async updateUser(request: FastifyRequest, reply: FastifyReply) {
     try {
       const { id } = request.params as { id: string };
-      const {
-        name,
-        email,
-        company_name,
-        address,
-        city,
-        state,
-        pincode,
-      } = request.body as {
+      const { name, email, company_name, address, city, state, pincode } = request.body as {
         name?: string;
         email?: string;
         company_name?: string;
@@ -202,12 +199,12 @@ export class UsersController {
         select: { balance: true },
       });
 
-      return reply.send({ 
-        success: true, 
+      return reply.send({
+        success: true,
         user: {
           ...updatedUser,
           wallet_balance: wallet?.balance || 0,
-        }
+        },
       });
     } catch (error) {
       this.fastify.log.error(error);
@@ -223,9 +220,9 @@ export class UsersController {
       // Validate billing configuration based on cycle type
       const billingValidationError = this.validateBillingConfiguration(profileData);
       if (billingValidationError) {
-        return reply.code(400).send({ 
-          success: false, 
-          error: billingValidationError 
+        return reply.code(400).send({
+          success: false,
+          error: billingValidationError,
         });
       }
 
@@ -237,10 +234,10 @@ export class UsersController {
           company: profileData.company,
           company_name: profileData.company_name,
           logo_url: profileData.logo_url,
-          
+
           // Notification Settings
           notification_settings: profileData.notification_settings,
-          
+
           // KYC Details
           business_type: profileData.business_type,
           pan: profileData.pan,
@@ -248,7 +245,7 @@ export class UsersController {
           gst_no: profileData.gst_no,
           kyc_submitted: profileData.kyc_submitted,
           kyc_verified: profileData.kyc_verified,
-          
+
           // Seller Config
           is_d2c: profileData.is_d2c,
           is_b2b: profileData.is_b2b,
@@ -257,7 +254,7 @@ export class UsersController {
           is_fw: profileData.is_fw,
           is_rto: profileData.is_rto,
           is_cod_reversal: profileData.is_cod_reversal,
-          
+
           // Billing and Remittance
           remittance_cycle: profileData.remittance_cycle,
           remittance_min_amount: profileData.remittance_min_amount,
@@ -269,7 +266,7 @@ export class UsersController {
           billing_day_of_month: profileData.billing_day_of_month,
           billing_week_of_month: profileData.billing_week_of_month,
           billing_days: profileData.billing_days,
-          
+
           // Label/Manifest Format
           label_format: profileData.label_format,
           manifest_format: profileData.manifest_format,
@@ -280,10 +277,10 @@ export class UsersController {
           company: profileData.company,
           company_name: profileData.company_name,
           logo_url: profileData.logo_url,
-          
+
           // Notification Settings
           notification_settings: profileData.notification_settings || { email: true, whatsapp: true, system: true },
-          
+
           // KYC Details
           business_type: profileData.business_type,
           pan: profileData.pan,
@@ -291,8 +288,7 @@ export class UsersController {
           gst_no: profileData.gst_no,
           kyc_submitted: profileData.kyc_submitted || false,
           kyc_verified: profileData.kyc_verified || false,
-          
-          
+
           // Seller Config
           is_d2c: profileData.is_d2c !== undefined ? profileData.is_d2c : true,
           is_b2b: profileData.is_b2b !== undefined ? profileData.is_b2b : true,
@@ -301,7 +297,7 @@ export class UsersController {
           is_fw: profileData.is_fw !== undefined ? profileData.is_fw : true,
           is_rto: profileData.is_rto !== undefined ? profileData.is_rto : true,
           is_cod_reversal: profileData.is_cod_reversal !== undefined ? profileData.is_cod_reversal : true,
-          
+
           // Billing and Remittance
           remittance_cycle: profileData.remittance_cycle || 'WEEKLY',
           remittance_min_amount: profileData.remittance_min_amount || 0,
@@ -313,7 +309,7 @@ export class UsersController {
           billing_day_of_month: profileData.billing_day_of_month || 1,
           billing_week_of_month: profileData.billing_week_of_month || 1,
           billing_days: profileData.billing_days || [5],
-          
+
           // Label/Manifest Format
           label_format: profileData.label_format || 'THERMAL',
           manifest_format: profileData.manifest_format || 'THERMAL',
@@ -377,21 +373,11 @@ export class UsersController {
   async getUserBankAccounts(request: FastifyRequest, reply: FastifyReply) {
     try {
       const { id } = request.params as { id: string };
-      const { 
-        page = 1, 
-        limit = 15, 
-        search, 
-        is_verified, 
-        is_selected_for_remittance,
-        bank_name,
-        account_holder,
-        sort,
-        filters
-      } = request.query as any;
+      const { page = 1, limit = 15, search, is_verified, is_selected_for_remittance, bank_name, account_holder, sort, filters } = request.query as any;
       const skip = (page - 1) * limit;
 
       const where: any = { user_id: id };
-      
+
       // Global search
       if (search) {
         where.OR = [
@@ -406,15 +392,15 @@ export class UsersController {
       if (is_verified !== undefined) {
         where.is_verified = is_verified === 'true';
       }
-      
+
       if (is_selected_for_remittance !== undefined) {
         where.is_selected_for_remittance = is_selected_for_remittance === 'true';
       }
-      
+
       if (bank_name) {
         where.bank_name = { contains: bank_name, mode: 'insensitive' };
       }
-      
+
       if (account_holder) {
         where.account_holder = { contains: account_holder, mode: 'insensitive' };
       }
@@ -443,19 +429,19 @@ export class UsersController {
         const sortItem = sort[0];
         const sortField = sortItem.id;
         const sortDirection = sortItem.desc ? 'desc' : 'asc';
-        
+
         // Map frontend field names to database field names
         const fieldMapping: Record<string, string> = {
-          'account_holder': 'account_holder',
-          'bank_name': 'bank_name',
-          'account_number': 'account_number',
-          'ifsc': 'ifsc',
-          'is_verified': 'is_verified',
-          'is_selected_for_remittance': 'is_selected_for_remittance',
-          'created_at': 'created_at',
-          'updated_at': 'updated_at',
+          account_holder: 'account_holder',
+          bank_name: 'bank_name',
+          account_number: 'account_number',
+          ifsc: 'ifsc',
+          is_verified: 'is_verified',
+          is_selected_for_remittance: 'is_selected_for_remittance',
+          created_at: 'created_at',
+          updated_at: 'updated_at',
         };
-        
+
         if (fieldMapping[sortField]) {
           orderBy = { [fieldMapping[sortField]]: sortDirection };
         }
@@ -624,4 +610,4 @@ export class UsersController {
       return reply.code(500).send({ success: false, error: 'Failed to delete bank account' });
     }
   }
-} 
+}

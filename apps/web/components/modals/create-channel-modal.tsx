@@ -79,10 +79,7 @@ export function CreateChannelModal({ onClose }: CreateChannelModalProps) {
           <Button type="button" variant="outline" onClick={onClose} disabled={isCreating}>
             Cancel
           </Button>
-          <Button
-            type="submit"
-            disabled={isCreating || !formData.name.trim() || !formData.nickname.trim()}
-          >
+          <Button type="submit" disabled={isCreating || !formData.name.trim() || !formData.nickname.trim()}>
             {isCreating ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

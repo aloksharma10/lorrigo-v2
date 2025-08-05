@@ -1,7 +1,7 @@
-"use client"
+'use client';
 
-import type * as React from "react"
-import Link from "next/link"
+import type * as React from 'react';
+import Link from 'next/link';
 
 import {
   NavigationMenu,
@@ -11,26 +11,26 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
-} from "@lorrigo/ui/components"
-import { cn } from "@lorrigo/ui/lib/utils"
-import type { NavigationConfig, NavigationContent } from "@/lib/type/public-navigation"
-import Image from "next/image"
+} from '@lorrigo/ui/components';
+import { cn } from '@lorrigo/ui/lib/utils';
+import type { NavigationConfig, NavigationContent } from '@/lib/type/public-navigation';
+import Image from 'next/image';
 
 interface PublicNavigationProps {
-  config: NavigationConfig
+  config: NavigationConfig;
 }
 
 export function PublicNavigation({ config }: PublicNavigationProps) {
-  const { items, brand, className, viewport = false } = config
+  const { items, brand, className, viewport = false } = config;
 
   return (
-    <NavigationMenu viewport={viewport} className={cn("z-2", className)}>
+    <NavigationMenu viewport={viewport} className={cn('z-2', className)}>
       <NavigationMenuList>
         {items.map((item, index) => (
           <NavigationMenuItem key={`${item.title}-${index}`}>
-            {item.type === "link" ? (
+            {item.type === 'link' ? (
               <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
-                <Link href={item.href || "#"}>{item.title}</Link>
+                <Link href={item.href || '#'}>{item.title}</Link>
               </NavigationMenuLink>
             ) : (
               <>
@@ -42,24 +42,20 @@ export function PublicNavigation({ config }: PublicNavigationProps) {
         ))}
       </NavigationMenuList>
     </NavigationMenu>
-  )
+  );
 }
 
-function renderNavigationContent(
-  content: NavigationContent | undefined,
-  type: "dropdown" | "mega",
-  brand?: NavigationConfig["brand"],
-) {
-  if (!content) return null
+function renderNavigationContent(content: NavigationContent | undefined, type: 'dropdown' | 'mega', brand?: NavigationConfig['brand']) {
+  if (!content) return null;
 
-  if (type === "mega") {
+  if (type === 'mega') {
     return (
       <ul className="grid gap-2 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
         {brand && (
           <li className="row-span-3">
             <NavigationMenuLink asChild>
               <Link
-                className="from-muted/50 to-muted flex h-full w-full flex-col justify-end rounded-md bg-gradient-to-b p-6 no-underline outline-none select-none focus:shadow-md"
+                className="from-muted/50 to-muted flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b p-6 no-underline outline-none focus:shadow-md"
                 href={brand.href}
               >
                 <Image src={brand.logo} alt={brand.title} width={100} height={100} className="mb-2" />
@@ -75,15 +71,15 @@ function renderNavigationContent(
           </ListItem>
         ))}
       </ul>
-    )
+    );
   }
 
-  if (type === "dropdown") {
-    const gridCols = content.sections ? "md:grid-cols-2" : "grid-cols-1"
-    const width = content.sections ? "w-[400px] md:w-[500px] lg:w-[600px]" : "w-[300px]"
+  if (type === 'dropdown') {
+    const gridCols = content.sections ? 'md:grid-cols-2' : 'grid-cols-1';
+    const width = content.sections ? 'w-[400px] md:w-[500px] lg:w-[600px]' : 'w-[300px]';
 
     return (
-      <ul className={cn("grid gap-4", width, gridCols)}>
+      <ul className={cn('grid gap-4', width, gridCols)}>
         {content.sections ? (
           content.sections.map((section, sectionIndex) => (
             <li key={`section-${sectionIndex}`}>
@@ -115,10 +111,10 @@ function renderNavigationContent(
           </li>
         )}
       </ul>
-    )
+    );
   }
 
-  return null
+  return null;
 }
 
 function ListItem({
@@ -127,10 +123,10 @@ function ListItem({
   href,
   className,
   ...props
-}: React.ComponentPropsWithoutRef<"li"> & {
-  href: string
-  title: string
-  children?: React.ReactNode
+}: React.ComponentPropsWithoutRef<'li'> & {
+  href: string;
+  title: string;
+  children?: React.ReactNode;
 }) {
   return (
     <li {...props}>
@@ -138,8 +134,8 @@ function ListItem({
         <Link
           href={href}
           className={cn(
-            "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-            className,
+            'hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors',
+            className
           )}
         >
           <div className="text-sm font-medium leading-none">{title}</div>
@@ -147,5 +143,5 @@ function ListItem({
         </Link>
       </NavigationMenuLink>
     </li>
-  )
+  );
 }

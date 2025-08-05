@@ -14,7 +14,7 @@ export class RemittanceService {
     console.log('Starting daily remittance calculation...');
     try {
       const users = await this.fastify.prisma.user.findMany({
-        where: { is_active: true,  },
+        where: { is_active: true },
         include: { profile: true, wallet: true, user_bank_accounts: true },
       });
       console.log(`Found ${users.length} active users`);
@@ -43,7 +43,8 @@ export class RemittanceService {
     // }
     const eligibleBankAccounts = user.user_bank_accounts ? user.user_bank_accounts.filter((acc: any) => this.isBankAccountEligible(acc)) : [];
     // Select eligible bank account if available, else null
-    const selectedBankAccount = eligibleBankAccounts.find((acc: any) => acc.is_selected_for_remittance) || eligibleBankAccounts[eligibleBankAccounts.length - 1] || null;
+    const selectedBankAccount =
+      eligibleBankAccounts.find((acc: any) => acc.is_selected_for_remittance) || eligibleBankAccounts[eligibleBankAccounts.length - 1] || null;
     const remittanceDelay = user.profile?.remittance_days_after_delivery || 7;
     const remittanceDays = user.profile?.remittance_days_of_week || [5];
     const minRemittanceAmount = user.profile?.remittance_min_amount || 0;
@@ -54,7 +55,7 @@ export class RemittanceService {
       return;
     }
     const ordersGroupedByRemittanceDate = this.groupOrdersByRemittanceDate(eligibleOrders, remittanceDelay, remittanceDays);
-    console.log(ordersGroupedByRemittanceDate, 'ordersGroupedByRemittanceDate-----')
+    console.log(ordersGroupedByRemittanceDate, 'ordersGroupedByRemittanceDate-----');
     const today = startOfDay(new Date());
     const cutoffDate = new Date('2025-06-10');
     for (const [remittanceDateStr, ordersForRemittance] of Object.entries(ordersGroupedByRemittanceDate)) {
@@ -97,7 +98,7 @@ export class RemittanceService {
       where: {
         user_id: userId,
         remittanceId: null,
-        shipment: { 
+        shipment: {
           status: 'DELIVERED',
           bucket: ShipmentBucket.DELIVERED,
           // delivered_date: { lte: cutoffDate },
@@ -105,21 +106,21 @@ export class RemittanceService {
         payment_method: 'COD',
       },
       include: {
-       shipment: {
-        include: { 
-          tracking_events: {
-            where: {
-              bucket: ShipmentBucket.DELIVERED,
-              // timestamp: { lte: cutoffDate },
+        shipment: {
+          include: {
+            tracking_events: {
+              where: {
+                bucket: ShipmentBucket.DELIVERED,
+                // timestamp: { lte: cutoffDate },
+              },
+              orderBy: {
+                created_at: 'desc',
+              },
+              take: 1,
             },
-            orderBy: {
-              created_at: 'desc',
-            },
-            take: 1,
-          }
-        }
-      }, 
-      billings: true 
+          },
+        },
+        billings: true,
       },
     });
     return orders;
@@ -208,9 +209,9 @@ export class RemittanceService {
           early_remittance_charge: calculation.earlyRemittanceCharge,
           final_payout_amount: calculation.netAmount,
           // user_id: user.id,
-          user: { 
+          user: {
             connect: { id: user.id },
-          },  
+          },
           // bank_account: {
           //   connect: { id: bankAccount ? bankAccount.id : null },
           // },
@@ -228,7 +229,6 @@ export class RemittanceService {
         where: { id: { in: orders.map((o) => o.id) } },
         data: { remittanceId: remittance.id },
       });
-
 
       await tx.userWallet.update({
         where: { id: user.wallet.id },
@@ -284,10 +284,7 @@ export class RemittanceService {
             totalCharges: updatedWalletTransferAmount,
             earlyRemittanceCharge: updatedEarlyRemittanceCharge,
             netAmount: updatedAmount,
-            orderDetails: [
-              ...(remittance.processing_details.orderDetails || []),
-              ...calculation.orderDetails,
-            ],
+            orderDetails: [...(remittance.processing_details.orderDetails || []), ...calculation.orderDetails],
           },
         },
       });
@@ -356,20 +353,22 @@ export class RemittanceService {
         { code: { contains: search, mode: 'insensitive' } },
         { transaction_id: { contains: search, mode: 'insensitive' } },
         { user: { name: { contains: search, mode: 'insensitive' } } },
-        { orders: { 
-          some : { 
-            shipment: { 
-              awb: { contains: search, mode: 'insensitive' }
-            }
-          }
-        }
-       },
-        { orders: { 
-          some : { 
-            order_number: { contains: search, mode: 'insensitive' }
-          }
-        }
-       },
+        {
+          orders: {
+            some: {
+              shipment: {
+                awb: { contains: search, mode: 'insensitive' },
+              },
+            },
+          },
+        },
+        {
+          orders: {
+            some: {
+              order_number: { contains: search, mode: 'insensitive' },
+            },
+          },
+        },
       ];
     }
 
@@ -575,7 +574,7 @@ export class RemittanceService {
     const skip = (page - 1) * limit;
 
     const where: any = { user_id: userId };
-    if(search){
+    if (search) {
       where.OR = [
         { account_number: { contains: search, mode: 'insensitive' } },
         { ifsc: { contains: search, mode: 'insensitive' } },
@@ -626,7 +625,7 @@ export class RemittanceService {
     if (userId) where.user_id = userId;
     if (is_verified !== undefined) where.is_verified = is_verified;
 
-    if(search){
+    if (search) {
       where.OR = [
         { user: { name: { contains: search, mode: 'insensitive' } } },
         { user: { email: { contains: search, mode: 'insensitive' } } },
@@ -647,7 +646,7 @@ export class RemittanceService {
         },
         skip,
         take: limit,
-        orderBy: { created_at: 'desc'},
+        orderBy: { created_at: 'desc' },
       }),
     ]);
     return {
@@ -698,26 +697,23 @@ export class RemittanceService {
       if (!this.isBankAccountEligible(bankAccount)) {
         throw new Error('Bank account is not eligible for remittance');
       }
-  
+
       const existingRemittance = await this.fastify.prisma.remittance.findFirst({
         where: { id: remittanceId, status: 'PENDING' },
       });
       if (!existingRemittance) {
         throw new Error('Cannot select bank account for completed remittance');
       }
-  
-      if (
-        existingRemittance.remittance_date.toDateString() <= new Date().toDateString() &&
-        existingRemittance.bank_account_id
-      ) {
-        throw new Error('Cannot change bank account for remittance with today\'s date when a bank account is already assigned');
+
+      if (existingRemittance.remittance_date.toDateString() <= new Date().toDateString() && existingRemittance.bank_account_id) {
+        throw new Error("Cannot change bank account for remittance with today's date when a bank account is already assigned");
       }
-  
+
       await this.fastify.prisma.remittance.update({
         where: { id: remittanceId },
         data: { bank_account_id: bankAccountId },
       });
-  
+
       return { valid: true, message: 'Bank account selected for remittance' };
     } catch (error) {
       return { valid: false, message: (error as Error).message };
@@ -753,8 +749,17 @@ export class RemittanceService {
   async exportRemittancesAsCSV(filters: any) {
     const { remittanceOrders } = await this.getAllRemittances({ ...filters, page: 1, limit: 10000 });
     const fields = [
-      'id', 'code', 'transaction_id', 'amount', 'status', 'remittance_date', 'orders_count', 'user_id', 'bank_account_id',
-      'user.name', 'user.email',
+      'id',
+      'code',
+      'transaction_id',
+      'amount',
+      'status',
+      'remittance_date',
+      'orders_count',
+      'user_id',
+      'bank_account_id',
+      'user.name',
+      'user.email',
     ];
     return exportData(fields, remittanceOrders, 'csv', `remittances-${Date.now()}.csv`);
   }
@@ -772,9 +777,7 @@ export class RemittanceService {
       remittance_code: remittanceOrder.code,
       ...order,
     }));
-    const fields = [
-      'remittance_code', 'order_number', 'total_amount', 'amount_to_collect', 'payment_method', 'awb', 'status', 'delivered date'
-    ];
+    const fields = ['remittance_code', 'order_number', 'total_amount', 'amount_to_collect', 'payment_method', 'awb', 'status', 'delivered date'];
     return exportData(fields, orders, 'csv', `remittance-${id}-${Date.now()}.csv`);
   }
 
@@ -784,8 +787,17 @@ export class RemittanceService {
   async exportRemittancesAsXLSX(filters: any) {
     const { remittanceOrders } = await this.getAllRemittances({ ...filters, page: 1, limit: 10000 });
     const fields = [
-      'id', 'code', 'transaction_id', 'amount', 'status', 'remittance_date', 'orders_count', 'user_id', 'bank_account_id',
-      'user.name', 'user.email',
+      'id',
+      'code',
+      'transaction_id',
+      'amount',
+      'status',
+      'remittance_date',
+      'orders_count',
+      'user_id',
+      'bank_account_id',
+      'user.name',
+      'user.email',
     ];
     return exportData(fields, remittanceOrders, 'xlsx', `remittances-${Date.now()}.xlsx`);
   }
@@ -803,9 +815,7 @@ export class RemittanceService {
       remittance_code: remittanceOrder.code,
       ...order,
     }));
-    const fields = [
-      'remittance_id', 'remittance_code', 'id', 'code', 'order_number', 'total_amount', 'amount_to_collect', 'payment_method',
-    ];
+    const fields = ['remittance_id', 'remittance_code', 'id', 'code', 'order_number', 'total_amount', 'amount_to_collect', 'payment_method'];
     return exportData(fields, orders, 'xlsx', `remittance-${id}-${Date.now()}.xlsx`);
   }
 }

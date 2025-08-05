@@ -128,18 +128,15 @@ export function DataTable<TData, TValue>({
   isUploading = false,
 }: DataTableProps<TData, TValue>) {
   const [rowSelection, setRowSelection] = React.useState({});
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>(defaultVisibility);
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>(defaultVisibility);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = React.useState<SortingState>(defaultSort);
   const [globalFilter, setGlobalFilter] = React.useState<string>('');
   const [dateRange, setDateRange] = React.useState(defaultDateRange);
-  const [{ pageIndex, pageSize: currentPageSize }, setPagination] = React.useState<PaginationState>(
-    {
-      pageIndex: page,
-      pageSize: pageSize,
-    }
-  );
+  const [{ pageIndex, pageSize: currentPageSize }, setPagination] = React.useState<PaginationState>({
+    pageIndex: page,
+    pageSize: pageSize,
+  });
 
   // Reset row selection when data changes
   React.useEffect(() => {
@@ -292,15 +289,13 @@ export function DataTable<TData, TValue>({
             isDownloading={isDownloading}
             handleUpload={handleUpload}
             isUploading={isUploading}
-            />
+          />
         )}
 
-        {selectable && Object.keys(rowSelection).length > 0 && (
-          <DataTableSelectedActions table={table} bulkActions={bulkActions} />
-        )}
+        {selectable && Object.keys(rowSelection).length > 0 && <DataTableSelectedActions table={table} bulkActions={bulkActions} />}
 
         <Card className="rounded-lg border-none">
-          <CardContent className="rounded-sm border-none p-0 w-full overflow-x-auto">
+          <CardContent className="w-full overflow-x-auto rounded-sm border-none p-0">
             <Table className={className}>
               <TableHeader className="border-b">
                 {table.getHeaderGroups().map((headerGroup) => (
@@ -308,9 +303,7 @@ export function DataTable<TData, TValue>({
                     {headerGroup.headers.map((header) => {
                       return (
                         <TableHead key={header.id} colSpan={header.colSpan}>
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(header.column.columnDef.header, header.getContext())}
+                          {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                         </TableHead>
                       );
                     })}
@@ -337,9 +330,7 @@ export function DataTable<TData, TValue>({
                       className={onRowClick ? 'cursor-pointer' : ''}
                     >
                       {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </TableCell>
+                        <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                       ))}
                     </TableRow>
                   ))
@@ -355,13 +346,7 @@ export function DataTable<TData, TValue>({
           </CardContent>
         </Card>
 
-        <DataTablePagination
-          table={table}
-          pageSizeOptions={pageSizeOptions}
-          totalCount={count}
-          isLoading={isLoading}
-          showToolbar={showToolbar}
-        />
+        <DataTablePagination table={table} pageSizeOptions={pageSizeOptions} totalCount={count} isLoading={isLoading} showToolbar={showToolbar} />
       </CardContent>
     </Card>
   );

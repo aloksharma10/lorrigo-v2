@@ -196,7 +196,7 @@ export default function RateCalculator() {
       {/* Form Section */}
       <div className="xl:col-span-1">
         <Card className="sticky top-24 border-0 shadow-xl">
-          <CardHeader className="rounded-t-lg py-3 bg-primary text-white dark:bg-stone-800">
+          <CardHeader className="bg-primary rounded-t-lg py-3 text-white dark:bg-stone-800">
             <CardTitle className="flex items-center gap-2">
               <Calculator className="h-5 w-5" />
               Shipment Details
@@ -313,7 +313,7 @@ export default function RateCalculator() {
                 </div>
               )}
 
-              <div className="flex items-center space-x-2 rounded-lg bg-gray-50 dark:bg-stone-800 p-3">
+              <div className="flex items-center space-x-2 rounded-lg bg-gray-50 p-3 dark:bg-stone-800">
                 <Switch id="reverseOrder" checked={formData.isReversedOrder} onCheckedChange={(checked) => handleInputChange('isReversedOrder', checked)} />
                 <Label htmlFor="reverseOrder" className="text-sm">
                   Reverse Order
@@ -323,11 +323,7 @@ export default function RateCalculator() {
 
             {/* Action Buttons */}
             <div className="space-y-3 pt-4">
-              <Button
-                onClick={handleCalculate}
-                disabled={loading}
-                className="h-12 w-full"
-              >
+              <Button onClick={handleCalculate} disabled={loading} className="h-12 w-full">
                 {loading ? (
                   <>
                     <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
@@ -450,7 +446,11 @@ export default function RateCalculator() {
                         <div className="mb-2 flex items-center gap-2">
                           <h3 className="text-lg font-semibold text-gray-900">{rate.name}</h3>
                           {index === 0 && sortBy === 'price' && <Badge className="bg-green-100 text-xs text-green-800">Best Value</Badge>}
-                          {rate.recommended && <Badge variant="status_success" className="bg-green-100 text-xs text-green-800">Recommended</Badge>}
+                          {rate.recommended && (
+                            <Badge variant="status_success" className="bg-green-100 text-xs text-green-800">
+                              Recommended
+                            </Badge>
+                          )}
                         </div>
                         <p className="mb-2 text-sm text-gray-600">{rate.nickname}</p>
                         <div className="flex items-center gap-4 text-sm text-gray-500">
@@ -497,7 +497,7 @@ export default function RateCalculator() {
                       </div>
                     </div>
 
-                      {/* <div className="mt-4 border-t pt-4">
+                    {/* <div className="mt-4 border-t pt-4">
                         <div className="flex flex-wrap gap-2">
                           {rate.is_cod_applicable && (
                             <Badge variant="outline" className="border-blue-200 bg-blue-50 text-xs text-blue-700">
@@ -570,7 +570,7 @@ export default function RateCalculator() {
         )}
 
         {rates.length === 0 && !loading && (
-          <Card className="border-0  shadow-lg backdrop-blur-sm">
+          <Card className="border-0 shadow-lg backdrop-blur-sm">
             <CardContent className="p-12 text-center">
               <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-red-100">
                 <Package className="h-12 w-12 text-red-700" />

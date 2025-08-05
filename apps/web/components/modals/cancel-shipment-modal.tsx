@@ -95,10 +95,7 @@ export const CancelShipmentModal = () => {
       </div>
 
       <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit((values) => onSubmit(values, 'shipment'))}
-          className="space-y-4 px-6 py-4"
-        >
+        <form onSubmit={form.handleSubmit((values) => onSubmit(values, 'shipment'))} className="space-y-4 px-6 py-4">
           <FormField
             control={form.control}
             name="reason"
@@ -106,18 +103,12 @@ export const CancelShipmentModal = () => {
               <FormItem>
                 <FormLabel>Select reason to cancel</FormLabel>
                 <FormControl>
-                  <Select
-                    disabled={isSubmitting}
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+                  <Select disabled={isSubmitting} onValueChange={field.onChange} defaultValue={field.value}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select a reason" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="customer_request">
-                        Customer requested cancellation
-                      </SelectItem>
+                      <SelectItem value="customer_request">Customer requested cancellation</SelectItem>
                       <SelectItem value="out_of_stock">Item out of stock</SelectItem>
                       <SelectItem value="address_issue">Address issue</SelectItem>
                       <SelectItem value="courier_issue">Courier service issue</SelectItem>
@@ -134,19 +125,15 @@ export const CancelShipmentModal = () => {
           <div className="mt-4">
             <div className="rounded-md bg-amber-50 p-4 text-sm text-amber-800">
               <p className="mb-2">
-                <strong>
-                  Once the Shipment is cancelled, you can still reassign the Order to a different
-                  courier.
-                </strong>
+                <strong>Once the Shipment is cancelled, you can still reassign the Order to a different courier.</strong>
               </p>
               <p className="mb-2">
-                However, a cancelled Order will not be available in the panel for reassignment.
-                Please choose to cancel the Order only if there is no need to ship it anymore.
+                However, a cancelled Order will not be available in the panel for reassignment. Please choose to cancel the Order only if there is no need to
+                ship it anymore.
               </p>
               <p>
-                In both cases, a cancellation request would be sent to the courier partner. Once
-                confirmed by the partner, the freight charges will be refunded and credited to your
-                Lorrigo wallet immediately.
+                In both cases, a cancellation request would be sent to the courier partner. Once confirmed by the partner, the freight charges will be refunded
+                and credited to your Lorrigo wallet immediately.
               </p>
             </div>
           </div>

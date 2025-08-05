@@ -2,11 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { AlertCircle } from 'lucide-react';
-import {
-  DataTable,
-  DataTableColumnHeader,
-  type ColumnDef,
-} from '@lorrigo/ui/components';
+import { DataTable, DataTableColumnHeader, type ColumnDef } from '@lorrigo/ui/components';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { useBillingOperations, type BillingRecord } from '@/lib/apis/billing';
 import { CopyBtn } from '@/components/copy-btn';
@@ -38,7 +34,7 @@ export function AdminBillingDetailTable({ userId, month }: AdminBillingDetailTab
 
   // Reset pagination when userId or month changes to ensure fresh data
   useEffect(() => {
-    setPagination(prev => ({ ...prev, pageIndex: 0 }));
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
   }, [userId, month]);
 
   // Use the billing operations hook
@@ -124,12 +120,9 @@ export function AdminBillingDetailTable({ userId, month }: AdminBillingDetailTab
   ];
 
   // Handle pagination change
-  const handlePaginationChange = React.useCallback(
-    (newPagination: { pageIndex: number; pageSize: number }) => {
-      setPagination(newPagination);
-    },
-    []
-  );
+  const handlePaginationChange = React.useCallback((newPagination: { pageIndex: number; pageSize: number }) => {
+    setPagination(newPagination);
+  }, []);
 
   // Handle sorting change
   const handleSortingChange = React.useCallback((newSorting: { id: string; desc: boolean }[]) => {
@@ -194,9 +187,7 @@ export function AdminBillingDetailTable({ userId, month }: AdminBillingDetailTab
         <div className="text-center">
           <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
           <h3 className="mt-2 text-sm font-semibold">Error loading billing details</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            There was an error loading the billing details for this user. Please try again.
-          </p>
+          <p className="text-muted-foreground mt-1 text-sm">There was an error loading the billing details for this user. Please try again.</p>
         </div>
       </div>
     );
@@ -208,9 +199,7 @@ export function AdminBillingDetailTable({ userId, month }: AdminBillingDetailTab
         <div className="text-center">
           <AlertCircle className="mx-auto h-12 w-12 text-orange-500" />
           <h3 className="mt-2 text-sm font-semibold">No user selected</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Please select a user from the summary table above to view their billing details.
-          </p>
+          <p className="text-muted-foreground mt-1 text-sm">Please select a user from the summary table above to view their billing details.</p>
         </div>
       </div>
     );
@@ -222,15 +211,11 @@ export function AdminBillingDetailTable({ userId, month }: AdminBillingDetailTab
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">User Billing Details</h3>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Billing details for User ID: {userId} | Month: {month}
           </p>
         </div>
-        <button
-          onClick={() => refetch()}
-          className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
-          disabled={isFetching}
-        >
+        <button onClick={() => refetch()} className="text-sm text-blue-600 hover:text-blue-800 hover:underline" disabled={isFetching}>
           {isFetching ? 'Refreshing...' : 'Refresh Data'}
         </button>
       </div>
@@ -280,4 +265,4 @@ export function AdminBillingDetailTable({ userId, month }: AdminBillingDetailTab
       />
     </div>
   );
-} 
+}

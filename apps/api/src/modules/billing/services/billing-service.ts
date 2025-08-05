@@ -1,12 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { 
-  BillingStatus, 
-  CycleType, 
-  ShipmentStatus, 
-  TransactionStatus,
-  ChargeType,
-  WeightDisputeStatus 
-} from '@lorrigo/db';
+import { BillingStatus, CycleType, ShipmentStatus, TransactionStatus, ChargeType, WeightDisputeStatus } from '@lorrigo/db';
 import { redis } from '@/lib/redis';
 import { TransactionService, TransactionType } from '@/modules/transactions/services/transaction-service';
 import { calculateExcessCharges } from '@/utils/calculate-order-price';
@@ -41,11 +34,11 @@ export class BillingService {
    */
   async runAutomatedBilling(): Promise<{ processedUsers: number; results: BillingResult[] }> {
     const results: BillingResult[] = [];
-    
+
     try {
       // Get users whose billing cycle is due today
       const usersForBilling = await this.getUsersForBilling();
-      
+
       for (const user of usersForBilling) {
         try {
           const result = await this.runBilling(user.id);
@@ -56,7 +49,7 @@ export class BillingService {
             success: false,
             processedOrders: 0,
             totalAmount: 0,
-            errors: [error instanceof Error ? error.message : 'Unknown error']
+            errors: [error instanceof Error ? error.message : 'Unknown error'],
           });
         }
       }
@@ -76,7 +69,7 @@ export class BillingService {
       // Get user's billing configuration
       const userProfile = await this.fastify.prisma.userProfile.findUnique({
         where: { user_id: userId },
-        include: { user: true }
+        include: { user: true },
       });
 
       if (!userProfile) {
@@ -100,17 +93,12 @@ export class BillingService {
           success: true,
           processedOrders: 0,
           totalAmount: 0,
-          errors: []
+          errors: [],
         };
       }
 
       // Create UserBilling record for this cycle
-      const userBilling = await this.createUserBillingCycle(
-        userId,
-        userProfile.billing_cycle_type,
-        billingPeriod,
-        eligibleShipments.length
-      );
+      const userBilling = await this.createUserBillingCycle(userId, userProfile.billing_cycle_type, billingPeriod, eligibleShipments.length);
 
       let totalAmount = 0;
       const errors: string[] = [];
@@ -119,10 +107,7 @@ export class BillingService {
       // Process each shipment
       for (const shipment of eligibleShipments) {
         try {
-          const billingAmount = await this.processSingleShipmentBilling(
-            shipment,
-            userBilling.id
-          );
+          const billingAmount = await this.processSingleShipmentBilling(shipment, userBilling.id);
           totalAmount += billingAmount;
           processedCount++;
         } catch (error) {
@@ -137,8 +122,8 @@ export class BillingService {
           total_amount: totalAmount,
           processed_orders: processedCount,
           failed_orders: eligibleShipments.length - processedCount,
-          status: errors.length === 0 ? BillingStatus.COMPLETED : BillingStatus.FAILED
-        }
+          status: errors.length === 0 ? BillingStatus.COMPLETED : BillingStatus.FAILED,
+        },
       });
 
       return {
@@ -146,7 +131,7 @@ export class BillingService {
         billingCycleId: userBilling.id,
         processedOrders: processedCount,
         totalAmount,
-        errors
+        errors,
       };
     } catch (error) {
       this.fastify.log.error(`Billing failed for user ${userId}: ${error}`);
@@ -172,7 +157,7 @@ export class BillingService {
         // Billing by date range
         const billingPeriod = {
           start: new Date(request.startDate),
-          end: new Date(request.endDate)
+          end: new Date(request.endDate),
         };
         eligibleShipments = await this.getEligibleShipments(request.userId, billingPeriod);
       } else {
@@ -184,7 +169,7 @@ export class BillingService {
           success: true,
           processedOrders: 0,
           totalAmount: 0,
-          errors: []
+          errors: [],
         };
       }
 
@@ -194,7 +179,7 @@ export class BillingService {
         CycleType.MANUAL,
         {
           start: new Date(request.startDate || Date.now()),
-          end: new Date(request.endDate || Date.now())
+          end: new Date(request.endDate || Date.now()),
         },
         eligibleShipments.length
       );
@@ -225,8 +210,8 @@ export class BillingService {
           total_amount: totalAmount,
           processed_orders: processedCount,
           failed_orders: eligibleShipments.length - processedCount,
-          status: errors.length === 0 ? BillingStatus.COMPLETED : BillingStatus.FAILED
-        }
+          status: errors.length === 0 ? BillingStatus.COMPLETED : BillingStatus.FAILED,
+        },
       });
 
       return {
@@ -234,7 +219,7 @@ export class BillingService {
         billingCycleId: userBilling.id,
         processedOrders: processedCount,
         totalAmount,
-        errors
+        errors,
       };
     } catch (error) {
       this.fastify.log.error(`Manual billing failed: ${error}`);
@@ -245,17 +230,19 @@ export class BillingService {
   /**
    * Process weight dispute CSV upload
    */
-  async processWeightDisputeCSV(csvData: Array<{
-    AWB: string;
-    Charged_Weight: number;
-    evidence_url?: string;
-  }>): Promise<{ processed: number; disputes: number; errors: string[] }> {
+  async processWeightDisputeCSV(
+    csvData: Array<{
+      AWB: string;
+      Charged_Weight: number;
+      evidence_url?: string;
+    }>
+  ): Promise<{ processed: number; disputes: number; errors: string[] }> {
     let processed = 0;
     let disputes = 0;
     const errors: string[] = [];
 
     this.fastify.log.info(`Processing ${csvData.length} rows from weight dispute CSV`);
-    
+
     if (!csvData || csvData.length === 0) {
       this.fastify.log.error('No CSV data provided or empty CSV');
       errors.push('No CSV data provided or empty CSV');
@@ -274,18 +261,18 @@ export class BillingService {
         }
 
         this.fastify.log.info(`Processing AWB: ${row.AWB}, Charged Weight: ${row.Charged_Weight}`);
-        
+
         const shipment = await this.fastify.prisma.shipment.findFirst({
           where: { awb: row.AWB },
-          include: { 
+          include: {
             order: true,
             courier: {
-              include: { channel_config: true }
+              include: { channel_config: true },
             },
             pricing: {
-              include: { courier_other_zone_pricing: true }
-            }
-          }
+              include: { courier_other_zone_pricing: true },
+            },
+          },
         });
 
         if (!shipment) {
@@ -331,9 +318,9 @@ export class BillingService {
       where: {
         status: WeightDisputeStatus.PENDING,
         dispute_raised_at: { lte: sevenDaysAgo },
-        seller_action_taken: false
+        seller_action_taken: false,
       },
-      include: { order: true }
+      include: { order: true },
     });
 
     let resolved = 0;
@@ -353,7 +340,7 @@ export class BillingService {
             status: TransactionStatus.COMPLETED,
             currency: 'INR',
             merchantTransactionId: `AUTO-DISPUTE-${dispute.dispute_id}`,
-            charge_type: ChargeType.FORWARD_EXCESS_WEIGHT
+            charge_type: ChargeType.FORWARD_EXCESS_WEIGHT,
           });
         }
 
@@ -363,8 +350,8 @@ export class BillingService {
           data: {
             status: WeightDisputeStatus.RESOLVED,
             auto_resolved_at: new Date(),
-            resolution: 'Auto-resolved after 7 days - charges applied'
-          }
+            resolution: 'Auto-resolved after 7 days - charges applied',
+          },
         });
 
         resolved++;
@@ -552,17 +539,17 @@ export class BillingService {
             // Weekly billing (check if today matches the configured day)
             {
               billing_cycle_type: CycleType.WEEKLY,
-              remittance_days_of_week: { has: dayOfWeek }
+              remittance_days_of_week: { has: dayOfWeek },
             },
             // Monthly billing (check if today matches the configured day)
             {
               billing_cycle_type: CycleType.MONTHLY,
               // billing_cycle_start_date: { not: null }
-            }
-          ]
-        }
+            },
+          ],
+        },
       },
-      include: { profile: true }
+      include: { profile: true },
     });
   }
 
@@ -590,10 +577,8 @@ export class BillingService {
       case CycleType.WEEKLY:
         // Weekly billing: from last billing day to today
         const today = now.getDay();
-        const lastBillingDay = billingDaysOfWeek
-          .filter(day => day <= today)
-          .sort((a, b) => b - a)[0] ?? billingDaysOfWeek[billingDaysOfWeek.length - 1] ?? 1;
-        
+        const lastBillingDay = billingDaysOfWeek.filter((day) => day <= today).sort((a, b) => b - a)[0] ?? billingDaysOfWeek[billingDaysOfWeek.length - 1] ?? 1;
+
         start = new Date(now);
         const daysSinceLastBilling = (today - lastBillingDay + 7) % 7;
         start.setDate(start.getDate() - daysSinceLastBilling);
@@ -607,7 +592,7 @@ export class BillingService {
         start = new Date(now);
         const currentWeek = Math.ceil(now.getDate() / 7);
         const targetWeek = billingWeekOfMonth || 1;
-        
+
         if (currentWeek >= targetWeek) {
           // This week or later, go back to target week
           const daysToSubtract = (currentWeek - targetWeek) * 7;
@@ -628,7 +613,7 @@ export class BillingService {
         // Monthly billing: from last billing day of month to today
         const currentDay = now.getDate();
         const billingDay = billingDayOfMonth || 1;
-        
+
         start = new Date(now);
         if (currentDay >= billingDay) {
           // This month's billing day has passed, start from billing day
@@ -647,10 +632,8 @@ export class BillingService {
         // Custom billing: use billing_days array for flexible configuration
         if (billingDays && billingDays.length > 0) {
           const todayCustom = now.getDate();
-          const lastCustomDay = billingDays
-            .filter(day => day <= todayCustom)
-            .sort((a, b) => b - a)[0] ?? billingDays[billingDays.length - 1] ?? 1;
-          
+          const lastCustomDay = billingDays.filter((day) => day <= todayCustom).sort((a, b) => b - a)[0] ?? billingDays[billingDays.length - 1] ?? 1;
+
           start = new Date(now);
           const daysSinceLastCustom = (todayCustom - lastCustomDay + 31) % 31;
           start.setDate(start.getDate() - daysSinceLastCustom);
@@ -682,13 +665,13 @@ export class BillingService {
   private async getEligibleShipments(userId: string, period: { start: Date; end: Date }) {
     // Excluded buckets for billing
     const excludedBuckets = [0, 1, 6, 11, 12, 61];
-    
+
     return this.fastify.prisma.shipment.findMany({
       where: {
         user_id: userId,
         created_at: {
           gte: period.start,
-          lte: period.end
+          lte: period.end,
         },
         bucket: { notIn: excludedBuckets },
         status: {
@@ -697,55 +680,50 @@ export class BillingService {
             ShipmentStatus.CANCELLED_SHIPMENT,
             ShipmentStatus.CANCELLED_ORDER,
             ShipmentStatus.COURIER_ASSIGNED,
-            ShipmentStatus.PICKUP_SCHEDULED
-          ]
-        }
+            ShipmentStatus.PICKUP_SCHEDULED,
+          ],
+        },
       },
       include: {
         order: {
-          include: { weight_dispute: true }
+          include: { weight_dispute: true },
         },
         courier: {
-          include: { channel_config: true }
+          include: { channel_config: true },
         },
         pricing: {
-          include: { courier_other_zone_pricing: true }
-        }
-      }
+          include: { courier_other_zone_pricing: true },
+        },
+      },
     });
   }
 
   private async getShipmentsByAwbs(awbs: string[], userId: string) {
     const excludedBuckets = [0, 1, 6, 11, 12, 61];
-    
+
     return this.fastify.prisma.shipment.findMany({
       where: {
         user_id: userId,
         awb: { in: awbs },
-        bucket: { notIn: excludedBuckets }
+        bucket: { notIn: excludedBuckets },
       },
       include: {
         order: {
-          include: { weight_dispute: true }
+          include: { weight_dispute: true },
         },
         courier: {
-          include: { channel_config: true }
+          include: { channel_config: true },
         },
         pricing: {
-          include: { courier_other_zone_pricing: true }
-        }
-      }
+          include: { courier_other_zone_pricing: true },
+        },
+      },
     });
   }
 
-  private async createUserBillingCycle(
-    userId: string,
-    cycleType: CycleType,
-    period: { start: Date; end: Date },
-    totalOrders: number
-  ) {
+  private async createUserBillingCycle(userId: string, cycleType: CycleType, period: { start: Date; end: Date }, totalOrders: number) {
     const code = `UB-${new Date().getFullYear().toString().slice(-2)}${(new Date().getMonth() + 1).toString().padStart(2, '0')}-${Date.now().toString().slice(-6)}`;
-    
+
     return this.fastify.prisma.userBilling.create({
       data: {
         code,
@@ -755,18 +733,14 @@ export class BillingService {
         cycle_end_date: period.end,
         cycle_days: Math.ceil((period.end.getTime() - period.start.getTime()) / (1000 * 60 * 60 * 24)),
         total_orders: totalOrders,
-        status: BillingStatus.PROCESSING
-      }
+        status: BillingStatus.PROCESSING,
+      },
     });
   }
 
-  private async processSingleShipmentBilling(
-    shipment: any,
-    billingCycleId: string,
-    isManual = false
-  ): Promise<number> {
+  private async processSingleShipmentBilling(shipment: any, billingCycleId: string, isManual = false): Promise<number> {
     const cacheKey = `billing:${shipment.awb}:${billingCycleId}`;
-    
+
     // Check if already billed using Redis
     const cached = await redis.get(cacheKey);
     if (cached) {
@@ -777,10 +751,10 @@ export class BillingService {
     const weightDispute = await this.fastify.prisma.weightDispute.findFirst({
       where: {
         order_id: shipment.order_id,
-        status: { 
-          in: [WeightDisputeStatus.PENDING, WeightDisputeStatus.RAISED_BY_SELLER] 
-        }
-      }
+        status: {
+          in: [WeightDisputeStatus.PENDING, WeightDisputeStatus.RAISED_BY_SELLER],
+        },
+      },
     });
 
     let totalCharges = 0;
@@ -820,7 +794,7 @@ export class BillingService {
           status: TransactionStatus.COMPLETED,
           currency: 'INR',
           merchantTransactionId: `RTO-${shipment.awb}-${Date.now()}`,
-          charge_type: ChargeType.RTO_CHARGE
+          charge_type: ChargeType.RTO_CHARGE,
         });
       }
     }
@@ -839,7 +813,7 @@ export class BillingService {
           status: TransactionStatus.COMPLETED,
           currency: 'INR',
           merchantTransactionId: `COD-REFUND-${shipment.awb}-${Date.now()}`,
-          charge_type: ChargeType.COD_REVERSAL
+          charge_type: ChargeType.COD_REVERSAL,
         });
       }
     }
@@ -849,7 +823,7 @@ export class BillingService {
 
     // Create billing record
     const billingCode = `BL-${new Date().getFullYear().toString().slice(-2)}${(new Date().getMonth() + 1).toString().padStart(2, '0')}-${Date.now().toString().slice(-6)}`;
-    
+
     await this.fastify.prisma.billing.create({
       data: {
         code: billingCode,
@@ -860,7 +834,7 @@ export class BillingService {
         original_weight: shipment.order.applicable_weight,
         charged_weight: chargedWeight,
         has_weight_dispute: hasWeightDispute,
-        paid_amount: hasWeightDispute ? (forwardCharge + rtoCharge + codCharge) : 0,
+        paid_amount: hasWeightDispute ? forwardCharge + rtoCharge + codCharge : 0,
         billing_amount: totalCharges,
         fw_charge: forwardCharge,
         cod_charge: codCharge,
@@ -869,8 +843,8 @@ export class BillingService {
         rto_excess_charge: rtoExcessCharge,
         is_forward_applicable: forwardCharge > 0,
         is_rto_applicable: rtoCharge > 0,
-        pending_amount: hasWeightDispute ? (fwExcessCharge + rtoExcessCharge) : 0,
-        disputed_amount: hasWeightDispute ? (fwExcessCharge + rtoExcessCharge) : 0,
+        pending_amount: hasWeightDispute ? fwExcessCharge + rtoExcessCharge : 0,
+        disputed_amount: hasWeightDispute ? fwExcessCharge + rtoExcessCharge : 0,
         base_price: shipment.pricing?.base_price || 0,
         increment_price: shipment.pricing?.increment_price || 0,
         base_weight: shipment.pricing?.weight_slab || 0.5,
@@ -880,8 +854,8 @@ export class BillingService {
         billing_cycle_id: billingCycleId,
         cycle_type: isManual ? CycleType.MANUAL : CycleType.MONTHLY,
         is_manual_billing: isManual,
-        payment_status: BillingStatus.COMPLETED
-      }
+        payment_status: BillingStatus.COMPLETED,
+      },
     });
 
     // Cache the billing to prevent duplicate processing
@@ -900,9 +874,9 @@ export class BillingService {
     let rtoExcess = 0;
 
     if (shipment.pricing && shipment.pricing.courier_other_zone_pricing) {
-      const zoneP = shipment.pricing.courier_other_zone_pricing.find((z: any) => z.zone === shipment.order_zone) || 
-                   shipment.pricing.courier_other_zone_pricing[0];
-      
+      const zoneP =
+        shipment.pricing.courier_other_zone_pricing.find((z: any) => z.zone === shipment.order_zone) || shipment.pricing.courier_other_zone_pricing[0];
+
       if (zoneP) {
         const excessCharges = calculateExcessCharges(weightDiff, shipment.pricing, zoneP);
         fwExcess = excessCharges.fwExcess;
@@ -930,12 +904,12 @@ export class BillingService {
         total_disputed_amount: totalDisputed,
         evidence_urls: evidenceUrl ? [evidenceUrl] : [],
         courier_name: `${shipment.courier?.name} ${shipment.courier?.channel_config?.nickname || ''}`,
-        deadline_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
-      }
+        deadline_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+      },
     });
 
     const existingBilling = await this.fastify.prisma.billing.findFirst({
-      where: { order_id: shipment.order_id }
+      where: { order_id: shipment.order_id },
     });
 
     if (existingBilling) {
@@ -952,10 +926,10 @@ export class BillingService {
           pending_amount: existingBilling.pending_amount + totalDisputed,
           disputed_amount: existingBilling.disputed_amount + totalDisputed,
           paid_amount: existingBilling.paid_amount,
-          updated_at: new Date()
-        }
+          updated_at: new Date(),
+        },
       });
-      
+
       this.fastify.log.info(`Updated billing record for AWB ${shipment.awb} with weight dispute information`);
     }
 
@@ -971,13 +945,13 @@ export class BillingService {
         status: TransactionStatus.COMPLETED,
         currency: 'INR',
         merchantTransactionId: `HOLD-${shipment.awb}-${Date.now()}`,
-        charge_type: ChargeType.FORWARD_EXCESS_WEIGHT
+        charge_type: ChargeType.FORWARD_EXCESS_WEIGHT,
       });
 
       // Update dispute to mark hold as applied
       await this.fastify.prisma.weightDispute.update({
         where: { id: dispute.id },
-        data: { wallet_hold_applied: true, status: WeightDisputeStatus.PENDING }
+        data: { wallet_hold_applied: true, status: WeightDisputeStatus.PENDING },
       });
     }
 
@@ -992,8 +966,8 @@ export class BillingService {
     const transaction = await this.fastify.prisma.shipmentTransaction.findFirst({
       where: {
         shipment_id: shipmentId,
-        charge_type: ChargeType.RTO_CHARGE
-      }
+        charge_type: ChargeType.RTO_CHARGE,
+      },
     });
     return !!transaction;
   }
@@ -1003,8 +977,8 @@ export class BillingService {
       where: {
         shipment_id: shipmentId,
         charge_type: ChargeType.COD_REVERSAL,
-        type: TransactionType.CREDIT
-      }
+        type: TransactionType.CREDIT,
+      },
     });
     return !!transaction;
   }

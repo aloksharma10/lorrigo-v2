@@ -85,10 +85,7 @@ function getTemplatePath(type: 'label' | 'manifest', format: 'A4' | 'THERMAL'): 
 }
 
 // Main: Generate bulk labels (A4 or Thermal)
-export async function generateBulkLabels(params: {
-  shipments: ShipmentLabelData[];
-  format: 'A4' | 'THERMAL';
-}): Promise<Buffer> {
+export async function generateBulkLabels(params: { shipments: ShipmentLabelData[]; format: 'A4' | 'THERMAL' }): Promise<Buffer> {
   const { shipments, format } = params;
   if (!shipments.length) throw new Error('No shipments provided');
   const templatePath = getTemplatePath('label', format);
@@ -105,13 +102,14 @@ export async function generateBulkLabels(params: {
       const page = await browser.newPage();
       await page.setContent(html, { waitUntil: 'networkidle0' });
       // PDF options
-      const pdfOptions = format === 'THERMAL'
-        ? { width: '101.6mm', height: '152.4mm', printBackground: true, margin: { top: '0mm', right: '0mm', bottom: '0mm', left: '0mm' } }
-        : { format: 'A4' as const, printBackground: true, margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' } };
+      const pdfOptions =
+        format === 'THERMAL'
+          ? { width: '101.6mm', height: '152.4mm', printBackground: true, margin: { top: '0mm', right: '0mm', bottom: '0mm', left: '0mm' } }
+          : { format: 'A4' as const, printBackground: true, margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' } };
       const pdf = await page.pdf(pdfOptions);
       const singlePdf = await PDFDocument.load(pdf);
       const copiedPages = await mergedPdf.copyPages(singlePdf, singlePdf.getPageIndices());
-      copiedPages.forEach(page => mergedPdf.addPage(page));
+      copiedPages.forEach((page) => mergedPdf.addPage(page));
       await page.close();
     }
     const pdfBytes = await mergedPdf.save();
@@ -136,11 +134,13 @@ export async function generateBulkManifests(params: {
   const mergedPdf = await PDFDocument.create();
   try {
     // For manifests, just one manifest for all orders
-    const manifestOrders = await Promise.all(orders.map(async (order, idx) => ({
-      ...order,
-      barcodeUrl: await generateBarcodeDataUrl(order.awb),
-      index: idx + 1,
-    })));
+    const manifestOrders = await Promise.all(
+      orders.map(async (order, idx) => ({
+        ...order,
+        barcodeUrl: await generateBarcodeDataUrl(order.awb),
+        index: idx + 1,
+      }))
+    );
     const data = {
       generatedDate: new Date().toLocaleString(),
       sellerName,
@@ -153,17 +153,18 @@ export async function generateBulkManifests(params: {
     const html = template(data);
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0' });
-    const pdfOptions = format === 'THERMAL'
-      ? { width: '101.6mm', height: '152.4mm', printBackground: true, margin: { top: '0mm', right: '0mm', bottom: '0mm', left: '0mm' } }
-      : { format: 'A4' as const, printBackground: true, margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' } };
+    const pdfOptions =
+      format === 'THERMAL'
+        ? { width: '101.6mm', height: '152.4mm', printBackground: true, margin: { top: '0mm', right: '0mm', bottom: '0mm', left: '0mm' } }
+        : { format: 'A4' as const, printBackground: true, margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' } };
     const pdf = await page.pdf(pdfOptions);
     const singlePdf = await PDFDocument.load(pdf);
     const copiedPages = await mergedPdf.copyPages(singlePdf, singlePdf.getPageIndices());
-    copiedPages.forEach(page => mergedPdf.addPage(page));
+    copiedPages.forEach((page) => mergedPdf.addPage(page));
     await page.close();
     const pdfBytes = await mergedPdf.save();
     return Buffer.from(pdfBytes);
   } finally {
     await browser.close();
   }
-} 
+}

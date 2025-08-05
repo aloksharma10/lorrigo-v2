@@ -276,4 +276,4 @@ export interface HealthCheckResponse {
   };
   message?: string;
   error?: string;
-} 
+}

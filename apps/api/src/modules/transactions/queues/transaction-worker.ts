@@ -22,7 +22,7 @@ export class TransactionWorker {
     this.worker = new Worker(
       QueueNames.TRANSACTION_QUEUE,
       async (job: Job) => {
-        switch(job.name) {
+        switch (job.name) {
           case TransactionJobType.BULK_PROCESS_TRANSACTIONS:
             return this.transactionService.processBulkTransactions(job.data.transactions, job.data.entityType);
           default:

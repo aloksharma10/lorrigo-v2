@@ -283,8 +283,7 @@ export async function fetchNDROrders(params: NDRQueryParams): Promise<NDRApiResp
     if (params.awb) queryParams.append('awb', params.awb);
     if (params.startDate) queryParams.append('startDate', params.startDate);
     if (params.endDate) queryParams.append('endDate', params.endDate);
-    if (params.actionTaken !== undefined)
-      queryParams.append('actionTaken', params.actionTaken.toString());
+    if (params.actionTaken !== undefined) queryParams.append('actionTaken', params.actionTaken.toString());
     if (params.actionType) queryParams.append('actionType', params.actionType);
 
     const response = await api.get<NDRApiResponse>(`/ndr/orders?${queryParams.toString()}`);

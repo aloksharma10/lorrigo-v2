@@ -71,10 +71,10 @@ export class AnalyticsService {
     });
     const shipmentStats = {
       total: shipments.length,
-      pending: shipments.filter(s => s.status === 'PICKUP_SCHEDULED').length,
-      inTransit: shipments.filter(s => s.status === 'IN_TRANSIT').length,
-      delivered: shipments.filter(s => s.status === 'DELIVERED').length,
-      rto: shipments.filter(s => ['RTO_INITIATED', 'RTO_IN_TRANSIT', 'RTO_DELIVERED'].includes(s.status)).length,
+      pending: shipments.filter((s) => s.status === 'PICKUP_SCHEDULED').length,
+      inTransit: shipments.filter((s) => s.status === 'IN_TRANSIT').length,
+      delivered: shipments.filter((s) => s.status === 'DELIVERED').length,
+      rto: shipments.filter((s) => ['RTO_INITIATED', 'RTO_IN_TRANSIT', 'RTO_DELIVERED'].includes(s.status)).length,
     };
 
     // NDR
@@ -84,8 +84,8 @@ export class AnalyticsService {
     });
     const ndrStats = {
       total: ndrOrders.length,
-      reattempts: ndrOrders.filter(o => o.action_taken).length,
-      delivered: ndrOrders.filter(o => o.delivered_date).length,
+      reattempts: ndrOrders.filter((o) => o.action_taken).length,
+      delivered: ndrOrders.filter((o) => o.delivered_date).length,
     };
 
     return {
@@ -152,13 +152,11 @@ export class AnalyticsService {
       paymentTypeMap[type] = (paymentTypeMap[type] || 0) + 1;
     }
     const totalOrders = orders.length;
-    const paymentTypeSplit: PaymentTypeSplitItem[] = Object.entries(paymentTypeMap).map(
-      ([name, value]) => ({
-        name,
-        value,
-        percentage: totalOrders ? `${Math.round((value / totalOrders) * 100)}%` : '0%',
-      })
-    );
+    const paymentTypeSplit: PaymentTypeSplitItem[] = Object.entries(paymentTypeMap).map(([name, value]) => ({
+      name,
+      value,
+      percentage: totalOrders ? `${Math.round((value / totalOrders) * 100)}%` : '0%',
+    }));
 
     // Popular Locations (state-wise order count and revenue)
     const locationMap: Record<string, { orderCount: number; revenue: number }> = {};
@@ -353,9 +351,7 @@ export class AnalyticsService {
       const channel = s.order?.order_channel_config?.channel || 'Custom';
       channelMap[channel] = (channelMap[channel] || 0) + 1;
     }
-    const shipmentChannel: ShipmentChannelItem[] = Object.entries(channelMap).map(
-      ([channel, orders]) => ({ channel, orders })
-    );
+    const shipmentChannel: ShipmentChannelItem[] = Object.entries(channelMap).map(([channel, orders]) => ({ channel, orders }));
 
     // Weight Profile
     const weightBuckets = [
@@ -374,13 +370,11 @@ export class AnalyticsService {
       weightProfileMap[bucket].value++;
       totalWeightShipments++;
     }
-    const weightProfile: WeightProfileItem[] = Object.entries(weightProfileMap).map(
-      ([name, { value }]) => ({
-        name,
-        value,
-        percentage: totalWeightShipments ? `${Math.round((value / totalWeightShipments) * 100)}%` : '0%',
-      })
-    );
+    const weightProfile: WeightProfileItem[] = Object.entries(weightProfileMap).map(([name, { value }]) => ({
+      name,
+      value,
+      percentage: totalWeightShipments ? `${Math.round((value / totalWeightShipments) * 100)}%` : '0%',
+    }));
 
     // Shipment Zone
     const shipmentZoneMap: Record<string, { value: number }> = {};
@@ -391,13 +385,11 @@ export class AnalyticsService {
       shipmentZoneMap[zone].value++;
       totalZoneShipments++;
     }
-    const shipmentZone: ShipmentZoneItem[] = Object.entries(shipmentZoneMap).map(
-      ([name, { value }]) => ({
-        name,
-        value,
-        percentage: totalZoneShipments ? `${Math.round((value / totalZoneShipments) * 100)}%` : '0%',
-      })
-    );
+    const shipmentZone: ShipmentZoneItem[] = Object.entries(shipmentZoneMap).map(([name, { value }]) => ({
+      name,
+      value,
+      percentage: totalZoneShipments ? `${Math.round((value / totalZoneShipments) * 100)}%` : '0%',
+    }));
 
     // Shipment Status
     const statusMap: Record<string, number> = {};
@@ -408,7 +400,8 @@ export class AnalyticsService {
     const shipmentStatus = Object.entries(statusMap).map(([name, value]) => ({ name, value }));
 
     // Delivery Performance
-    let onTime = 0, late = 0;
+    let onTime = 0,
+      late = 0;
     for (const s of shipments) {
       if (s.status === 'DELIVERED' && s.edd && s.created_at) {
         const deliveryDate = s.created_at; // Using created_at as proxy; update to actual delivery date if available
@@ -510,37 +503,40 @@ export class AnalyticsService {
     const metrics: NdrMetrics = {
       raised: String(ndrOrders.length),
       percentage: totalShipments ? `${((ndrOrders.length / totalShipments) * 100).toFixed(2)}%` : '0%',
-      actionRequired: String(ndrOrders.filter(o => !o.action_taken).length),
-      delivered: String(ndrOrders.filter(o => o.delivered_date).length),
-      rto: String(ndrOrders.filter(o => o.cancellation_reason?.includes('RTO')).length),
+      actionRequired: String(ndrOrders.filter((o) => !o.action_taken).length),
+      delivered: String(ndrOrders.filter((o) => o.delivered_date).length),
+      rto: String(ndrOrders.filter((o) => o.cancellation_reason?.includes('RTO')).length),
     };
 
     // Response Summary
     const responseSummary: NdrResponseSummary = {
-      sellerResponse: ndrOrders.filter(o => o.ndr_history.some(h => h.action_by === 1)).length,
-      buyerResponse: ndrOrders.filter(o => o.ndr_history.some(h => h.action_by === 2)).length,
-      sellerPositiveResponse: ndrOrders.filter(o => o.ndr_history.some(h => h.action_by === 1 && h.comment?.includes('ACCEPT'))).length,
-      buyerPositiveResponse: ndrOrders.filter(o => o.ndr_history.some(h => h.action_by === 2 && h.comment?.includes('ACCEPT'))).length,
-      sellerPositiveResponseDelivered: ndrOrders.filter(o => o.ndr_history.some(h => h.action_by === 1 && h.comment?.includes('ACCEPT')) && o.delivered_date).length,
-      buyerPositiveResponseDelivered: ndrOrders.filter(o => o.ndr_history.some(h => h.action_by === 2 && h.comment?.includes('ACCEPT')) && o.delivered_date).length,
+      sellerResponse: ndrOrders.filter((o) => o.ndr_history.some((h) => h.action_by === 1)).length,
+      buyerResponse: ndrOrders.filter((o) => o.ndr_history.some((h) => h.action_by === 2)).length,
+      sellerPositiveResponse: ndrOrders.filter((o) => o.ndr_history.some((h) => h.action_by === 1 && h.comment?.includes('ACCEPT'))).length,
+      buyerPositiveResponse: ndrOrders.filter((o) => o.ndr_history.some((h) => h.action_by === 2 && h.comment?.includes('ACCEPT'))).length,
+      sellerPositiveResponseDelivered: ndrOrders.filter(
+        (o) => o.ndr_history.some((h) => h.action_by === 1 && h.comment?.includes('ACCEPT')) && o.delivered_date
+      ).length,
+      buyerPositiveResponseDelivered: ndrOrders.filter((o) => o.ndr_history.some((h) => h.action_by === 2 && h.comment?.includes('ACCEPT')) && o.delivered_date)
+        .length,
     };
 
     // Funnel
     const funnel: NdrFunnel = {
       firstNDR: {
-        total: String(ndrOrders.filter(o => o.attempts === 1).length),
-        pending: ndrOrders.filter(o => o.attempts === 1 && !o.delivered_date && !o.cancellation_reason).length,
-        delivered: String(ndrOrders.filter(o => o.attempts === 1 && o.delivered_date).length),
+        total: String(ndrOrders.filter((o) => o.attempts === 1).length),
+        pending: ndrOrders.filter((o) => o.attempts === 1 && !o.delivered_date && !o.cancellation_reason).length,
+        delivered: String(ndrOrders.filter((o) => o.attempts === 1 && o.delivered_date).length),
       },
       secondNDR: {
-        total: String(ndrOrders.filter(o => o.attempts === 2).length),
-        pending: ndrOrders.filter(o => o.attempts === 2 && !o.delivered_date && !o.cancellation_reason).length,
-        delivered: ndrOrders.filter(o => o.attempts === 2 && o.delivered_date).length,
+        total: String(ndrOrders.filter((o) => o.attempts === 2).length),
+        pending: ndrOrders.filter((o) => o.attempts === 2 && !o.delivered_date && !o.cancellation_reason).length,
+        delivered: ndrOrders.filter((o) => o.attempts === 2 && o.delivered_date).length,
       },
       thirdNDR: {
-        total: String(ndrOrders.filter(o => o.attempts >= 3).length),
-        pending: ndrOrders.filter(o => o.attempts >= 3 && !o.delivered_date && !o.cancellation_reason).length,
-        delivered: ndrOrders.filter(o => o.attempts >= 3 && o.delivered_date).length,
+        total: String(ndrOrders.filter((o) => o.attempts >= 3).length),
+        pending: ndrOrders.filter((o) => o.attempts >= 3 && !o.delivered_date && !o.cancellation_reason).length,
+        delivered: ndrOrders.filter((o) => o.attempts >= 3 && o.delivered_date).length,
       },
     };
 
@@ -578,41 +574,41 @@ export class AnalyticsService {
     const responsesByAttempt: NdrResponsesByAttemptItem[] = [
       {
         category: 'First Attempt',
-        ndrShipments: ndrOrders.filter(o => o.attempts === 1).length,
-        firstNDRAttempt: ndrOrders.filter(o => o.attempts === 1).length,
-        firstNDRDelivered: ndrOrders.filter(o => o.attempts === 1 && o.delivered_date).length,
+        ndrShipments: ndrOrders.filter((o) => o.attempts === 1).length,
+        firstNDRAttempt: ndrOrders.filter((o) => o.attempts === 1).length,
+        firstNDRDelivered: ndrOrders.filter((o) => o.attempts === 1 && o.delivered_date).length,
         secondNDRAttempt: 0,
         secondNDRDelivered: 0,
         thirdNDRAttempt: 0,
         thirdNDRDelivered: 0,
-        totalDelivered: ndrOrders.filter(o => o.delivered_date).length,
-        totalRTO: ndrOrders.filter(o => o.cancellation_reason).length,
+        totalDelivered: ndrOrders.filter((o) => o.delivered_date).length,
+        totalRTO: ndrOrders.filter((o) => o.cancellation_reason).length,
         lostDamaged: 0,
       },
       {
         category: 'Second Attempt',
-        ndrShipments: ndrOrders.filter(o => o.attempts === 2).length,
+        ndrShipments: ndrOrders.filter((o) => o.attempts === 2).length,
         firstNDRAttempt: 0,
         firstNDRDelivered: 0,
-        secondNDRAttempt: ndrOrders.filter(o => o.attempts === 2).length,
-        secondNDRDelivered: ndrOrders.filter(o => o.attempts === 2 && o.delivered_date).length,
+        secondNDRAttempt: ndrOrders.filter((o) => o.attempts === 2).length,
+        secondNDRDelivered: ndrOrders.filter((o) => o.attempts === 2 && o.delivered_date).length,
         thirdNDRAttempt: 0,
         thirdNDRDelivered: 0,
-        totalDelivered: ndrOrders.filter(o => o.delivered_date).length,
-        totalRTO: ndrOrders.filter(o => o.cancellation_reason).length,
+        totalDelivered: ndrOrders.filter((o) => o.delivered_date).length,
+        totalRTO: ndrOrders.filter((o) => o.cancellation_reason).length,
         lostDamaged: 0,
       },
       {
         category: 'Third+ Attempt',
-        ndrShipments: ndrOrders.filter(o => o.attempts >= 3).length,
+        ndrShipments: ndrOrders.filter((o) => o.attempts >= 3).length,
         firstNDRAttempt: 0,
         firstNDRDelivered: 0,
         secondNDRAttempt: 0,
         secondNDRDelivered: 0,
-        thirdNDRAttempt: ndrOrders.filter(o => o.attempts >= 3).length,
-        thirdNDRDelivered: ndrOrders.filter(o => o.attempts >= 3 && o.delivered_date).length,
-        totalDelivered: ndrOrders.filter(o => o.delivered_date).length,
-        totalRTO: ndrOrders.filter(o => o.cancellation_reason).length,
+        thirdNDRAttempt: ndrOrders.filter((o) => o.attempts >= 3).length,
+        thirdNDRDelivered: ndrOrders.filter((o) => o.attempts >= 3 && o.delivered_date).length,
+        totalDelivered: ndrOrders.filter((o) => o.delivered_date).length,
+        totalRTO: ndrOrders.filter((o) => o.cancellation_reason).length,
         lostDamaged: 0,
       },
     ];
@@ -622,18 +618,18 @@ export class AnalyticsService {
     const vsDeliveryAttempt: NdrVsDeliveryAttemptItem[] = [
       {
         name: 'First Attempt',
-        ndrRaised: ndrOrders.filter(o => o.attempts === 1).length,
-        deliveryAttempt: ndrOrders.filter(o => o.attempts === 1 && o.delivered_date).length,
+        ndrRaised: ndrOrders.filter((o) => o.attempts === 1).length,
+        deliveryAttempt: ndrOrders.filter((o) => o.attempts === 1 && o.delivered_date).length,
       },
       {
         name: 'Second Attempt',
-        ndrRaised: ndrOrders.filter(o => o.attempts === 2).length,
-        deliveryAttempt: ndrOrders.filter(o => o.attempts === 2 && o.delivered_date).length,
+        ndrRaised: ndrOrders.filter((o) => o.attempts === 2).length,
+        deliveryAttempt: ndrOrders.filter((o) => o.attempts === 2 && o.delivered_date).length,
       },
       {
         name: 'Third+ Attempt',
-        ndrRaised: ndrOrders.filter(o => o.attempts >= 3).length,
-        deliveryAttempt: ndrOrders.filter(o => o.attempts >= 3 && o.delivered_date).length,
+        ndrRaised: ndrOrders.filter((o) => o.attempts >= 3).length,
+        deliveryAttempt: ndrOrders.filter((o) => o.attempts >= 3 && o.delivered_date).length,
       },
     ];
 
@@ -642,15 +638,15 @@ export class AnalyticsService {
     const sellerResponse: NdrSellerBuyerResponseItem[] = [
       {
         name: 'Seller',
-        ndr: ndrOrders.filter(o => o.ndr_history.some(h => h.action_by === 1)).length,
-        sellerResponse: ndrOrders.filter(o => o.ndr_history.some(h => h.action_by === 1)).length,
+        ndr: ndrOrders.filter((o) => o.ndr_history.some((h) => h.action_by === 1)).length,
+        sellerResponse: ndrOrders.filter((o) => o.ndr_history.some((h) => h.action_by === 1)).length,
       },
     ];
     const buyerResponse: NdrSellerBuyerResponseItem[] = [
       {
         name: 'Buyer',
-        ndr: ndrOrders.filter(o => o.ndr_history.some(h => h.action_by === 2)).length,
-        buyerResponse: ndrOrders.filter(o => o.ndr_history.some(h => h.action_by === 2)).length,
+        ndr: ndrOrders.filter((o) => o.ndr_history.some((h) => h.action_by === 2)).length,
+        buyerResponse: ndrOrders.filter((o) => o.ndr_history.some((h) => h.action_by === 2)).length,
       },
     ];
 
@@ -757,9 +753,9 @@ export class AnalyticsService {
     const metrics: RtoMetrics = {
       total: rtoShipments.length,
       percentage: totalShipments ? `${((rtoShipments.length / totalShipments) * 100).toFixed(2)}%` : '0%',
-      initiated: rtoShipments.filter(s => s.status === 'RTO_INITIATED').length,
-      undelivered: rtoShipments.filter(s => s.status === 'RTO_IN_TRANSIT').length,
-      delivered: rtoShipments.filter(s => s.status === 'RTO_DELIVERED').length,
+      initiated: rtoShipments.filter((s) => s.status === 'RTO_INITIATED').length,
+      undelivered: rtoShipments.filter((s) => s.status === 'RTO_IN_TRANSIT').length,
+      delivered: rtoShipments.filter((s) => s.status === 'RTO_DELIVERED').length,
     };
 
     // Count Over Time
@@ -867,7 +863,7 @@ export class AnalyticsService {
       .map(([_, entry = { count: 0, name: '' }]) => ({
         name: entry.name ?? '',
         rtoCount: entry.count ?? 0,
-        percentage: rtoShipments.length ? `${((entry.count ?? 0) / rtoShipments.length * 100).toFixed(2)}%` : '0%',
+        percentage: rtoShipments.length ? `${(((entry.count ?? 0) / rtoShipments.length) * 100).toFixed(2)}%` : '0%',
       }))
       .sort((a, b) => b.rtoCount - a.rtoCount)
       .slice(0, 5);

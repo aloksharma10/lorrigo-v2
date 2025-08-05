@@ -27,10 +27,7 @@ export class DelhiveryVendor extends BaseVendor {
   private weightCategory: '0.5' | '5' | '10';
   private bucketMappingService?: BucketMappingService;
 
-  constructor(
-    weightCategory: '0.5' | '5' | '10' = '5',
-    bucketMappingService?: BucketMappingService
-  ) {
+  constructor(weightCategory: '0.5' | '5' | '10' = '5', bucketMappingService?: BucketMappingService) {
     const vendorConfig = APP_CONFIG.VENDOR.DELHIVERY;
     let apiKey = '';
     let tokenCacheKey = '';
@@ -129,9 +126,7 @@ export class DelhiveryVendor extends BaseVendor {
 
       const isServiceable = Number(deliveryData.postal_code.pin) === Number(deliveryPincode);
 
-      const courierData = isServiceable
-        ? couriersData.find((c: any) => c.courier.is_reversed_courier === isReverseOrder)
-        : null;
+      const courierData = isServiceable ? couriersData.find((c: any) => c.courier.is_reversed_courier === isReverseOrder) : null;
 
       const serviceableCourier = {
         id: courierData?.courierId || `delhivery-${this.weightCategory}`,
@@ -189,20 +184,13 @@ export class DelhiveryVendor extends BaseVendor {
         country: 'India',
         pin: hubData.pincode.toString(),
         return_address: hubData.isRTOAddressSame ? hubData.address : hubData.rtoAddress,
-        return_pin: hubData.isRTOAddressSame
-          ? hubData.pincode.toString()
-          : hubData.rtoPincode?.toString(),
+        return_pin: hubData.isRTOAddressSame ? hubData.pincode.toString() : hubData.rtoPincode?.toString(),
         return_city: hubData.isRTOAddressSame ? hubData.city : hubData.rtoCity,
         return_state: hubData.isRTOAddressSame ? hubData.state : hubData.rtoState,
         return_country: 'India',
       };
 
-      const response = await this.makeRequest(
-        APIs.DELHIVERY.PICKUP_LOCATION,
-        'POST',
-        payload,
-        apiConfig
-      );
+      const response = await this.makeRequest(APIs.DELHIVERY.PICKUP_LOCATION, 'POST', payload, apiConfig);
 
       return {
         success: true,
@@ -210,10 +198,7 @@ export class DelhiveryVendor extends BaseVendor {
         data: response.data,
       };
     } catch (error: any) {
-      console.error(
-        `Error registering hub with Delhivery ${this.weightCategory}:`,
-        JSON.stringify(error.response?.data)
-      );
+      console.error(`Error registering hub with Delhivery ${this.weightCategory}:`, JSON.stringify(error.response?.data));
 
       // Use the base class method to handle hub registration errors
       return this.handleHubRegistrationError(error, `Delhivery ${this.weightCategory} kg`);
@@ -274,10 +259,7 @@ export class DelhiveryVendor extends BaseVendor {
               seller_add: hub.address.address,
               seller_name: hub.name,
               seller_inv: order.code,
-              quantity: orderItems.reduce(
-                (acc: number, item: any) => acc + Number(item.units || 1),
-                0
-              ),
+              quantity: orderItems.reduce((acc: number, item: any) => acc + Number(item.units || 1), 0),
               waybill: order.ewaybill || '',
               shipment_length: dimensions.length || 10,
               shipment_width: dimensions.width || 10,
@@ -302,12 +284,10 @@ export class DelhiveryVendor extends BaseVendor {
       // URL encode the payload for Delhivery API
       const urlEncodedPayload = `format=json&data=${encodeURIComponent(JSON.stringify(delhiveryShipmentPayload.data))}`;
 
-      const response = await this.makeRequest(
-        APIs.DELHIVERY.CREATE_ORDER,
-        'POST',
-        urlEncodedPayload,
-        { Authorization: token, 'Content-Type': 'application/x-www-form-urlencoded' }
-      );
+      const response = await this.makeRequest(APIs.DELHIVERY.CREATE_ORDER, 'POST', urlEncodedPayload, {
+        Authorization: token,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      });
 
       const delhiveryResponse = response.data?.packages?.[0];
 
@@ -360,12 +340,7 @@ export class DelhiveryVendor extends BaseVendor {
    * @param pickupData Pickup data
    * @returns Promise resolving to pickup scheduling result
    */
-  public async schedulePickup(pickupData: {
-    awb: string;
-    pickupDate: string;
-    hub: any;
-    shipment: any;
-  }): Promise<VendorPickupResult> {
+  public async schedulePickup(pickupData: { awb: string; pickupDate: string; hub: any; shipment: any }): Promise<VendorPickupResult> {
     try {
       const token = await this.getAuthToken();
 
@@ -397,9 +372,7 @@ export class DelhiveryVendor extends BaseVendor {
       if (!response.data?.success) {
         return {
           success: false,
-          message:
-            response.data?.error ||
-            `Failed to schedule pickup with Delhivery ${this.weightCategory}`,
+          message: response.data?.error || `Failed to schedule pickup with Delhivery ${this.weightCategory}`,
           pickup_date: null,
           data: response.data,
         };
@@ -428,10 +401,7 @@ export class DelhiveryVendor extends BaseVendor {
    * @param cancelData Cancellation data
    * @returns Promise resolving to cancellation result
    */
-  public async cancelShipment(cancelData: {
-    awb: string;
-    shipment: any;
-  }): Promise<VendorCancellationResult> {
+  public async cancelShipment(cancelData: { awb: string; shipment: any }): Promise<VendorCancellationResult> {
     try {
       const token = await this.getAuthToken();
 
@@ -458,9 +428,7 @@ export class DelhiveryVendor extends BaseVendor {
       if (!response.data?.status) {
         return {
           success: false,
-          message:
-            response.data?.error ||
-            `Failed to cancel shipment with Delhivery ${this.weightCategory}`,
+          message: response.data?.error || `Failed to cancel shipment with Delhivery ${this.weightCategory}`,
           data: response.data,
         };
       }
@@ -538,11 +506,7 @@ export class DelhiveryVendor extends BaseVendor {
       const response = await this.makeRequest(endpoint, 'GET', null, apiConfig);
 
       // Check if response is valid
-      if (
-        !response.data ||
-        !response.data.ShipmentData ||
-        response.data.ShipmentData.length === 0
-      ) {
+      if (!response.data || !response.data.ShipmentData || response.data.ShipmentData.length === 0) {
         return {
           success: false,
           message: `No tracking data found for AWB ${trackingData.awb}`,
@@ -614,11 +578,7 @@ export class DelhiveryVendor extends BaseVendor {
 
           // Map to bucket using helper method
           const bucket = this.bucketMappingService
-            ? await this.bucketMappingService.detectBucket(
-                status,
-                statusCode,
-                this.name.toUpperCase()
-              )
+            ? await this.bucketMappingService.detectBucket(status, statusCode, this.name.toUpperCase())
             : await this.mapStatusToBucket(status, statusCode);
 
           trackingEvents.push({
@@ -638,11 +598,7 @@ export class DelhiveryVendor extends BaseVendor {
       // Add current status if not already included in scans
       if (shipmentData.Status && !trackingEvents.some((e) => e.status === shipmentData.Status)) {
         const currentStatusBucket = this.bucketMappingService
-          ? await this.bucketMappingService.detectBucket(
-              shipmentData.Status,
-              '',
-              this.name.toUpperCase()
-            )
+          ? await this.bucketMappingService.detectBucket(shipmentData.Status, '', this.name.toUpperCase())
           : await this.mapStatusToBucket(shipmentData.Status);
 
         trackingEvents.push({
@@ -795,8 +751,7 @@ export class DelhiveryVendor extends BaseVendor {
 
       if (!uplId) {
         // Check for errors in the response
-        const errorMessage =
-          response.data.error || response.data.message || 'Failed to process NDR action';
+        const errorMessage = response.data.error || response.data.message || 'Failed to process NDR action';
         return {
           success: false,
           message: `Delhivery NDR API error: ${errorMessage}`,
@@ -834,10 +789,7 @@ export class DelhiveryVendor extends BaseVendor {
 
       return {
         success: false,
-        message:
-          error.response?.data?.message ||
-          error.message ||
-          `Failed to process NDR action with Delhivery ${this.weightCategory}`,
+        message: error.response?.data?.message || error.message || `Failed to process NDR action with Delhivery ${this.weightCategory}`,
         data: error.response?.data || null,
       };
     }
@@ -873,12 +825,7 @@ export class DelhiveryVendor extends BaseVendor {
       }
 
       // Make API request to check NDR status
-      const response = await this.makeRequest(
-        `${APIs.DELHIVERY.NDR_STATUS}?upl_id=${uplId}`,
-        'GET',
-        null,
-        { Authorization: token }
-      );
+      const response = await this.makeRequest(`${APIs.DELHIVERY.NDR_STATUS}?upl_id=${uplId}`, 'GET', null, { Authorization: token });
 
       return {
         success: true,
@@ -907,11 +854,7 @@ export class DelhiveryVendorFactory {
    * @returns Array of Delhivery vendor instances
    */
   public static getAllVendors(bucketMappingService?: BucketMappingService): DelhiveryVendor[] {
-    return [
-      new DelhiveryVendor('0.5', bucketMappingService),
-      new DelhiveryVendor('5', bucketMappingService),
-      new DelhiveryVendor('10', bucketMappingService),
-    ];
+    return [new DelhiveryVendor('0.5', bucketMappingService), new DelhiveryVendor('5', bucketMappingService), new DelhiveryVendor('10', bucketMappingService)];
   }
 
   /**
@@ -920,10 +863,7 @@ export class DelhiveryVendorFactory {
    * @param bucketMappingService Optional bucket mapping service
    * @returns Delhivery vendor instance
    */
-  public static getVendor(
-    weightCategory: '0.5' | '5' | '10',
-    bucketMappingService?: BucketMappingService
-  ): DelhiveryVendor {
+  public static getVendor(weightCategory: '0.5' | '5' | '10', bucketMappingService?: BucketMappingService): DelhiveryVendor {
     return new DelhiveryVendor(weightCategory, bucketMappingService);
   }
 }

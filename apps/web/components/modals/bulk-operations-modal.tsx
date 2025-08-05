@@ -3,22 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { Checkbox, Button } from '@lorrigo/ui/components';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@lorrigo/ui/components';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@lorrigo/ui/components';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@lorrigo/ui/components';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@lorrigo/ui/components';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@lorrigo/ui/components';
 import { Calendar } from '@lorrigo/ui/components';
 import { Popover, PopoverContent, PopoverTrigger } from '@lorrigo/ui/components';
 import { CalendarIcon, Loader2, ChevronUp, ChevronDown, X, Plus } from 'lucide-react';
@@ -92,12 +78,7 @@ export function BulkOrdersOperationsModal({
   const [selectedCouriers, setSelectedCouriers] = useState<CourierItem[]>([]);
   const [courierToAdd, setCourierToAdd] = useState<string>('');
 
-  const {
-    createBulkShipments,
-    scheduleBulkPickups,
-    cancelBulkShipments,
-    downloadBulkOperationFile,
-  } = useShippingOperations();
+  const { createBulkShipments, scheduleBulkPickups, cancelBulkShipments, downloadBulkOperationFile } = useShippingOperations();
   const { getCouriersQuery } = useCourierOperations();
   const availableCouriers = getCouriersQuery.data?.couriers || [];
 
@@ -215,10 +196,10 @@ export function BulkOrdersOperationsModal({
         ? {
             status: filterForm.getValues('status'),
             dateRange: filterForm.getValues('dateRange')
-              ? ([
-                  filterForm.getValues('dateRange')?.[0]?.toISOString() || undefined,
-                  filterForm.getValues('dateRange')?.[1]?.toISOString() || undefined,
-                ] as [string | undefined, string | undefined])
+              ? ([filterForm.getValues('dateRange')?.[0]?.toISOString() || undefined, filterForm.getValues('dateRange')?.[1]?.toISOString() || undefined] as [
+                  string | undefined,
+                  string | undefined,
+                ])
               : undefined,
           }
         : undefined;
@@ -228,12 +209,10 @@ export function BulkOrdersOperationsModal({
         const { is_schedule_pickup, pickup_date } = createShipmentForm.getValues();
 
         // Prepare order_ids array if we have selected rows
-        const order_ids =
-          !useFilters && selectedRows.length > 0 ? selectedRows.map((row) => row.id) : undefined;
+        const order_ids = !useFilters && selectedRows.length > 0 ? selectedRows.map((row) => row.id) : undefined;
 
         // Use the prioritized courier_ids from the list
-        const courier_ids =
-          selectedCouriers.length > 0 ? selectedCouriers.map((courier) => courier.id) : undefined;
+        const courier_ids = selectedCouriers.length > 0 ? selectedCouriers.map((courier) => courier.id) : undefined;
 
         result = await createBulkShipments.mutateAsync({
           order_ids,
@@ -246,8 +225,7 @@ export function BulkOrdersOperationsModal({
         const { pickup_date } = schedulePickupForm.getValues();
 
         // Prepare shipment_ids array if we have selected rows
-        const shipment_ids =
-          !useFilters && selectedRows.length > 0 ? selectedRows.map((row) => row.id) : undefined;
+        const shipment_ids = !useFilters && selectedRows.length > 0 ? selectedRows.map((row) => row.id) : undefined;
 
         result = await scheduleBulkPickups.mutateAsync({
           shipment_ids,
@@ -258,8 +236,7 @@ export function BulkOrdersOperationsModal({
         const { reason } = cancelShipmentForm.getValues();
 
         // Prepare shipment_ids array if we have selected rows
-        const shipment_ids =
-          !useFilters && selectedRows.length > 0 ? selectedRows.map((row) => row.id) : undefined;
+        const shipment_ids = !useFilters && selectedRows.length > 0 ? selectedRows.map((row) => row.id) : undefined;
 
         result = await cancelBulkShipments.mutateAsync({
           shipment_ids,
@@ -420,30 +397,14 @@ export function BulkOrdersOperationsModal({
                           <Popover>
                             <PopoverTrigger asChild>
                               <FormControl>
-                                <Button
-                                  variant={'outline'}
-                                  className={cn(
-                                    'w-full pl-3 text-left font-normal',
-                                    !field.value && 'text-muted-foreground'
-                                  )}
-                                >
-                                  {field.value ? (
-                                    format(field.value, 'PPP')
-                                  ) : (
-                                    <span>Pick a date</span>
-                                  )}
+                                <Button variant={'outline'} className={cn('w-full pl-3 text-left font-normal', !field.value && 'text-muted-foreground')}>
+                                  {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
                                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                 </Button>
                               </FormControl>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                disabled={(date) => date > new Date()}
-                                initialFocus
-                              />
+                              <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} initialFocus />
                             </PopoverContent>
                           </Popover>
                           <FormMessage />
@@ -460,30 +421,14 @@ export function BulkOrdersOperationsModal({
                           <Popover>
                             <PopoverTrigger asChild>
                               <FormControl>
-                                <Button
-                                  variant={'outline'}
-                                  className={cn(
-                                    'w-full pl-3 text-left font-normal',
-                                    !field.value && 'text-muted-foreground'
-                                  )}
-                                >
-                                  {field.value ? (
-                                    format(field.value, 'PPP')
-                                  ) : (
-                                    <span>Pick a date</span>
-                                  )}
+                                <Button variant={'outline'} className={cn('w-full pl-3 text-left font-normal', !field.value && 'text-muted-foreground')}>
+                                  {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
                                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                 </Button>
                               </FormControl>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                disabled={(date) => date > new Date()}
-                                initialFocus
-                              />
+                              <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} initialFocus />
                             </PopoverContent>
                           </Popover>
                           <FormMessage />
@@ -505,8 +450,7 @@ export function BulkOrdersOperationsModal({
                   <h3 className="mb-3 text-sm font-medium">Courier Priority</h3>
                   <div className="space-y-3">
                     <p className="text-muted-foreground text-sm">
-                      Select and arrange couriers in order of priority. The system will try to use
-                      the first courier, then fall back to others if needed.
+                      Select and arrange couriers in order of priority. The system will try to use the first courier, then fall back to others if needed.
                     </p>
 
                     {/* Courier selector */}
@@ -535,12 +479,7 @@ export function BulkOrdersOperationsModal({
                           )}
                         </SelectContent>
                       </Select>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={addCourier}
-                        disabled={!courierToAdd}
-                      >
+                      <Button type="button" variant="outline" onClick={addCourier} disabled={!courierToAdd}>
                         <Plus className="mr-1 h-4 w-4" /> Add
                       </Button>
                     </div>
@@ -550,9 +489,7 @@ export function BulkOrdersOperationsModal({
                       {selectedCouriers.length === 0 ? (
                         <div className="rounded-md border bg-gray-50 py-6 text-center dark:bg-transparent">
                           <p className="text-muted-foreground text-sm">No couriers selected</p>
-                          <p className="text-muted-foreground mt-1 text-xs">
-                            Add couriers to set priority order
-                          </p>
+                          <p className="text-muted-foreground mt-1 text-xs">Add couriers to set priority order</p>
                         </div>
                       ) : (
                         <div>
@@ -561,16 +498,11 @@ export function BulkOrdersOperationsModal({
                               {selectedCouriers.length} courier
                               {selectedCouriers.length !== 1 ? 's' : ''} selected
                             </Badge>
-                            <p className="text-muted-foreground mt-1 text-xs">
-                              Use arrows to reorder priority (top = highest priority)
-                            </p>
+                            <p className="text-muted-foreground mt-1 text-xs">Use arrows to reorder priority (top = highest priority)</p>
                           </div>
                           <div className="max-h-60 space-y-2 overflow-y-auto">
                             {selectedCouriers.map((courier, index) => (
-                              <div
-                                key={courier.id}
-                                className="flex items-center justify-between rounded border bg-white p-2"
-                              >
+                              <div key={courier.id} className="flex items-center justify-between rounded border bg-white p-2">
                                 <span>{courier.name}</span>
                                 <div className="flex items-center gap-1">
                                   <Button
@@ -625,9 +557,7 @@ export function BulkOrdersOperationsModal({
                         </FormControl>
                         <div className="space-y-1 leading-none">
                           <FormLabel>Schedule pickup</FormLabel>
-                          <FormDescription>
-                            Automatically schedule pickup for created shipments
-                          </FormDescription>
+                          <FormDescription>Automatically schedule pickup for created shipments</FormDescription>
                         </div>
                       </FormItem>
                     )}
@@ -649,26 +579,14 @@ export function BulkOrdersOperationsModal({
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
-                            <Button
-                              variant={'outline'}
-                              className={cn(
-                                'w-full pl-3 text-left font-normal',
-                                !field.value && 'text-muted-foreground'
-                              )}
-                            >
+                            <Button variant={'outline'} className={cn('w-full pl-3 text-left font-normal', !field.value && 'text-muted-foreground')}>
                               {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
                               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) => date < new Date()}
-                            initialFocus
-                          />
+                          <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date < new Date()} initialFocus />
                         </PopoverContent>
                       </Popover>
                       <FormMessage />
@@ -696,9 +614,7 @@ export function BulkOrdersOperationsModal({
                           <SelectContent>
                             <SelectItem value="Cancelled by seller">Cancelled by seller</SelectItem>
                             <SelectItem value="Out of stock">Out of stock</SelectItem>
-                            <SelectItem value="Customer requested cancellation">
-                              Customer requested cancellation
-                            </SelectItem>
+                            <SelectItem value="Customer requested cancellation">Customer requested cancellation</SelectItem>
                             <SelectItem value="Delivery issue">Delivery issue</SelectItem>
                             <SelectItem value="Other">Other</SelectItem>
                           </SelectContent>

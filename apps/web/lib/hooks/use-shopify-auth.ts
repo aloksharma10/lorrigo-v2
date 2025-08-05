@@ -11,7 +11,7 @@ export const useShopifyAuth = () => {
 
     try {
       const authUrl = await getShopifyAuthUrl(shop);
-      
+
       // Redirect to Shopify OAuth
       window.location.href = authUrl;
     } catch (err) {
@@ -26,4 +26,4 @@ export const useShopifyAuth = () => {
     isLoading,
     error,
   };
-}; 
+};

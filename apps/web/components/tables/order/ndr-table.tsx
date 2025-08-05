@@ -84,10 +84,7 @@ export default function NDRTable({ initialParams = {} }: NDRTableProps) {
       id: 'select',
       header: ({ table }) => (
         <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && 'indeterminate')
-          }
+          checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all"
           disabled={isLoading}
@@ -144,9 +141,7 @@ export default function NDRTable({ initialParams = {} }: NDRTableProps) {
                     : 'w-fit border-orange-200 bg-orange-50 text-xs text-orange-600 dark:border-orange-700 dark:bg-orange-900 dark:text-orange-50'
                 }
               >
-                {ndr.action_taken
-                  ? `${ndr.action_type?.toUpperCase()} COMPLETED`
-                  : 'PENDING ACTION'}
+                {ndr.action_taken ? `${ndr.action_type?.toUpperCase()} COMPLETED` : 'PENDING ACTION'}
               </Badge>
               {ndr.otp_verified && (
                 <Badge
@@ -173,9 +168,7 @@ export default function NDRTable({ initialParams = {} }: NDRTableProps) {
         return (
           <div className="flex flex-col space-y-1">
             <div className="font-medium text-blue-600">AWB: {ndr.awb}</div>
-            {order && (
-              <div className="text-sm">Order: {order.code || order.order_reference_id}</div>
-            )}
+            {order && <div className="text-sm">Order: {order.code || order.order_reference_id}</div>}
             <Button
               variant="link"
               size="sm"
@@ -216,17 +209,12 @@ export default function NDRTable({ initialParams = {} }: NDRTableProps) {
       header: ({ column }) => <DataTableColumnHeader column={column} title="Delivery Address" />,
       cell: ({ row }) => {
         const ndr = row.original;
-        const address =
-          ndr.shipment?.order?.customer?.address ||
-          ndr.order?.customer?.address ||
-          ndr.customer?.address;
+        const address = ndr.shipment?.order?.customer?.address || ndr.order?.customer?.address || ndr.customer?.address;
 
         return (
           <div className="flex flex-col space-y-1">
             <HoverCardToolTip label="Delivery Address">
-              {address
-                ? `${address.address}, ${address.city}, ${address.state} - ${address.pincode}`
-                : 'No address'}
+              {address ? `${address.address}, ${address.city}, ${address.state} - ${address.pincode}` : 'No address'}
             </HoverCardToolTip>
           </div>
         );
@@ -266,14 +254,8 @@ export default function NDRTable({ initialParams = {} }: NDRTableProps) {
                 <Badge variant="secondary" className="w-fit">
                   {ndr.action_type?.toUpperCase()}
                 </Badge>
-                <div className="text-muted-foreground text-xs">
-                  {ndr.action_date && new Date(ndr.action_date).toLocaleDateString()}
-                </div>
-                {ndr.action_comment && (
-                  <div className="text-muted-foreground max-w-xs truncate text-xs">
-                    {ndr.action_comment}
-                  </div>
-                )}
+                <div className="text-muted-foreground text-xs">{ndr.action_date && new Date(ndr.action_date).toLocaleDateString()}</div>
+                {ndr.action_comment && <div className="text-muted-foreground max-w-xs truncate text-xs">{ndr.action_comment}</div>}
               </>
             ) : (
               <Badge variant="outline" className="w-fit">
@@ -300,9 +282,7 @@ export default function NDRTable({ initialParams = {} }: NDRTableProps) {
                 size="sm"
                 onClick={() => handleNDRAction(ndr)}
                 disabled={ndr.otp_verified}
-                title={
-                  ndr.otp_verified ? 'Cannot take action on OTP verified orders' : 'Take NDR Action'
-                }
+                title={ndr.otp_verified ? 'Cannot take action on OTP verified orders' : 'Take NDR Action'}
               >
                 {ndr.otp_verified ? 'OTP Verified' : 'Take Action'}
               </Button>

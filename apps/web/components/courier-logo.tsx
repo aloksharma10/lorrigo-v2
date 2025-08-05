@@ -17,9 +17,7 @@ export function CourierLogoOld({ courierName, className = 'w-8 h-8' }: CourierLo
   const style = courierStyles[courierName] || { bg: 'bg-gray-600', text: 'text-white' };
 
   return (
-    <div
-      className={`${className} ${style.bg} ${style.text} flex items-center justify-center rounded-md text-xs font-bold`}
-    >
+    <div className={`${className} ${style.bg} ${style.text} flex items-center justify-center rounded-md text-xs font-bold`}>
       {courierName.substring(0, 2).toUpperCase()}
     </div>
   );

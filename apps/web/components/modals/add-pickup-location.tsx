@@ -59,16 +59,8 @@ export const AddPickupLocationModal = () => {
 
   const pincode = form.watch('pincode');
   const rtoPincode = form.watch('rtoPincode');
-  const {
-    cityState: cityStateRes,
-    isTyping: isPinloading,
-    loading: isPinLoading,
-  } = useFetchCityState(pincode);
-  const {
-    cityState: rtoCityStateRes,
-    isTyping: isRTOPinloading,
-    loading: isRTOPinLoading,
-  } = useFetchCityState(rtoPincode);
+  const { cityState: cityStateRes, isTyping: isPinloading, loading: isPinLoading } = useFetchCityState(pincode);
+  const { cityState: rtoCityStateRes, isTyping: isRTOPinloading, loading: isRTOPinLoading } = useFetchCityState(rtoPincode);
 
   const isFwPincodeLoading = isPinLoading || isPinloading;
   const isRwPincodeLoading = isRTOPinLoading || isRTOPinloading;
@@ -88,13 +80,8 @@ export const AddPickupLocationModal = () => {
 
   const onSubmit = async (values: z.infer<typeof pickupAddressRegistrationSchema>) => {
     try {
-      if (
-        !values.isRTOAddressSame &&
-        ((values.rtoAddress?.length ?? 0) < 5 || values.rtoPincode?.length !== 6)
-      ) {
-        toast.error(
-          'RTO Address must be at least 5 characters long and RTO Pincode must be 6 characters long.'
-        );
+      if (!values.isRTOAddressSame && ((values.rtoAddress?.length ?? 0) < 5 || values.rtoPincode?.length !== 6)) {
+        toast.error('RTO Address must be at least 5 characters long and RTO Pincode must be 6 characters long.');
         return;
       }
 
@@ -151,19 +138,9 @@ export const AddPickupLocationModal = () => {
       </div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
-          <AddPickupLocationForm
-            isLoading={isLoading}
-            form={form}
-            isPinLoading={isFwPincodeLoading}
-            isRTOPinLoading={isRwPincodeLoading}
-          />
+          <AddPickupLocationForm isLoading={isLoading} form={form} isPinLoading={isFwPincodeLoading} isRTOPinLoading={isRwPincodeLoading} />
           <DialogFooter className="px-6 py-4">
-            <Button
-              onClick={() => form.reset()}
-              disabled={isLoading}
-              variant={'secondary'}
-              type="button"
-            >
+            <Button onClick={() => form.reset()} disabled={isLoading} variant={'secondary'} type="button">
               Reset
             </Button>
             <Button isLoading={isLoading} variant={'default'} type="submit">
@@ -230,12 +207,7 @@ export const AddPickupLocationForm = ({
                                 {...field}
                                 maxLength={10}
                             /> */}
-              <Input
-                disabled={isLoading}
-                maxLength={10}
-                placeholder="Enter the contact number"
-                {...field}
-              />
+              <Input disabled={isLoading} maxLength={10} placeholder="Enter the contact number" {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -267,9 +239,7 @@ export const AddPickupLocationForm = ({
             <FormControl>
               <Input disabled={isLoading} placeholder="Enter address" {...field} />
             </FormControl>
-            <FormDescription className="text-xs">
-              This will be used in the invoices that you will print.
-            </FormDescription>
+            <FormDescription className="text-xs">This will be used in the invoices that you will print.</FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -281,13 +251,7 @@ export const AddPickupLocationForm = ({
           <FormItem>
             <FormLabel className="text-xs font-bold">Pincode</FormLabel>
             <FormControl>
-              <LoadingInput
-                isLoading={isPinLoading}
-                disabled={isLoading}
-                placeholder="Enter the pincode"
-                {...field}
-                maxLength={6}
-              />
+              <LoadingInput isLoading={isPinLoading} disabled={isLoading} placeholder="Enter the pincode" {...field} maxLength={6} />
             </FormControl>
             <FormMessage />
           </FormItem>

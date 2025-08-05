@@ -77,7 +77,7 @@ export const notificationAPI = {
   // Get system notifications
   getSystemNotifications: async (userId: string, limit?: number) => {
     return await api.get(`/notifications/system/${userId}`, {
-      params: { limit }
+      params: { limit },
     });
   },
 

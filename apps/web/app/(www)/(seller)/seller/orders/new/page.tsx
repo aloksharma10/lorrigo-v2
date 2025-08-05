@@ -15,12 +15,7 @@ export default function OrderFormPage() {
 
   const router = useRouter();
   const {
-    createOrder: {
-      data: order,
-      isPending: isCreatingOrder,
-      mutateAsync: createOrder,
-      isSuccess: isOrderCreated,
-    },
+    createOrder: { data: order, isPending: isCreatingOrder, mutateAsync: createOrder, isSuccess: isOrderCreated },
   } = useOrderOperations();
 
   async function onSubmit(values: OrderFormValues) {
@@ -34,10 +29,7 @@ export default function OrderFormPage() {
       toast.success('Order created successfully');
     } catch (error: any) {
       console.error('Order creation error:', error);
-      toast.error(
-        error.response?.data?.message ||
-          'Failed to create order, Please Report to Support at support@lorrigo.in'
-      );
+      toast.error(error.response?.data?.message || 'Failed to create order, Please Report to Support at support@lorrigo.in');
     }
   }
 

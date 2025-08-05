@@ -20,18 +20,11 @@ export interface SectionCardsProps {
   gridClassName?: string;
 }
 
-export const SectionCards: FC<SectionCardsProps> = ({
-  title,
-  items = [],
-  className = '',
-  gridClassName = '',
-}) => {
+export const SectionCards: FC<SectionCardsProps> = ({ title, items = [], className = '', gridClassName = '' }) => {
   return (
-    <Card className={cn("p-4", className)}>
+    <Card className={cn('p-4', className)}>
       <CardHeader>
-        <CardTitle className="scroll-m-20 text-lg font-semibold tracking-tight md:text-xl">
-          {title}
-        </CardTitle>
+        <CardTitle className="scroll-m-20 text-lg font-semibold tracking-tight md:text-xl">{title}</CardTitle>
       </CardHeader>
       <div
         className={`*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card *:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-4 grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t lg:px-6 ${gridClassName}`}

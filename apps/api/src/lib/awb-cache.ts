@@ -35,4 +35,4 @@ export async function addAppliedCharge(
 export async function getAppliedCharges(awb: string): Promise<string[]> {
   const key = buildKey(awb);
   return redis.smembers(key);
-} 
+}

@@ -1,11 +1,6 @@
 'use client';
 
-import {
-  CSVUploadModal,
-  type CSVField,
-  type HeaderMapping,
-  type CSVUploadResult,
-} from '@/components/modals/csv-upload-modal';
+import { CSVUploadModal, type CSVField, type HeaderMapping, type CSVUploadResult } from '@/components/modals/csv-upload-modal';
 import { useOrderOperations } from '@/lib/apis/order';
 import { useCSVUpload } from '@/components/providers/csv-upload-provider';
 import { toast } from '@lorrigo/ui/components';
@@ -143,8 +138,7 @@ export default function BulkOrderUploadPage() {
       <div className="mb-8">
         <h1 className="mb-2 text-3xl font-bold">Bulk Order Upload</h1>
         <p className="text-muted-foreground">
-          Upload a CSV file with order data to create multiple orders at once. You can upload up to
-          100,000 orders per file.
+          Upload a CSV file with order data to create multiple orders at once. You can upload up to 100,000 orders per file.
         </p>
       </div>
 

@@ -44,14 +44,7 @@ export class BulkOperationsController {
 
       const userId = request.userPayload!.i;
 
-      const operations = await this.bulkOperationsService.getAllBulkOperations(
-        userId,
-        Number(page),
-        Number(pageSize),
-        type,
-        status,
-        dateRange
-      );
+      const operations = await this.bulkOperationsService.getAllBulkOperations(userId, Number(page), Number(pageSize), type, status, dateRange);
 
       return reply.code(200).send(operations);
     } catch (error: any) {
@@ -74,10 +67,7 @@ export class BulkOperationsController {
 
       const operation = await this.bulkOperationsService.getBulkOperation(id, userId);
 
-      const progress =
-        operation.total_count > 0
-          ? Math.floor((operation.processed_count / operation.total_count) * 100)
-          : 0;
+      const progress = operation.total_count > 0 ? Math.floor((operation.processed_count / operation.total_count) * 100) : 0;
 
       return reply.code(200).send({
         success: true,
@@ -249,7 +239,7 @@ export class BulkOperationsController {
     try {
       const userId = request.userPayload!.id;
 
-      const data = request.body as { shipment_ids: any[], pickup_date: string };
+      const data = request.body as { shipment_ids: any[]; pickup_date: string };
 
       const result = await this.bulkOperationsService.scheduleBulkPickups(data, userId);
 
@@ -275,7 +265,7 @@ export class BulkOperationsController {
     try {
       const userId = request.userPayload!.id;
 
-      const data = request.body as { shipment_ids: any[], reason: string };
+      const data = request.body as { shipment_ids: any[]; reason: string };
 
       const result = await this.bulkOperationsService.cancelBulkShipments(data, userId);
 
@@ -412,9 +402,7 @@ export class BulkOperationsController {
       const mappingField = (data as any).fields?.mapping;
       if (mappingField) {
         try {
-          const raw = Buffer.isBuffer(mappingField.value)
-            ? mappingField.value.toString()
-            : mappingField.value;
+          const raw = Buffer.isBuffer(mappingField.value) ? mappingField.value.toString() : mappingField.value;
           headerMapping = JSON.parse(raw);
         } catch (err) {
           request.log.warn('Invalid mapping JSON provided, proceeding with empty mapping');
@@ -465,53 +453,53 @@ export class BulkOperationsController {
 
       const userId = request.userPayload!.id;
       const filePart = await (request as any).file();
-      
+
       if (!filePart) {
         return reply.code(400).send({ error: 'CSV file missing' });
       }
-      
+
       request.log.info(`Received CSV file: ${filePart.filename}`);
-      
+
       // Create temporary directory if it doesn't exist
       const tempDir = '/tmp';
       if (!fs.existsSync(tempDir)) {
         fs.mkdirSync(tempDir, { recursive: true });
       }
-      
+
       const tempPath = path.join(tempDir, `${Date.now()}-${filePart.filename}`);
       request.log.info(`Saving file to: ${tempPath}`);
-      
+
       // Save the file
       await pipeline(filePart.file, fs.createWriteStream(tempPath));
-      
+
       // Verify file exists and has content
       if (!fs.existsSync(tempPath)) {
         return reply.code(500).send({ error: 'Failed to save CSV file' });
       }
-      
+
       const stats = fs.statSync(tempPath);
       request.log.info(`File saved. Size: ${stats.size} bytes`);
-      
+
       if (stats.size === 0) {
         return reply.code(400).send({ error: 'CSV file is empty' });
       }
-      
+
       // Read the first few lines for debugging
       const fileContent = fs.readFileSync(tempPath, 'utf8').slice(0, 500);
       request.log.info(`File content sample: ${fileContent}`);
-      
+
       const operation = await this.bulkOperationsService.createWeightChargeBulk(tempPath, userId);
-      
-      return reply.code(201).send({ 
-        success: true, 
+
+      return reply.code(201).send({
+        success: true,
         operationId: operation.id,
-        message: 'Weight CSV uploaded successfully and queued for processing'
+        message: 'Weight CSV uploaded successfully and queued for processing',
       });
     } catch (error) {
       request.log.error(`Error uploading weight CSV: ${error}`);
-      return reply.code(500).send({ 
+      return reply.code(500).send({
         error: 'Failed to process weight CSV',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }

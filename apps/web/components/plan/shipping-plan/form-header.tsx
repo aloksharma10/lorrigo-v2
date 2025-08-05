@@ -19,24 +19,12 @@ export function FormHeader({ isEditing, isSubmitting, onSubmit }: FormHeaderProp
               <Package className="h-8 w-8" />
             </div>
             <div>
-              <CardTitle className="text-2xl font-bold">
-                {isEditing ? 'Edit Shipping Plan' : 'Create New Shipping Plan'}
-              </CardTitle>
-              <CardDescription>
-                Configure pricing, features, and courier settings for your shipping plan
-              </CardDescription>
+              <CardTitle className="text-2xl font-bold">{isEditing ? 'Edit Shipping Plan' : 'Create New Shipping Plan'}</CardTitle>
+              <CardDescription>Configure pricing, features, and courier settings for your shipping plan</CardDescription>
             </div>
           </div>
-          <Button
-            onClick={onSubmit}
-            disabled={isSubmitting}
-            className="bg-background text-primary hover:bg-background/90 px-6 font-semibold"
-          >
-            {isSubmitting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="mr-2 h-4 w-4" />
-            )}
+          <Button onClick={onSubmit} disabled={isSubmitting} className="bg-background text-primary hover:bg-background/90 px-6 font-semibold">
+            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
             {isEditing ? 'Update Plan' : 'Create Plan'}
           </Button>
         </div>

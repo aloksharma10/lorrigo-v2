@@ -9,9 +9,7 @@ export const MobileOrderSummary = ({ order }: { order: any }) => {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <div className="text-muted-foreground text-xs">Order Value</div>
-            <div className="font-semibold text-green-600">
-              {currencyFormatter(order.total_amount)}
-            </div>
+            <div className="font-semibold text-green-600">{currencyFormatter(order.total_amount)}</div>
           </div>
           <div>
             <div className="text-muted-foreground text-xs">Weight</div>
@@ -29,12 +27,9 @@ export const MobileOrderSummary = ({ order }: { order: any }) => {
         <div className="mt-3 border-t pt-3">
           <div className="flex items-center justify-between">
             <div className="text-muted-foreground text-xs">Payment</div>
-                      <Badge
-            variant={order.payment_method === 'COD' ? 'destructive' : 'default'}
-            className="text-xs"
-          >
-            {order.payment_method}
-          </Badge>
+            <Badge variant={order.payment_method === 'COD' ? 'destructive' : 'default'} className="text-xs">
+              {order.payment_method}
+            </Badge>
           </div>
         </div>
       </CardContent>

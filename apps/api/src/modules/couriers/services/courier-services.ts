@@ -110,10 +110,7 @@ export class CourierService {
 
     // Add search filter
     if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { courier_code: { contains: search, mode: 'insensitive' } },
-      ];
+      where.OR = [{ name: { contains: search, mode: 'insensitive' } }, { courier_code: { contains: search, mode: 'insensitive' } }];
     }
 
     // Add status filter
@@ -247,11 +244,7 @@ export class CourierService {
     });
   }
 
-  async setCourierPricing(
-    data: CourierPricingData,
-    userId: string,
-    userRole: Role
-  ): Promise<any | ErrorResponse> {
+  async setCourierPricing(data: CourierPricingData, userId: string, userRole: Role): Promise<any | ErrorResponse> {
     // Check if courier exists
     const courier = await this.fastify.prisma.courier.findUnique({
       where: { id: data.courier_id },

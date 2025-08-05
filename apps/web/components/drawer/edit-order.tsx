@@ -26,12 +26,7 @@ export default function EditOrder({
   side?: DrawerSide;
 }) {
   const {
-    updateOrder: {
-      data: updatedOrder,
-      isPending: isUpdatingOrder,
-      mutateAsync: updateOrder,
-      isSuccess: isOrderUpdated,
-    },
+    updateOrder: { data: updatedOrder, isPending: isUpdatingOrder, mutateAsync: updateOrder, isSuccess: isOrderUpdated },
   } = useOrderOperations();
 
   async function onSubmit(values: OrderFormValues) {
@@ -41,10 +36,7 @@ export default function EditOrder({
       toast.success('Order updated successfully');
       onClose();
     } catch (error: any) {
-      toast.error(
-        error.response?.data?.message ||
-          'Failed to update order, Please Report to Support at support@lorrigo.in'
-      );
+      toast.error(error.response?.data?.message || 'Failed to update order, Please Report to Support at support@lorrigo.in');
       console.error('Validation error:', error);
     }
   }
@@ -65,13 +57,7 @@ export default function EditOrder({
         </DrawerComponent.Close>
       </div>
       <div className="flex-1 overflow-auto p-4">
-        <OrderForm
-          initialValues={order}
-          onSubmit={onSubmit}
-          isSubmitting={isUpdatingOrder}
-          submitButtonText="Update Order"
-          mode="edit"
-        />
+        <OrderForm initialValues={order} onSubmit={onSubmit} isSubmitting={isUpdatingOrder} submitButtonText="Update Order" mode="edit" />
       </div>
     </DrawerComponent>
   );

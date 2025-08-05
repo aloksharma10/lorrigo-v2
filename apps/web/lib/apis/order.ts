@@ -1,12 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from './axios';
 import { BackendOrder, OrderFormValues, UpdateOrderFormValues } from '@lorrigo/utils';
-import {
-  ApiResponse,
-  OrderQueryParams,
-  OrdersApiResponse,
-  ShipmentParams,
-} from '../type/response-types';
+import { ApiResponse, OrderQueryParams, OrdersApiResponse, ShipmentParams } from '../type/response-types';
 import { useAuthToken } from '@/components/providers/token-provider';
 import { toast } from '@lorrigo/ui/components';
 
@@ -80,8 +75,7 @@ export const useOrderOperations = (queryParams: OrderQueryParams = {}, orderId?:
 
   // Update order status
   const updateOrder = useMutation({
-    mutationFn: (orderData: UpdateOrderFormValues) =>
-      api.patch(`/orders/${orderData.id}`, orderData),
+    mutationFn: (orderData: UpdateOrderFormValues) => api.patch(`/orders/${orderData.id}`, orderData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['reverse-orders'] });
@@ -90,16 +84,14 @@ export const useOrderOperations = (queryParams: OrderQueryParams = {}, orderId?:
 
   // Cancel order
   const cancelOrder = useMutation({
-    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
-      api.post(`/orders/${id}/cancel`, { reason }),
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) => api.post(`/orders/${id}/cancel`, { reason }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['reverse-orders'] });
     },
   });
   const bulkCancelOrders = useMutation({
-    mutationFn: (orderIds: string[], reason?: string) =>
-      api.post(`/orders/bulk-cancel`, { orderIds, reason }),
+    mutationFn: (orderIds: string[], reason?: string) => api.post(`/orders/bulk-cancel`, { orderIds, reason }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
@@ -201,22 +193,15 @@ export async function fetchOrders(params: any, is_reverse_order: boolean = false
     const queryParams = new URLSearchParams();
     if (params.page !== undefined) queryParams.append('page', (params.page + 1).toString()); // Convert 0-based to 1-based
     if (params.pageSize) queryParams.append('limit', params.pageSize.toString());
-    if (params.status && params.status !== 'all')
-      queryParams.append('status', params.status.toUpperCase());
+    if (params.status && params.status !== 'all') queryParams.append('status', params.status.toUpperCase());
     if (params.globalFilter) queryParams.append('search', params.globalFilter);
     if (params.dateRange?.from) {
       const from = params.dateRange.from;
-      queryParams.append(
-        'from_date',
-        `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, '0')}-${String(from.getDate()).padStart(2, '0')}`
-      );
+      queryParams.append('from_date', `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, '0')}-${String(from.getDate()).padStart(2, '0')}`);
     }
     if (params.dateRange?.to) {
       const to = params.dateRange.to;
-      queryParams.append(
-        'to_date',
-        `${to.getFullYear()}-${String(to.getMonth() + 1).padStart(2, '0')}-${String(to.getDate()).padStart(2, '0')}`
-      );
+      queryParams.append('to_date', `${to.getFullYear()}-${String(to.getMonth() + 1).padStart(2, '0')}-${String(to.getDate()).padStart(2, '0')}`);
     }
 
     // Handle sorting
@@ -236,9 +221,7 @@ export async function fetchOrders(params: any, is_reverse_order: boolean = false
       queryParams.append('status', params.filters.find((f: any) => f.id === 'status')?.value.join(','));
     }
 
-    const responseData= await api.get<OrdersApiResponse>(
-      `/orders${is_reverse_order ? '/reverse-orders' : ''}?${queryParams.toString()}`
-    );
+    const responseData = await api.get<OrdersApiResponse>(`/orders${is_reverse_order ? '/reverse-orders' : ''}?${queryParams.toString()}`);
     // Response structure: { data: OrdersApiResponse }
 
     // Transform backend response to match frontend expectations

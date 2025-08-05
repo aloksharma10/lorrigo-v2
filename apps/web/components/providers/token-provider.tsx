@@ -69,9 +69,5 @@ export function TokenProvider({ children }: { children: React.ReactNode }) {
     return null; // Prevent rendering children until session is loaded
   }
 
-  return (
-    <TokenContext.Provider value={{ setAuthToken, clearAuthToken, isTokenReady }}>
-      {children}
-    </TokenContext.Provider>
-  );
+  return <TokenContext.Provider value={{ setAuthToken, clearAuthToken, isTokenReady }}>{children}</TokenContext.Provider>;
 }

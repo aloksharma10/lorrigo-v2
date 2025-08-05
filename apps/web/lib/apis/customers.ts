@@ -30,10 +30,7 @@ export const searchCustomers = async (query: string, signal?: AbortSignal): Prom
   }
 
   try {
-    const response = await api.get<Customer[]>(
-      `/customers/search?query=${encodeURIComponent(query)}`,
-      { signal }
-    );
+    const response = await api.get<Customer[]>(`/customers/search?query=${encodeURIComponent(query)}`, { signal });
     return response || [];
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
@@ -53,8 +50,7 @@ export const useCustomerOperations = () => {
   const getCustomersQuery = (page = 1, limit = 10, search = '') =>
     useQuery({
       queryKey: ['customers', page, limit, search],
-      queryFn: () =>
-        api.get<any>(`/customers?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`),
+      queryFn: () => api.get<any>(`/customers?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`),
       staleTime: 1000 * 60 * 5, // 5 minutes: data is considered fresh
       enabled: isTokenReady,
     });
@@ -93,8 +89,7 @@ export const useCustomerOperations = () => {
 
   // Add address to customer
   const addCustomerAddress = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) =>
-      api.post(`/customers/${id}/addresses`, data),
+    mutationFn: ({ id, data }: { id: string; data: any }) => api.post(`/customers/${id}/addresses`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
     },

@@ -55,10 +55,7 @@ export class ChannelConnectionService {
    * @param channel Channel type
    * @returns Connection details or null if not found
    */
-  async getConnectionByUserIdAndChannel(
-    userId: string,
-    channel: Channel
-  ): Promise<ChannelConnection | null> {
+  async getConnectionByUserIdAndChannel(userId: string, channel: Channel): Promise<ChannelConnection | null> {
     try {
       switch (channel) {
         case Channel.SHOPIFY:
@@ -79,11 +76,7 @@ export class ChannelConnectionService {
    * @param channel Channel type
    * @returns Connection details or null if not found
    */
-  async getConnectionByShop(
-    userId: string,
-    shop: string,
-    channel: Channel
-  ): Promise<ChannelConnection | null> {
+  async getConnectionByShop(userId: string, shop: string, channel: Channel): Promise<ChannelConnection | null> {
     try {
       switch (channel) {
         case Channel.SHOPIFY:
@@ -212,10 +205,7 @@ export class ChannelConnectionService {
    * @param shop Shop domain
    * @returns Connection details or null if not found
    */
-  private async getShopifyConnectionByShop(
-    userId: string,
-    shop: string
-  ): Promise<ChannelConnection | null> {
+  private async getShopifyConnectionByShop(userId: string, shop: string): Promise<ChannelConnection | null> {
     const connection = await prisma.shopifyConnection.findFirst({
       where: {
         user_id: userId,

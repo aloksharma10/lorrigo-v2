@@ -4,14 +4,7 @@ import * as React from 'react';
 import { CheckIcon } from 'lucide-react';
 import { cn } from '@lorrigo/ui/lib/utils';
 import { Button } from '../button';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '../command';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../command';
 import { Popover, PopoverContent, PopoverTrigger } from '../popover';
 
 interface StatusOption {
@@ -27,23 +20,14 @@ interface DataTableStatusFilterProps {
   placeholder?: string;
 }
 
-export function DataTableStatusFilter({
-  options,
-  value,
-  onChange,
-  placeholder = 'Select Status',
-}: DataTableStatusFilterProps) {
+export function DataTableStatusFilter({ options, value, onChange, placeholder = 'Select Status' }: DataTableStatusFilterProps) {
   const [open, setOpen] = React.useState(false);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className="h-9 border-dashed">
-          {value ? (
-            options.find((option) => option.value === value)?.label
-          ) : (
-            <span>{placeholder}</span>
-          )}
+          {value ? options.find((option) => option.value === value)?.label : <span>{placeholder}</span>}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[200px] p-0" align="start">
@@ -64,9 +48,7 @@ export function DataTableStatusFilter({
                   <div
                     className={cn(
                       'border-primary mr-2 flex h-4 w-4 items-center justify-center rounded-sm border',
-                      value === option.value
-                        ? 'bg-primary text-primary-foreground'
-                        : 'opacity-50 [&_svg]:invisible'
+                      value === option.value ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible'
                     )}
                   >
                     <CheckIcon className={cn('h-4 w-4')} />

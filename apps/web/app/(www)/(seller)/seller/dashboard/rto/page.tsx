@@ -34,9 +34,7 @@ export default function RTOPage() {
     <div className="mx-auto space-y-6 p-4">
       <div className="flex flex-col">
         <h1 className="text-2xl font-bold">RTO</h1>
-        <div className="text-muted-foreground mb-6 text-sm">
-          All data in the Dashboard is displayed based on the Shipment assignment date.
-        </div>
+        <div className="text-muted-foreground mb-6 text-sm">All data in the Dashboard is displayed based on the Shipment assignment date.</div>
 
         {/* Filter Section */}
         {/* <div className="flex items-center gap-4 mb-4">
@@ -80,31 +78,11 @@ export default function RTOPage() {
               </div>
             </div> */}
             <div className="grid grid-cols-5 gap-4">
-              <MetricCard
-                title="Total RTO"
-                value={rtoMetrics.total}
-                className="bg-gray-50 dark:bg-neutral-900"
-              />
-              <MetricCard
-                title="RTO Percentage"
-                value={rtoMetrics.percentage}
-                className="bg-gray-50 dark:bg-neutral-900"
-              />
-              <MetricCard
-                title="RTO Initiated"
-                value={rtoMetrics.initiated}
-                className="bg-gray-50 dark:bg-neutral-900"
-              />
-              <MetricCard
-                title="RTO Undelivered"
-                value={rtoMetrics.undelivered}
-                className="bg-gray-50 dark:bg-neutral-900"
-              />
-              <MetricCard
-                title="RTO Delivered"
-                value={rtoMetrics.delivered}
-                className="bg-gray-50 dark:bg-neutral-900"
-              />
+              <MetricCard title="Total RTO" value={rtoMetrics.total} className="bg-gray-50 dark:bg-neutral-900" />
+              <MetricCard title="RTO Percentage" value={rtoMetrics.percentage} className="bg-gray-50 dark:bg-neutral-900" />
+              <MetricCard title="RTO Initiated" value={rtoMetrics.initiated} className="bg-gray-50 dark:bg-neutral-900" />
+              <MetricCard title="RTO Undelivered" value={rtoMetrics.undelivered} className="bg-gray-50 dark:bg-neutral-900" />
+              <MetricCard title="RTO Delivered" value={rtoMetrics.delivered} className="bg-gray-50 dark:bg-neutral-900" />
             </div>
           </ChartCard>
         </div>
@@ -112,11 +90,7 @@ export default function RTOPage() {
         {/* RTO Count Chart */}
         <div className="mb-6">
           <ChartCard title="RTO Count">
-            <LineChart
-              data={countOverTime}
-              lines={[{ dataKey: 'RTO Count', color: '#818cf8' }]}
-              height={300}
-            />
+            <LineChart data={countOverTime} lines={[{ dataKey: 'RTO Count', color: '#818cf8' }]} height={300} />
           </ChartCard>
         </div>
 
@@ -194,9 +168,7 @@ export default function RTOPage() {
           />
         </div>
 
-        <div className="text-muted-foreground text-xs">
-          Note: Last updated on 21 May 2025. There might be a slight mismatch in the data.
-        </div>
+        <div className="text-muted-foreground text-xs">Note: Last updated on 21 May 2025. There might be a slight mismatch in the data.</div>
       </div>
     </div>
   );

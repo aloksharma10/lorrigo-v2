@@ -2,14 +2,7 @@
 
 import React, { useState } from 'react';
 import { useShippingOperations } from '@/lib/apis/shipment';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@lorrigo/ui/components';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@lorrigo/ui/components';
 import { Button } from '@lorrigo/ui/components';
 import { Card, CardContent, CardHeader, CardTitle } from '@lorrigo/ui/components';
 import { Badge } from '@lorrigo/ui/components';
@@ -36,10 +29,7 @@ export default function BulkLogPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [downloading, setDownloading] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState<[Date | undefined, Date | undefined]>([
-    undefined,
-    undefined,
-  ]);
+  const [dateRange, setDateRange] = useState<[Date | undefined, Date | undefined]>([undefined, undefined]);
   const [type, setType] = useState<string | undefined>(undefined);
   const [status, setStatus] = useState<string | undefined>(undefined);
 
@@ -152,11 +142,7 @@ export default function BulkLogPage() {
               placeholder="Filter by date"
               align="end"
             /> */}
-            <select
-              className="rounded border p-2 text-sm"
-              value={type || ''}
-              onChange={(e) => handleFilter(e.target.value || undefined, status)}
-            >
+            <select className="rounded border p-2 text-sm" value={type || ''} onChange={(e) => handleFilter(e.target.value || undefined, status)}>
               <option value="">All Types</option>
               <option value="CREATE_SHIPMENT">Create Shipments</option>
               <option value="SCHEDULE_PICKUP">Schedule Pickups</option>
@@ -164,11 +150,7 @@ export default function BulkLogPage() {
               <option value="DOWNLOAD_LABEL">Download Labels</option>
               <option value="EDIT_PICKUP_ADDRESS">Edit Pickup Address</option>
             </select>
-            <select
-              className="rounded border p-2 text-sm"
-              value={status || ''}
-              onChange={(e) => handleFilter(type, e.target.value || undefined)}
-            >
+            <select className="rounded border p-2 text-sm" value={status || ''} onChange={(e) => handleFilter(type, e.target.value || undefined)}>
               <option value="">All Statuses</option>
               <option value="PENDING">Pending</option>
               <option value="PROCESSING">Processing</option>
@@ -220,11 +202,7 @@ export default function BulkLogPage() {
                               <div
                                 className="h-2.5 rounded-full bg-blue-600"
                                 style={{
-                                  width: `${
-                                    operation.total_count > 0
-                                      ? (operation.processed_count / operation.total_count) * 100
-                                      : 0
-                                  }%`,
+                                  width: `${operation.total_count > 0 ? (operation.processed_count / operation.total_count) * 100 : 0}%`,
                                 }}
                               ></div>
                             </div>
@@ -236,25 +214,16 @@ export default function BulkLogPage() {
                             {operation.success_count} succeeded, {operation.failed_count} failed
                           </div>
                         </TableCell>
-                        <TableCell>
-                          {format(new Date(operation.created_at), 'MMM dd, yyyy HH:mm')}
-                        </TableCell>
+                        <TableCell>{format(new Date(operation.created_at), 'MMM dd, yyyy HH:mm')}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end space-x-2">
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => handleDownload(operation.id, 'report')}
-                              disabled={
-                                operation.status !== 'COMPLETED' ||
-                                downloading === `${operation.id}-report`
-                              }
+                              disabled={operation.status !== 'COMPLETED' || downloading === `${operation.id}-report`}
                             >
-                              {downloading === `${operation.id}-report` ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <FileText className="mr-1 h-4 w-4" />
-                              )}
+                              {downloading === `${operation.id}-report` ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="mr-1 h-4 w-4" />}
                               Report
                             </Button>
                             {operation.type.toUpperCase() === 'DOWNLOAD_LABEL' && (
@@ -262,16 +231,9 @@ export default function BulkLogPage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleDownload(operation.id, 'file')}
-                                disabled={
-                                  operation.status !== 'COMPLETED' ||
-                                  downloading === `${operation.id}-file`
-                                }
+                                disabled={operation.status !== 'COMPLETED' || downloading === `${operation.id}-file`}
                               >
-                                {downloading === `${operation.id}-file` ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Download className="mr-1 h-4 w-4" />
-                                )}
+                                {downloading === `${operation.id}-file` ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="mr-1 h-4 w-4" />}
                                 Labels
                               </Button>
                             )}
@@ -287,25 +249,13 @@ export default function BulkLogPage() {
               {operationsData?.meta && (
                 <div className="mt-4 flex items-center justify-between">
                   <div className="text-sm text-gray-500">
-                    Showing {(page - 1) * pageSize + 1} to{' '}
-                    {Math.min(page * pageSize, operationsData.meta.total)} of{' '}
-                    {operationsData.meta.total} operations
+                    Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, operationsData.meta.total)} of {operationsData.meta.total} operations
                   </div>
                   <div className="flex space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage(page - 1)}
-                      disabled={page === 1}
-                    >
+                    <Button variant="outline" size="sm" onClick={() => setPage(page - 1)} disabled={page === 1}>
                       Previous
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage(page + 1)}
-                      disabled={page >= operationsData.meta.pageCount}
-                    >
+                    <Button variant="outline" size="sm" onClick={() => setPage(page + 1)} disabled={page >= operationsData.meta.pageCount}>
                       Next
                     </Button>
                   </div>

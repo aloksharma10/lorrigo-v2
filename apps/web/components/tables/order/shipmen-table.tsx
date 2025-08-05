@@ -142,10 +142,11 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
               <ScrollArea className="h-24">
                 {shipment.productDetails.products.map((product) => (
                   <React.Fragment key={product.id}>
-                    <div key={product.id} className="grid gap-2 grid-cols-2 text-xs text-gray-800">
+                    <div key={product.id} className="grid grid-cols-2 gap-2 text-xs text-gray-800">
                       <div className="col-span-2 flex items-center gap-2">
                         <Package className="h-3 w-3" />
-                        <span className="font-medium">Name:</span><span className="truncate">{product.name}</span>
+                        <span className="font-medium">Name:</span>
+                        <span className="truncate">{product.name}</span>
                       </div>
                       <Badge variant="status_warning" className="flex items-center gap-2">
                         <Tag className="h-3 w-3" />
@@ -234,7 +235,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
         return (
           <div className="flex flex-col">
             <div className="font-medium">{currencyFormatter(shipment.totalAmount)}</div>
-            <Badge variant={shipment.paymentType === 'COD' ? 'default': "status_success"}  className="mt-1 w-fit">
+            <Badge variant={shipment.paymentType === 'COD' ? 'default' : 'status_success'} className="mt-1 w-fit">
               {shipment.paymentType}
             </Badge>
             {shipment.paymentType === 'COD' && (
@@ -260,7 +261,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
         return (
           <div className="flex flex-col">
             <HoverCardToolTip className="w-80" label={shipment?.hub?.name}>
-              <div className="flex gap-2 items-center justify-between text-xs font-medium">
+              <div className="flex items-center justify-between gap-2 text-xs font-medium">
                 <div className="flex items-center gap-1">
                   <TruckIcon className="mr-1 h-3 w-3" />
                   <span>{shipment?.hub?.name}</span>
@@ -297,7 +298,6 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
                 tooltipText="Copy AWB"
                 text={shipment.awb}
               />
-
               <div className="text-muted-foreground text-xs">
                 {shipment.courier} {shipment.courierNickname}
               </div>

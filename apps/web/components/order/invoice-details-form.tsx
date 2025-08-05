@@ -52,18 +52,8 @@ export function InvoiceDetailsForm({ control, watch }: InvoiceDetailsFormProps) 
             <Popover>
               <PopoverTrigger asChild>
                 <FormControl>
-                  <Button
-                    variant={'outline'}
-                    className={cn(
-                      'p-0 text-left font-normal',
-                      !field.value && 'text-muted-foreground'
-                    )}
-                  >
-                    {field.value ? (
-                      formatDate(field.value, { year: 'numeric', month: 'long', day: 'numeric' })
-                    ) : (
-                      <span>Pick a date</span>
-                    )}
+                  <Button variant={'outline'} className={cn('p-0 text-left font-normal', !field.value && 'text-muted-foreground')}>
+                    {field.value ? formatDate(field.value, { year: 'numeric', month: 'long', day: 'numeric' }) : <span>Pick a date</span>}
                     <CalendarIcon className="ml-auto opacity-50" />
                   </Button>
                 </FormControl>

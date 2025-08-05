@@ -6,19 +6,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signIn, getSession } from 'next-auth/react';
-import {
-  Eye,
-  EyeOff,
-  Building2,
-  User,
-  Mail,
-  Phone,
-  FileText,
-  Lock,
-  CheckCircle,
-  AlertCircle,
-  ShoppingBag,
-} from 'lucide-react';
+import { Eye, EyeOff, Building2, User, Mail, Phone, FileText, Lock, CheckCircle, AlertCircle, ShoppingBag } from 'lucide-react';
 import {
   Input,
   Label,
@@ -72,16 +60,16 @@ export default function SignUp() {
   // Handle Google OAuth signup
   const handleGoogleSignup = async () => {
     if (isGoogleLoading) return;
-    
+
     setIsGoogleLoading(true);
     setErrors({});
 
     try {
       // Start Google OAuth flow - this will redirect to Google consent screen
-      await signIn('google', { 
-        callbackUrl: '/dashboard'
+      await signIn('google', {
+        callbackUrl: '/dashboard',
       });
-      
+
       // Note: The code below won't execute immediately because signIn will redirect
       // The actual session handling happens in the NextAuth callbacks
     } catch (error) {
@@ -221,13 +209,11 @@ export default function SignUp() {
   const progress = (completedFields / totalRequiredFields) * 100;
 
   return (
-   <>
-      <Card className="w-full max-w-lg m-auto">
+    <>
+      <Card className="m-auto w-full max-w-lg">
         <CardHeader className="space-y-1">
           <CardTitle className="text-center text-2xl font-bold">Create your account</CardTitle>
-          <CardDescription className="text-center">
-            Join us and start managing your business today
-          </CardDescription>
+          <CardDescription className="text-center">Join us and start managing your business today</CardDescription>
           <div className="space-y-2">
             <div className="flex justify-between text-sm text-gray-600">
               <span>Progress</span>
@@ -248,13 +234,7 @@ export default function SignUp() {
           {/* OAuth Buttons */}
           <div className="space-y-3">
             {/* Google OAuth Button */}
-            <Button 
-              type="button" 
-              variant="outline" 
-              className="w-full" 
-              onClick={handleGoogleSignup}
-              disabled={isGoogleLoading}
-            >
+            <Button type="button" variant="outline" className="w-full" onClick={handleGoogleSignup} disabled={isGoogleLoading}>
               {isGoogleLoading ? (
                 <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
               ) : (
@@ -281,13 +261,7 @@ export default function SignUp() {
             </Button>
 
             {/* Shopify OAuth Button */}
-            <Button 
-              type="button" 
-              variant="outline" 
-              className="w-full" 
-              onClick={() => loginWithShopify()}
-              disabled={shopifyLoading}
-            >
+            <Button type="button" variant="outline" className="w-full" onClick={() => loginWithShopify()} disabled={shopifyLoading}>
               {shopifyLoading ? (
                 <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
               ) : (
@@ -340,9 +314,7 @@ export default function SignUp() {
                   onChange={handleInputChange}
                   className={errors.business_name ? 'border-red-500' : ''}
                 />
-                {errors.business_name && (
-                  <p className="text-sm text-red-500">{errors.business_name}</p>
-                )}
+                {errors.business_name && <p className="text-sm text-red-500">{errors.business_name}</p>}
               </div>
             </div>
 
@@ -394,15 +366,7 @@ export default function SignUp() {
                 <div className="space-y-1">
                   <div className="flex justify-between text-sm">
                     <span>Password strength</span>
-                    <span
-                      className={
-                        passwordStrength < 50
-                          ? 'text-red-500'
-                          : passwordStrength < 75
-                            ? 'text-yellow-500'
-                            : 'text-green-500'
-                      }
-                    >
+                    <span className={passwordStrength < 50 ? 'text-red-500' : passwordStrength < 75 ? 'text-yellow-500' : 'text-green-500'}>
                       {passwordStrength < 50 ? 'Weak' : passwordStrength < 75 ? 'Medium' : 'Strong'}
                     </span>
                   </div>
@@ -482,9 +446,7 @@ export default function SignUp() {
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background text-muted-foreground px-2">
-                Don't have an account?
-              </span>
+              <span className="bg-background text-muted-foreground px-2">Don't have an account?</span>
             </div>
           </div>
 

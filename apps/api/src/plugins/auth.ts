@@ -24,9 +24,7 @@ declare module 'fastify' {
 
   interface FastifyInstance {
     authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
-    authorize: (
-      allowedRoles: string[]
-    ) => (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+    authorize: (allowedRoles: string[]) => (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
     prisma: typeof prisma;
     redis: typeof redis;
     queues: typeof queues;

@@ -32,11 +32,7 @@ export const captureException = (error: Error, context?: Record<string, any>) =>
 };
 
 // Helper function to capture messages
-export const captureMessage = (
-  message: string,
-  level: Sentry.SeverityLevel = 'info',
-  context?: Record<string, any>
-) => {
+export const captureMessage = (message: string, level: Sentry.SeverityLevel = 'info', context?: Record<string, any>) => {
   if (APP_CONFIG.SENTRY.DSN) {
     Sentry.captureMessage(message, {
       level,

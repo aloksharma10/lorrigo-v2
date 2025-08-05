@@ -27,7 +27,11 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
   fastify.get('/rto', { preHandler: [authorizeRoles([Role.SELLER, Role.ADMIN])] }, controller.getRtoAnalytics.bind(controller));
 
   // Delivery performance analytics
-  fastify.get('/delivery-performance', { preHandler: [authorizeRoles([Role.SELLER, Role.ADMIN])] }, controller.getDeliveryPerformanceAnalytics?.bind(controller));
+  fastify.get(
+    '/delivery-performance',
+    { preHandler: [authorizeRoles([Role.SELLER, Role.ADMIN])] },
+    controller.getDeliveryPerformanceAnalytics?.bind(controller)
+  );
 
   // Courier split analytics
   fastify.get('/courier-split', { preHandler: [authorizeRoles([Role.SELLER, Role.ADMIN])] }, controller.getCourierSplitAnalytics?.bind(controller));
@@ -36,4 +40,4 @@ export default async function analyticsRoutes(fastify: FastifyInstance) {
   fastify.get('/zone-distribution', { preHandler: [authorizeRoles([Role.SELLER, Role.ADMIN])] }, controller.getZoneDistributionAnalytics?.bind(controller));
 
   // Add more endpoints as needed for each dashboard component
-} 
+}

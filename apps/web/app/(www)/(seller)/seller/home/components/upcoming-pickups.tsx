@@ -2,19 +2,7 @@
 import { format } from 'date-fns';
 import { useState } from 'react';
 
-import {
-  Button,
-  Calendar,
-  Card,
-  CardContent,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-  Separator,
-  Badge,
-  CardHeader,
-  CardTitle,
-} from '@lorrigo/ui/components';
+import { Button, Calendar, Card, CardContent, Popover, PopoverContent, PopoverTrigger, Separator, Badge, CardHeader, CardTitle } from '@lorrigo/ui/components';
 import { PickupCard } from './pickup-card';
 import { DateRange } from 'react-day-picker';
 import { UpcomingPickupItem } from '@/lib/type/shipment-analysis';
@@ -105,7 +93,7 @@ export const UpcomingPickups = ({ data }: UpcomingPickupsProps) => {
 
   // Convert API data to the format expected by PickupCard
   const convertToPickupFormat = (apiData: UpcomingPickupItem[]) => {
-    return apiData.map(item => ({
+    return apiData.map((item) => ({
       id: item.id,
       customerName: item.customerName,
       address: item.pickupAddress,
@@ -118,8 +106,8 @@ export const UpcomingPickups = ({ data }: UpcomingPickupsProps) => {
           description: `Pickup from ${item.customerName}`,
           quantity: 1,
           brandLogo: undefined,
-        }
-      ]
+        },
+      ],
     }));
   };
 
@@ -149,10 +137,7 @@ export const UpcomingPickups = ({ data }: UpcomingPickupsProps) => {
             ) : (
               <Card>
                 <CardContent className="flex h-40 items-center justify-center">
-                  <p className="text-gray-500">
-                    No pickups scheduled for{' '}
-                    {format(selectedDate.from || new Date(), 'MMM d, yyyy')}
-                  </p>
+                  <p className="text-gray-500">No pickups scheduled for {format(selectedDate.from || new Date(), 'MMM d, yyyy')}</p>
                 </CardContent>
               </Card>
             )}

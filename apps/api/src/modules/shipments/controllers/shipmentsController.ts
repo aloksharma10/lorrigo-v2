@@ -16,22 +16,22 @@ export class ShipmentController {
   constructor(private shipmentService: ShipmentService) {}
 
   async getServiceableCouriers(request: FastifyRequest, reply: FastifyReply) {
-   try {
-    const userId = request.userPayload!.id;
-    const params= request.body as RateCalculationParams;
+    try {
+      const userId = request.userPayload!.id;
+      const params = request.body as RateCalculationParams;
 
-    const rates = await this.shipmentService.getServiceableCouriers(userId, params);
+      const rates = await this.shipmentService.getServiceableCouriers(userId, params);
 
-    return reply.send(rates);
-   } catch (error) {
-    request.log.error(error);
-    captureException(error as Error);
+      return reply.send(rates);
+    } catch (error) {
+      request.log.error(error);
+      captureException(error as Error);
 
-    return reply.code(500).send({
-      message: 'Internal server error',
-    });
-   }
-  } 
+      return reply.code(500).send({
+        message: 'Internal server error',
+      });
+    }
+  }
 
   /**
    * Get rates for an order
@@ -83,7 +83,7 @@ export class ShipmentController {
       reply.status(500).send({
         success: false,
         message: 'Failed to create shipment',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -134,10 +134,7 @@ export class ShipmentController {
   /**
    * Get tracking events for a shipment
    */
-  async getTrackingEvents(
-    request: FastifyRequest<{ Params: { id: string } }>,
-    reply: FastifyReply
-  ) {
+  async getTrackingEvents(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
     try {
       // Check if user is authenticated
       await checkAuth(request, reply);
@@ -286,18 +283,11 @@ export class ShipmentController {
         ? {
             ...filters,
             status: filters.status as ShipmentStatus,
-            dateRange: filters.dateRange
-              ? ([new Date(filters.dateRange[0]), new Date(filters.dateRange[1])] as [Date, Date])
-              : undefined,
+            dateRange: filters.dateRange ? ([new Date(filters.dateRange[0]), new Date(filters.dateRange[1])] as [Date, Date]) : undefined,
           }
         : undefined;
 
-      const result = await this.shipmentService.schedulePickupBulk(
-        shipment_ids || [],
-        pickup_date,
-        user_id,
-        processedFilters
-      );
+      const result = await this.shipmentService.schedulePickupBulk(shipment_ids || [], pickup_date, user_id, processedFilters);
 
       if (result.error) {
         return reply.code(400).send({ error: result.error });
@@ -330,18 +320,11 @@ export class ShipmentController {
         ? {
             ...filters,
             status: filters.status as ShipmentStatus,
-            dateRange: filters.dateRange
-              ? ([new Date(filters.dateRange[0]), new Date(filters.dateRange[1])] as [Date, Date])
-              : undefined,
+            dateRange: filters.dateRange ? ([new Date(filters.dateRange[0]), new Date(filters.dateRange[1])] as [Date, Date]) : undefined,
           }
         : undefined;
 
-      const result = await this.shipmentService.cancelShipmentBulk(
-        shipment_ids || [],
-        reason,
-        user_id,
-        processedFilters
-      );
+      const result = await this.shipmentService.cancelShipmentBulk(shipment_ids || [], reason, user_id, processedFilters);
 
       if (result.error) {
         return reply.code(400).send({ error: result.error });
@@ -357,10 +340,7 @@ export class ShipmentController {
   /**
    * Get bulk operation status
    */
-  async getBulkOperationStatus(
-    request: FastifyRequest<{ Params: { id: string } }>,
-    reply: FastifyReply
-  ) {
+  async getBulkOperationStatus(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
     try {
       const { id } = request.params;
       const user_id = request.userPayload!.id;
@@ -381,10 +361,7 @@ export class ShipmentController {
   /**
    * Download bulk operation report or file
    */
-  async downloadBulkOperationFile(
-    request: FastifyRequest<{ Params: { id: string }; Querystring: { type: string } }>,
-    reply: FastifyReply
-  ) {
+  async downloadBulkOperationFile(request: FastifyRequest<{ Params: { id: string }; Querystring: { type: string } }>, reply: FastifyReply) {
     try {
       const { id } = request.params;
       const { type = 'report' } = request.query;
@@ -452,12 +429,7 @@ export class ShipmentController {
     try {
       const { batchSize } = request.body as { batchSize?: number };
 
-      const result = await processShipmentTracking(
-        request.server,
-        this.shipmentService,
-        { batchSize: batchSize || 50 },
-        request.log
-      );
+      const result = await processShipmentTracking(request.server, this.shipmentService, { batchSize: batchSize || 50 }, request.log);
 
       return reply.send({
         success: result.success,
@@ -502,12 +474,7 @@ export class ShipmentController {
       }
 
       // Track the shipment
-      const trackingResult = await this.shipmentService.trackShipment(
-        id,
-        shipment.courier.channel_config.name,
-        shipment.awb,
-        shipment.order_id
-      );
+      const trackingResult = await this.shipmentService.trackShipment(id, shipment.courier.channel_config.name, shipment.awb, shipment.order_id);
 
       if (!trackingResult.success) {
         return reply.code(400).send({
@@ -521,9 +488,7 @@ export class ShipmentController {
 
       return reply.send({
         success: true,
-        message: trackingResult.updated
-          ? `Shipment status updated to ${trackingResult.newStatus}`
-          : 'No status change detected',
+        message: trackingResult.updated ? `Shipment status updated to ${trackingResult.newStatus}` : 'No status change detected',
         status: trackingResult.newStatus || shipment.status,
         bucket: trackingResult.newBucket || shipment.bucket,
         tracking_events: trackingResult.events || [],
@@ -662,12 +627,7 @@ export class ShipmentController {
       }
 
       // Take action on NDR order using service
-      const result = await this.shipmentService.takeNDRAction(
-        params.id,
-        body.action_type,
-        body.comment || '',
-        userId
-      );
+      const result = await this.shipmentService.takeNDRAction(params.id, body.action_type, body.comment || '', userId);
 
       return reply.code(result.success ? 200 : 400).send(result);
     } catch (error: any) {

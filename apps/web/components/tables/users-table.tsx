@@ -8,12 +8,7 @@ import { DataTableColumnHeader } from '@lorrigo/ui/components';
 import { Badge } from '@lorrigo/ui/components';
 import { Button } from '@lorrigo/ui/components';
 import { MoreHorizontal, Package, AlertTriangle } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@lorrigo/ui/components';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@lorrigo/ui/components';
 import { toast } from '@lorrigo/ui/components';
 import type { ColumnDef } from '@lorrigo/ui/components';
 import { useDebounce } from '@/lib/hooks/use-debounce';
@@ -33,12 +28,8 @@ export default function UsersTable({ initialParams }: UsersTableProps) {
     pageIndex: initialParams.page || 0,
     pageSize: initialParams.pageSize || 15,
   });
-  const [sorting, setSorting] = React.useState<{ id: string; desc: boolean }[]>(
-    initialParams.sort || []
-  );
-  const [filters, setFilters] = React.useState<{ id: string; value: any }[]>(
-    initialParams.filters || []
-  );
+  const [sorting, setSorting] = React.useState<{ id: string; desc: boolean }[]>(initialParams.sort || []);
+  const [filters, setFilters] = React.useState<{ id: string; value: any }[]>(initialParams.filters || []);
   const [globalFilter, setGlobalFilter] = React.useState(initialParams.globalFilter || '');
   const debouncedGlobalFilter = useDebounce(globalFilter, 500);
   const [dateRange, setDateRange] = React.useState<{ from: Date; to: Date }>(
@@ -52,16 +43,7 @@ export default function UsersTable({ initialParams }: UsersTableProps) {
 
   // Fetch shipments with React Query
   const { data, isLoading, isError, isFetching } = useQuery({
-    queryKey: [
-      'shipments',
-      pagination.pageIndex,
-      pagination.pageSize,
-      sorting,
-      filters,
-      debouncedGlobalFilter,
-      dateRange,
-      activeTab,
-    ],
+    queryKey: ['shipments', pagination.pageIndex, pagination.pageSize, sorting, filters, debouncedGlobalFilter, dateRange, activeTab],
     queryFn: () =>
       fetchShipments({
         page: pagination.pageIndex,
@@ -132,10 +114,7 @@ export default function UsersTable({ initialParams }: UsersTableProps) {
       id: 'select',
       header: ({ table }) => (
         <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && 'indeterminate')
-          }
+          checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all"
           disabled={isLoading}
@@ -172,11 +151,7 @@ export default function UsersTable({ initialParams }: UsersTableProps) {
               <Package className="text-muted-foreground mr-1 h-4 w-4" />
               <span className="text-xs font-medium uppercase">CUSTOM</span>
             </div>
-            <Button
-              variant="link"
-              size="sm"
-              className="mt-1 h-auto justify-start p-0 text-blue-600"
-            >
+            <Button variant="link" size="sm" className="mt-1 h-auto justify-start p-0 text-blue-600">
               Package Details
             </Button>
           </div>
@@ -225,16 +200,12 @@ export default function UsersTable({ initialParams }: UsersTableProps) {
     },
     {
       accessorKey: 'pickupAddress',
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Pickup / RTO Addresses" />
-      ),
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Pickup / RTO Addresses" />,
       cell: ({ row }) => {
         const shipment = row.original;
         return (
           <div className="flex flex-col">
-            <div className="text-muted-foreground mb-1 border-b border-dashed pb-1 font-medium">
-              {shipment.hub?.address}
-            </div>
+            <div className="text-muted-foreground mb-1 border-b border-dashed pb-1 font-medium">{shipment.hub?.address}</div>
           </div>
         );
       },
@@ -275,9 +246,7 @@ export default function UsersTable({ initialParams }: UsersTableProps) {
 
         return (
           <div className="flex flex-col">
-            <Badge className={`${statusColorMap[shipment.status]} w-fit`}>
-              {shipment.status.toUpperCase()}
-            </Badge>
+            <Badge className={`${statusColorMap[shipment.status]} w-fit`}>{shipment.status.toUpperCase()}</Badge>
             <div className="mt-1 text-xs">For May {shipment.pickupDate.split(' ')[1]}, 2025</div>
             <div className="mt-1 text-xs">EDD: {shipment.edd}</div>
             <div className="mt-1 text-xs">Pickup ID: {shipment.pickupId}</div>
@@ -313,10 +282,7 @@ export default function UsersTable({ initialParams }: UsersTableProps) {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem>View details</DropdownMenuItem>
                 <DropdownMenuItem>Track shipment</DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => cancelOrdersMutation.mutate([row.original])}
-                  disabled={cancelOrdersMutation.isPending}
-                >
+                <DropdownMenuItem onClick={() => cancelOrdersMutation.mutate([row.original])} disabled={cancelOrdersMutation.isPending}>
                   Cancel order
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -383,12 +349,9 @@ export default function UsersTable({ initialParams }: UsersTableProps) {
   };
 
   // Handle pagination change
-  const handlePaginationChange = React.useCallback(
-    (newPagination: { pageIndex: number; pageSize: number }) => {
-      setPagination(newPagination);
-    },
-    []
-  );
+  const handlePaginationChange = React.useCallback((newPagination: { pageIndex: number; pageSize: number }) => {
+    setPagination(newPagination);
+  }, []);
 
   // Handle sorting change
   const handleSortingChange = React.useCallback((newSorting: { id: string; desc: boolean }[]) => {

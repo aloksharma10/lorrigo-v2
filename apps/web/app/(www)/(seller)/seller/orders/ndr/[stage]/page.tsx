@@ -45,9 +45,7 @@ export default function NDRPage() {
     <div className="mx-auto w-full">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-base font-bold capitalize lg:text-2xl">
-          NDR {stage?.replace('-', ' ')} Orders
-        </h1>
+        <h1 className="text-base font-bold capitalize lg:text-2xl">NDR {stage?.replace('-', ' ')} Orders</h1>
       </div>
 
       {/* Tabs */}

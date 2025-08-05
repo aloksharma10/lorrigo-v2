@@ -17,71 +17,31 @@ export async function billingRoutes(fastify: FastifyInstance) {
   const { queue } = initBillingQueue(fastify, billingService);
 
   // Nightly automation – every day at 00:05 AM
-  await addRecurringJob(
-    QueueNames.BILLING_AUTOMATION,
-    BillingJobType.AUTOMATE_BILLING,
-    {},
-    '5 0 * * *',
-    { jobId: 'billing-nightly' }
-  );
+  await addRecurringJob(QueueNames.BILLING_AUTOMATION, BillingJobType.AUTOMATE_BILLING, {}, '5 0 * * *', { jobId: 'billing-nightly' });
 
   // Dispute auto-resolution – run hourly
-  await addRecurringJob(
-    QueueNames.BILLING_AUTOMATION,
-    BillingJobType.RESOLVE_DISPUTES,
-    {},
-    '0 * * * *',
-    { jobId: 'dispute-hourly' }
-  );
+  await addRecurringJob(QueueNames.BILLING_AUTOMATION, BillingJobType.RESOLVE_DISPUTES, {}, '0 * * * *', { jobId: 'dispute-hourly' });
 
   // Controller
   const controller = new BillingController(billingService);
 
   // Admin manual billing generation
-  fastify.post(
-    '/manual',
-    { preHandler: authorizeRoles([Role.ADMIN]) },
-    controller.manualBilling.bind(controller)
-  );
+  fastify.post('/manual', { preHandler: authorizeRoles([Role.ADMIN]) }, controller.manualBilling.bind(controller));
 
   // Billing cycles (admin and seller)
-  fastify.get(
-    '/cycles',
-    { preHandler: authorizeRoles([Role.SELLER, Role.ADMIN]) },
-    controller.getBillingCycles.bind(controller)
-  );
+  fastify.get('/cycles', { preHandler: authorizeRoles([Role.SELLER, Role.ADMIN]) }, controller.getBillingCycles.bind(controller));
 
   // Billing history
-  fastify.get(
-    '/history',
-    { preHandler: authorizeRoles([Role.SELLER, Role.ADMIN]) },
-    controller.getBillingHistory.bind(controller)
-  );
+  fastify.get('/history', { preHandler: authorizeRoles([Role.SELLER, Role.ADMIN]) }, controller.getBillingHistory.bind(controller));
 
   // Billing summary by month
-  fastify.get(
-    '/summary/:month',
-    { preHandler: authorizeRoles([Role.SELLER, Role.ADMIN]) },
-    controller.getBillingSummary.bind(controller)
-  );
+  fastify.get('/summary/:month', { preHandler: authorizeRoles([Role.SELLER, Role.ADMIN]) }, controller.getBillingSummary.bind(controller));
 
   // Dispute management
-  fastify.get(
-    '/disputes',
-    { preHandler: authorizeRoles([Role.SELLER, Role.ADMIN]) },
-    controller.getDisputes.bind(controller)
-  );
+  fastify.get('/disputes', { preHandler: authorizeRoles([Role.SELLER, Role.ADMIN]) }, controller.getDisputes.bind(controller));
 
-  fastify.post(
-    '/disputes/:id/action',
-    { preHandler: authorizeRoles([Role.SELLER, Role.ADMIN]) },
-    controller.actOnDispute.bind(controller)
-  );
+  fastify.post('/disputes/:id/action', { preHandler: authorizeRoles([Role.SELLER, Role.ADMIN]) }, controller.actOnDispute.bind(controller));
 
   // Dispute export
-  fastify.get(
-    '/disputes/export',
-    { preHandler: authorizeRoles([Role.SELLER, Role.ADMIN]) },
-    controller.exportDisputes.bind(controller)
-  );
-} 
+  fastify.get('/disputes/export', { preHandler: authorizeRoles([Role.SELLER, Role.ADMIN]) }, controller.exportDisputes.bind(controller));
+}

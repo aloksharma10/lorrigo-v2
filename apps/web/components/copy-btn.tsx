@@ -54,20 +54,18 @@ function CopyBtn({
 
   return (
     <div className="flex items-center gap-2">
-      {label && label !== 'N/A' && (
-        <span className={cn('text-sm font-medium text-gray-700', labelClassName)}>{label}</span>
-      )}
+      {label && label !== 'N/A' && <span className={cn('text-sm font-medium text-gray-700', labelClassName)}>{label}</span>}
       {label && label !== 'N/A' && (
         <ActionTooltip label={copied ? successTooltipText : tooltipText}>
           <Button
             variant={variant}
             size={size}
-            className={cn('h-6 w-6 disabled:opacity-100 relative', className)}
+            className={cn('relative h-6 w-6 disabled:opacity-100', className)}
             onClick={handleCopy}
             aria-label={copied ? successTooltipText : tooltipText}
             disabled={copied}
           >
-            <div className="flex items-center justify-center w-full h-full">
+            <div className="flex h-full w-full items-center justify-center">
               <CheckIcon
                 className={cn('stroke-emerald-500 transition-opacity duration-300', {
                   'opacity-100': copied,

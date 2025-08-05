@@ -4,17 +4,11 @@ import { SettingsHeader } from '@/components/settings/header';
 import { SettingsNavigation } from '@/components/settings/settings-navigation';
 import { USER_SETTINGS_TABS, generateUserSettingsRoutes } from '@/lib/routes/user-settings';
 
-export default async function UserProfileLayout({
-  children,
-  params,
-}: {
-  children: React.ReactNode;
-  params: Promise<{ id: string }>;
-}) {
+export default async function UserProfileLayout({ children, params }: { children: React.ReactNode; params: Promise<{ id: string }> }) {
   const { id: userId } = await params;
 
   return (
-    <div className="flex flex-col w-full">
+    <div className="flex w-full flex-col">
       {/* Header */}
       <SettingsHeader id={userId} />
 

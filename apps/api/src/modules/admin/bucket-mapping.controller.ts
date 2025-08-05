@@ -28,10 +28,7 @@ export class BucketMappingController {
   /**
    * Get all bucket mappings with optional filtering
    */
-  public async getMappings(
-    request: FastifyRequest<{ Querystring: GetMappingsQuery }>,
-    reply: FastifyReply
-  ) {
+  public async getMappings(request: FastifyRequest<{ Querystring: GetMappingsQuery }>, reply: FastifyReply) {
     try {
       const { courier_name, is_mapped, bucket } = request.query;
 
@@ -59,10 +56,7 @@ export class BucketMappingController {
   /**
    * Update bucket mapping for a courier status
    */
-  public async updateMapping(
-    request: FastifyRequest<{ Body: UpdateBucketMappingBody }>,
-    reply: FastifyReply
-  ) {
+  public async updateMapping(request: FastifyRequest<{ Body: UpdateBucketMappingBody }>, reply: FastifyReply) {
     try {
       const { courier_name, status_code, bucket, status_label, status_description } = request.body;
 
@@ -82,13 +76,7 @@ export class BucketMappingController {
         });
       }
 
-      const mapping = await this.bucketMappingService.updateBucketMapping(
-        courier_name.toUpperCase(),
-        status_code,
-        bucket,
-        status_label,
-        status_description
-      );
+      const mapping = await this.bucketMappingService.updateBucketMapping(courier_name.toUpperCase(), status_code, bucket, status_label, status_description);
 
       return reply.status(200).send({
         success: true,
@@ -157,10 +145,7 @@ export class BucketMappingController {
   /**
    * Get unmapped statuses for admin review
    */
-  public async getUnmappedStatuses(
-    request: FastifyRequest<{ Querystring: { courier_name?: string } }>,
-    reply: FastifyReply
-  ) {
+  public async getUnmappedStatuses(request: FastifyRequest<{ Querystring: { courier_name?: string } }>, reply: FastifyReply) {
     try {
       const { courier_name } = request.query;
 

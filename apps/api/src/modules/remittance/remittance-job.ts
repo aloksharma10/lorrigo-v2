@@ -3,7 +3,7 @@ import { Worker } from 'bullmq';
 import { RemittanceService } from './remittance-services';
 import { QueueNames } from '@/lib/queue';
 import { redis } from '@/lib/redis';
-  import fastify, { FastifyInstance } from 'fastify';
+import fastify, { FastifyInstance } from 'fastify';
 
 export enum RemittanceJobType {
   CALCULATE_REMITTANCE = 'calculate-remittance',
@@ -20,7 +20,7 @@ export const remittanceWorker = new Worker(
       await app.close();
     }
   },
-  { 
+  {
     connection: redis,
     concurrency: 2,
   }

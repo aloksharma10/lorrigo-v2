@@ -11,15 +11,13 @@ interface CardItemsProps {
   value: string;
   percentage?: string;
   description: string;
-  icon:
-    | ComponentType<IconProps>
-    | ForwardRefExoticComponent<Omit<LucideProps, 'ref'> & RefAttributes<SVGSVGElement>>;
+  icon: ComponentType<IconProps> | ForwardRefExoticComponent<Omit<LucideProps, 'ref'> & RefAttributes<SVGSVGElement>>;
   className?: string;
 }
 
 export function CardItems({ title, value, percentage, description, icon: Icon, className }: CardItemsProps) {
   return (
-    <Card className={cn("@container/card", className)}>
+    <Card className={cn('@container/card', className)}>
       <CardHeader>
         <div className="flex items-center gap-2">
           <div>
@@ -29,9 +27,7 @@ export function CardItems({ title, value, percentage, description, icon: Icon, c
                 <Icon className="size-6" />
               </ActionTooltip>
             </CardDescription>
-            <CardTitle className="@[250px]/card:text-2xl flex items-center gap-2 text-2xl font-semibold tabular-nums">
-              {value}
-            </CardTitle>
+            <CardTitle className="@[250px]/card:text-2xl flex items-center gap-2 text-2xl font-semibold tabular-nums">{value}</CardTitle>
           </div>
         </div>
         {percentage && (

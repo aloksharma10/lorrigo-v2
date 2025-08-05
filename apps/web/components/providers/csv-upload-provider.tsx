@@ -3,16 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useModalStore } from '@/modal/modal-store';
 
-import {
-  X,
-  Minus,
-  RefreshCw,
-  CheckCircle,
-  XCircle,
-  Clock,
-  AlertCircle,
-  Download,
-} from 'lucide-react';
+import { X, Minus, RefreshCw, CheckCircle, XCircle, Clock, AlertCircle, Download } from 'lucide-react';
 import { Button, Progress, Badge, toast } from '@lorrigo/ui/components';
 import { useOrderOperations } from '@/lib/apis/order';
 import { useShippingOperations } from '@/lib/apis/shipment';
@@ -51,12 +42,7 @@ type CSVUploadContextType = {
   setOperationId: (operationId: string) => void;
   mappingPreferences: MappingPreference[];
   saveMappingPreference: (name: string, mapping: HeaderMapping, key?: string) => void;
-  updateMappingPreference: (
-    oldName: string,
-    newName: string,
-    mapping: HeaderMapping,
-    key?: string
-  ) => void;
+  updateMappingPreference: (oldName: string, newName: string, mapping: HeaderMapping, key?: string) => void;
   deleteMappingPreference: (name: string, key?: string) => void;
   preferenceKey: string;
   openCSVUploadModal: () => void;
@@ -67,11 +53,7 @@ type CSVUploadContextType = {
     operationId?: string;
     operationType?: 'bulk-order-upload' | 'bulk-operation';
   };
-  showBulkUploadStatus: (
-    operationId: string,
-    operationType?: 'bulk-order-upload' | 'bulk-operation',
-    minimized?: boolean
-  ) => void;
+  showBulkUploadStatus: (operationId: string, operationType?: 'bulk-order-upload' | 'bulk-operation', minimized?: boolean) => void;
   hideBulkUploadStatus: () => void;
   toggleBulkUploadMinimized: () => void;
   // Convenience functions for different operation types
@@ -101,16 +83,11 @@ function BulkUploadStatusModal({
   const { getBulkOperationStatus } = useShippingOperations();
 
   // Only use the appropriate status query based on operation type
-  const orderStatusQuery = bulkOrderUploadStatusQuery(
-    operationType === 'bulk-order-upload' ? operationId : ''
-  );
-  const shipmentStatusQuery = getBulkOperationStatus(
-    operationType === 'bulk-operation' ? operationId : ''
-  );
+  const orderStatusQuery = bulkOrderUploadStatusQuery(operationType === 'bulk-order-upload' ? operationId : '');
+  const shipmentStatusQuery = getBulkOperationStatus(operationType === 'bulk-operation' ? operationId : '');
 
   // Choose the right query based on operation type
-  const statusQuery =
-    operationType === 'bulk-order-upload' ? orderStatusQuery : shipmentStatusQuery;
+  const statusQuery = operationType === 'bulk-order-upload' ? orderStatusQuery : shipmentStatusQuery;
   const { data: statusResponse, isLoading, error, refetch } = statusQuery;
 
   // Extract status data from response
@@ -211,40 +188,23 @@ function BulkUploadStatusModal({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {getStatusIcon(status?.status)}
-              <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                {getOperationTitle(status?.type)}
-              </span>
+              <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{getOperationTitle(status?.type)}</span>
             </div>
             <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onRestore}
-                className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
+              <Button variant="ghost" size="icon" onClick={onRestore} className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
                 <RefreshCw className="h-4 w-4 text-gray-600 dark:text-gray-400" />
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onClose}
-                className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
+              <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
                 <X className="h-4 w-4 text-gray-600 dark:text-gray-400" />
               </Button>
             </div>
           </div>
           {status && (
             <div className="mt-3">
-              <Progress
-                value={progress}
-                className="h-2 rounded-full bg-gray-200 dark:bg-gray-800"
-              />
+              <Progress value={progress} className="h-2 rounded-full bg-gray-200 dark:bg-gray-800" />
               <div className="mt-2 text-xs font-medium text-gray-600 dark:text-gray-400">
                 {progress}% complete
-                {isDone && (
-                  <span className="ml-2 text-green-600 dark:text-green-400">✓ {status.status}</span>
-                )}
+                {isDone && <span className="ml-2 text-green-600 dark:text-green-400">✓ {status.status}</span>}
               </div>
             </div>
           )}
@@ -265,36 +225,18 @@ function BulkUploadStatusModal({
           <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center gap-3">
               {getStatusIcon(status?.status)}
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                {getOperationTitle(status?.type)}
-              </h2>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">{getOperationTitle(status?.type)}</h2>
               {isDone && (
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    'rounded-full px-2 py-1 text-xs font-semibold',
-                    getStatusColor(status?.status)
-                  )}
-                >
+                <Badge variant="outline" className={cn('rounded-full px-2 py-1 text-xs font-semibold', getStatusColor(status?.status))}>
                   {status?.status}
                 </Badge>
               )}
             </div>
             <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onMinimize}
-                className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
+              <Button variant="ghost" size="icon" onClick={onMinimize} className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
                 <Minus className="h-4 w-4 text-gray-600" />
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onClose}
-                className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
+              <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
                 <X className="h-4 w-4 text-gray-600" />
               </Button>
             </div>
@@ -304,9 +246,7 @@ function BulkUploadStatusModal({
             {isLoading && (
               <div className="flex items-center justify-center rounded-lg bg-gray-50 py-6 dark:bg-gray-900">
                 <RefreshCw className="h-6 w-6 animate-spin text-blue-600" />
-                <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Loading status...
-                </span>
+                <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">Loading status...</span>
               </div>
             )}
 
@@ -314,13 +254,9 @@ function BulkUploadStatusModal({
               <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950">
                 <div className="flex items-center gap-2">
                   <XCircle className="h-5 w-5 text-red-600" />
-                  <span className="text-sm font-semibold text-red-800 dark:text-red-200">
-                    Error
-                  </span>
+                  <span className="text-sm font-semibold text-red-800 dark:text-red-200">Error</span>
                 </div>
-                <p className="mt-2 text-sm text-red-700 dark:text-red-300">
-                  {error instanceof Error ? error.message : 'Failed to load status'}
-                </p>
+                <p className="mt-2 text-sm text-red-700 dark:text-red-300">{error instanceof Error ? error.message : 'Failed to load status'}</p>
               </div>
             )}
 
@@ -328,14 +264,8 @@ function BulkUploadStatusModal({
               <>
                 {/* Operation ID */}
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    Operation ID: {status.id}
-                  </span>
-                  {isDone && (
-                    <span className="text-sm font-medium text-green-600 dark:text-green-400">
-                      Operation Complete
-                    </span>
-                  )}
+                  <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Operation ID: {status.id}</span>
+                  {isDone && <span className="text-sm font-medium text-green-600 dark:text-green-400">Operation Complete</span>}
                 </div>
 
                 {/* Progress Bar */}
@@ -344,43 +274,26 @@ function BulkUploadStatusModal({
                     <span>Progress</span>
                     <span>{progress}%</span>
                   </div>
-                  <Progress
-                    value={progress}
-                    className="h-3 rounded-full bg-gray-200 dark:bg-gray-800"
-                  />
+                  <Progress value={progress} className="h-3 rounded-full bg-gray-200 dark:bg-gray-800" />
                 </div>
 
                 {/* Statistics */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="rounded-lg bg-gray-50 p-4 shadow-sm dark:bg-gray-900">
-                    <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Total Orders
-                    </div>
-                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                      {status.total_count?.toLocaleString() || 0}
-                    </div>
+                    <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Orders</div>
+                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{status.total_count?.toLocaleString() || 0}</div>
                   </div>
                   <div className="rounded-lg bg-gray-50 p-4 shadow-sm dark:bg-gray-900">
-                    <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Processed
-                    </div>
-                    <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                      {status.processed_count?.toLocaleString() || 0}
-                    </div>
+                    <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Processed</div>
+                    <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{status.processed_count?.toLocaleString() || 0}</div>
                   </div>
                   <div className="rounded-lg bg-green-50 p-4 shadow-sm dark:bg-green-900">
-                    <div className="text-sm font-medium text-green-700 dark:text-green-300">
-                      Successful
-                    </div>
-                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                      {status.success_count?.toLocaleString() || 0}
-                    </div>
+                    <div className="text-sm font-medium text-green-700 dark:text-green-300">Successful</div>
+                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">{status.success_count?.toLocaleString() || 0}</div>
                   </div>
                   <div className="rounded-lg bg-red-50 p-4 shadow-sm dark:bg-red-900">
                     <div className="text-sm font-medium text-red-700 dark:text-red-300">Failed</div>
-                    <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-                      {status.failed_count?.toLocaleString() || 0}
-                    </div>
+                    <div className="text-2xl font-bold text-red-600 dark:text-red-400">{status.failed_count?.toLocaleString() || 0}</div>
                   </div>
                 </div>
 
@@ -389,20 +302,15 @@ function BulkUploadStatusModal({
                   <div className="flex justify-between">
                     <span className="font-medium">Started:</span>
                     <span className="text-gray-900 dark:text-gray-100">
-                      {formatDistanceToNow(
-                        new Date(statusResponse?.createdAt || status.created_at),
-                        {
-                          addSuffix: true,
-                        }
-                      )}
+                      {formatDistanceToNow(new Date(statusResponse?.createdAt || status.created_at), {
+                        addSuffix: true,
+                      })}
                     </span>
                   </div>
                   {status.updated_at && isDone && (
                     <div className="flex justify-between">
                       <span className="font-medium">Completed:</span>
-                      <span className="text-gray-900 dark:text-gray-100">
-                        {formatDistanceToNow(new Date(status.updated_at), { addSuffix: true })}
-                      </span>
+                      <span className="text-gray-900 dark:text-gray-100">{formatDistanceToNow(new Date(status.updated_at), { addSuffix: true })}</span>
                     </div>
                   )}
                 </div>
@@ -412,13 +320,9 @@ function BulkUploadStatusModal({
                   <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950">
                     <div className="mb-2 flex items-center gap-2">
                       <AlertCircle className="h-5 w-5 text-red-600" />
-                      <span className="text-sm font-semibold text-red-800 dark:text-red-200">
-                        Error Details
-                      </span>
+                      <span className="text-sm font-semibold text-red-800 dark:text-red-200">Error Details</span>
                     </div>
-                    <p className="text-sm text-red-700 dark:text-red-300">
-                      {statusResponse?.errorMessage || status.error_message}
-                    </p>
+                    <p className="text-sm text-red-700 dark:text-red-300">{statusResponse?.errorMessage || status.error_message}</p>
                   </div>
                 )}
 
@@ -447,12 +351,7 @@ function BulkUploadStatusModal({
                     </Button>
                   )}
                   {isDone && (
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={onClose}
-                      className="flex items-center gap-2"
-                    >
+                    <Button variant="default" size="sm" onClick={onClose} className="flex items-center gap-2">
                       Close
                     </Button>
                   )}
@@ -467,15 +366,7 @@ function BulkUploadStatusModal({
 }
 
 // Minimized CSV Upload Component
-function MinimizedCSVUpload({
-  uploadStatus,
-  onRestore,
-  onClose,
-}: {
-  uploadStatus: CSVUploadStatus;
-  onRestore: () => void;
-  onClose: () => void;
-}) {
+function MinimizedCSVUpload({ uploadStatus, onRestore, onClose }: { uploadStatus: CSVUploadStatus; onRestore: () => void; onClose: () => void }) {
   if (!uploadStatus.isUploading || !uploadStatus.minimized) {
     return null;
   }
@@ -496,22 +387,14 @@ function MinimizedCSVUpload({
         </div>
         <div className="space-y-1">
           <Progress value={uploadStatus.progress} className="h-2" />
-          <div className="text-xs text-gray-600 dark:text-gray-400">
-            {Math.round(uploadStatus.progress)}% complete
-          </div>
+          <div className="text-xs text-gray-600 dark:text-gray-400">{Math.round(uploadStatus.progress)}% complete</div>
         </div>
       </div>
     </div>
   );
 }
 
-export function CSVUploadProvider({
-  children,
-  preferenceKey = 'csvMappingPreferences',
-}: {
-  children: React.ReactNode;
-  preferenceKey?: string;
-}) {
+export function CSVUploadProvider({ children, preferenceKey = 'csvMappingPreferences' }: { children: React.ReactNode; preferenceKey?: string }) {
   const { openModal } = useModalStore();
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
 
@@ -745,10 +628,7 @@ export function CSVUploadProvider({
 
       // Get current preferences for this key
       const currentPreferences = JSON.parse(localStorage.getItem(storageKey) || '[]');
-      const updatedPreferences = [
-        ...currentPreferences.filter((p: MappingPreference) => p.name !== name),
-        { name, mapping },
-      ];
+      const updatedPreferences = [...currentPreferences.filter((p: MappingPreference) => p.name !== name), { name, mapping }];
 
       // Save to localStorage
       localStorage.setItem(storageKey, JSON.stringify(updatedPreferences));
@@ -764,20 +644,13 @@ export function CSVUploadProvider({
   };
 
   // Update an existing mapping preference
-  const updateMappingPreference = (
-    oldName: string,
-    newName: string,
-    mapping: HeaderMapping,
-    key?: string
-  ) => {
+  const updateMappingPreference = (oldName: string, newName: string, mapping: HeaderMapping, key?: string) => {
     try {
       const storageKey = key || preferenceKey;
 
       // Get current preferences for this key
       const currentPreferences = JSON.parse(localStorage.getItem(storageKey) || '[]');
-      const updatedPreferences = currentPreferences.map((p: MappingPreference) =>
-        p.name === oldName ? { name: newName, mapping } : p
-      );
+      const updatedPreferences = currentPreferences.map((p: MappingPreference) => (p.name === oldName ? { name: newName, mapping } : p));
 
       // Save to localStorage
       localStorage.setItem(storageKey, JSON.stringify(updatedPreferences));
@@ -799,9 +672,7 @@ export function CSVUploadProvider({
 
       // Get current preferences for this key
       const currentPreferences = JSON.parse(localStorage.getItem(storageKey) || '[]');
-      const updatedPreferences = currentPreferences.filter(
-        (p: MappingPreference) => p.name !== name
-      );
+      const updatedPreferences = currentPreferences.filter((p: MappingPreference) => p.name !== name);
 
       // Save to localStorage
       localStorage.setItem(storageKey, JSON.stringify(updatedPreferences));
@@ -829,11 +700,7 @@ export function CSVUploadProvider({
   };
 
   // Bulk upload status modal controls
-  const showBulkUploadStatus = (
-    operationId: string,
-    operationType: 'bulk-order-upload' | 'bulk-operation' = 'bulk-operation',
-    minimized = false
-  ) => {
+  const showBulkUploadStatus = (operationId: string, operationType: 'bulk-order-upload' | 'bulk-operation' = 'bulk-operation', minimized = false) => {
     setBulkUploadStatus({
       isVisible: true,
       isMinimized: minimized,
@@ -903,11 +770,7 @@ export function CSVUploadProvider({
       {children}
 
       {/* Minimized CSV Upload */}
-      <MinimizedCSVUpload
-        uploadStatus={uploadStatus}
-        onRestore={toggleMinimized}
-        onClose={resetUpload}
-      />
+      <MinimizedCSVUpload uploadStatus={uploadStatus} onRestore={toggleMinimized} onClose={resetUpload} />
 
       {/* Bulk Upload Status Modal - Directly embedded */}
       {bulkUploadStatus.isVisible && bulkUploadStatus.operationId && (

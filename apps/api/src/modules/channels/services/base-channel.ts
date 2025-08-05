@@ -13,13 +13,7 @@ export abstract class BaseChannel {
   protected userId: string;
   protected tokenCacheKey: string;
 
-  constructor(
-    name: string,
-    baseUrl: string,
-    apiKey: string,
-    userId: string,
-    tokenCacheKey?: string
-  ) {
+  constructor(name: string, baseUrl: string, apiKey: string, userId: string, tokenCacheKey?: string) {
     this.name = name;
     this.baseUrl = baseUrl;
     this.apiKey = apiKey;
@@ -102,10 +96,7 @@ export abstract class BaseChannel {
       const response = await axios(config);
       return response;
     } catch (error: any) {
-      console.error(
-        `Error in ${method} request to ${auth_url || `${this.baseUrl}${endpoint}`}:`,
-        error.message
-      );
+      console.error(`Error in ${method} request to ${auth_url || `${this.baseUrl}${endpoint}`}:`, error.message);
 
       if (error.response) {
         // The request was made and the server responded with a status code

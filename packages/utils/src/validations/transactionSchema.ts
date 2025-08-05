@@ -17,12 +17,7 @@ export const CreateShipmentTransactionSchema = z.object({
   paymentId: z.string().uuid('Invalid payment ID').optional(),
   currency: z.string().length(3, 'Currency must be a 3-letter code').optional().default('INR'),
   status: z
-    .enum([
-      TransactionStatus.PENDING,
-      TransactionStatus.COMPLETED,
-      TransactionStatus.FAILED,
-      TransactionStatus.REFUNDED,
-    ])
+    .enum([TransactionStatus.PENDING, TransactionStatus.COMPLETED, TransactionStatus.FAILED, TransactionStatus.REFUNDED])
     .optional()
     .default(TransactionStatus.COMPLETED),
   merchantTransactionId: z.string().optional(),
@@ -42,12 +37,7 @@ export const CreateInvoiceTransactionSchema = z.object({
   paymentId: z.string().uuid('Invalid payment ID').optional(),
   currency: z.string().length(3, 'Currency must be a 3-letter code').optional().default('INR'),
   status: z
-    .enum([
-      TransactionStatus.PENDING,
-      TransactionStatus.COMPLETED,
-      TransactionStatus.FAILED,
-      TransactionStatus.REFUNDED,
-    ])
+    .enum([TransactionStatus.PENDING, TransactionStatus.COMPLETED, TransactionStatus.FAILED, TransactionStatus.REFUNDED])
     .optional()
     .default(TransactionStatus.COMPLETED),
   merchantTransactionId: z.string().optional(),
@@ -65,12 +55,7 @@ export const CreateWalletRechargeTransactionSchema = z.object({
   paymentId: z.string().uuid('Invalid payment ID').optional(),
   currency: z.string().length(3, 'Currency must be a 3-letter code').optional().default('INR'),
   status: z
-    .enum([
-      TransactionStatus.PENDING,
-      TransactionStatus.COMPLETED,
-      TransactionStatus.FAILED,
-      TransactionStatus.REFUNDED,
-    ])
+    .enum([TransactionStatus.PENDING, TransactionStatus.COMPLETED, TransactionStatus.FAILED, TransactionStatus.REFUNDED])
     .optional()
     .default(TransactionStatus.COMPLETED),
   merchantTransactionId: z.string().optional(),
@@ -80,11 +65,7 @@ export const CreateWalletRechargeTransactionSchema = z.object({
  * Validation schema for recharging a wallet
  */
 export const RechargeWalletSchema = z.object({
-  amount: z
-    .number()
-    .positive('Amount must be positive')
-    .min(1, 'Minimum recharge amount is 1')
-    .max(100000, 'Maximum recharge amount is 100,000'),
+  amount: z.number().positive('Amount must be positive').min(1, 'Minimum recharge amount is 1').max(100000, 'Maximum recharge amount is 100,000'),
   redirectUrl: z.string().url('Invalid redirect URL'),
 });
 

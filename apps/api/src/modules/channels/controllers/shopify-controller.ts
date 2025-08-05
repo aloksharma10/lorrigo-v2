@@ -3,11 +3,11 @@ import { z } from 'zod';
 import { captureException } from '@/lib/sentry';
 import { ChannelConnectionService, Channel } from '../services/channel-connection-service';
 import { ShopifyChannel, ShopifyConnection } from '../services/shopify/shopify-channel';
-import { 
-  ShopifyWebhookService, 
+import {
+  ShopifyWebhookService,
   ShopifyCustomerDataRequestPayload,
   ShopifyCustomerRedactPayload,
-  ShopifyShopRedactPayload
+  ShopifyShopRedactPayload,
 } from '../services/shopify/shopify-webhook-service';
 
 // Validation schemas
@@ -203,7 +203,7 @@ export class ShopifyController {
       // If we don't have a code, this might be an app installation request
       if (!code) {
         const authUrl = shopifyChannel.generateAuthUrl(shop);
-        
+
         // Redirect to the authorization URL
         return reply.redirect(authUrl);
       }
@@ -228,24 +228,18 @@ export class ShopifyController {
         // For non-embedded apps, redirect to the app's dashboard
         const dashboardUrl = `${process.env.FRONTEND_URL || 'https://app.lorrigo.com'}/seller/dashboard?shop=${shop}&status=success`;
         return reply.redirect(dashboardUrl);
-
       } catch (exchangeError: any) {
         console.error('Error exchanging code for token:', exchangeError);
         const errorMessage = exchangeError.message || 'Failed to exchange code for token';
 
         // Check if the error is due to the code already being used
         const isCodeUsedError =
-          exchangeError.response?.data?.includes(
-            'authorization code was not found or was already used'
-          ) || errorMessage.includes('authorization code was not found or was already used');
+          exchangeError.response?.data?.includes('authorization code was not found or was already used') ||
+          errorMessage.includes('authorization code was not found or was already used');
 
         if (isCodeUsedError) {
           // Check if we already have a connection for this shop and user
-          const existingConnection = await this.connectionService.getConnectionByShop(
-            user.id,
-            shop,
-            Channel.SHOPIFY
-          );
+          const existingConnection = await this.connectionService.getConnectionByShop(user.id, shop, Channel.SHOPIFY);
 
           if (existingConnection) {
             // If we already have a connection, redirect to dashboard
@@ -261,7 +255,7 @@ export class ShopifyController {
     } catch (error) {
       console.error('Unexpected error in OAuth callback:', error);
       captureException(error as Error);
-      
+
       // Redirect to app with error
       const errorUrl = `${process.env.FRONTEND_URL || 'https://app.lorrigo.com'}/auth/signin?error=unexpected_error`;
       return reply.redirect(errorUrl);
@@ -283,10 +277,7 @@ export class ShopifyController {
       }
 
       // Get user's Shopify connection from database
-      const connection = await this.connectionService.getConnectionByUserIdAndChannel(
-        user.id,
-        Channel.SHOPIFY
-      );
+      const connection = await this.connectionService.getConnectionByUserIdAndChannel(user.id, Channel.SHOPIFY);
 
       if (!connection) {
         return reply.code(404).send({ error: 'Shopify connection not found' });
@@ -321,10 +312,7 @@ export class ShopifyController {
       }
 
       // Get the connection first to get the shop domain
-      const connection = await this.connectionService.getConnectionByUserIdAndChannel(
-        user.id,
-        Channel.SHOPIFY
-      );
+      const connection = await this.connectionService.getConnectionByUserIdAndChannel(user.id, Channel.SHOPIFY);
 
       if (!connection || !connection.shop) {
         return reply.code(404).send({ error: 'Shopify connection not found' });
@@ -380,10 +368,7 @@ export class ShopifyController {
       }
 
       // Get user's Shopify connection from database
-      const connection = await this.connectionService.getConnectionByUserIdAndChannel(
-        user.id,
-        Channel.SHOPIFY
-      );
+      const connection = await this.connectionService.getConnectionByUserIdAndChannel(user.id, Channel.SHOPIFY);
 
       if (!connection || !connection.shop) {
         return reply.code(404).send({ error: 'Shopify connection not found' });
@@ -452,10 +437,7 @@ export class ShopifyController {
       }
 
       // Get user's Shopify connection from database
-      const connection = await this.connectionService.getConnectionByUserIdAndChannel(
-        user.id,
-        Channel.SHOPIFY
-      );
+      const connection = await this.connectionService.getConnectionByUserIdAndChannel(user.id, Channel.SHOPIFY);
 
       if (!connection || !connection.shop) {
         return reply.code(404).send({ error: 'Shopify connection not found' });
@@ -501,7 +483,7 @@ export class ShopifyController {
       // Verify webhook authenticity using HMAC
       const hmac = request.headers['x-shopify-hmac-sha256'];
       const bodyString = typeof request.body === 'string' ? request.body : JSON.stringify(request.body);
-      
+
       if (!this.webhookService.verifyWebhookHmac(bodyString, hmac as string)) {
         console.error('Invalid webhook HMAC signature');
         return reply.code(401).send({ error: 'Invalid webhook signature' });
@@ -516,7 +498,7 @@ export class ShopifyController {
         customer_id: payload.customer.id,
         customer_email: payload.customer.email,
         orders_requested: payload.orders_requested.length,
-        data_request_id: payload.data_request.id
+        data_request_id: payload.data_request.id,
       });
 
       // Get shop connection
@@ -537,12 +519,7 @@ export class ShopifyController {
 
       // Store the data request for processing (you might want to queue this)
       // This data should be provided to the store owner within 30 days
-      await this.webhookService.logWebhookEvent(
-        'customers/data_request',
-        payload.shop_domain,
-        customerData,
-        'pending'
-      );
+      await this.webhookService.logWebhookEvent('customers/data_request', payload.shop_domain, customerData, 'pending');
 
       // TODO: Implement actual data export logic
       // 1. Fetch customer data from your database
@@ -580,7 +557,7 @@ export class ShopifyController {
       // Verify webhook authenticity using HMAC
       const hmac = request.headers['x-shopify-hmac-sha256'];
       const bodyString = typeof request.body === 'string' ? request.body : JSON.stringify(request.body);
-      
+
       if (!this.webhookService.verifyWebhookHmac(bodyString, hmac as string)) {
         console.error('Invalid webhook HMAC signature');
         return reply.code(401).send({ error: 'Invalid webhook signature' });
@@ -594,7 +571,7 @@ export class ShopifyController {
         shop_domain: payload.shop_domain,
         customer_id: payload.customer.id,
         customer_email: payload.customer.email,
-        orders_to_redact: payload.orders_to_redact.length
+        orders_to_redact: payload.orders_to_redact.length,
       });
 
       // Get shop connection
@@ -613,7 +590,7 @@ export class ShopifyController {
       // Delete customer data from your database
       // This must be completed within 30 days of receiving the request
       // If you're legally required to retain data, you shouldn't complete the action
-      
+
       // TODO: Implement actual data deletion logic
       // 1. Delete customer-specific data from your database
       // 2. Delete order data for the specified orders
@@ -626,14 +603,14 @@ export class ShopifyController {
       //   await this.prisma.customerData.deleteMany({
       //     where: { shopify_customer_id: payload.customer.id.toString() }
       //   });
-      //   
+      //
       //   // Delete order data
       //   if (payload.orders_to_redact.length > 0) {
       //     await this.prisma.orderData.deleteMany({
       //       where: { shopify_order_id: { in: payload.orders_to_redact.map(id => id.toString()) } }
       //     });
       //   }
-      //   
+      //
       //   // Delete analytics data
       //   await this.prisma.customerAnalytics.deleteMany({
       //     where: { shopify_customer_id: payload.customer.id.toString() }
@@ -641,12 +618,7 @@ export class ShopifyController {
       // }
 
       // Log the erasure request
-      await this.webhookService.logWebhookEvent(
-        'customers/redact',
-        payload.shop_domain,
-        payload,
-        'completed'
-      );
+      await this.webhookService.logWebhookEvent('customers/redact', payload.shop_domain, payload, 'completed');
 
       // Return success immediately (Shopify expects a 200 response)
       reply.code(200).send({ success: true });
@@ -677,7 +649,7 @@ export class ShopifyController {
       // Verify webhook authenticity using HMAC
       const hmac = request.headers['x-shopify-hmac-sha256'];
       const bodyString = typeof request.body === 'string' ? request.body : JSON.stringify(request.body);
-      
+
       if (!this.webhookService.verifyWebhookHmac(bodyString, hmac as string)) {
         console.error('Invalid webhook HMAC signature');
         return reply.code(401).send({ error: 'Invalid webhook signature' });
@@ -688,7 +660,7 @@ export class ShopifyController {
 
       console.log('Shop data erasure payload:', {
         shop_id: payload.shop_id,
-        shop_domain: payload.shop_domain
+        shop_domain: payload.shop_domain,
       });
 
       // Get shop connection
@@ -708,12 +680,7 @@ export class ShopifyController {
       await this.connectionService.deleteConnection(connection.user_id, Channel.SHOPIFY);
 
       // Log the erasure request
-      await this.webhookService.logWebhookEvent(
-        'shop/redact',
-        payload.shop_domain,
-        payload,
-        'completed'
-      );
+      await this.webhookService.logWebhookEvent('shop/redact', payload.shop_domain, payload, 'completed');
 
       // Return success immediately (Shopify expects a 200 response)
       reply.code(200).send({ success: true });

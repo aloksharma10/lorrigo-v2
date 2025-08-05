@@ -37,7 +37,7 @@ export async function getDeviceInfo(req: NextRequest | Request): Promise<DeviceI
 
       deviceInfo.browser = result.browser.name || undefined;
       deviceInfo.os = result.os.name || undefined;
-      
+
       // Determine device type
       if (result.device.type) {
         deviceInfo.deviceType = result.device.type;
@@ -53,7 +53,6 @@ export async function getDeviceInfo(req: NextRequest | Request): Promise<DeviceI
     // deviceInfo.country = await getCountryFromIP(deviceInfo.ipAddress);
     // deviceInfo.city = await getCityFromIP(deviceInfo.ipAddress);
     // deviceInfo.region = await getRegionFromIP(deviceInfo.ipAddress);
-
   } catch (error) {
     console.error('Error extracting device info:', error);
   }
@@ -94,4 +93,4 @@ export function getOSInfo(userAgent: string): { name?: string; version?: string 
     name: result.os.name,
     version: result.os.version,
   };
-} 
+}

@@ -79,13 +79,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session } = useSession();
   const user = session?.user;
   const isAdmin = user?.role === 'ADMIN';
-  const { state, setOpenMobile, openMobile, isMobile  } = useSidebar();
+  const { state, setOpenMobile, openMobile, isMobile } = useSidebar();
   const isCollapsed = state === 'collapsed';
   const pathname = usePathname();
 
   const firstName = useMemo(() => user?.name?.split(' ')[0] ?? 'there', [user?.name]);
   const greeting = useMemo(() => getTimeGreeting(firstName), [firstName]);
-
 
   useEffect(() => {
     setOpenMobile(false);
@@ -110,14 +109,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       {/* Content */}
       <SidebarContent>
         <ScrollArea className="h-[calc(100vh-8rem)]">
-          
           {isAdmin ? <NavMain items={ADMIN_ROUTES} group="admin" /> : <NavMain items={SELLER_ROUTES} group="seller" />}
         </ScrollArea>
       </SidebarContent>
 
       {/* Footer */}
       <SidebarFooter>
-      <NavSecondary items={navSecondaryLinks} className={cn("mt-auto shadow-lg rounded-lg border ", isCollapsed && "p-0")} />
+        <NavSecondary items={navSecondaryLinks} className={cn('mt-auto rounded-lg border shadow-lg', isCollapsed && 'p-0')} />
 
         {/* <NavUser
           user={{

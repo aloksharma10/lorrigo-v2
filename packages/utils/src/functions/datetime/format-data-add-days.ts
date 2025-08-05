@@ -1,7 +1,4 @@
-export const formatDateAddDays = (
-  datetime: Date | string | number,
-  options?: Intl.DateTimeFormatOptions
-): string => {
+export const formatDateAddDays = (datetime: Date | string | number, options?: Intl.DateTimeFormatOptions): string => {
   let dateObj: Date;
 
   if (typeof datetime === 'number') {

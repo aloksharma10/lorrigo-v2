@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  Button,
-  DataTable,
-  Badge,
-  DataTableColumnHeader,
-  type ColumnDef,
-} from '@lorrigo/ui/components';
+import { Button, DataTable, Badge, DataTableColumnHeader, type ColumnDef } from '@lorrigo/ui/components';
 
 interface Invoice {
   id: string;

@@ -91,7 +91,7 @@ export default function WalletPage() {
 
       {/* Transactions History */}
       <div className="mt-8">
-        <h2 className="text-2xl font-bold mb-4">Transaction History</h2>
+        <h2 className="mb-4 text-2xl font-bold">Transaction History</h2>
         <TransactionHistoryTable />
       </div>
     </div>

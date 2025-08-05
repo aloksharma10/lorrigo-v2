@@ -230,7 +230,7 @@ export const useShipmentAnalysis = (filters?: ShipmentAnalysisFilters) => {
 // Cache Management Mutation
 export const useClearAnalyticsCache = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: clearAnalyticsCache,
     onSuccess: () => {

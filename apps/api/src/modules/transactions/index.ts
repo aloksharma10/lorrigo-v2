@@ -1,10 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { TransactionController } from './controllers/transaction-controller';
-import {
-  TransactionService,
-  TransactionType,
-  TransactionEntityType,
-} from './services/transaction-service';
+import { TransactionService, TransactionType, TransactionEntityType } from './services/transaction-service';
 import { Role } from '@lorrigo/db';
 import { initTransactionWorker } from './queues/transaction-worker';
 
@@ -95,8 +91,7 @@ export default async function transactionRoutes(fastify: FastifyInstance): Promi
       },
     },
     preHandler: [fastify.authenticate, fastify.authorize([Role.SELLER, Role.ADMIN])],
-    handler: (request, reply) =>
-      transactionController.createWalletRechargeTransaction(request, reply),
+    handler: (request, reply) => transactionController.createWalletRechargeTransaction(request, reply),
   });
 
   // Recharge wallet

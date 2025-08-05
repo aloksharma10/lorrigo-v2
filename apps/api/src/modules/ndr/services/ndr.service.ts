@@ -105,14 +105,9 @@ export class NDRService {
         comment,
         customer_name: ndrRecord.shipment?.order?.customer?.name || ndrRecord.order?.customer?.name,
         phone: ndrRecord.shipment?.order?.customer?.phone || ndrRecord.order?.customer?.phone,
-        address:
-          ndrRecord.shipment?.order?.customer?.address?.address ||
-          ndrRecord.order?.customer?.address?.address,
+        address: ndrRecord.shipment?.order?.customer?.address?.address || ndrRecord.order?.customer?.address?.address,
         next_attempt_date: nextAttemptDate,
-        client_order_reference_id:
-          ndrRecord.shipment?.order?.order_reference_id ||
-          ndrRecord.order?.order_reference_id ||
-          '',
+        client_order_reference_id: ndrRecord.shipment?.order?.order_reference_id || ndrRecord.order?.order_reference_id || '',
         // @ts-ignore
         shipment: ndrRecord.shipment
           ? {
@@ -193,12 +188,12 @@ export class NDRService {
 
             // Also update order status
             // if (ndrRecord.order_id) {
-              // await this.fastify.prisma.order.update({
-              //   where: { id: ndrRecord.order_id },
-              //   data: {
-              //     updated_at: new Date(),
-              //   },
-              // });
+            // await this.fastify.prisma.order.update({
+            //   where: { id: ndrRecord.order_id },
+            //   data: {
+            //     updated_at: new Date(),
+            //   },
+            // });
             // }
           }
         }

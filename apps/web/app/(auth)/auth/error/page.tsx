@@ -37,13 +37,8 @@ function ErrorContent() {
     <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
       <div className="mx-auto max-w-md text-center">
         <h1 className="text-2xl font-bold">Authentication Error</h1>
-        <div className="mt-4 rounded-md bg-red-50 p-4 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">
-          {getErrorMessage()}
-        </div>
-        <button
-          onClick={() => router.push('/auth/signin')}
-          className="mt-6 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500"
-        >
+        <div className="mt-4 rounded-md bg-red-50 p-4 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">{getErrorMessage()}</div>
+        <button onClick={() => router.push('/auth/signin')} className="mt-6 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500">
           Back to Sign In
         </button>
       </div>

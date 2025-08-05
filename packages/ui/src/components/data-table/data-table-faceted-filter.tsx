@@ -7,15 +7,7 @@ import type { Column } from '@tanstack/react-table';
 import { cn } from '@lorrigo/ui/lib/utils';
 import { Badge } from '../badge';
 import { Button } from '../button';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-} from '../command';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from '../command';
 import { Popover, PopoverContent, PopoverTrigger } from '../popover';
 import { Separator } from '../separator';
 import { Loader2 } from 'lucide-react';
@@ -31,12 +23,7 @@ interface DataTableFacetedFilterProps<TData, TValue> {
   disabled?: boolean;
 }
 
-export function DataTableFacetedFilter<TData, TValue>({
-  column,
-  title,
-  options,
-  disabled = false,
-}: DataTableFacetedFilterProps<TData, TValue>) {
+export function DataTableFacetedFilter<TData, TValue>({ column, title, options, disabled = false }: DataTableFacetedFilterProps<TData, TValue>) {
   const facets = column?.getFacetedUniqueValues();
   const selectedValues = new Set(column?.getFilterValue() as string[]);
   const [open, setOpen] = React.useState(false);
@@ -62,11 +49,7 @@ export function DataTableFacetedFilter<TData, TValue>({
                   options
                     .filter((option) => selectedValues.has(option.value))
                     .map((option) => (
-                      <Badge
-                        variant="secondary"
-                        key={option.value}
-                        className="rounded-sm px-1 font-normal"
-                      >
+                      <Badge variant="secondary" key={option.value} className="rounded-sm px-1 font-normal">
                         {option.label}
                       </Badge>
                     ))
@@ -101,9 +84,7 @@ export function DataTableFacetedFilter<TData, TValue>({
                     <div
                       className={cn(
                         'border-primary mr-2 flex h-4 w-4 items-center justify-center rounded-sm border',
-                        isSelected
-                          ? 'bg-primary text-primary-foreground'
-                          : 'opacity-50 [&_svg]:invisible'
+                        isSelected ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible'
                       )}
                     >
                       <CheckIcon className={cn('h-4 w-4')} />
@@ -111,9 +92,7 @@ export function DataTableFacetedFilter<TData, TValue>({
                     {option.icon && <option.icon className="text-muted-foreground mr-2 h-4 w-4" />}
                     <span>{option.label}</span>
                     {facets?.get(option.value) && (
-                      <span className="ml-auto flex h-4 w-4 items-center justify-center font-mono text-xs">
-                        {facets.get(option.value)}
-                      </span>
+                      <span className="ml-auto flex h-4 w-4 items-center justify-center font-mono text-xs">{facets.get(option.value)}</span>
                     )}
                   </CommandItem>
                 );
@@ -123,10 +102,7 @@ export function DataTableFacetedFilter<TData, TValue>({
               <>
                 <CommandSeparator />
                 <CommandGroup>
-                  <CommandItem
-                    onSelect={() => column?.setFilterValue(undefined)}
-                    className="justify-center text-center"
-                  >
+                  <CommandItem onSelect={() => column?.setFilterValue(undefined)} className="justify-center text-center">
                     Clear filters
                   </CommandItem>
                 </CommandGroup>

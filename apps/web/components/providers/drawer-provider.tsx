@@ -37,8 +37,7 @@ export default function DrawerProvider({ children }: { children: React.ReactNode
 
     drawers.forEach((drawer) => {
       // A drawer is visible if it's in entering or entered state
-      newVisibleDrawers[drawer.id] =
-        drawer.animationState === 'entering' || drawer.animationState === 'entered';
+      newVisibleDrawers[drawer.id] = drawer.animationState === 'entering' || drawer.animationState === 'entered';
     });
 
     setVisibleDrawers(newVisibleDrawers);

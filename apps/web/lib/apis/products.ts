@@ -35,10 +35,7 @@ export const searchProducts = async (query: string, signal?: AbortSignal): Promi
   }
 
   try {
-    const response = await api.get<Product[]>(
-      `/products/search?query=${encodeURIComponent(query)}`,
-      { signal }
-    );
+    const response = await api.get<Product[]>(`/products/search?query=${encodeURIComponent(query)}`, { signal });
     return response || [];
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
@@ -58,8 +55,7 @@ export const useProductOperations = () => {
   const getProductsQuery = (page = 1, limit = 10, search = '') =>
     useQuery<ProductsResponse>({
       queryKey: ['products', page, limit, search],
-      queryFn: () =>
-        api.get<any>(`/products?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`),
+      queryFn: () => api.get<any>(`/products?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`),
       staleTime: 1000 * 60 * 5, // 5 minutes: data is considered fresh
       enabled: isTokenReady,
     });

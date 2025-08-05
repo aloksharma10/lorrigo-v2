@@ -7,8 +7,7 @@ export default function NotFound() {
         <TriangleAlertIcon className="text-primary mx-auto h-12 w-12" />
         <h1 className="text-foreground mt-4 text-8xl font-bold tracking-tight">500</h1>
         <p className="text-muted-foreground mt-4">
-          Oops, it looks like there was an internal server error. Please try again later or contact
-          support if the issue persists.
+          Oops, it looks like there was an internal server error. Please try again later or contact support if the issue persists.
         </p>
         <div className="mt-6">
           <Link

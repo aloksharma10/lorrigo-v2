@@ -82,14 +82,10 @@ export class NotificationWorker {
   /**
    * Update job status in Redis
    */
-  private async updateJobStatus(
-    jobId: string,
-    status: NotificationStatus,
-    message?: string
-  ): Promise<void> {
+  private async updateJobStatus(jobId: string, status: NotificationStatus, message?: string): Promise<void> {
     try {
       const jobData = await redis.get(`notification_job:${jobId}`);
-      
+
       if (jobData) {
         const job = JSON.parse(jobData);
         job.status = status;
@@ -116,10 +112,9 @@ export class NotificationWorker {
       await this.worker.close();
     }
   }
-
 }
 
 // Export worker factory function
 export function createNotificationWorker(fastify: FastifyInstance): NotificationWorker {
   return new NotificationWorker(fastify);
-} 
+}

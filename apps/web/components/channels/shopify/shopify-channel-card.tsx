@@ -1,34 +1,13 @@
 import { useState } from 'react';
-import {
-  Store,
-  LinkIcon,
-  AlertCircle,
-  CheckCircle2,
-  ShoppingCart,
-  ExternalLink,
-  Unlink,
-} from 'lucide-react';
-import {
-  Button,
-  Alert,
-  AlertTitle,
-  AlertDescription,
-  Skeleton,
-  toast,
-} from '@lorrigo/ui/components';
+import { Store, LinkIcon, AlertCircle, CheckCircle2, ShoppingCart, ExternalLink, Unlink } from 'lucide-react';
+import { Button, Alert, AlertTitle, AlertDescription, Skeleton, toast } from '@lorrigo/ui/components';
 import { ChannelCard } from '../channel-card-factory';
 import { useShopify } from '@/lib/apis/channels/shopify';
 
 export function ShopifyChannelCard() {
   // Use our shopify hook
   const shopify = useShopify();
-  const {
-    data: connection,
-    isLoading: isLoadingConnection,
-    isError,
-    error,
-    refetch,
-  } = shopify.connection;
+  const { data: connection, isLoading: isLoadingConnection, isError, error, refetch } = shopify.connection;
   const { mutate: initiateAuth, isPending: isConnecting } = shopify.initiateAuth;
   const { mutate: disconnect, isPending: isDisconnecting } = shopify.disconnect;
 
@@ -90,9 +69,7 @@ export function ShopifyChannelCard() {
               <p className="text-muted-foreground mt-1 text-sm">
                 Store: <span className="font-medium">{connection.shop}</span>
               </p>
-              <p className="text-muted-foreground text-xs">
-                Connected on {new Date(connection.connected_at).toLocaleDateString()}
-              </p>
+              <p className="text-muted-foreground text-xs">Connected on {new Date(connection.connected_at).toLocaleDateString()}</p>
             </div>
           </div>
 
@@ -123,23 +100,19 @@ export function ShopifyChannelCard() {
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Connection Error</AlertTitle>
-            <AlertDescription>
-              {error instanceof Error ? error.message : 'Failed to check connection status'}
-            </AlertDescription>
+            <AlertDescription>{error instanceof Error ? error.message : 'Failed to check connection status'}</AlertDescription>
           </Alert>
         )}
 
-        <div className="text-center space-y-3">
-          <div className="flex items-center justify-center w-16 h-16 mx-auto rounded-full bg-emerald-50 dark:bg-emerald-950/30">
-            <Store className="w-8 h-8 text-emerald-600" />
+        <div className="space-y-3 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/30">
+            <Store className="h-8 w-8 text-emerald-600" />
           </div>
           <div>
             <h3 className="text-lg font-semibold">Connect Your Shopify Store</h3>
-            <p className="text-muted-foreground text-sm mt-1">
-              Import orders automatically from your Shopify store
-            </p>
+            <p className="text-muted-foreground mt-1 text-sm">Import orders automatically from your Shopify store</p>
           </div>
-          <div className="text-xs text-muted-foreground space-y-1">
+          <div className="text-muted-foreground space-y-1 text-xs">
             <p>• Sync orders in real-time</p>
             <p>• Manage shipping and tracking</p>
             <p>• Access order analytics</p>
@@ -152,13 +125,7 @@ export function ShopifyChannelCard() {
   const renderFooter = () => {
     if (connection) {
       return (
-        <Button
-          variant="outline"
-          onClick={handleDisconnect}
-          disabled={isDisconnecting}
-          className="w-full"
-          icon={Unlink}
-        >
+        <Button variant="outline" onClick={handleDisconnect} disabled={isDisconnecting} className="w-full" icon={Unlink}>
           {isDisconnecting ? 'Disconnecting...' : 'Disconnect Store'}
         </Button>
       );

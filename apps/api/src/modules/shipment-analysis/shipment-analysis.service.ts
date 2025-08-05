@@ -80,10 +80,7 @@ export class ShipmentAnalysisService {
     return result;
   }
 
-  async getShipmentPerformanceAnalytics(
-    userId: string,
-    filters: ShipmentAnalysisFilters = {}
-  ): Promise<ShipmentPerformanceAnalytics> {
+  async getShipmentPerformanceAnalytics(userId: string, filters: ShipmentAnalysisFilters = {}): Promise<ShipmentPerformanceAnalytics> {
     const filtersHash = this.hashFilters(filters);
     const cacheKey = CACHE_KEYS.SHIPMENT_PERFORMANCE(userId, filtersHash);
     const redis = this.fastify.redis as Redis;
@@ -98,27 +95,18 @@ export class ShipmentAnalysisService {
     const params = this.buildQueryParams(userId, filters);
 
     // Fetch fresh data
-    const [
-      overview,
-      courierPerformance,
-      zonePerformance,
-      statusDistribution,
-      deliveryTimeline,
-      weightAnalysis,
-      channelAnalysis,
-      topCustomers,
-      topIssues,
-    ] = await Promise.all([
-      this.getShipmentOverview(params),
-      this.getCourierPerformance(params),
-      this.getZonePerformance(params),
-      this.getStatusDistribution(params),
-      this.getDeliveryTimeline(params),
-      this.getWeightAnalysis(params),
-      this.getChannelAnalysis(params),
-      this.getTopCustomers(params),
-      this.getTopIssues(params),
-    ]);
+    const [overview, courierPerformance, zonePerformance, statusDistribution, deliveryTimeline, weightAnalysis, channelAnalysis, topCustomers, topIssues] =
+      await Promise.all([
+        this.getShipmentOverview(params),
+        this.getCourierPerformance(params),
+        this.getZonePerformance(params),
+        this.getStatusDistribution(params),
+        this.getDeliveryTimeline(params),
+        this.getWeightAnalysis(params),
+        this.getChannelAnalysis(params),
+        this.getTopCustomers(params),
+        this.getTopIssues(params),
+      ]);
 
     // NDR analytics (real queries)
     const ndrOrders = await prisma.nDROrder.findMany({
@@ -141,53 +129,56 @@ export class ShipmentAnalysisService {
     // ndrMetrics
     const ndrMetrics = {
       raised: ndrOrders.length,
-      actionRequired: ndrOrders.filter(o => !o.action_taken).length,
-      delivered: ndrOrders.filter(o => o.delivered_date).length,
-      rto: ndrOrders.filter(o => o.cancellation_reason === 'RTO').length,
-      percentage: ndrOrders.length > 0 ? ((ndrOrders.filter(o => o.cancellation_reason === 'RTO').length / ndrOrders.length) * 100).toFixed(2) + '%' : '0%',
+      actionRequired: ndrOrders.filter((o) => !o.action_taken).length,
+      delivered: ndrOrders.filter((o) => o.delivered_date).length,
+      rto: ndrOrders.filter((o) => o.cancellation_reason === 'RTO').length,
+      percentage: ndrOrders.length > 0 ? ((ndrOrders.filter((o) => o.cancellation_reason === 'RTO').length / ndrOrders.length) * 100).toFixed(2) + '%' : '0%',
     };
     // ndrResponseSummary
     const ndrResponseSummary = {
-      sellerResponse: ndrOrders.filter(o => o.action_taken).length,
+      sellerResponse: ndrOrders.filter((o) => o.action_taken).length,
       buyerResponse: 0, // Not enough info in schema, set to 0 or implement if available
-      sellerPositiveResponse: ndrOrders.filter(o => o.action_taken && o.cancellation_reason !== 'RTO').length,
+      sellerPositiveResponse: ndrOrders.filter((o) => o.action_taken && o.cancellation_reason !== 'RTO').length,
       buyerPositiveResponse: 0, // Not enough info in schema
-      sellerPositiveResponseDelivered: ndrOrders.filter(o => o.action_taken && o.delivered_date).length,
+      sellerPositiveResponseDelivered: ndrOrders.filter((o) => o.action_taken && o.delivered_date).length,
       buyerPositiveResponseDelivered: 0, // Not enough info in schema
     };
     // ndrFunnel
     const ndrFunnel = {
       firstNDR: {
-        total: ndrOrders.filter(o => o.attempts === 1).length,
-        pending: ndrOrders.filter(o => o.attempts === 1 && !o.action_taken).length,
-        delivered: ndrOrders.filter(o => o.attempts === 1 && o.delivered_date).length,
+        total: ndrOrders.filter((o) => o.attempts === 1).length,
+        pending: ndrOrders.filter((o) => o.attempts === 1 && !o.action_taken).length,
+        delivered: ndrOrders.filter((o) => o.attempts === 1 && o.delivered_date).length,
       },
       secondNDR: {
-        total: ndrOrders.filter(o => o.attempts === 2).length,
-        pending: ndrOrders.filter(o => o.attempts === 2 && !o.action_taken).length,
-        delivered: ndrOrders.filter(o => o.attempts === 2 && o.delivered_date).length,
+        total: ndrOrders.filter((o) => o.attempts === 2).length,
+        pending: ndrOrders.filter((o) => o.attempts === 2 && !o.action_taken).length,
+        delivered: ndrOrders.filter((o) => o.attempts === 2 && o.delivered_date).length,
       },
       thirdNDR: {
-        total: ndrOrders.filter(o => o.attempts === 3).length,
-        pending: ndrOrders.filter(o => o.attempts === 3 && !o.action_taken).length,
-        delivered: ndrOrders.filter(o => o.attempts === 3 && o.delivered_date).length,
+        total: ndrOrders.filter((o) => o.attempts === 3).length,
+        pending: ndrOrders.filter((o) => o.attempts === 3 && !o.action_taken).length,
+        delivered: ndrOrders.filter((o) => o.attempts === 3 && o.delivered_date).length,
       },
     };
     // ndrReasonSplit
     const ndrReasonSplit = Object.entries(
-      ndrOrders.reduce((acc, o) => {
-        const reason = o.cancellation_reason || 'Unknown';
-        acc[reason] = (acc[reason] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>)
+      ndrOrders.reduce(
+        (acc, o) => {
+          const reason = o.cancellation_reason || 'Unknown';
+          acc[reason] = (acc[reason] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      )
     ).map(([name, value]) => ({ name, value, percentage: ndrOrders.length > 0 ? ((value / ndrOrders.length) * 100).toFixed(2) + '%' : '0%' }));
     // ndrStatusSplit
     const ndrStatusSplit = [
       {
         name: 'NDR',
-        Delivered: ndrOrders.filter(o => o.delivered_date).length,
-        RTO: ndrOrders.filter(o => o.cancellation_reason === 'RTO').length,
-        Pending: ndrOrders.filter(o => !o.action_taken).length,
+        Delivered: ndrOrders.filter((o) => o.delivered_date).length,
+        RTO: ndrOrders.filter((o) => o.cancellation_reason === 'RTO').length,
+        Pending: ndrOrders.filter((o) => !o.action_taken).length,
       },
     ];
     // ndrResponsesByAttempt
@@ -195,14 +186,14 @@ export class ShipmentAnalysisService {
       {
         category: 'All',
         ndrShipments: ndrOrders.length,
-        firstNDRAttempt: ndrOrders.filter(o => o.attempts === 1).length,
-        firstNDRDelivered: ndrOrders.filter(o => o.attempts === 1 && o.delivered_date).length,
-        secondNDRAttempt: ndrOrders.filter(o => o.attempts === 2).length,
-        secondNDRDelivered: ndrOrders.filter(o => o.attempts === 2 && o.delivered_date).length,
-        thirdNDRAttempt: ndrOrders.filter(o => o.attempts === 3).length,
-        thirdNDRDelivered: ndrOrders.filter(o => o.attempts === 3 && o.delivered_date).length,
-        totalDelivered: ndrOrders.filter(o => o.delivered_date).length,
-        totalRTO: ndrOrders.filter(o => o.cancellation_reason === 'RTO').length,
+        firstNDRAttempt: ndrOrders.filter((o) => o.attempts === 1).length,
+        firstNDRDelivered: ndrOrders.filter((o) => o.attempts === 1 && o.delivered_date).length,
+        secondNDRAttempt: ndrOrders.filter((o) => o.attempts === 2).length,
+        secondNDRDelivered: ndrOrders.filter((o) => o.attempts === 2 && o.delivered_date).length,
+        thirdNDRAttempt: ndrOrders.filter((o) => o.attempts === 3).length,
+        thirdNDRDelivered: ndrOrders.filter((o) => o.attempts === 3 && o.delivered_date).length,
+        totalDelivered: ndrOrders.filter((o) => o.delivered_date).length,
+        totalRTO: ndrOrders.filter((o) => o.cancellation_reason === 'RTO').length,
         lostDamaged: 0, // Not enough info in schema
       },
     ];
@@ -219,7 +210,7 @@ export class ShipmentAnalysisService {
       {
         name: 'Seller',
         NDR: ndrOrders.length,
-        sellerResponse: ndrOrders.filter(o => o.action_taken).length,
+        sellerResponse: ndrOrders.filter((o) => o.action_taken).length,
       },
     ];
     const buyerResponse = [
@@ -230,21 +221,24 @@ export class ShipmentAnalysisService {
       },
     ];
     // successByCourier
-    const courierMap = ndrOrders.reduce((acc, o) => {
-      const name = o.courier?.name || 'Unknown';
-      if (!acc[name]) acc[name] = { name, total: 0, zoneA: 0, zoneB: 0, zoneC: 0, zoneD: 0, zoneE: 0 };
-      acc[name].total++;
-      // No zone info in NDROrder, so leave zones as 0
-      return acc;
-    }, {} as Record<string, any>);
+    const courierMap = ndrOrders.reduce(
+      (acc, o) => {
+        const name = o.courier?.name || 'Unknown';
+        if (!acc[name]) acc[name] = { name, total: 0, zoneA: 0, zoneB: 0, zoneC: 0, zoneD: 0, zoneE: 0 };
+        acc[name].total++;
+        // No zone info in NDROrder, so leave zones as 0
+        return acc;
+      },
+      {} as Record<string, any>
+    );
     const successByCourier = Object.values(courierMap);
     // ndrReason table
-    const ndrReason = ndrReasonSplit.map(r => ({
+    const ndrReason = ndrReasonSplit.map((r) => ({
       reason: r.name,
       total: r.value,
-      pending: ndrOrders.filter(o => o.cancellation_reason === r.name && !o.action_taken).length,
-      delivered: ndrOrders.filter(o => o.cancellation_reason === r.name && o.delivered_date).length,
-      rto: ndrOrders.filter(o => o.cancellation_reason === r.name && o.cancellation_reason === 'RTO').length,
+      pending: ndrOrders.filter((o) => o.cancellation_reason === r.name && !o.action_taken).length,
+      delivered: ndrOrders.filter((o) => o.cancellation_reason === r.name && o.delivered_date).length,
+      rto: ndrOrders.filter((o) => o.cancellation_reason === r.name && o.cancellation_reason === 'RTO').length,
       lostDamaged: 0, // Not enough info in schema
     }));
 
@@ -266,17 +260,21 @@ export class ShipmentAnalysisService {
     // rtoMetrics
     const rtoMetrics = {
       total: rtoShipments.length,
-      initiated: rtoShipments.filter(s => s.status === 'RTO_INITIATED').length,
-      delivered: rtoShipments.filter(s => s.status === 'RTO_DELIVERED').length,
-      undelivered: rtoShipments.filter(s => s.status === 'RTO_IN_TRANSIT').length,
-      percentage: rtoShipments.length > 0 ? ((rtoShipments.filter(s => s.status === 'RTO_DELIVERED').length / rtoShipments.length) * 100).toFixed(2) + '%' : '0%',
+      initiated: rtoShipments.filter((s) => s.status === 'RTO_INITIATED').length,
+      delivered: rtoShipments.filter((s) => s.status === 'RTO_DELIVERED').length,
+      undelivered: rtoShipments.filter((s) => s.status === 'RTO_IN_TRANSIT').length,
+      percentage:
+        rtoShipments.length > 0 ? ((rtoShipments.filter((s) => s.status === 'RTO_DELIVERED').length / rtoShipments.length) * 100).toFixed(2) + '%' : '0%',
     };
     // rtoCountOverTime
-    const rtoCountByDate = rtoShipments.reduce((acc, s) => {
-      const date = s.created_at.toISOString().slice(0, 10);
-      acc[date] = (acc[date] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const rtoCountByDate = rtoShipments.reduce(
+      (acc, s) => {
+        const date = s.created_at.toISOString().slice(0, 10);
+        acc[date] = (acc[date] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
     const rtoCountOverTime = Object.entries(rtoCountByDate).map(([name, rtoCount]) => ({ name, rtoCount }));
     // rtoStatus
     const rtoStatus = [
@@ -289,44 +287,71 @@ export class ShipmentAnalysisService {
     ];
     // rtoReasons
     const rtoReasons = Object.entries(
-      rtoShipments.reduce((acc, s) => {
-        const reason = s.status || 'Unknown';
-        acc[reason] = (acc[reason] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>)
+      rtoShipments.reduce(
+        (acc, s) => {
+          const reason = s.status || 'Unknown';
+          acc[reason] = (acc[reason] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      )
     ).map(([name, value]) => ({ name, value, percentage: rtoShipments.length > 0 ? ((value / rtoShipments.length) * 100).toFixed(2) + '%' : '0%' }));
     // rtoTopByPincode
-    const pincodeMap = rtoShipments.reduce((acc, s) => {
-      const pincode = s.order?.customer?.address?.pincode || 'Unknown';
-      if (!acc[pincode]) acc[pincode] = { pincode, rtoCount: 0 };
-      acc[pincode].rtoCount++;
-      return acc;
-    }, {} as Record<string, any>);
-    const rtoTopByPincode = Object.values(pincodeMap).map((item: any) => ({ ...item, percentage: rtoMetrics.total > 0 ? ((item.rtoCount / rtoMetrics.total) * 100).toFixed(2) + '%' : '0%' }));
+    const pincodeMap = rtoShipments.reduce(
+      (acc, s) => {
+        const pincode = s.order?.customer?.address?.pincode || 'Unknown';
+        if (!acc[pincode]) acc[pincode] = { pincode, rtoCount: 0 };
+        acc[pincode].rtoCount++;
+        return acc;
+      },
+      {} as Record<string, any>
+    );
+    const rtoTopByPincode = Object.values(pincodeMap).map((item: any) => ({
+      ...item,
+      percentage: rtoMetrics.total > 0 ? ((item.rtoCount / rtoMetrics.total) * 100).toFixed(2) + '%' : '0%',
+    }));
     // rtoTopByCity
-    const cityMap = rtoShipments.reduce((acc, s) => {
-      const city = s.order?.customer?.address?.city || 'Unknown';
-      if (!acc[city]) acc[city] = { city, rtoCount: 0 };
-      acc[city].rtoCount++;
-      return acc;
-    }, {} as Record<string, any>);
-    const rtoTopByCity = Object.values(cityMap).map((item: any) => ({ ...item, percentage: rtoMetrics.total > 0 ? ((item.rtoCount / rtoMetrics.total) * 100).toFixed(2) + '%' : '0%' }));
+    const cityMap = rtoShipments.reduce(
+      (acc, s) => {
+        const city = s.order?.customer?.address?.city || 'Unknown';
+        if (!acc[city]) acc[city] = { city, rtoCount: 0 };
+        acc[city].rtoCount++;
+        return acc;
+      },
+      {} as Record<string, any>
+    );
+    const rtoTopByCity = Object.values(cityMap).map((item: any) => ({
+      ...item,
+      percentage: rtoMetrics.total > 0 ? ((item.rtoCount / rtoMetrics.total) * 100).toFixed(2) + '%' : '0%',
+    }));
     // rtoTopByCourier
-    const courierRtoMap = rtoShipments.reduce((acc, s) => {
-      const name = s.courier?.name || 'Unknown';
-      if (!acc[name]) acc[name] = { name, rtoCount: 0 };
-      acc[name].rtoCount++;
-      return acc;
-    }, {} as Record<string, any>);
-    const rtoTopByCourier = Object.values(courierRtoMap).map((item: any) => ({ ...item, percentage: rtoMetrics.total > 0 ? ((item.rtoCount / rtoMetrics.total) * 100).toFixed(2) + '%' : '0%' }));
+    const courierRtoMap = rtoShipments.reduce(
+      (acc, s) => {
+        const name = s.courier?.name || 'Unknown';
+        if (!acc[name]) acc[name] = { name, rtoCount: 0 };
+        acc[name].rtoCount++;
+        return acc;
+      },
+      {} as Record<string, any>
+    );
+    const rtoTopByCourier = Object.values(courierRtoMap).map((item: any) => ({
+      ...item,
+      percentage: rtoMetrics.total > 0 ? ((item.rtoCount / rtoMetrics.total) * 100).toFixed(2) + '%' : '0%',
+    }));
     // rtoTopByCustomer
-    const customerRtoMap = rtoShipments.reduce((acc, s) => {
-      const name = s.order?.customer?.name || 'Unknown';
-      if (!acc[name]) acc[name] = { name, rtoCount: 0 };
-      acc[name].rtoCount++;
-      return acc;
-    }, {} as Record<string, any>);
-    const rtoTopByCustomer = Object.values(customerRtoMap).map((item: any) => ({ ...item, percentage: rtoMetrics.total > 0 ? ((item.rtoCount / rtoMetrics.total) * 100).toFixed(2) + '%' : '0%' }));
+    const customerRtoMap = rtoShipments.reduce(
+      (acc, s) => {
+        const name = s.order?.customer?.name || 'Unknown';
+        if (!acc[name]) acc[name] = { name, rtoCount: 0 };
+        acc[name].rtoCount++;
+        return acc;
+      },
+      {} as Record<string, any>
+    );
+    const rtoTopByCustomer = Object.values(customerRtoMap).map((item: any) => ({
+      ...item,
+      percentage: rtoMetrics.total > 0 ? ((item.rtoCount / rtoMetrics.total) * 100).toFixed(2) + '%' : '0%',
+    }));
 
     const result: ShipmentPerformanceAnalytics = {
       overview,
@@ -376,16 +401,7 @@ export class ShipmentAnalysisService {
     }
 
     // Fetch fresh data
-    const [
-      activeShipments,
-      pendingPickups,
-      inTransit,
-      deliveredToday,
-      rtoToday,
-      ndrRaised,
-      ndrResolved,
-      systemAlerts,
-    ] = await Promise.all([
+    const [activeShipments, pendingPickups, inTransit, deliveredToday, rtoToday, ndrRaised, ndrResolved, systemAlerts] = await Promise.all([
       this.getActiveShipmentsCount(userId),
       this.getPendingPickupsCount(userId),
       this.getInTransitCount(userId),
@@ -424,12 +440,7 @@ export class ShipmentAnalysisService {
     }
 
     // Fetch fresh data
-    const [
-      deliveryPredictions,
-      rtoPredictions,
-      demandForecast,
-      courierRecommendations,
-    ] = await Promise.all([
+    const [deliveryPredictions, rtoPredictions, demandForecast, courierRecommendations] = await Promise.all([
       this.getBasicDeliveryPredictions(userId),
       this.getBasicRtoPredictions(userId),
       this.getBasicDemandForecast(userId),
@@ -649,7 +660,7 @@ export class ShipmentAnalysisService {
     if (!user?.profile?.pan) pendingDocuments.push('PAN Card');
     if (!user?.profile?.adhaar) pendingDocuments.push('Aadhaar Card');
     if (!user?.profile?.gst_no) pendingDocuments.push('GST Number');
-    const completionPercentage = isCompleted ? 100 : (user?.profile?.kyc_submitted ? 75 : 0);
+    const completionPercentage = isCompleted ? 100 : user?.profile?.kyc_submitted ? 75 : 0;
     const nextAction = isCompleted ? 'KYC completed' : 'Upload pending documents';
 
     return {
@@ -678,16 +689,16 @@ export class ShipmentAnalysisService {
     });
 
     const totalShipments = shipments.length;
-    const delivered = shipments.filter(s => s.status === 'DELIVERED').length;
-    const inTransit = shipments.filter(s => ['IN_TRANSIT', 'OUT_FOR_DELIVERY'].includes(s.status)).length;
-    const pending = shipments.filter(s => ['PICKUP_SCHEDULED', 'OUT_FOR_PICKUP'].includes(s.status)).length;
-    const rto = shipments.filter(s => ['RTO_INITIATED', 'RTO_IN_TRANSIT', 'RTO_DELIVERED'].includes(s.status)).length;
-    const lostDamaged = shipments.filter(s => s.status === 'EXCEPTION').length;
-    const onTimeDelivery = shipments.filter(s => s.status === 'DELIVERED' && s.updated_at && s.edd && s.updated_at <= s.edd).length;
-    const delayedDelivery = shipments.filter(s => s.status === 'DELIVERED' && s.updated_at && s.edd && s.updated_at > s.edd).length;
+    const delivered = shipments.filter((s) => s.status === 'DELIVERED').length;
+    const inTransit = shipments.filter((s) => ['IN_TRANSIT', 'OUT_FOR_DELIVERY'].includes(s.status)).length;
+    const pending = shipments.filter((s) => ['PICKUP_SCHEDULED', 'OUT_FOR_PICKUP'].includes(s.status)).length;
+    const rto = shipments.filter((s) => ['RTO_INITIATED', 'RTO_IN_TRANSIT', 'RTO_DELIVERED'].includes(s.status)).length;
+    const lostDamaged = shipments.filter((s) => s.status === 'EXCEPTION').length;
+    const onTimeDelivery = shipments.filter((s) => s.status === 'DELIVERED' && s.updated_at && s.edd && s.updated_at <= s.edd).length;
+    const delayedDelivery = shipments.filter((s) => s.status === 'DELIVERED' && s.updated_at && s.edd && s.updated_at > s.edd).length;
     const deliveryTimes = shipments
-      .filter(s => s.status === 'DELIVERED' && s.updated_at && s.created_at)
-      .map(s => (s.updated_at!.getTime() - s.created_at!.getTime()) / (1000 * 60 * 60 * 24));
+      .filter((s) => s.status === 'DELIVERED' && s.updated_at && s.created_at)
+      .map((s) => (s.updated_at!.getTime() - s.created_at!.getTime()) / (1000 * 60 * 60 * 24));
     const averageDeliveryTime = deliveryTimes.length > 0 ? deliveryTimes.reduce((sum, time) => sum + time, 0) / deliveryTimes.length : 0;
     const successRate = totalShipments > 0 ? (delivered / totalShipments) * 100 : 0;
 
@@ -722,48 +733,54 @@ export class ShipmentAnalysisService {
       },
     });
 
-    const groupedByCourier = shipments.reduce((acc, s) => {
-      const courierId = s.courier?.id || 'unknown';
-      const courierName = s.courier?.name || 'Unknown';
-      if (!acc[courierId]) {
-        acc[courierId] = {
-          courierId,
-          courierName,
-          totalShipments: 0,
-          delivered: 0,
-          rto: 0,
-          lostDamaged: 0,
-          onTimeDelivery: 0,
-          delayedDelivery: 0,
-          successRate: 0,
-          averageDeliveryTime: 0,
-          ndrCount: 0,
-          ndrResolved: 0,
-          deliveryTimes: [] as number[],
-        };
-      }
-      acc[courierId].totalShipments += 1;
-      if (s.status === 'DELIVERED') acc[courierId].delivered += 1;
-      if (['RTO_INITIATED', 'RTO_IN_TRANSIT', 'RTO_DELIVERED'].includes(s.status)) acc[courierId].rto += 1;
-      if (s.status === 'EXCEPTION') acc[courierId].lostDamaged += 1;
-      if (s.status === 'DELIVERED' && s.updated_at && s.edd && s.updated_at <= s.edd) acc[courierId].onTimeDelivery += 1;
-      if (s.status === 'DELIVERED' && s.updated_at && s.edd && s.updated_at > s.edd) acc[courierId].delayedDelivery += 1;
-      if (s.updated_at && s.created_at && s.status === 'DELIVERED') {
-        acc[courierId].deliveryTimes.push((s.updated_at.getTime() - s.created_at.getTime()) / (1000 * 60 * 60 * 24));
-      }
-      acc[courierId].ndrCount += s.ndr ? 1 : 0;
-      acc[courierId].ndrResolved += s.ndr && s.ndr.action_taken ? 1 : 0;
-      return acc;
-    }, {} as Record<string, CourierPerformanceItem & { deliveryTimes: number[] }>);
+    const groupedByCourier = shipments.reduce(
+      (acc, s) => {
+        const courierId = s.courier?.id || 'unknown';
+        const courierName = s.courier?.name || 'Unknown';
+        if (!acc[courierId]) {
+          acc[courierId] = {
+            courierId,
+            courierName,
+            totalShipments: 0,
+            delivered: 0,
+            rto: 0,
+            lostDamaged: 0,
+            onTimeDelivery: 0,
+            delayedDelivery: 0,
+            successRate: 0,
+            averageDeliveryTime: 0,
+            ndrCount: 0,
+            ndrResolved: 0,
+            deliveryTimes: [] as number[],
+          };
+        }
+        acc[courierId].totalShipments += 1;
+        if (s.status === 'DELIVERED') acc[courierId].delivered += 1;
+        if (['RTO_INITIATED', 'RTO_IN_TRANSIT', 'RTO_DELIVERED'].includes(s.status)) acc[courierId].rto += 1;
+        if (s.status === 'EXCEPTION') acc[courierId].lostDamaged += 1;
+        if (s.status === 'DELIVERED' && s.updated_at && s.edd && s.updated_at <= s.edd) acc[courierId].onTimeDelivery += 1;
+        if (s.status === 'DELIVERED' && s.updated_at && s.edd && s.updated_at > s.edd) acc[courierId].delayedDelivery += 1;
+        if (s.updated_at && s.created_at && s.status === 'DELIVERED') {
+          acc[courierId].deliveryTimes.push((s.updated_at.getTime() - s.created_at.getTime()) / (1000 * 60 * 60 * 24));
+        }
+        acc[courierId].ndrCount += s.ndr ? 1 : 0;
+        acc[courierId].ndrResolved += s.ndr && s.ndr.action_taken ? 1 : 0;
+        return acc;
+      },
+      {} as Record<string, CourierPerformanceItem & { deliveryTimes: number[] }>
+    );
 
-    return Object.values(groupedByCourier).map(item => {
-      const { deliveryTimes, ...rest } = item;
-      return {
-        ...rest,
-        successRate: item.totalShipments > 0 ? (item.delivered / item.totalShipments) * 100 : 0,
-        averageDeliveryTime: deliveryTimes.length > 0 ? deliveryTimes.reduce((sum, time) => sum + time, 0) / deliveryTimes.length : 0,
-      };
-    }).sort((a, b) => b.totalShipments - a.totalShipments).slice(0, 10);
+    return Object.values(groupedByCourier)
+      .map((item) => {
+        const { deliveryTimes, ...rest } = item;
+        return {
+          ...rest,
+          successRate: item.totalShipments > 0 ? (item.delivered / item.totalShipments) * 100 : 0,
+          averageDeliveryTime: deliveryTimes.length > 0 ? deliveryTimes.reduce((sum, time) => sum + time, 0) / deliveryTimes.length : 0,
+        };
+      })
+      .sort((a, b) => b.totalShipments - a.totalShipments)
+      .slice(0, 10);
   }
 
   private async getZonePerformance(params: OptimizedQueryParams): Promise<ZonePerformanceItem[]> {
@@ -781,39 +798,44 @@ export class ShipmentAnalysisService {
       },
     });
 
-    const groupedByZone = shipments.reduce((acc, s) => {
-      const zone = s.order_zone || 'Unknown';
-      if (!acc[zone]) {
-        acc[zone] = {
-          zone,
-          totalShipments: 0,
-          delivered: 0,
-          rto: 0,
-          lostDamaged: 0,
-          successRate: 0,
-          averageDeliveryTime: 0,
-          topCouriers: [],
-          deliveryTimes: [] as number[],
-        };
-      }
-      acc[zone].totalShipments += 1;
-      if (s.status === 'DELIVERED') acc[zone].delivered += 1;
-      if (['RTO_INITIATED', 'RTO_IN_TRANSIT', 'RTO_DELIVERED'].includes(s.status)) acc[zone].rto += 1;
-      if (s.status === 'EXCEPTION') acc[zone].lostDamaged += 1;
-      if (s.updated_at && s.created_at && s.status === 'DELIVERED') {
-        acc[zone].deliveryTimes.push((s.updated_at.getTime() - s.created_at.getTime()) / (1000 * 60 * 60 * 24));
-      }
-      return acc;
-    }, {} as Record<string, ZonePerformanceItem & { deliveryTimes: number[] }>);
+    const groupedByZone = shipments.reduce(
+      (acc, s) => {
+        const zone = s.order_zone || 'Unknown';
+        if (!acc[zone]) {
+          acc[zone] = {
+            zone,
+            totalShipments: 0,
+            delivered: 0,
+            rto: 0,
+            lostDamaged: 0,
+            successRate: 0,
+            averageDeliveryTime: 0,
+            topCouriers: [],
+            deliveryTimes: [] as number[],
+          };
+        }
+        acc[zone].totalShipments += 1;
+        if (s.status === 'DELIVERED') acc[zone].delivered += 1;
+        if (['RTO_INITIATED', 'RTO_IN_TRANSIT', 'RTO_DELIVERED'].includes(s.status)) acc[zone].rto += 1;
+        if (s.status === 'EXCEPTION') acc[zone].lostDamaged += 1;
+        if (s.updated_at && s.created_at && s.status === 'DELIVERED') {
+          acc[zone].deliveryTimes.push((s.updated_at.getTime() - s.created_at.getTime()) / (1000 * 60 * 60 * 24));
+        }
+        return acc;
+      },
+      {} as Record<string, ZonePerformanceItem & { deliveryTimes: number[] }>
+    );
 
-    return Object.values(groupedByZone).map(item => {
-      const { deliveryTimes, ...rest } = item;
-      return {
-        ...rest,
-        successRate: item.totalShipments > 0 ? (item.delivered / item.totalShipments) * 100 : 0,
-        averageDeliveryTime: deliveryTimes.length > 0 ? deliveryTimes.reduce((sum, time) => sum + time, 0) / deliveryTimes.length : 0,
-      };
-    }).sort((a, b) => b.totalShipments - a.totalShipments);
+    return Object.values(groupedByZone)
+      .map((item) => {
+        const { deliveryTimes, ...rest } = item;
+        return {
+          ...rest,
+          successRate: item.totalShipments > 0 ? (item.delivered / item.totalShipments) * 100 : 0,
+          averageDeliveryTime: deliveryTimes.length > 0 ? deliveryTimes.reduce((sum, time) => sum + time, 0) / deliveryTimes.length : 0,
+        };
+      })
+      .sort((a, b) => b.totalShipments - a.totalShipments);
   }
 
   private async getStatusDistribution(params: OptimizedQueryParams): Promise<StatusDistributionItem[]> {
@@ -827,12 +849,14 @@ export class ShipmentAnalysisService {
     });
 
     const total = shipments.reduce((sum, s) => sum + s._count.id, 0) || 1;
-    return shipments.map(s => ({
-      status: s.status,
-      count: s._count.id,
-      percentage: (s._count.id / total) * 100,
-      trend: 'stable' as const, // Implement trend logic if needed
-    })).sort((a, b) => b.count - a.count);
+    return shipments
+      .map((s) => ({
+        status: s.status,
+        count: s._count.id,
+        percentage: (s._count.id / total) * 100,
+        trend: 'stable' as const, // Implement trend logic if needed
+      }))
+      .sort((a, b) => b.count - a.count);
   }
 
   private async getDeliveryTimeline(params: OptimizedQueryParams): Promise<DeliveryTimelineItem[]> {
@@ -850,19 +874,24 @@ export class ShipmentAnalysisService {
       },
     });
 
-    const groupedByDate = shipments.reduce((acc, s) => {
-      const date = s.created_at.toISOString().slice(0, 10);
-      if (!acc[date]) {
-        acc[date] = { date, delivered: 0, delayed: 0, rto: 0, total: 0 };
-      }
-      acc[date].total += 1;
-      if (s.status === 'DELIVERED') acc[date].delivered += 1;
-      if (s.status === 'DELIVERED' && s.updated_at && s.edd && s.updated_at > s.edd) acc[date].delayed += 1;
-      if (['RTO_INITIATED', 'RTO_IN_TRANSIT', 'RTO_DELIVERED'].includes(s.status)) acc[date].rto += 1;
-      return acc;
-    }, {} as Record<string, DeliveryTimelineItem>);
+    const groupedByDate = shipments.reduce(
+      (acc, s) => {
+        const date = s.created_at.toISOString().slice(0, 10);
+        if (!acc[date]) {
+          acc[date] = { date, delivered: 0, delayed: 0, rto: 0, total: 0 };
+        }
+        acc[date].total += 1;
+        if (s.status === 'DELIVERED') acc[date].delivered += 1;
+        if (s.status === 'DELIVERED' && s.updated_at && s.edd && s.updated_at > s.edd) acc[date].delayed += 1;
+        if (['RTO_INITIATED', 'RTO_IN_TRANSIT', 'RTO_DELIVERED'].includes(s.status)) acc[date].rto += 1;
+        return acc;
+      },
+      {} as Record<string, DeliveryTimelineItem>
+    );
 
-    return Object.values(groupedByDate).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30);
+    return Object.values(groupedByDate)
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 30);
   }
 
   private async getWeightAnalysis(params: OptimizedQueryParams): Promise<WeightAnalysisItem[]> {
@@ -887,46 +916,48 @@ export class ShipmentAnalysisService {
     });
 
     const totalShipments = shipments.length;
-    const groupedByWeight = shipments.reduce((acc, s) => {
-      const weight = s.order?.package?.weight || 0;
-      const weightRange = weight <= 1 ? '0-1 Kgs' :
-                         weight <= 1.5 ? '1-1.5 Kgs' :
-                         weight <= 2 ? '1.5-2 Kgs' :
-                         weight <= 5 ? '2-5 Kgs' : '5+ Kgs';
-      if (!acc[weightRange]) {
-        acc[weightRange] = {
-          weightRange,
-          count: 0,
-          percentage: 0,
-          averageDeliveryTime: 0,
-          successRate: 0,
-          deliveryTimes: [] as number[],
-        };
-      }
-      acc[weightRange].count += 1;
-      if (s.status === 'DELIVERED') acc[weightRange].successRate += 1;
-      if (s.updated_at && s.created_at && s.status === 'DELIVERED') {
-        acc[weightRange].deliveryTimes.push((s.updated_at.getTime() - s.created_at.getTime()) / (1000 * 60 * 60 * 24));
-      }
-      return acc;
-    }, {} as Record<string, WeightAnalysisItem & { deliveryTimes: number[] }>);
+    const groupedByWeight = shipments.reduce(
+      (acc, s) => {
+        const weight = s.order?.package?.weight || 0;
+        const weightRange = weight <= 1 ? '0-1 Kgs' : weight <= 1.5 ? '1-1.5 Kgs' : weight <= 2 ? '1.5-2 Kgs' : weight <= 5 ? '2-5 Kgs' : '5+ Kgs';
+        if (!acc[weightRange]) {
+          acc[weightRange] = {
+            weightRange,
+            count: 0,
+            percentage: 0,
+            averageDeliveryTime: 0,
+            successRate: 0,
+            deliveryTimes: [] as number[],
+          };
+        }
+        acc[weightRange].count += 1;
+        if (s.status === 'DELIVERED') acc[weightRange].successRate += 1;
+        if (s.updated_at && s.created_at && s.status === 'DELIVERED') {
+          acc[weightRange].deliveryTimes.push((s.updated_at.getTime() - s.created_at.getTime()) / (1000 * 60 * 60 * 24));
+        }
+        return acc;
+      },
+      {} as Record<string, WeightAnalysisItem & { deliveryTimes: number[] }>
+    );
 
-    return Object.values(groupedByWeight).map(item => {
-      const { deliveryTimes, ...rest } = item;
-      return {
-        ...rest,
-        percentage: totalShipments > 0 ? (item.count / totalShipments) * 100 : 0,
-        averageDeliveryTime: deliveryTimes.length > 0 ? deliveryTimes.reduce((sum, time) => sum + time, 0) / deliveryTimes.length : 0,
-        successRate: item.count > 0 ? (item.successRate / item.count) * 100 : 0,
-      };
-    }).sort((a, b) => b.count - a.count);
+    return Object.values(groupedByWeight)
+      .map((item) => {
+        const { deliveryTimes, ...rest } = item;
+        return {
+          ...rest,
+          percentage: totalShipments > 0 ? (item.count / totalShipments) * 100 : 0,
+          averageDeliveryTime: deliveryTimes.length > 0 ? deliveryTimes.reduce((sum, time) => sum + time, 0) / deliveryTimes.length : 0,
+          successRate: item.count > 0 ? (item.successRate / item.count) * 100 : 0,
+        };
+      })
+      .sort((a, b) => b.count - a.count);
   }
 
   private async getChannelAnalysis(params: OptimizedQueryParams): Promise<ChannelAnalysisItem[]> {
     const orders = await prisma.order.findMany({
       where: {
-        shipment: { 
-          bucket : {
+        shipment: {
+          bucket: {
             in: [
               ShipmentBucket.IN_TRANSIT,
               ShipmentBucket.NDR,
@@ -938,8 +969,8 @@ export class ShipmentAnalysisService {
               ShipmentBucket.DISPOSED,
               ShipmentBucket.PICKED_UP,
               ShipmentBucket.OUT_FOR_DELIVERY,
-            ]
-          }
+            ],
+          },
         },
         user_id: params.userId,
         created_at: { gte: params.startDate, lte: params.endDate },
@@ -952,34 +983,39 @@ export class ShipmentAnalysisService {
       },
     });
 
-    const groupedByChannel = orders.reduce((acc, o) => {
-      const channel = o.order_channel_config?.channel || 'Unknown';
-      if (!acc[channel]) {
-        acc[channel] = {
-          channel,
-          totalOrders: 0,
-          totalShipments: 0,
-          successRate: 0,
-          averageOrderValue: 0,
-          topProducts: [],
-          orderValues: [] as number[],
-        };
-      }
-      acc[channel].totalOrders += 1;
-      if (o.shipment) acc[channel].totalShipments += 1;
-      if (o.shipment?.status === 'DELIVERED') acc[channel].successRate += 1;
-      if (o.total_amount) acc[channel].orderValues.push(o.total_amount);
-      return acc;
-    }, {} as Record<string, ChannelAnalysisItem & { orderValues: number[] }>);
+    const groupedByChannel = orders.reduce(
+      (acc, o) => {
+        const channel = o.order_channel_config?.channel || 'Unknown';
+        if (!acc[channel]) {
+          acc[channel] = {
+            channel,
+            totalOrders: 0,
+            totalShipments: 0,
+            successRate: 0,
+            averageOrderValue: 0,
+            topProducts: [],
+            orderValues: [] as number[],
+          };
+        }
+        acc[channel].totalOrders += 1;
+        if (o.shipment) acc[channel].totalShipments += 1;
+        if (o.shipment?.status === 'DELIVERED') acc[channel].successRate += 1;
+        if (o.total_amount) acc[channel].orderValues.push(o.total_amount);
+        return acc;
+      },
+      {} as Record<string, ChannelAnalysisItem & { orderValues: number[] }>
+    );
 
-    return Object.values(groupedByChannel).map(item => {
-      const { orderValues, ...rest } = item;
-      return {
-        ...rest,
-        successRate: item.totalShipments > 0 ? (item.successRate / item.totalShipments) * 100 : 0,
-        averageOrderValue: orderValues.length > 0 ? orderValues.reduce((sum, val) => sum + val, 0) / orderValues.length : 0,
-      };
-    }).sort((a, b) => b.totalOrders - a.totalOrders);
+    return Object.values(groupedByChannel)
+      .map((item) => {
+        const { orderValues, ...rest } = item;
+        return {
+          ...rest,
+          successRate: item.totalShipments > 0 ? (item.successRate / item.totalShipments) * 100 : 0,
+          averageOrderValue: orderValues.length > 0 ? orderValues.reduce((sum, val) => sum + val, 0) / orderValues.length : 0,
+        };
+      })
+      .sort((a, b) => b.totalOrders - a.totalOrders);
   }
 
   private async getTopCustomers(params: OptimizedQueryParams): Promise<TopCustomerItem[]> {
@@ -1007,63 +1043,69 @@ export class ShipmentAnalysisService {
         },
       },
     });
-    
-    const groupedByCustomer = orders.reduce((acc, order) => {
-      const customerId = order.customer_id || 'Unknown';
-      if (!acc[customerId]) {
-        acc[customerId] = {
-          customerId: order.customer_id || 'Unknown',
-          customerName: order.customer?.name || 'Unknown',
-          totalShipments: 0,
-          delivered: 0,
-          rto: 0,
-          lostDamaged: 0,
-          successRate: 0,
-          averageDeliveryTime: 0,
-          totalRevenue: 0,
-          averageOrderValue: 0,
-          deliveryTimes: [] as number[],
-          orderValues: [] as number[],
-        };
-      }
-      
-      // Add revenue data
-      if (order.total_amount) {
-        acc[customerId].totalRevenue += order.total_amount;
-        acc[customerId].orderValues.push(order.total_amount);
-      }
-      
-      // Add shipment data
-      if (order.shipment) {
-        acc[customerId].totalShipments += 1;
-        if (order.shipment.status === 'DELIVERED') {
-          acc[customerId].delivered += 1;
-          // Calculate delivery time
-          if (order.shipment.updated_at && order.shipment.created_at) {
-            const deliveryTime = (order.shipment.updated_at.getTime() - order.shipment.created_at.getTime()) / (1000 * 60 * 60 * 24);
-            acc[customerId].deliveryTimes.push(deliveryTime);
+
+    const groupedByCustomer = orders.reduce(
+      (acc, order) => {
+        const customerId = order.customer_id || 'Unknown';
+        if (!acc[customerId]) {
+          acc[customerId] = {
+            customerId: order.customer_id || 'Unknown',
+            customerName: order.customer?.name || 'Unknown',
+            totalShipments: 0,
+            delivered: 0,
+            rto: 0,
+            lostDamaged: 0,
+            successRate: 0,
+            averageDeliveryTime: 0,
+            totalRevenue: 0,
+            averageOrderValue: 0,
+            deliveryTimes: [] as number[],
+            orderValues: [] as number[],
+          };
+        }
+
+        // Add revenue data
+        if (order.total_amount) {
+          acc[customerId].totalRevenue += order.total_amount;
+          acc[customerId].orderValues.push(order.total_amount);
+        }
+
+        // Add shipment data
+        if (order.shipment) {
+          acc[customerId].totalShipments += 1;
+          if (order.shipment.status === 'DELIVERED') {
+            acc[customerId].delivered += 1;
+            // Calculate delivery time
+            if (order.shipment.updated_at && order.shipment.created_at) {
+              const deliveryTime = (order.shipment.updated_at.getTime() - order.shipment.created_at.getTime()) / (1000 * 60 * 60 * 24);
+              acc[customerId].deliveryTimes.push(deliveryTime);
+            }
+          }
+          if (['RTO_INITIATED', 'RTO_IN_TRANSIT', 'RTO_DELIVERED'].includes(order.shipment.status)) {
+            acc[customerId].rto += 1;
+          }
+          if (order.shipment.status === 'EXCEPTION') {
+            acc[customerId].lostDamaged += 1;
           }
         }
-        if (['RTO_INITIATED', 'RTO_IN_TRANSIT', 'RTO_DELIVERED'].includes(order.shipment.status)) {
-          acc[customerId].rto += 1;
-        }
-        if (order.shipment.status === 'EXCEPTION') {
-          acc[customerId].lostDamaged += 1;
-        }
-      }
-      
-      return acc;
-    }, {} as Record<string, TopCustomerItem & { deliveryTimes: number[]; orderValues: number[] }>);
 
-    return Object.values(groupedByCustomer).map(item => {
-      const { deliveryTimes, orderValues, ...rest } = item;
-      return {
-        ...rest,
-        successRate: item.totalShipments > 0 ? (item.delivered / item.totalShipments) * 100 : 0,
-        averageDeliveryTime: deliveryTimes.length > 0 ? deliveryTimes.reduce((sum, time) => sum + time, 0) / deliveryTimes.length : 0,
-        averageOrderValue: orderValues.length > 0 ? orderValues.reduce((sum, val) => sum + val, 0) / orderValues.length : 0,
-      };
-    }).sort((a, b) => b.totalShipments - a.totalShipments).slice(0, 10);
+        return acc;
+      },
+      {} as Record<string, TopCustomerItem & { deliveryTimes: number[]; orderValues: number[] }>
+    );
+
+    return Object.values(groupedByCustomer)
+      .map((item) => {
+        const { deliveryTimes, orderValues, ...rest } = item;
+        return {
+          ...rest,
+          successRate: item.totalShipments > 0 ? (item.delivered / item.totalShipments) * 100 : 0,
+          averageDeliveryTime: deliveryTimes.length > 0 ? deliveryTimes.reduce((sum, time) => sum + time, 0) / deliveryTimes.length : 0,
+          averageOrderValue: orderValues.length > 0 ? orderValues.reduce((sum, val) => sum + val, 0) / orderValues.length : 0,
+        };
+      })
+      .sort((a, b) => b.totalShipments - a.totalShipments)
+      .slice(0, 10);
   }
 
   private async getTopIssues(params: OptimizedQueryParams): Promise<TopIssueItem[]> {
@@ -1079,7 +1121,7 @@ export class ShipmentAnalysisService {
 
     const total = shipments.reduce((sum, s) => sum + s._count.id, 0) || 1;
     return shipments
-      .map(s => ({
+      .map((s) => ({
         issue: s.cancel_reason || 'Unknown',
         count: s._count.id,
         percentage: (s._count.id / total) * 100,
@@ -1259,16 +1301,16 @@ export class ShipmentAnalysisService {
         shipment_id: true,
         id: true,
         attempts: true,
-        ndr_history: { 
-          where: { 
+        ndr_history: {
+          where: {
             ndr_raised_at: {
               gte: new Date(new Date().setDate(new Date().getDate() - 7)),
-            }
+            },
           },
           select: {
             ndr_reason: true,
-          }
-        }
+          },
+        },
       },
     });
     return ndrs.map((n) => ({
@@ -1320,43 +1362,50 @@ export class ShipmentAnalysisService {
       },
     });
 
-    const groupedByOrderAndCourier = shipments.reduce((acc, s) => {
-      const key = `${s.order_id}-${s.courier?.id || 'unknown'}`;
-      if (!acc[key]) {
-        acc[key] = {
-          orderId: s.order_id,
-          courierId: s.courier?.id || 'unknown',
-          courierName: s.courier?.name || 'Unknown',
-          delivered: 0,
-        };
-      }
-      acc[key].delivered += 1;
-      return acc;
-    }, {} as Record<string, { orderId: string; courierId: string; courierName: string; delivered: number }>);
+    const groupedByOrderAndCourier = shipments.reduce(
+      (acc, s) => {
+        const key = `${s.order_id}-${s.courier?.id || 'unknown'}`;
+        if (!acc[key]) {
+          acc[key] = {
+            orderId: s.order_id,
+            courierId: s.courier?.id || 'unknown',
+            courierName: s.courier?.name || 'Unknown',
+            delivered: 0,
+          };
+        }
+        acc[key].delivered += 1;
+        return acc;
+      },
+      {} as Record<string, { orderId: string; courierId: string; courierName: string; delivered: number }>
+    );
 
-    const recommendations = Object.values(groupedByOrderAndCourier).map(item => {
-      const totalForOrder = shipments.filter(s => s.order_id === item.orderId).length;
+    const recommendations = Object.values(groupedByOrderAndCourier).map((item) => {
+      const totalForOrder = shipments.filter((s) => s.order_id === item.orderId).length;
       const successRate = totalForOrder > 0 ? (item.delivered / totalForOrder) * 100 : 0;
       return {
         orderId: item.orderId,
-        recommendedCouriers: [{
-          courierId: item.courierId,
-          courierName: item.courierName,
-          score: successRate / 100,
-          estimatedCost: 0, // Implement cost estimation logic if needed
-          estimatedDeliveryTime: 2,
-          successRate,
-        }],
+        recommendedCouriers: [
+          {
+            courierId: item.courierId,
+            courierName: item.courierName,
+            score: successRate / 100,
+            estimatedCost: 0, // Implement cost estimation logic if needed
+            estimatedDeliveryTime: 2,
+            successRate,
+          },
+        ],
         factors: ['Highest delivery rate'],
         estimatedDeliveryTime: 2,
       };
     });
 
-    return recommendations.sort((a, b) => {
-      const aSuccess = a.recommendedCouriers?.[0]?.successRate ?? 0;
-      const bSuccess = b.recommendedCouriers?.[0]?.successRate ?? 0;
-      return bSuccess - aSuccess;
-    }).slice(0, 10);
+    return recommendations
+      .sort((a, b) => {
+        const aSuccess = a.recommendedCouriers?.[0]?.successRate ?? 0;
+        const bSuccess = b.recommendedCouriers?.[0]?.successRate ?? 0;
+        return bSuccess - aSuccess;
+      })
+      .slice(0, 10);
   }
 
   // Helper methods
@@ -1459,10 +1508,10 @@ export class ShipmentAnalysisService {
 
   private calculatePickupPriority(scheduledDate: Date | null): 'high' | 'medium' | 'low' {
     if (!scheduledDate) return 'medium';
-    
+
     const now = new Date();
     const diffHours = (scheduledDate.getTime() - now.getTime()) / (1000 * 60 * 60);
-    
+
     if (diffHours < 24) return 'high';
     if (diffHours < 72) return 'medium';
     return 'low';

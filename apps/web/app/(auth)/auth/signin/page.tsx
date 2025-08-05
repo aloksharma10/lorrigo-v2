@@ -129,16 +129,16 @@ function SignInForm({ onForgotPasswordClick }: { onForgotPasswordClick: () => vo
   // Handle Google OAuth login
   const handleGoogleLogin = async () => {
     if (isGoogleLoading) return;
-    
+
     setIsGoogleLoading(true);
     setError('');
 
     try {
       // Start Google OAuth flow - this will redirect to Google consent screen
-      await signIn('google', { 
-        callbackUrl: callbackUrl || '/dashboard'
+      await signIn('google', {
+        callbackUrl: callbackUrl || '/dashboard',
       });
-      
+
       // Note: The code below won't execute immediately because signIn will redirect
       // The actual session handling happens in the NextAuth callbacks
     } catch (error) {
@@ -186,13 +186,7 @@ function SignInForm({ onForgotPasswordClick }: { onForgotPasswordClick: () => vo
         {/* OAuth Buttons */}
         <div className="space-y-3">
           {/* Google OAuth Button */}
-          <Button 
-            type="button" 
-            variant="outline" 
-            className="w-full" 
-            onClick={handleGoogleLogin}
-            disabled={isGoogleLoading}
-          >
+          <Button type="button" variant="outline" className="w-full" onClick={handleGoogleLogin} disabled={isGoogleLoading}>
             {isGoogleLoading ? (
               <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
             ) : (
@@ -219,13 +213,7 @@ function SignInForm({ onForgotPasswordClick }: { onForgotPasswordClick: () => vo
           </Button>
 
           {/* Shopify OAuth Button */}
-          <Button 
-            type="button" 
-            variant="outline" 
-            className="w-full" 
-            onClick={() => loginWithShopify()}
-            disabled={shopifyLoading}
-          >
+          <Button type="button" variant="outline" className="w-full" onClick={() => loginWithShopify()} disabled={shopifyLoading}>
             {shopifyLoading ? (
               <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
             ) : (
@@ -363,13 +351,13 @@ export default function SignIn() {
         <Redirecting />
       ) : (
         <FlippingCard
-        className="bottom-0 m-auto w-full max-w-md border-none shadow-none"
-        frontContent={<SignInForm onForgotPasswordClick={handleForgotPasswordClick} />}
-        backContent={<ForgotPassword onBackToSignInClick={handleBackToSignInClick} />}
-        height={535} // Adjusted height to accommodate form content
-        // width={400}
-        toggle={isFlipped}
-      />
+          className="bottom-0 m-auto w-full max-w-md border-none shadow-none"
+          frontContent={<SignInForm onForgotPasswordClick={handleForgotPasswordClick} />}
+          backContent={<ForgotPassword onBackToSignInClick={handleBackToSignInClick} />}
+          height={535} // Adjusted height to accommodate form content
+          // width={400}
+          toggle={isFlipped}
+        />
       )}
       <VideoContainer />
     </Suspense>

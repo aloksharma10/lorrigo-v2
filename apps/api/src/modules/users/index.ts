@@ -374,7 +374,7 @@ export async function usersRoutes(fastify: FastifyInstance) {
           company: { type: 'string' },
           company_name: { type: 'string' },
           logo_url: { type: 'string' },
-          
+
           // Notification Settings
           notification_settings: {
             type: 'object',
@@ -384,7 +384,7 @@ export async function usersRoutes(fastify: FastifyInstance) {
               system: { type: 'boolean' },
             },
           },
-          
+
           // KYC Details
           business_type: { type: 'string' },
           pan: { type: 'string' },
@@ -392,13 +392,13 @@ export async function usersRoutes(fastify: FastifyInstance) {
           gst_no: { type: 'string' },
           kyc_submitted: { type: 'boolean' },
           kyc_verified: { type: 'boolean' },
-          
+
           // Bank Details
           acc_holder_name: { type: 'string' },
           acc_number: { type: 'string' },
           ifsc_number: { type: 'string' },
           acc_type: { type: 'string' },
-          
+
           // Seller Config
           is_d2c: { type: 'boolean' },
           is_b2b: { type: 'boolean' },
@@ -407,7 +407,7 @@ export async function usersRoutes(fastify: FastifyInstance) {
           is_fw: { type: 'boolean' },
           is_rto: { type: 'boolean' },
           is_cod_reversal: { type: 'boolean' },
-          
+
           // Billing and Remittance
           payment_method: { type: 'string', enum: ['PREPAID', 'WALLET', 'CARD', 'BANK_TRANSFER', 'COD', 'UPI'] },
           remittance_cycle: { type: 'string', enum: ['DAILY', 'WEEKLY', 'BI_WEEKLY', 'FORTNIGHTLY', 'MONTHLY', 'CUSTOM', 'MANUAL'] },
@@ -420,7 +420,7 @@ export async function usersRoutes(fastify: FastifyInstance) {
           billing_day_of_month: { type: 'integer' },
           billing_week_of_month: { type: 'integer' },
           billing_days: { type: 'array', items: { type: 'integer' } },
-          
+
           // Label/Manifest Format
           label_format: { type: 'string', enum: ['THERMAL', 'A4'] },
           manifest_format: { type: 'string', enum: ['THERMAL', 'A4'] },
@@ -531,15 +531,15 @@ export async function usersRoutes(fastify: FastifyInstance) {
           is_selected_for_remittance: { type: 'string', enum: ['true', 'false'] },
           bank_name: { type: 'string' },
           account_holder: { type: 'string' },
-          sort: { 
+          sort: {
             type: 'array',
             items: {
               type: 'object',
               properties: {
                 id: { type: 'string' },
-                desc: { type: 'boolean' }
-              }
-            }
+                desc: { type: 'boolean' },
+              },
+            },
           },
           filters: {
             type: 'array',
@@ -547,10 +547,10 @@ export async function usersRoutes(fastify: FastifyInstance) {
               type: 'object',
               properties: {
                 id: { type: 'string' },
-                value: { type: 'string' }
-              }
-            }
-          }
+                value: { type: 'string' },
+              },
+            },
+          },
         },
       },
       response: {
@@ -804,4 +804,4 @@ export async function usersRoutes(fastify: FastifyInstance) {
     preHandler: authorizeRoles([Role.ADMIN]),
     handler: (request, reply) => usersController.deleteUserBankAccount(request, reply),
   });
-} 
+}

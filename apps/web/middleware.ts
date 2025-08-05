@@ -11,9 +11,7 @@ export const middleware: any = auth((request) => {
 
   // Check if the path is protected
   const isProtectedPath =
-    request.nextUrl.pathname.startsWith('/seller') ||
-    request.nextUrl.pathname.startsWith('/staff') ||
-    request.nextUrl.pathname.startsWith('/admin');
+    request.nextUrl.pathname.startsWith('/seller') || request.nextUrl.pathname.startsWith('/staff') || request.nextUrl.pathname.startsWith('/admin');
 
   // Redirect unauthenticated users from protected routes
   if (isProtectedPath && !isAuthenticated) {
@@ -61,10 +59,7 @@ export const middleware: any = auth((request) => {
       if (request.nextUrl.pathname.includes('/dashboard')) {
         // Seller dashboard needs frequent updates
         response.headers.set('Cache-Control', 's-maxage=30, stale-while-revalidate=60');
-      } else if (
-        request.nextUrl.pathname.includes('/orders') ||
-        request.nextUrl.pathname.includes('/shipments')
-      ) {
+      } else if (request.nextUrl.pathname.includes('/orders') || request.nextUrl.pathname.includes('/shipments')) {
         // Orders and shipments can be cached a bit longer
         response.headers.set('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
       } else if (request.nextUrl.pathname.includes('/analytics')) {
@@ -98,11 +93,7 @@ export const middleware: any = auth((request) => {
       if (request.nextUrl.pathname.includes('/dashboard')) {
         // Admin dashboard needs very frequent updates
         response.headers.set('Cache-Control', 's-maxage=20, stale-while-revalidate=40');
-      } else if (
-        request.nextUrl.pathname.includes('/users') ||
-        request.nextUrl.pathname.includes('/system') ||
-        request.nextUrl.pathname.includes('/reports')
-      ) {
+      } else if (request.nextUrl.pathname.includes('/users') || request.nextUrl.pathname.includes('/system') || request.nextUrl.pathname.includes('/reports')) {
         // Critical admin data
         response.headers.set('Cache-Control', 's-maxage=30, stale-while-revalidate=60');
       } else if (request.nextUrl.pathname.includes('/settings')) {

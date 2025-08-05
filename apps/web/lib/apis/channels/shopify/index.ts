@@ -91,12 +91,7 @@ export const useShopify = () => {
   });
 
   // Get Shopify orders with pagination and filters
-  const getOrders = (
-    page = 1,
-    limit = 10,
-    status?: string,
-    dateRange?: { start: string; end: string }
-  ) => {
+  const getOrders = (page = 1, limit = 10, status?: string, dateRange?: { start: string; end: string }) => {
     return useQuery({
       queryKey: ['channels', 'shopify', 'orders', { page, limit, status, dateRange }],
       queryFn: async () => {

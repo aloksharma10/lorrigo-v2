@@ -15,11 +15,7 @@ export type CSVUploadResult = {
   errors?: string; // CSV string format
 };
 
-export async function parseCSVUpload(
-  file: File,
-  mapping: CSVMapping,
-  options: CSVUploadOptions = {}
-): Promise<CSVUploadResult> {
+export async function parseCSVUpload(file: File, mapping: CSVMapping, options: CSVUploadOptions = {}): Promise<CSVUploadResult> {
   try {
     const text = await file.text();
     const lines = text.split('\n').filter((line) => line.trim());

@@ -1,16 +1,6 @@
 'use client';
 
-import {
-  Input,
-  Label,
-  Checkbox,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  Badge,
-} from '@lorrigo/ui/components';
+import { Input, Label, Checkbox, FormControl, FormField, FormItem, FormLabel, FormMessage, Badge } from '@lorrigo/ui/components';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Control, UseFormWatch, useFormContext } from 'react-hook-form';
 import { type OrderFormValues } from '@lorrigo/utils/validations';
@@ -181,11 +171,7 @@ export function SellerDetailsForm({ control, watch, isLoading }: SellerDetailsFo
               ) : sellerOptions.length > 0 ? (
                 <ul className="max-h-60 overflow-y-auto py-1">
                   {sellerOptions.map((option) => (
-                    <li
-                      key={option.id}
-                      className="hover:bg-muted cursor-pointer px-4 py-2"
-                      onClick={() => handleSellerSelect(option)}
-                    >
+                    <li key={option.id} className="hover:bg-muted cursor-pointer px-4 py-2" onClick={() => handleSellerSelect(option)}>
                       <div className="flex items-center justify-between text-sm font-medium">
                         <Badge variant="outline">
                           <Package2 className="h-4 w-4" /> {option.name}
@@ -203,13 +189,9 @@ export function SellerDetailsForm({ control, watch, isLoading }: SellerDetailsFo
                   ))}
                 </ul>
               ) : searchQuery.length >= 2 ? (
-                <div className="text-muted-foreground p-4 text-center text-sm">
-                  No sellers found
-                </div>
+                <div className="text-muted-foreground p-4 text-center text-sm">No sellers found</div>
               ) : (
-                <div className="text-muted-foreground p-4 text-center text-sm">
-                  Type at least 2 characters to search
-                </div>
+                <div className="text-muted-foreground p-4 text-center text-sm">Type at least 2 characters to search</div>
               )}
             </div>
           )}
@@ -235,11 +217,7 @@ export function SellerDetailsForm({ control, watch, isLoading }: SellerDetailsFo
         name="sellerDetails.isAddressAvailable"
         render={({ field }) => (
           <div className="flex items-center space-x-2">
-            <Checkbox
-              id="add-seller-address"
-              checked={field.value}
-              onCheckedChange={(checked) => field.onChange(checked as boolean)}
-            />
+            <Checkbox id="add-seller-address" checked={field.value} onCheckedChange={(checked) => field.onChange(checked as boolean)} />
             <Label htmlFor="add-seller-address" className="font-medium">
               Add Seller Address
             </Label>

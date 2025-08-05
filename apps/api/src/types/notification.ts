@@ -33,8 +33,6 @@ export interface EmailTemplate {
   text?: string;
 }
 
-
-
 export interface SystemNotification {
   userId: string;
   title: string;
@@ -140,4 +138,4 @@ export interface NotificationChannel {
   priority: number;
   createdAt: Date;
   updatedAt: Date;
-} 
+}

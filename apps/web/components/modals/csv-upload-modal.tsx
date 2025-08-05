@@ -4,21 +4,7 @@ import type React from 'react';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
-import {
-  Upload,
-  Check,
-  ChevronsUpDown,
-  Save,
-  Pencil,
-  Trash2,
-  FileText,
-  Loader2,
-  CheckCircle2,
-  AlertTriangle,
-  ArrowLeft,
-  Settings,
-  X,
-} from 'lucide-react';
+import { Upload, Check, ChevronsUpDown, Save, Pencil, Trash2, FileText, Loader2, CheckCircle2, AlertTriangle, ArrowLeft, Settings, X } from 'lucide-react';
 
 import {
   Button,
@@ -131,9 +117,7 @@ interface CSVUploadState {
 
 const ValidationUtils = {
   validateFileType: (file: File, acceptedTypes: string[]): boolean => {
-    return acceptedTypes.some((type) =>
-      file.name.toLowerCase().endsWith(type.toLowerCase().replace('.', ''))
-    );
+    return acceptedTypes.some((type) => file.name.toLowerCase().endsWith(type.toLowerCase().replace('.', '')));
   },
 
   validateFileSize: (file: File, maxSizeMB: number): boolean => {
@@ -189,11 +173,7 @@ const ValidationUtils = {
 
     // Exact matches first
     fields.forEach((field) => {
-      const exactMatch = csvHeaders.find(
-        (header) =>
-          header.toLowerCase() === field.key.toLowerCase() ||
-          header.toLowerCase() === field.label.toLowerCase()
-      );
+      const exactMatch = csvHeaders.find((header) => header.toLowerCase() === field.key.toLowerCase() || header.toLowerCase() === field.label.toLowerCase());
 
       if (exactMatch && !usedHeaders.has(exactMatch)) {
         mapping[field.key] = exactMatch;
@@ -233,14 +213,7 @@ const ValidationUtils = {
 // Enhanced custom hook with better logic
 
 const useCSVUploadLogic = (props: CSVUploadProps) => {
-  const {
-    fields,
-    validateFile,
-    maxFileSize = 10,
-    acceptedFileTypes = ['.csv'],
-    preferenceKey,
-    enableDragDrop = true,
-  } = props;
+  const { fields, validateFile, maxFileSize = 10, acceptedFileTypes = ['.csv'], preferenceKey, enableDragDrop = true } = props;
 
   const csvUploadContext = useCSVUpload();
 
@@ -267,9 +240,7 @@ const useCSVUploadLogic = (props: CSVUploadProps) => {
   const mappingPreferences = useMemo(
     () =>
       allMappingPreferences.filter((pref: MappingPreference) =>
-        preferenceKey
-          ? pref.key === `${preferenceKey}_mappingpreferences`
-          : pref.key === globalPreferenceKey
+        preferenceKey ? pref.key === `${preferenceKey}_mappingpreferences` : pref.key === globalPreferenceKey
       ),
     [allMappingPreferences, preferenceKey, globalPreferenceKey]
   );
@@ -303,10 +274,7 @@ const useCSVUploadLogic = (props: CSVUploadProps) => {
         const newState = { ...prev, ...updates };
         // Auto-calculate mapping stats when mapping changes
         if (updates.headerMapping) {
-          newState.mappingStats = ValidationUtils.calculateMappingStats(
-            newState.headerMapping,
-            fields
-          );
+          newState.mappingStats = ValidationUtils.calculateMappingStats(newState.headerMapping, fields);
         }
         return newState;
       });
@@ -602,9 +570,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
 
     // Check for duplicate mappings
     const mappedHeaders = Object.values(state.headerMapping).filter(Boolean);
-    const duplicates = mappedHeaders.filter(
-      (header, index) => mappedHeaders.indexOf(header) !== index
-    );
+    const duplicates = mappedHeaders.filter((header, index) => mappedHeaders.indexOf(header) !== index);
 
     if (duplicates.length > 0) {
       errors.push(`Duplicate column mappings: ${[...new Set(duplicates)].join(', ')}`);
@@ -680,17 +646,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
       });
       props.onError?.(errorMessage);
     }
-  }, [
-    validateMapping,
-    state.file,
-    state.headerMapping,
-    updateState,
-    startUpload,
-    toggleMinimized,
-    onSubmit,
-    completeUpload,
-    props,
-  ]);
+  }, [validateMapping, state.file, state.headerMapping, updateState, startUpload, toggleMinimized, onSubmit, completeUpload, props]);
 
   // Enhanced save mapping handler
 
@@ -702,18 +658,9 @@ export function CSVUploadModal(props: CSVUploadProps) {
 
     try {
       if (editingPreference) {
-        updateMappingPreference(
-          editingPreference.name,
-          newMappingName.trim(),
-          state.headerMapping,
-          `${actualPreferenceKey}_mappingpreferences`
-        );
+        updateMappingPreference(editingPreference.name, newMappingName.trim(), state.headerMapping, `${actualPreferenceKey}_mappingpreferences`);
       } else {
-        saveMappingPreference(
-          newMappingName.trim(),
-          state.headerMapping,
-          `${actualPreferenceKey}_mappingpreferences`
-        );
+        saveMappingPreference(newMappingName.trim(), state.headerMapping, `${actualPreferenceKey}_mappingpreferences`);
       }
 
       setNewMappingName('');
@@ -723,15 +670,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
     } catch (error) {
       updateState({ globalError: 'Failed to save mapping preference' });
     }
-  }, [
-    newMappingName,
-    editingPreference,
-    state.headerMapping,
-    actualPreferenceKey,
-    updateMappingPreference,
-    saveMappingPreference,
-    updateState,
-  ]);
+  }, [newMappingName, editingPreference, state.headerMapping, actualPreferenceKey, updateMappingPreference, saveMappingPreference, updateState]);
 
   // Step configuration for better organization
 
@@ -788,9 +727,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
                   {state.step === 'upload' && <Upload className="h-5 w-5" />}
                   {state.step === 'mapping' && <Settings className="h-5 w-5" />}
                   {state.step === 'processing' && <Loader2 className="h-5 w-5 animate-spin" />}
-                  {state.step === 'completed' && (
-                    <CheckCircle2 className="h-5 w-5 text-green-500" />
-                  )}
+                  {state.step === 'completed' && <CheckCircle2 className="h-5 w-5 text-green-500" />}
                   {currentStepConfig.title}
                 </span>
                 <p className="text-base">{currentStepConfig.description}</p>
@@ -828,41 +765,23 @@ export function CSVUploadModal(props: CSVUploadProps) {
                   >
                     <CardContent className="flex flex-col items-center justify-center p-8 text-center">
                       <div className="mb-4">
-                        <FileText
-                          className={cn(
-                            'h-12 w-12 transition-colors',
-                            state.dragActive ? 'text-primary' : 'text-muted-foreground'
-                          )}
-                        />
+                        <FileText className={cn('h-12 w-12 transition-colors', state.dragActive ? 'text-primary' : 'text-muted-foreground')} />
                       </div>
 
                       <div className="space-y-2">
-                        <h3 className="text-lg font-semibold">
-                          {state.dragActive ? 'Drop your CSV file here' : 'Upload CSV File'}
-                        </h3>
+                        <h3 className="text-lg font-semibold">{state.dragActive ? 'Drop your CSV file here' : 'Upload CSV File'}</h3>
                         <p className="text-muted-foreground text-sm">
-                          {enableDragDrop
-                            ? 'Drag and drop your file here, or click to browse'
-                            : 'Click to browse for your file'}
+                          {enableDragDrop ? 'Drag and drop your file here, or click to browse' : 'Click to browse for your file'}
                         </p>
                       </div>
 
                       <div className="mt-6 space-y-4">
-                        <Button
-                          onClick={() => fileInputRef.current?.click()}
-                          className="min-w-[120px]"
-                        >
+                        <Button onClick={() => fileInputRef.current?.click()} className="min-w-[120px]">
                           <Upload className="mr-2 h-4 w-4" />
                           Browse Files
                         </Button>
 
-                        <Input
-                          ref={fileInputRef}
-                          type="file"
-                          accept={props.acceptedFileTypes?.join(',')}
-                          onChange={handleFileChange}
-                          className="hidden"
-                        />
+                        <Input ref={fileInputRef} type="file" accept={props.acceptedFileTypes?.join(',')} onChange={handleFileChange} className="hidden" />
                       </div>
 
                       <div className="mt-4 flex flex-wrap justify-center gap-2">
@@ -891,9 +810,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
                           <FileText className="h-5 w-5 text-green-500" />
                           <div>
                             <p className="font-medium">{state.file?.name}</p>
-                            <p className="text-muted-foreground text-sm">
-                              {state.csvHeaders.length} columns detected
-                            </p>
+                            <p className="text-muted-foreground text-sm">{state.csvHeaders.length} columns detected</p>
                           </div>
                         </div>
 
@@ -901,9 +818,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
                           <p className="text-sm font-medium">
                             {state.mappingStats.mapped}/{state.mappingStats.total} mapped
                           </p>
-                          <p className="text-muted-foreground text-xs">
-                            {state.mappingStats.required} required
-                          </p>
+                          <p className="text-muted-foreground text-xs">{state.mappingStats.required} required</p>
                         </div>
                       </div>
                     </CardContent>
@@ -919,10 +834,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
                       <CardContent>
                         <Popover>
                           <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className="w-full justify-between bg-transparent"
-                            >
+                            <Button variant="outline" className="w-full justify-between bg-transparent">
                               Choose a saved mapping...
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
@@ -969,15 +881,8 @@ export function CSVUploadModal(props: CSVUploadProps) {
                                               onClick={(e) => {
                                                 e.preventDefault();
                                                 e.stopPropagation();
-                                                if (
-                                                  window.confirm(
-                                                    `Delete mapping "${mapping.name}"?`
-                                                  )
-                                                ) {
-                                                  deleteMappingPreference(
-                                                    mapping.name,
-                                                    mapping.key
-                                                  );
+                                                if (window.confirm(`Delete mapping "${mapping.name}"?`)) {
+                                                  deleteMappingPreference(mapping.name, mapping.key);
                                                 }
                                               }}
                                               className="h-6 w-6 text-red-500 hover:text-red-700"
@@ -1027,10 +932,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
                       <div className="h-[300px] overflow-y-auto">
                         <div className="space-y-4">
                           {fields.map((field) => (
-                            <div
-                              key={field.key}
-                              className="grid grid-cols-1 gap-4 rounded-lg border p-4 md:grid-cols-2"
-                            >
+                            <div key={field.key} className="grid grid-cols-1 gap-4 rounded-lg border p-4 md:grid-cols-2">
                               <div className="space-y-2">
                                 <div className="flex items-center gap-2">
                                   <Label className="font-medium">{field.label}</Label>
@@ -1045,11 +947,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
                                     </Badge>
                                   )}
                                 </div>
-                                {field.description && (
-                                  <p className="text-muted-foreground text-sm">
-                                    {field.description}
-                                  </p>
-                                )}
+                                {field.description && <p className="text-muted-foreground text-sm">{field.description}</p>}
                               </div>
 
                               <div className="space-y-2">
@@ -1068,12 +966,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
                                     <Button
                                       variant="outline"
                                       role="combobox"
-                                      className={cn(
-                                        'w-full justify-between',
-                                        !state.headerMapping[field.key] &&
-                                          field.required !== false &&
-                                          'border-red-200'
-                                      )}
+                                      className={cn('w-full justify-between', !state.headerMapping[field.key] && field.required !== false && 'border-red-200')}
                                     >
                                       {state.headerMapping[field.key] || 'Select CSV column...'}
                                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -1096,17 +989,8 @@ export function CSVUploadModal(props: CSVUploadProps) {
                                               });
                                             }}
                                           >
-                                            <Check
-                                              className={cn(
-                                                'mr-2 h-4 w-4',
-                                                !state.headerMapping[field.key]
-                                                  ? 'opacity-100'
-                                                  : 'opacity-0'
-                                              )}
-                                            />
-                                            <span className="text-muted-foreground">
-                                              -- Not mapped --
-                                            </span>
+                                            <Check className={cn('mr-2 h-4 w-4', !state.headerMapping[field.key] ? 'opacity-100' : 'opacity-0')} />
+                                            <span className="text-muted-foreground">-- Not mapped --</span>
                                           </CommandItem>
                                           {state.csvHeaders.map((header) => (
                                             <CommandItem
@@ -1121,14 +1005,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
                                                 });
                                               }}
                                             >
-                                              <Check
-                                                className={cn(
-                                                  'mr-2 h-4 w-4',
-                                                  state.headerMapping[field.key] === header
-                                                    ? 'opacity-100'
-                                                    : 'opacity-0'
-                                                )}
-                                              />
+                                              <Check className={cn('mr-2 h-4 w-4', state.headerMapping[field.key] === header ? 'opacity-100' : 'opacity-0')} />
                                               {header}
                                             </CommandItem>
                                           ))}
@@ -1154,9 +1031,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
                     <Loader2 className="text-primary mx-auto h-12 w-12 animate-spin" />
                     <div className="space-y-2">
                       <h3 className="text-lg font-semibold">Processing your file...</h3>
-                      <p className="text-muted-foreground">
-                        This may take a few moments depending on file size
-                      </p>
+                      <p className="text-muted-foreground">This may take a few moments depending on file size</p>
                     </div>
                   </div>
 
@@ -1177,9 +1052,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
                     <CheckCircle2 className="mx-auto h-12 w-12 text-green-500" />
                     <div className="space-y-2">
                       <h3 className="text-lg font-semibold">Upload Complete!</h3>
-                      <p className="text-muted-foreground">
-                        Your CSV file has been processed successfully
-                      </p>
+                      <p className="text-muted-foreground">Your CSV file has been processed successfully</p>
                     </div>
                   </div>
 
@@ -1200,11 +1073,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
             <div className="flex w-full items-center justify-between">
               <div className="flex items-center gap-2">
                 {currentStepConfig.showBack && (
-                  <Button
-                    variant="outline"
-                    onClick={() => updateState({ step: 'upload' })}
-                    disabled={state.isUploading}
-                  >
+                  <Button variant="outline" onClick={() => updateState({ step: 'upload' })} disabled={state.isUploading}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back
                   </Button>
@@ -1218,12 +1087,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
                   </Button>
                 )}
                 {currentStepConfig.showNext && (
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={
-                      state.isUploading || state.mappingStats.mapped < state.mappingStats.required
-                    }
-                  >
+                  <Button onClick={handleSubmit} disabled={state.isUploading || state.mappingStats.mapped < state.mappingStats.required}>
                     {state.isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {currentStepConfig.nextLabel}
                   </Button>
@@ -1249,11 +1113,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
         <div className="flex flex-col sm:max-w-[400px]">
           <div className="flex items-center justify-between border-b p-6">
             <h2>{editingPreference ? 'Update Mapping' : 'Save Mapping'}</h2>
-            <p>
-              {editingPreference
-                ? 'Update the name for this mapping configuration.'
-                : 'Give this mapping configuration a name so you can reuse it later.'}
-            </p>
+            <p>{editingPreference ? 'Update the name for this mapping configuration.' : 'Give this mapping configuration a name so you can reuse it later.'}</p>
           </div>
 
           <div className="space-y-4 py-4">
@@ -1284,9 +1144,7 @@ export function CSVUploadModal(props: CSVUploadProps) {
             >
               Cancel
             </Button>
-            <Button onClick={handleSaveMapping}>
-              {editingPreference ? 'Update' : 'Save'} Mapping
-            </Button>
+            <Button onClick={handleSaveMapping}>{editingPreference ? 'Update' : 'Save'} Mapping</Button>
           </div>
         </div>
       </Modal>

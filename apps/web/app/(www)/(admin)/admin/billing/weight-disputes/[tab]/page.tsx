@@ -11,39 +11,38 @@ import ClientTabs from '@/components/client-tabs';
 export default function SellerWeightDisputesPage() {
   const { tab } = useParams();
   const [activeTab, setActiveTab] = useState<string>(tab as string);
-  
+
   // Map tabs to status values for API
   const tabToStatusMap: Record<string, string | undefined> = {
-    'pending': 'PENDING',
-    'raised_by_seller': 'RAISED_BY_SELLER',
-    'resolved': 'RESOLVED',
-    'rejected': 'REJECTED',
-    'all': undefined
+    pending: 'PENDING',
+    raised_by_seller: 'RAISED_BY_SELLER',
+    resolved: 'RESOLVED',
+    rejected: 'REJECTED',
+    all: undefined,
   };
-  
+
   const { disputesQuery } = useBillingOperations({
     disputes: {
       page: 1,
       pageSize: 10,
-      status: tabToStatusMap[activeTab] || undefined
-    }
+      status: tabToStatusMap[activeTab] || undefined,
+    },
   });
 
   const { data: disputes } = disputesQuery;
 
-
   // Calculate stats
-  const pendingCount = disputes?.data.filter(d => d.status === 'PENDING').length || 0;
-  const resolvedCount = disputes?.data.filter(d => d.status === 'RESOLVED').length || 0;
-  const rejectedCount = disputes?.data.filter(d => d.status === 'REJECTED').length || 0;
-  const raisedCount = disputes?.data.filter(d => d.status === 'RAISED_BY_SELLER').length || 0;
+  const pendingCount = disputes?.data.filter((d) => d.status === 'PENDING').length || 0;
+  const resolvedCount = disputes?.data.filter((d) => d.status === 'RESOLVED').length || 0;
+  const rejectedCount = disputes?.data.filter((d) => d.status === 'REJECTED').length || 0;
+  const raisedCount = disputes?.data.filter((d) => d.status === 'RAISED_BY_SELLER').length || 0;
 
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex mt-4 items-center justify-between">
+      <div className="mt-4 flex items-center justify-between">
         <div>
-          <h1 className="text-lg lg:text-2xl font-semibold tracking-tight">Weight Disputes</h1>
+          <h1 className="text-lg font-semibold tracking-tight lg:text-2xl">Weight Disputes</h1>
           <p className="text-muted-foreground text-sm lg:text-base">Review and resolve your shipment weight disputes.</p>
         </div>
       </div>
@@ -56,7 +55,7 @@ export default function SellerWeightDisputesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-500">{pendingCount}</div>
-            <p className="text-xs text-muted-foreground">Awaiting resolution</p>
+            <p className="text-muted-foreground text-xs">Awaiting resolution</p>
           </CardContent>
         </Card>
         <Card>
@@ -65,7 +64,7 @@ export default function SellerWeightDisputesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-500">{raisedCount}</div>
-            <p className="text-xs text-muted-foreground">Evidence provided</p>
+            <p className="text-muted-foreground text-xs">Evidence provided</p>
           </CardContent>
         </Card>
         <Card>
@@ -74,7 +73,7 @@ export default function SellerWeightDisputesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-500">{resolvedCount}</div>
-            <p className="text-xs text-muted-foreground">Successfully resolved</p>
+            <p className="text-muted-foreground text-xs">Successfully resolved</p>
           </CardContent>
         </Card>
         <Card>
@@ -83,14 +82,13 @@ export default function SellerWeightDisputesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-500">{rejectedCount}</div>
-            <p className="text-xs text-muted-foreground">Rejected disputes</p>
+            <p className="text-muted-foreground text-xs">Rejected disputes</p>
           </CardContent>
         </Card>
       </div>
 
       <ClientTabs menuItems={WEIGHT_DISPUTE_TAB_ROUTES} />
       <WeightDisputesTable userRole="ADMIN" status={tabToStatusMap[activeTab]} />
-
     </div>
   );
-} 
+}

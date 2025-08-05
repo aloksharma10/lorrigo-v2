@@ -25,7 +25,7 @@ export default function ForgotPassword({ onBackToSignInClick }: ForgotPasswordPr
   const { verifyOTP, resendOTP } = useNotificationOperations();
   const resetPasswordMutation = useResetPassword();
 
-    const handleSendResetEmail = async (e: React.FormEvent) => {
+  const handleSendResetEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
@@ -33,7 +33,7 @@ export default function ForgotPassword({ onBackToSignInClick }: ForgotPasswordPr
     try {
       // Send forgot password request (this will generate and send OTP internally)
       const forgotResult = await forgotPasswordMutation.mutateAsync(email);
-      
+
       if (forgotResult.success || forgotResult.message) {
         setSuccess('OTP sent to your email address');
         setStep('otp');
@@ -55,12 +55,12 @@ export default function ForgotPassword({ onBackToSignInClick }: ForgotPasswordPr
     }
 
     try {
-      const result = await verifyOTP.mutateAsync({
+      const result = (await verifyOTP.mutateAsync({
         identifier: email,
         identifierType: 'email',
         otp: otp,
         type: 'password_reset',
-      }) as any;
+      })) as any;
 
       if (result.success) {
         setStep('new-password');
@@ -89,7 +89,7 @@ export default function ForgotPassword({ onBackToSignInClick }: ForgotPasswordPr
 
     try {
       // Use the users API for password reset
-        const response = await resetPasswordMutation.mutateAsync({
+      const response = await resetPasswordMutation.mutateAsync({
         email,
         otp,
         newPassword,
@@ -110,7 +110,7 @@ export default function ForgotPassword({ onBackToSignInClick }: ForgotPasswordPr
   const handleResendOTP = async () => {
     setError('');
     try {
-      const result = await resendOTP.mutateAsync({
+      const result = (await resendOTP.mutateAsync({
         type: 'password_reset',
         identifier: email,
         identifierType: 'email',
@@ -118,7 +118,7 @@ export default function ForgotPassword({ onBackToSignInClick }: ForgotPasswordPr
         metadata: {
           userName: email.split('@')[0],
         },
-      }) as any;
+      })) as any;
 
       if (result.success) {
         setSuccess('OTP resent successfully');
@@ -183,12 +183,7 @@ export default function ForgotPassword({ onBackToSignInClick }: ForgotPasswordPr
                 Send reset link
               </Button>
 
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onBackToSignInClick}
-                className="w-full"
-              >
+              <Button type="button" variant="outline" onClick={onBackToSignInClick} className="w-full">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to sign in
               </Button>
@@ -214,9 +209,7 @@ export default function ForgotPassword({ onBackToSignInClick }: ForgotPasswordPr
                   className="text-center text-lg tracking-widest"
                 />
               </div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                We've sent a 6-digit code to {email}
-              </p>
+              <p className="text-muted-foreground mt-2 text-sm">We've sent a 6-digit code to {email}</p>
             </div>
 
             <div className="space-y-3">
@@ -224,22 +217,11 @@ export default function ForgotPassword({ onBackToSignInClick }: ForgotPasswordPr
                 Verify OTP
               </Button>
 
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleResendOTP}
-                disabled={isLoading}
-                className="w-full"
-              >
+              <Button type="button" variant="outline" onClick={handleResendOTP} disabled={isLoading} className="w-full">
                 Resend OTP
               </Button>
 
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setStep('email')}
-                className="w-full"
-              >
+              <Button type="button" variant="ghost" onClick={() => setStep('email')} className="w-full">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to email
               </Button>
@@ -285,12 +267,7 @@ export default function ForgotPassword({ onBackToSignInClick }: ForgotPasswordPr
                 Reset Password
               </Button>
 
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setStep('otp')}
-                className="w-full"
-              >
+              <Button type="button" variant="outline" onClick={() => setStep('otp')} className="w-full">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to OTP
               </Button>
@@ -302,18 +279,12 @@ export default function ForgotPassword({ onBackToSignInClick }: ForgotPasswordPr
         {step === 'success' && (
           <div className="space-y-6">
             <div className="text-center">
-              <CheckCircle className="mx-auto h-12 w-12 text-green-500 mb-4" />
+              <CheckCircle className="mx-auto mb-4 h-12 w-12 text-green-500" />
               <h3 className="text-lg font-semibold">Password Reset Successful!</h3>
-              <p className="text-sm text-muted-foreground mt-2">
-                Your password has been reset successfully. You can now login with your new password.
-              </p>
+              <p className="text-muted-foreground mt-2 text-sm">Your password has been reset successfully. You can now login with your new password.</p>
             </div>
 
-            <Button
-              type="button"
-              onClick={onBackToSignInClick}
-              className="w-full"
-            >
+            <Button type="button" onClick={onBackToSignInClick} className="w-full">
               Back to Sign In
             </Button>
           </div>

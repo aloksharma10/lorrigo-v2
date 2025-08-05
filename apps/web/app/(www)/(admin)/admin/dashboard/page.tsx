@@ -1,7 +1,3 @@
 export default function AdminDashboard() {
-  return (
-    <div>
-    Under Development
-    </div>
-  );
+  return <div>Under Development</div>;
 }

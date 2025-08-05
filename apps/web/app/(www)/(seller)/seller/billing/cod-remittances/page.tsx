@@ -40,5 +40,5 @@ export default async function CODRemittancesPage({ searchParams }: PageProps) {
     //  status: "",
   };
 
-  return <CODRemittanceTab />
+  return <CODRemittanceTab />;
 }

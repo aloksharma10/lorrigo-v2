@@ -2,19 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import {
-  MapPin,
-  Package,
-  Weight,
-  AlertTriangle,
-  Clock,
-  Calendar,
-  Info,
-  Search,
-  Shield,
-  Menu,
-  Loader2,
-} from 'lucide-react';
+import { MapPin, Package, Weight, AlertTriangle, Clock, Calendar, Info, Search, Shield, Menu, Loader2 } from 'lucide-react';
 import {
   Button,
   Separator,
@@ -66,12 +54,7 @@ export default function ShipOrderPage() {
 
   const {
     getShippingRates,
-    shipOrder: {
-      data: shipmentData,
-      mutateAsync: createShipment,
-      isPending: isCreatingShipment,
-      isSuccess: isShipmentCreated,
-    },
+    shipOrder: { data: shipmentData, mutateAsync: createShipment, isPending: isCreatingShipment, isSuccess: isShipmentCreated },
   } = useShippingOperations();
   const { data, isLoading, error } = getShippingRates(orderId);
 
@@ -112,21 +95,17 @@ export default function ShipOrderPage() {
 
     // Filter by search
     if (searchQuery) {
-      filtered = filtered.filter((rate) =>
-        rate.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      filtered = filtered.filter((rate) => rate.name.toLowerCase().includes(searchQuery.toLowerCase()));
     }
 
     // Filter by price
     if (priceFilter === 'under-500') filtered = filtered.filter((rate) => rate.total_price < 500);
-    if (priceFilter === '500-1000')
-      filtered = filtered.filter((rate) => rate.total_price >= 500 && rate.total_price <= 1000);
+    if (priceFilter === '500-1000') filtered = filtered.filter((rate) => rate.total_price >= 500 && rate.total_price <= 1000);
     if (priceFilter === 'above-1000') filtered = filtered.filter((rate) => rate.total_price > 1000);
 
     // Filter by rating
     if (ratingFilter === 'above-4.5') filtered = filtered.filter((rate) => rate.rating >= 4.5);
-    if (ratingFilter === '4-4.5')
-      filtered = filtered.filter((rate) => rate.rating >= 4 && rate.rating < 4.5);
+    if (ratingFilter === '4-4.5') filtered = filtered.filter((rate) => rate.rating >= 4 && rate.rating < 4.5);
 
     return filtered;
   };
@@ -137,11 +116,7 @@ export default function ShipOrderPage() {
     if (sortBy === 'price-low') return sorted.sort((a, b) => a.total_price - b.total_price);
     if (sortBy === 'price-high') return sorted.sort((a, b) => b.total_price - a.total_price);
     if (sortBy === 'rating') return sorted.sort((a, b) => b.rating - a.rating);
-    if (sortBy === 'delivery-time')
-      return sorted.sort(
-        (a, b) =>
-          Number.parseInt(a.estimated_delivery_days) - Number.parseInt(b.estimated_delivery_days)
-      );
+    if (sortBy === 'delivery-time') return sorted.sort((a, b) => Number.parseInt(a.estimated_delivery_days) - Number.parseInt(b.estimated_delivery_days));
     return sorted;
   };
 
@@ -164,15 +139,11 @@ export default function ShipOrderPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-transparent">
       <div className="flex flex-col md:flex-row">
         {/* Desktop Order Details */}
-        <DesktopOrderDetails
-          order={order}
-          isOpen={isOrderDetailsOpen}
-          setIsOpen={setIsOrderDetailsOpen}
-        />
+        <DesktopOrderDetails order={order} isOpen={isOrderDetailsOpen} setIsOpen={setIsOrderDetailsOpen} />
 
         {/* Main Content */}
         <div className="flex-1">
-          <div className="mx-auto max-w-7xl space-y-4 md:space-y-6 px-4">
+          <div className="mx-auto max-w-7xl space-y-4 px-4 md:space-y-6">
             {/* Mobile Header with Order Details Sheet */}
             <div className="flex items-center justify-between md:hidden">
               <h1 className="text-xl font-bold">Select Courier</h1>
@@ -189,15 +160,8 @@ export default function ShipOrderPage() {
                   <div className="mt-6 space-y-4 px-6">
                     {/* Order ID */}
                     <div className="rounded-lg p-3">
-                      <div className="text-sm font-medium text-blue-600 dark:text-white">
-                        Order ID
-                      </div>
-                      <CopyBtn
-                        text={order.order_number}
-                        label={order.order_number}
-                        labelClassName="text-blue-900 dark:text-white"
-                        className="font-semibold"
-                      />
+                      <div className="text-sm font-medium text-blue-600 dark:text-white">Order ID</div>
+                      <CopyBtn text={order.order_number} label={order.order_number} labelClassName="text-blue-900 dark:text-white" className="font-semibold" />
                     </div>
 
                     {/* Locations */}
@@ -228,9 +192,7 @@ export default function ShipOrderPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <div className="text-muted-foreground text-sm">Order Value</div>
-                        <div className="font-semibold text-green-600">
-                          {currencyFormatter(order.total_amount)}
-                        </div>
+                        <div className="font-semibold text-green-600">{currencyFormatter(order.total_amount)}</div>
                       </div>
                       <div>
                         <div className="text-muted-foreground text-sm">Weight</div>
@@ -238,9 +200,7 @@ export default function ShipOrderPage() {
                       </div>
                       <div>
                         <div className="text-muted-foreground text-sm">Payment</div>
-                                    <Badge variant={order.payment_method === 'COD' ? 'destructive' : 'default'}>
-              {order.payment_method}
-                        </Badge>
+                        <Badge variant={order.payment_method === 'COD' ? 'destructive' : 'default'}>{order.payment_method}</Badge>
                       </div>
                       <div>
                         <div className="text-muted-foreground text-sm">Customer</div>
@@ -255,9 +215,7 @@ export default function ShipOrderPage() {
             {/* Desktop Header */}
             <div className="hidden items-center justify-between md:flex">
               <h1 className="text-2xl font-bold">Select Courier Partner</h1>
-              <p className="text-muted-foreground">
-                Choose the best shipping option for your order
-              </p>
+              <p className="text-muted-foreground">Choose the best shipping option for your order</p>
             </div>
 
             {/* Mobile Order Summary */}
@@ -269,12 +227,7 @@ export default function ShipOrderPage() {
               <div className="flex flex-col gap-3">
                 <div className="relative">
                   <Search className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform" />
-                  <Input
-                    placeholder="Search courier partners..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
+                  <Input placeholder="Search courier partners..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
                 </div>
                 <div className="flex gap-2 overflow-x-auto pb-2">
                   <Select value={priceFilter} onValueChange={setPriceFilter}>
@@ -347,13 +300,9 @@ export default function ShipOrderPage() {
                 className="h-4 w-4 border-blue-600 dark:border-white"
                 id="auto-scheduled-pickup"
                 checked={autoScheduledPickup}
-                onCheckedChange={(checked) =>
-                  setAutoScheduledPickup(checked === 'indeterminate' ? false : checked)
-                }
+                onCheckedChange={(checked) => setAutoScheduledPickup(checked === 'indeterminate' ? false : checked)}
               />
-              <span className="font-medium text-blue-700 dark:text-white">
-                Auto-Scheduled Pickup
-              </span>
+              <span className="font-medium text-blue-700 dark:text-white">Auto-Scheduled Pickup</span>
               <span className="text-blue-600 dark:text-white">Tomorrow, 10:00 AM - 6:00 PM</span>
             </div>
 
@@ -363,9 +312,7 @@ export default function ShipOrderPage() {
                 {filteredRates.length} courier{filteredRates.length !== 1 ? 's' : ''} found
               </div>
               {filteredRates.length > 0 && (
-                <div className="text-muted-foreground">
-                  Best: {currencyFormatter(Math.min(...filteredRates.map((r) => r.total_price)))}
-                </div>
+                <div className="text-muted-foreground">Best: {currencyFormatter(Math.min(...filteredRates.map((r) => r.total_price)))}</div>
               )}
             </div>
 
@@ -381,10 +328,7 @@ export default function ShipOrderPage() {
                         <th className="p-4 text-left text-sm font-medium">Estimated Pickup</th>
                         <th className="p-4 text-left text-sm font-medium">Estimated Delivery</th>
                         <th className="p-4 text-left text-sm font-medium">
-                          <ActionTooltip
-                            label="Chargeable weight used for pricing"
-                            className="h-auto p-0"
-                          >
+                          <ActionTooltip label="Chargeable weight used for pricing" className="h-auto p-0">
                             <div className="flex items-center gap-1">
                               Weight
                               <Info className="h-3 w-3" />
@@ -393,10 +337,7 @@ export default function ShipOrderPage() {
                         </th>
                         <th className="p-4 text-left text-sm font-medium">Zone</th>
                         <th className="p-4 text-left text-sm font-medium">
-                          <ActionTooltip
-                            label="Total shipping charges including all fees"
-                            className="h-auto p-0"
-                          >
+                          <ActionTooltip label="Total shipping charges including all fees" className="h-auto p-0">
                             <div className="flex items-center gap-1">
                               Charges
                               <Info className="h-3 w-3" />
@@ -408,10 +349,7 @@ export default function ShipOrderPage() {
                     </thead>
                     <tbody>
                       {filteredRates.map((rate, index) => (
-                        <tr
-                          key={rate.id}
-                          className="border-b transition-colors hover:bg-gray-50 dark:hover:bg-transparent"
-                        >
+                        <tr key={rate.id} className="border-b transition-colors hover:bg-gray-50 dark:hover:bg-transparent">
                           <td className="p-4">
                             <div className="flex items-center gap-3">
                               <CourierLogo courierName={rate.name} />
@@ -422,9 +360,7 @@ export default function ShipOrderPage() {
                                 <div className="text-muted-foreground text-sm">
                                   {rate.type} • Min: {rate.breakdown.min_weight} Kg
                                 </div>
-                                <div className="text-muted-foreground text-xs">
-                                  RTO: {currencyFormatter(rate.rto_charges)}
-                                </div>
+                                <div className="text-muted-foreground text-xs">RTO: {currencyFormatter(rate.rto_charges)}</div>
                               </div>
                             </div>
                           </td>
@@ -449,9 +385,7 @@ export default function ShipOrderPage() {
                                 <Calendar className="text-muted-foreground h-4 w-4" />
                                 <span className="text-sm">{rate.etd}</span>
                               </div>
-                              <div className="text-muted-foreground text-xs">
-                                {rate.estimated_delivery_days} days
-                              </div>
+                              <div className="text-muted-foreground text-xs">{rate.estimated_delivery_days} days</div>
                             </div>
                           </td>
                           <td className="p-4">
@@ -462,17 +396,11 @@ export default function ShipOrderPage() {
                           </td>
                           <td className="p-4">
                             <div className="text-right">
-                              <div className="text-lg font-bold text-green-600">
-                                {currencyFormatter(rate.total_price)}
-                              </div>
+                              <div className="text-lg font-bold text-green-600">{currencyFormatter(rate.total_price)}</div>
                               <HoverCardToolTip
                                 className="w-64"
                                 triggerComponent={
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-muted-foreground h-auto p-0 text-xs"
-                                  >
+                                  <Button variant="ghost" size="sm" className="text-muted-foreground h-auto p-0 text-xs">
                                     View breakdown
                                   </Button>
                                 }
@@ -500,10 +428,7 @@ export default function ShipOrderPage() {
                             </div>
                           </td>
                           <td className="p-4">
-                            <Button
-                              onClick={() => handleShipOrder(rate.id, rate.name)}
-                              disabled={isCreatingShipment}
-                            >
+                            <Button onClick={() => handleShipOrder(rate.id, rate.name)} disabled={isCreatingShipment}>
                               {isCreatingShipment ? 'Shipping...' : 'Ship Now'}
                             </Button>
                           </td>
@@ -531,9 +456,7 @@ export default function ShipOrderPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-lg font-bold text-green-600">
-                          {currencyFormatter(rate.total_price)}
-                        </div>
+                        <div className="text-lg font-bold text-green-600">{currencyFormatter(rate.total_price)}</div>
                         <RatingBadgeStart rating={rate.rating} />
                       </div>
                     </div>
@@ -551,9 +474,7 @@ export default function ShipOrderPage() {
                         <Weight className="text-muted-foreground h-3 w-3" />
                         <span>Weight: {rate.final_weight} Kg</span>
                       </div>
-                      <div className="text-muted-foreground">
-                        RTO: {currencyFormatter(rate.rto_charges)}
-                      </div>
+                      <div className="text-muted-foreground">RTO: {currencyFormatter(rate.rto_charges)}</div>
                     </div>
 
                     <Button
@@ -581,9 +502,7 @@ export default function ShipOrderPage() {
               <div className="py-12 text-center">
                 <Package className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
                 <h3 className="mb-2 text-lg font-medium">No couriers found</h3>
-                <p className="text-muted-foreground">
-                  Try adjusting your filters or search criteria
-                </p>
+                <p className="text-muted-foreground">Try adjusting your filters or search criteria</p>
               </div>
             )}
           </div>

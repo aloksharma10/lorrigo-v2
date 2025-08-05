@@ -150,14 +150,7 @@ async function processBulkOrders(
   duration: number;
 }> {
   const startTime = Date.now();
-  const {
-    operationId,
-    userId,
-    userName,
-    csvContent: csvInput,
-    headerMapping,
-    filePath,
-  } = job.data as any;
+  const { operationId, userId, userName, csvContent: csvInput, headerMapping, filePath } = job.data as any;
 
   try {
     // Load CSV content if only filePath is provided
@@ -250,18 +243,14 @@ async function processBulkOrders(
         await fs.unlink(filePath);
         fastify.log.info(`Deleted temporary CSV file: ${filePath}`);
       } catch (deleteErr) {
-        fastify.log.warn(
-          `Failed to delete temporary CSV file ${filePath}: ${deleteErr instanceof Error ? deleteErr.message : deleteErr}`
-        );
+        fastify.log.warn(`Failed to delete temporary CSV file ${filePath}: ${deleteErr instanceof Error ? deleteErr.message : deleteErr}`);
       }
     }
 
     const endTime = Date.now();
     const duration = (endTime - startTime) / 1000;
 
-    job.log(
-      `Bulk order upload completed: ${successCount} successful, ${failedCount} failed in ${duration}s`
-    );
+    job.log(`Bulk order upload completed: ${successCount} successful, ${failedCount} failed in ${duration}s`);
 
     return {
       operationId,
@@ -272,9 +261,7 @@ async function processBulkOrders(
       duration,
     };
   } catch (error) {
-    job.log(
-      `Bulk order upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-    );
+    job.log(`Bulk order upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
 
     // Update operation status to failed
     await fastify.prisma.bulkOperation.update({
@@ -291,12 +278,7 @@ async function processBulkOrders(
 }
 
 // Chunk processing function
-async function processOrderChunk(
-  orders: OrderFormValues[],
-  userId: string,
-  userName: string,
-  orderService: OrderService
-): Promise<BulkOrderResult[]> {
+async function processOrderChunk(orders: OrderFormValues[], userId: string, userName: string, orderService: OrderService): Promise<BulkOrderResult[]> {
   const limit = pLimit(50);
   const results: BulkOrderResult[] = [];
 
@@ -427,13 +409,7 @@ async function generateCsvReport(results: BulkOrderResult[], operationId: string
     const csvRows = [headers.join(',')];
 
     results.forEach((result) => {
-      const row = [
-        result.orderId,
-        result.success ? 'SUCCESS' : 'FAILED',
-        result.message,
-        result.error || '',
-        result.timestamp.toISOString(),
-      ];
+      const row = [result.orderId, result.success ? 'SUCCESS' : 'FAILED', result.message, result.error || '', result.timestamp.toISOString()];
       csvRows.push(row.map((field) => `"${field}"`).join(','));
     });
 
@@ -450,10 +426,7 @@ async function generateCsvReport(results: BulkOrderResult[], operationId: string
 /**
  * Validate orders before processing
  */
-async function validateOrders(
-  job: Job<BulkOrderJobData>,
-  fastify: FastifyInstance
-): Promise<{ valid: boolean; errors: string[] }> {
+async function validateOrders(job: Job<BulkOrderJobData>, fastify: FastifyInstance): Promise<{ valid: boolean; errors: string[] }> {
   const { orders } = job.data;
   const errors: string[] = [];
 
@@ -495,11 +468,7 @@ async function validateOrders(
 /**
  * Create a batch of orders using bulk insert
  */
-async function createOrdersBatch(
-  job: Job<BulkOrderJobData>,
-  fastify: FastifyInstance,
-  orderService: OrderService
-): Promise<BulkOrderResult[]> {
+async function createOrdersBatch(job: Job<BulkOrderJobData>, fastify: FastifyInstance, orderService: OrderService): Promise<BulkOrderResult[]> {
   const { orders, userId, userName } = job.data;
 
   // This is a placeholder for future implementation of true bulk insert
@@ -516,7 +485,6 @@ async function parseCsvContent(csvText: string): Promise<any[]> {
 
   return jsonArray;
 }
-
 
 function transformCsvToOrders(csvData: any[], mapping: Record<string, string>): OrderFormValues[] {
   return csvData.map((row, index) => {
@@ -595,9 +563,7 @@ function transformCsvToOrders(csvData: any[], mapping: Record<string, string>): 
 
       return order;
     } catch (error) {
-      throw new Error(
-        `Error processing row ${index + 1}: ${error instanceof Error ? error.message : 'Invalid data'}`
-      );
+      throw new Error(`Error processing row ${index + 1}: ${error instanceof Error ? error.message : 'Invalid data'}`);
     }
   });
 }
@@ -605,14 +571,7 @@ function transformCsvToOrders(csvData: any[], mapping: Record<string, string>): 
 function parseInvoiceDate(dateStr: string): string {
   if (!dateStr) return '';
 
-  const formats = [
-    'dd-MM-yyyy',
-    'dd/MM/yyyy',
-    'MM-dd-yyyy',
-    'MM/dd/yyyy',
-    'yyyy-MM-dd',
-    'yyyy/MM/dd',
-  ];
+  const formats = ['dd-MM-yyyy', 'dd/MM/yyyy', 'MM-dd-yyyy', 'MM/dd/yyyy', 'yyyy-MM-dd', 'yyyy/MM/dd'];
 
   for (const fmt of formats) {
     const parsed = parseDateFns(dateStr, fmt, new Date());
@@ -640,8 +599,7 @@ function chunkArray(array: any[], chunkSize: number): any[][] {
 }
 
 function sanitizeNumber(value: unknown, defaultValue: number = 0): number {
-  const num =
-    typeof value === 'string' ? parseFloat(value.replace(/[^0-9.\-]/g, '')) : Number(value);
+  const num = typeof value === 'string' ? parseFloat(value.replace(/[^0-9.\-]/g, '')) : Number(value);
   if (!isFinite(num) || isNaN(num)) return defaultValue;
   return num;
 }

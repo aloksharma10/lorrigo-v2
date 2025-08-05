@@ -24,24 +24,12 @@ interface PasskeySetupProviderProps {
 }
 
 export function PasskeySetupProvider({ children }: PasskeySetupProviderProps) {
-  const {
-    showModal,
-    hasConfigured,
-    handleClose,
-    handleSkip,
-    handleConfigure,
-    resetSkipPreference,
-  } = usePasskeySetup();
+  const { showModal, hasConfigured, handleClose, handleSkip, handleConfigure, resetSkipPreference } = usePasskeySetup();
 
   return (
     <PasskeySetupContext.Provider value={{ resetSkipPreference, hasConfigured }}>
       {children}
-      <PasskeySetupModal
-        isOpen={showModal}
-        onClose={handleClose}
-        onSkip={handleSkip}
-        onConfigure={handleConfigure}
-      />
+      <PasskeySetupModal isOpen={showModal} onClose={handleClose} onSkip={handleSkip} onConfigure={handleConfigure} />
     </PasskeySetupContext.Provider>
   );
-} 
+}

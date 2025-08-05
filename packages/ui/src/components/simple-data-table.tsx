@@ -26,16 +26,7 @@ interface SimpleDataTableProps<T> {
   onExternalLinkClick?: () => void;
 }
 
-export function SimpleDataTable<T>({
-  title,
-  description,
-  badge,
-  helpText,
-  columns,
-  data,
-  isLoading = false,
-  onExternalLinkClick,
-}: SimpleDataTableProps<T>) {
+export function SimpleDataTable<T>({ title, description, badge, helpText, columns, data, isLoading = false, onExternalLinkClick }: SimpleDataTableProps<T>) {
   if (isLoading) {
     return (
       <Card>
@@ -90,9 +81,7 @@ export function SimpleDataTable<T>({
                 <TableRow key={i}>
                   {columns.map((column) => (
                     <TableCell key={String(column.accessorKey)}>
-                      {column.cell
-                        ? column.cell(row[column.accessorKey], row)
-                        : String(row[column.accessorKey])}
+                      {column.cell ? column.cell(row[column.accessorKey], row) : String(row[column.accessorKey])}
                     </TableCell>
                   ))}
                 </TableRow>

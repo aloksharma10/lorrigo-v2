@@ -8,13 +8,7 @@ interface TableSkeletonProps {
   rowClassName?: string;
 }
 
-export function TableSkeleton({
-  rows = 5,
-  columns = 6,
-  showHeader = true,
-  cellHeight = 16,
-  rowClassName = '',
-}: TableSkeletonProps) {
+export function TableSkeleton({ rows = 5, columns = 6, showHeader = true, cellHeight = 16, rowClassName = '' }: TableSkeletonProps) {
   // Generate column widths that add up to 12 grid columns
   const generateColumnSpans = (numColumns: number) => {
     const baseSpan = Math.floor(12 / numColumns);
@@ -31,33 +25,18 @@ export function TableSkeleton({
       {showHeader && (
         <div className="border-border grid grid-cols-12 gap-4 border-b pb-2">
           {columnSpans.map((span, i) => (
-            <Skeleton
-              key={`header-${i}`}
-              className={`col-span-${span} h-${cellHeight / 4} w-full`}
-            />
+            <Skeleton key={`header-${i}`} className={`col-span-${span} h-${cellHeight / 4} w-full`} />
           ))}
         </div>
       )}
 
       {/* Table rows */}
       {Array.from({ length: rows }).map((_, rowIndex) => (
-        <div
-          key={`row-${rowIndex}`}
-          className={`border-border grid grid-cols-12 gap-4 border-b py-4 ${rowClassName}`}
-        >
+        <div key={`row-${rowIndex}`} className={`border-border grid grid-cols-12 gap-4 border-b py-4 ${rowClassName}`}>
           {columnSpans.map((span, colIndex) => (
-            <div
-              key={`cell-${rowIndex}-${colIndex}`}
-              className={`col-span-${span} flex flex-col gap-2`}
-            >
-              <Skeleton
-                className={`h-${cellHeight / 4} w-${Math.floor(Math.random() * 40) + 20}`}
-              />
-              {Math.random() > 0.5 && (
-                <Skeleton
-                  className={`h-${cellHeight / 4} w-${Math.floor(Math.random() * 30) + 20}`}
-                />
-              )}
+            <div key={`cell-${rowIndex}-${colIndex}`} className={`col-span-${span} flex flex-col gap-2`}>
+              <Skeleton className={`h-${cellHeight / 4} w-${Math.floor(Math.random() * 40) + 20}`} />
+              {Math.random() > 0.5 && <Skeleton className={`h-${cellHeight / 4} w-${Math.floor(Math.random() * 30) + 20}`} />}
             </div>
           ))}
         </div>

@@ -2,14 +2,7 @@
 
 import type { Table } from '@tanstack/react-table';
 import { Button } from '../button';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '../dropdown-menu';
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../dropdown-menu';
 import { Loader2, Columns } from 'lucide-react';
 
 interface DataTableViewOptionsProps<TData> {
@@ -17,10 +10,7 @@ interface DataTableViewOptionsProps<TData> {
   disabled?: boolean;
 }
 
-export function DataTableViewOptions<TData>({
-  table,
-  disabled = false,
-}: DataTableViewOptionsProps<TData>) {
+export function DataTableViewOptions<TData>({ table, disabled = false }: DataTableViewOptionsProps<TData>) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>

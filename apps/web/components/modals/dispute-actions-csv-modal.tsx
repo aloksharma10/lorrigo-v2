@@ -2,16 +2,7 @@
 
 import React, { useState } from 'react';
 import { Upload, FileText, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import {
-  Button,
-  Modal,
-  Alert,
-  AlertDescription,
-  AlertTitle,
-  Progress,
-  Input,
-  Label,
-} from '@lorrigo/ui/components';
+import { Button, Modal, Alert, AlertDescription, AlertTitle, Progress, Input, Label } from '@lorrigo/ui/components';
 import { useBillingOperations } from '@/lib/apis/billing';
 import { useCSVUpload } from '../providers/csv-upload-provider';
 import { CSVUploadModal, type CSVField } from './csv-upload-modal';
@@ -98,13 +89,11 @@ export function DisputeActionsCSVModal({ modalId, onClose }: DisputeActionsCSVMo
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6 p-6">
       <div className="flex items-center justify-between border-b pb-4">
         <div>
           <h2 className="text-xl font-semibold">Upload Dispute Actions CSV</h2>
-          <p className="text-muted-foreground text-sm">
-            Bulk process weight dispute actions with a CSV file
-          </p>
+          <p className="text-muted-foreground text-sm">Bulk process weight dispute actions with a CSV file</p>
         </div>
       </div>
 
@@ -117,9 +106,9 @@ export function DisputeActionsCSVModal({ modalId, onClose }: DisputeActionsCSVMo
       )}
 
       <div className="space-y-4">
-        <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+        <div className="bg-muted/50 space-y-2 rounded-lg p-4">
           <h3 className="font-medium">CSV Format Requirements</h3>
-          <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
+          <ul className="text-muted-foreground list-disc space-y-1 pl-5 text-sm">
             <li>File must be in CSV format</li>
             <li>Required columns: AWB Number, Action (ACCEPT, REJECT, or RAISE)</li>
             <li>Optional columns: Final Weight (kg), Comment</li>
@@ -140,4 +129,4 @@ export function DisputeActionsCSVModal({ modalId, onClose }: DisputeActionsCSVMo
       </div>
     </div>
   );
-} 
+}

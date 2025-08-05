@@ -143,16 +143,7 @@ export const MetroCities = [
   'Pimpri-Chinchwad',
 ];
 
-export const NorthEastStates = [
-  'Arunachal Pradesh',
-  'Assam',
-  'Manipur',
-  'Meghalaya',
-  'Mizoram',
-  'Nagaland',
-  'Sikkim',
-  'Tripura',
-];
+export const NorthEastStates = ['Arunachal Pradesh', 'Assam', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Sikkim', 'Tripura'];
 
 export const ZoneNames = {
   Z_A: 'Zone A',
@@ -221,14 +212,8 @@ export function validateCourierData(courier: CourierInfo, pricing: CourierPricin
 /**
  * Calculate volumetric weight based on dimensions
  */
-export function calculateVolumetricWeight(
-  length: number,
-  width: number,
-  height: number,
-  sizeUnit: 'cm' | 'inch' = 'cm'
-): number {
-  const volume =
-    sizeUnit === 'cm' ? (length * width * height) / 5000 : (length * width * height) / 5;
+export function calculateVolumetricWeight(length: number, width: number, height: number, sizeUnit: 'cm' | 'inch' = 'cm'): number {
+  const volume = sizeUnit === 'cm' ? (length * width * height) / 5000 : (length * width * height) / 5;
 
   return Math.round(volume * 100) / 100; // Round to 2 decimal places
 }
@@ -263,10 +248,7 @@ export function getOrderZoneFromCourierZone(courierZone: string): ZoneLabel {
 /**
  * Determine shipping zone based on pickup and delivery locations
  */
-export function determineZone(
-  pickupDetails: PincodeDetails,
-  deliveryDetails: PincodeDetails
-): { zone: ZonePricing['zone']; zoneName: string } {
+export function determineZone(pickupDetails: PincodeDetails, deliveryDetails: PincodeDetails): { zone: ZonePricing['zone']; zoneName: string } {
   // Same city
   if (pickupDetails.city === deliveryDetails.city) {
     return { zone: 'Z_A', zoneName: ZoneNames.Z_A };
@@ -283,10 +265,7 @@ export function determineZone(
   }
 
   // North East states
-  if (
-    NorthEastStates.includes(pickupDetails.state) ||
-    NorthEastStates.includes(deliveryDetails.state)
-  ) {
+  if (NorthEastStates.includes(pickupDetails.state) || NorthEastStates.includes(deliveryDetails.state)) {
     return { zone: 'Z_E', zoneName: ZoneNames.Z_E };
   }
 
@@ -341,11 +320,7 @@ export function calculateCODCharges(
 /**
  * Calculate weight increment ratio
  */
-export function calculateWeightIncrementRatio(
-  orderWeight: number,
-  minWeight: number,
-  incrementWeight: number
-): number {
+export function calculateWeightIncrementRatio(orderWeight: number, minWeight: number, incrementWeight: number): number {
   if (orderWeight <= minWeight) return 0;
   return Math.ceil((orderWeight - minWeight) / incrementWeight);
 }
@@ -432,12 +407,7 @@ export function calculatePrice(
 
     // Weight calculations
     const actualWeight = normalizeWeight(params.weight, params.weightUnit);
-    const volumetricWeight = calculateVolumetricWeight(
-      params.boxLength,
-      params.boxWidth,
-      params.boxHeight,
-      params.sizeUnit
-    );
+    const volumetricWeight = calculateVolumetricWeight(params.boxLength, params.boxWidth, params.boxHeight, params.sizeUnit);
     const finalWeight = Math.max(volumetricWeight, actualWeight, courier.weight_slab);
 
     // Determine zone and get zone pricing
@@ -452,11 +422,7 @@ export function calculatePrice(
 
     // Calculate weight increment ratio
     const incrementWeight = courierPricing.increment_weight || 0.5;
-    const weightIncrementRatio = calculateWeightIncrementRatio(
-      chargeableWeight,
-      minWeight,
-      incrementWeight
-    );
+    const weightIncrementRatio = calculateWeightIncrementRatio(chargeableWeight, minWeight, incrementWeight);
 
     // Calculate base charges
     const basePrice = zonePricing.base_price || 0;
@@ -476,13 +442,7 @@ export function calculatePrice(
     const fw_charge = courierPricing.is_fw_applicable ? basePrice + weightCharges : 0;
 
     // Calculate RTO charges
-    const rtoCharges = calculateRTOCharges(
-      courierPricing.is_rto_applicable,
-      zonePricing,
-      baseTotal,
-      codCharges,
-      weightIncrementRatio
-    );
+    const rtoCharges = calculateRTOCharges(courierPricing.is_rto_applicable, zonePricing, baseTotal, codCharges, weightIncrementRatio);
 
     // Calculate final total price
     const totalPrice = courierPricing.is_fw_applicable ? baseTotal : 0;
@@ -530,7 +490,7 @@ export function calculatePricesForCouriers(
   const results: PriceCalculationResult[] = [];
 
   for (const { courier, pricing } of couriers) {
-    const result = (calculatePrice(params, courier, pricing, pickupDetails, deliveryDetails));
+    const result = calculatePrice(params, courier, pricing, pickupDetails, deliveryDetails);
     if (result) {
       results.push(result);
     }
@@ -546,36 +506,25 @@ export function calculatePricesForCouriers(
 /**
  * Get the cheapest courier option
  */
-export function getCheapestOption(
-  results: PriceCalculationResult[]
-): PriceCalculationResult | null {
+export function getCheapestOption(results: PriceCalculationResult[]): PriceCalculationResult | null {
   if (results.length === 0) return null;
 
-  return results.reduce((cheapest, current) =>
-    current.total_price < cheapest.total_price ? current : cheapest
-  );
+  return results.reduce((cheapest, current) => (current.total_price < cheapest.total_price ? current : cheapest));
 }
 
 /**
  * Get the most expensive courier option
  */
-export function getMostExpensiveOption(
-  results: PriceCalculationResult[]
-): PriceCalculationResult | null {
+export function getMostExpensiveOption(results: PriceCalculationResult[]): PriceCalculationResult | null {
   if (results.length === 0) return null;
 
-  return results.reduce((expensive, current) =>
-    current.total_price > expensive.total_price ? current : expensive
-  );
+  return results.reduce((expensive, current) => (current.total_price > expensive.total_price ? current : expensive));
 }
 
 /**
  * Filter results by specific criteria
  */
-export function filterResults(
-  results: PriceCalculationResult[],
-  filters: PriceFilters
-): PriceCalculationResult[] {
+export function filterResults(results: PriceCalculationResult[], filters: PriceFilters): PriceCalculationResult[] {
   return results.filter((result) => {
     // Price range filters
     if (filters.maxPrice !== undefined && result.total_price > filters.maxPrice) return false;
@@ -585,25 +534,16 @@ export function filterResults(
     if (filters.courierType && result.courier.type !== filters.courierType) return false;
 
     // COD support filter
-    if (
-      filters.codSupported !== undefined &&
-      result.pricing.is_cod_applicable !== filters.codSupported
-    )
-      return false;
+    if (filters.codSupported !== undefined && result.pricing.is_cod_applicable !== filters.codSupported) return false;
 
     // RTO support filter
-    if (
-      filters.rtoSupported !== undefined &&
-      result.pricing.is_rto_applicable !== filters.rtoSupported
-    )
-      return false;
+    if (filters.rtoSupported !== undefined && result.pricing.is_rto_applicable !== filters.rtoSupported) return false;
 
     // Zone filter
     if (filters.zone && result.zone !== filters.zone) return false;
 
     // Exclude specific courier IDs
-    if (filters.excludeCourierIds && filters.excludeCourierIds.includes(result.courier.id))
-      return false;
+    if (filters.excludeCourierIds && filters.excludeCourierIds.includes(result.courier.id)) return false;
 
     return true;
   });
@@ -612,13 +552,8 @@ export function filterResults(
 /**
  * Sort results by price (ascending or descending)
  */
-export function sortByPrice(
-  results: PriceCalculationResult[],
-  order: 'asc' | 'desc' = 'asc'
-): PriceCalculationResult[] {
-  return [...results].sort((a, b) =>
-    order === 'asc' ? a.total_price - b.total_price : b.total_price - a.total_price
-  );
+export function sortByPrice(results: PriceCalculationResult[], order: 'asc' | 'desc' = 'asc'): PriceCalculationResult[] {
+  return [...results].sort((a, b) => (order === 'asc' ? a.total_price - b.total_price : b.total_price - a.total_price));
 }
 
 /**
@@ -635,9 +570,7 @@ export function sortByPickupTime(results: PriceCalculationResult[]): PriceCalcul
 /**
  * Group results by zone
  */
-export function groupByZone(
-  results: PriceCalculationResult[]
-): Record<string, PriceCalculationResult[]> {
+export function groupByZone(results: PriceCalculationResult[]): Record<string, PriceCalculationResult[]> {
   return results.reduce(
     (groups, result) => {
       const zone = result.zoneName;
@@ -683,38 +616,28 @@ export function getPriceSummary(results: PriceCalculationResult[]): PriceSummary
 /**
  * Find couriers with COD support
  */
-export function getCODSupportedCouriers(
-  results: PriceCalculationResult[]
-): PriceCalculationResult[] {
+export function getCODSupportedCouriers(results: PriceCalculationResult[]): PriceCalculationResult[] {
   return filterResults(results, { codSupported: true });
 }
 
 /**
  * Find couriers with RTO support
  */
-export function getRTOSupportedCouriers(
-  results: PriceCalculationResult[]
-): PriceCalculationResult[] {
+export function getRTOSupportedCouriers(results: PriceCalculationResult[]): PriceCalculationResult[] {
   return filterResults(results, { rtoSupported: true });
 }
 
 /**
  * Get couriers within a specific price range
  */
-export function getCouriersInPriceRange(
-  results: PriceCalculationResult[],
-  minPrice: number,
-  maxPrice: number
-): PriceCalculationResult[] {
+export function getCouriersInPriceRange(results: PriceCalculationResult[], minPrice: number, maxPrice: number): PriceCalculationResult[] {
   return filterResults(results, { minPrice, maxPrice });
 }
 
 /**
  * Sort results by recommended couriers first, then by price (ascending)
  */
-export function sortByRecommendedAndPrice(
-  results: PriceCalculationResult[]
-): PriceCalculationResult[] {
+export function sortByRecommendedAndPrice(results: PriceCalculationResult[]): PriceCalculationResult[] {
   return [...results].sort((a, b) => {
     if (a.courier.recommended === b.courier.recommended) {
       return a.total_price - b.total_price;

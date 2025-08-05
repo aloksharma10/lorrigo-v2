@@ -31,11 +31,11 @@ export default function ShopifyCallback() {
         const timestamp = searchParams.get('timestamp');
         const host = searchParams.get('host');
 
-        console.log('Shopify callback received:', { 
-          shop, 
-          code: code ? 'present' : 'missing', 
+        console.log('Shopify callback received:', {
+          shop,
+          code: code ? 'present' : 'missing',
           state: state ? 'present' : 'missing',
-          host 
+          host,
         });
 
         // If we have shop but no code, this means we need to redirect to OAuth
@@ -56,7 +56,7 @@ export default function ShopifyCallback() {
         // If we have code, state, and shop, handle the OAuth callback
         if (code && state && shop) {
           console.log('Processing OAuth callback with:', { code: code.substring(0, 10) + '...', state, shop });
-          
+
           // Handle Shopify OAuth callback
           const result = await handleShopifyCallback(code, state, shop);
           console.log('OAuth callback result:', { user: result.user.email, hasToken: !!result.token });
@@ -84,7 +84,7 @@ export default function ShopifyCallback() {
           // For non-embedded apps, redirect to the app's dashboard
           const redirectUrl = getRoleBasedRedirect(result.user.role as Role);
           console.log('Redirecting to app dashboard:', redirectUrl);
-          
+
           // Add a small delay to ensure session is created
           setTimeout(() => {
             router.push(redirectUrl);
@@ -110,12 +110,10 @@ export default function ShopifyCallback() {
       <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
         <div className="mx-auto max-w-md text-center">
           <div className="mb-4">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto" />
+            <Loader2 className="mx-auto h-8 w-8 animate-spin text-blue-600" />
           </div>
-          <h1 className="text-xl font-semibold mb-2">Connecting to Shopify...</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Please wait while we complete your authentication.
-          </p>
+          <h1 className="mb-2 text-xl font-semibold">Connecting to Shopify...</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Please wait while we complete your authentication.</p>
         </div>
       </div>
     );
@@ -149,4 +147,4 @@ export default function ShopifyCallback() {
   // }
 
   return null;
-} 
+}

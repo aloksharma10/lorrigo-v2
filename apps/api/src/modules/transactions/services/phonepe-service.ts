@@ -34,12 +34,7 @@ export class PhonePeService {
    * @param redirectUrl URL to redirect after payment
    * @returns Payment link and details
    */
-  async generatePaymentLink(
-    amount: number,
-    merchantTransactionId: string,
-    userId: string,
-    redirectUrl: string
-  ) {
+  async generatePaymentLink(amount: number, merchantTransactionId: string, userId: string, redirectUrl: string) {
     try {
       // Prepare payload
       const payload = {
@@ -83,9 +78,7 @@ export class PhonePeService {
           merchantTransactionId,
         };
       } else {
-        this.fastify.log.error(
-          `PhonePe payment link generation failed: ${JSON.stringify(response.data)}`
-        );
+        this.fastify.log.error(`PhonePe payment link generation failed: ${JSON.stringify(response.data)}`);
         return {
           success: false,
           error: response.data.message || 'Failed to generate payment link',
@@ -108,10 +101,7 @@ export class PhonePeService {
   async checkPaymentStatus(merchantTransactionId: string) {
     try {
       // Generate checksum for status check
-      const checksum = this.generateChecksum(
-        '',
-        `/pg/v1/status/${this.merchantId}/${merchantTransactionId}`
-      );
+      const checksum = this.generateChecksum('', `/pg/v1/status/${this.merchantId}/${merchantTransactionId}`);
 
       // Prepare request headers
       const headers = {
@@ -121,10 +111,7 @@ export class PhonePeService {
       };
 
       // Make API call to PhonePe
-      const response = await axios.get(
-        `${this.apiBaseUrl}/pg/v1/status/${this.merchantId}/${merchantTransactionId}`,
-        { headers }
-      );
+      const response = await axios.get(`${this.apiBaseUrl}/pg/v1/status/${this.merchantId}/${merchantTransactionId}`, { headers });
 
       // Check response
       if (response.data.success) {
@@ -138,9 +125,7 @@ export class PhonePeService {
           data: response.data.data,
         };
       } else {
-        this.fastify.log.error(
-          `PhonePe payment status check failed: ${JSON.stringify(response.data)}`
-        );
+        this.fastify.log.error(`PhonePe payment status check failed: ${JSON.stringify(response.data)}`);
         return {
           success: false,
           error: response.data.message || 'Failed to check payment status',

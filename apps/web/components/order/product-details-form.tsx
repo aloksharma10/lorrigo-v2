@@ -149,10 +149,7 @@ function ProductRow({ index, control, watch, remove, productsLength }: ProductRo
       {/* Header Row with Product Name and Delete Button */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Label
-            htmlFor={`productDetails.products.${index}.name`}
-            className="text-sm font-medium text-indigo-600"
-          >
+          <Label htmlFor={`productDetails.products.${index}.name`} className="text-sm font-medium text-indigo-600">
             Product Name
           </Label>
         </div>
@@ -200,11 +197,7 @@ function ProductRow({ index, control, watch, remove, productsLength }: ProductRo
             ) : productOptions.length > 0 ? (
               <ul className="max-h-60 overflow-y-auto py-1">
                 {productOptions.map((option) => (
-                  <li
-                    key={option.id}
-                    className="hover:bg-muted cursor-pointer px-4 py-2"
-                    onClick={() => handleProductSelect(option)}
-                  >
+                  <li key={option.id} className="hover:bg-muted cursor-pointer px-4 py-2" onClick={() => handleProductSelect(option)}>
                     <div className="flex items-center justify-between text-sm font-medium">
                       {option.name}{' '}
                       <Badge variant="outline" className="text-muted-foreground ml-2 text-xs">
@@ -217,9 +210,7 @@ function ProductRow({ index, control, watch, remove, productsLength }: ProductRo
             ) : searchQuery.length >= 2 ? (
               <div className="text-muted-foreground p-4 text-center text-sm">No products found</div>
             ) : (
-              <div className="text-muted-foreground p-4 text-center text-sm">
-                Type at least 2 characters to search
-              </div>
+              <div className="text-muted-foreground p-4 text-center text-sm">Type at least 2 characters to search</div>
             )}
           </div>
         )}
@@ -236,9 +227,7 @@ function ProductRow({ index, control, watch, remove, productsLength }: ProductRo
               <FormItem>
                 <FormLabel className="text-sm font-medium">Unit Price</FormLabel>
                 <div className="flex items-center">
-                  <span className="bg-muted text-muted-foreground flex h-9 w-10 items-center justify-center rounded-l-md border border-r-0 text-sm">
-                    ₹
-                  </span>
+                  <span className="bg-muted text-muted-foreground flex h-9 w-10 items-center justify-center rounded-l-md border border-r-0 text-sm">₹</span>
                   <FormControl>
                     <Input
                       id={`productDetails.products.${index}.price`}
@@ -267,13 +256,7 @@ function ProductRow({ index, control, watch, remove, productsLength }: ProductRo
               <FormItem>
                 <FormLabel className="text-sm font-medium">Quantity</FormLabel>
                 <div className="flex items-center">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-9 w-9 rounded-r-none"
-                    onClick={() => handleQuantityChange(-1)}
-                  >
+                  <Button type="button" variant="outline" size="icon" className="h-9 w-9 rounded-r-none" onClick={() => handleQuantityChange(-1)}>
                     <Minus className="h-4 w-4" />
                   </Button>
                   <FormControl>
@@ -288,13 +271,7 @@ function ProductRow({ index, control, watch, remove, productsLength }: ProductRo
                       className="h-9 min-w-0 flex-1 rounded-none text-center"
                     />
                   </FormControl>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-9 w-9 rounded-l-none"
-                    onClick={() => handleQuantityChange(1)}
-                  >
+                  <Button type="button" variant="outline" size="icon" className="h-9 w-9 rounded-l-none" onClick={() => handleQuantityChange(1)}>
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
@@ -325,9 +302,7 @@ function ProductRow({ index, control, watch, remove, productsLength }: ProductRo
                       className="flex-1 rounded-r-none"
                     />
                   </FormControl>
-                  <span className="bg-muted text-muted-foreground flex h-9 w-10 items-center justify-center rounded-r-md border border-l-0 text-sm">
-                    %
-                  </span>
+                  <span className="bg-muted text-muted-foreground flex h-9 w-10 items-center justify-center rounded-r-md border border-l-0 text-sm">%</span>
                 </div>
                 <FormMessage />
               </FormItem>
@@ -337,50 +312,44 @@ function ProductRow({ index, control, watch, remove, productsLength }: ProductRo
       </div>
 
       {/* HSN Code Section - Only show if product name is filled */}
-      {watch(`productDetails.products.${index}.name`) &&
-        watch(`productDetails.products.${index}.name`).length > 0 && (
-          <div className="border-t pt-2">
-            <FormField
-              control={control}
-              name={`productDetails.products.${index}.hsnCode`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-2 text-sm font-medium">
-                    HSN Code
-                    <span className="text-muted-foreground text-xs">(Optional)</span>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
-                            <Info className="h-3 w-3" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Why is it important?</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      id={`productDetails.products.${index}.hsnCode`}
-                      placeholder="Enter product HSN Code"
-                      {...field}
-                      className="max-w-md"
-                    />
-                  </FormControl>
-                  <div className="text-muted-foreground mt-1 text-xs">
-                    Don't know your HSN Code?{' '}
-                    <Button variant="link" className="h-auto p-0 text-xs text-indigo-600">
-                      Know Here
-                    </Button>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        )}
+      {watch(`productDetails.products.${index}.name`) && watch(`productDetails.products.${index}.name`).length > 0 && (
+        <div className="border-t pt-2">
+          <FormField
+            control={control}
+            name={`productDetails.products.${index}.hsnCode`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="flex items-center gap-2 text-sm font-medium">
+                  HSN Code
+                  <span className="text-muted-foreground text-xs">(Optional)</span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
+                          <Info className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Why is it important?</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </FormLabel>
+                <FormControl>
+                  <Input id={`productDetails.products.${index}.hsnCode`} placeholder="Enter product HSN Code" {...field} className="max-w-md" />
+                </FormControl>
+                <div className="text-muted-foreground mt-1 text-xs">
+                  Don't know your HSN Code?{' '}
+                  <Button variant="link" className="h-auto p-0 text-xs text-indigo-600">
+                    Know Here
+                  </Button>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -415,14 +384,7 @@ export function ProductDetailsForm({ control, watch }: ProductDetailsFormProps) 
   return (
     <div className="space-y-4">
       {fields.map((field, index) => (
-        <ProductRow
-          key={field.id}
-          index={index}
-          control={control}
-          watch={watch}
-          remove={remove}
-          productsLength={fields.length}
-        />
+        <ProductRow key={field.id} index={index} control={control} watch={watch} remove={remove} productsLength={fields.length} />
       ))}
 
       <div className="flex justify-start">
@@ -447,9 +409,7 @@ export function ProductDetailsForm({ control, watch }: ProductDetailsFormProps) 
       </div>
 
       <Alert className="border-gray-200 bg-gray-50 dark:border-stone-700 dark:bg-stone-800">
-        <AlertTitle className="text-lg font-semibold">
-          Total Order Value: {currencyFormatter(totalAmount)}
-        </AlertTitle>
+        <AlertTitle className="text-lg font-semibold">Total Order Value: {currencyFormatter(totalAmount)}</AlertTitle>
         <AlertDescription className="text-sm text-gray-600 dark:text-gray-400">
           The total order value is the sum of the prices of all the products in the order.
         </AlertDescription>

@@ -104,10 +104,7 @@ export abstract class BaseVendor {
 
       return await axios(config);
     } catch (error: any) {
-      console.error(
-        `Error in ${method} request to ${`${this.baseUrl}${endpoint}`}:`,
-        error.message
-      );
+      console.error(`Error in ${method} request to ${`${this.baseUrl}${endpoint}`}:`, error.message);
 
       if (error.response) {
         // The request was made and the server responded with a status code
@@ -135,15 +132,7 @@ export abstract class BaseVendor {
    */
   protected isRTOStatus(status: string, statusCode?: string): boolean {
     // Common RTO status patterns
-    const rtoPatterns = [
-      /rto/i,
-      /return to origin/i,
-      /returned/i,
-      /returning/i,
-      /return initiated/i,
-      /return in progress/i,
-      /return completed/i,
-    ];
+    const rtoPatterns = [/rto/i, /return to origin/i, /returned/i, /returning/i, /return initiated/i, /return in progress/i, /return completed/i];
 
     // Check status text
     for (const pattern of rtoPatterns) {
@@ -172,12 +161,7 @@ export abstract class BaseVendor {
    */
   protected isDeliveredStatus(status: string, statusCode?: string): boolean {
     // Common delivered status patterns
-    const deliveredPatterns = [
-      /delivered/i,
-      /delivery complete/i,
-      /successfully delivered/i,
-      /completed/i,
-    ];
+    const deliveredPatterns = [/delivered/i, /delivery complete/i, /successfully delivered/i, /completed/i];
 
     // Check status text
     for (const pattern of deliveredPatterns) {
@@ -205,16 +189,9 @@ export abstract class BaseVendor {
    * @param statusCode Optional status code
    * @returns Bucket number or undefined if no match
    */
-  protected async mapStatusToBucket(
-    status: string,
-    statusCode?: string
-  ): Promise<number | undefined> {
+  protected async mapStatusToBucket(status: string, statusCode?: string): Promise<number | undefined> {
     // Fallback to keyword-based detection if bucket mapping service is not available
-    return ShipmentBucketManager.detectBucketFromVendorStatus(
-      status,
-      statusCode || '',
-      this.name.toUpperCase()
-    );
+    return ShipmentBucketManager.detectBucketFromVendorStatus(status, statusCode || '', this.name.toUpperCase());
   }
 
   /**
@@ -223,23 +200,13 @@ export abstract class BaseVendor {
    * @param vendorName Vendor name for error message
    * @returns Registration result with appropriate success/failure status
    */
-  protected handleHubRegistrationError(
-    error: any,
-    vendorName: string = this.name
-  ): VendorRegistrationResult {
+  protected handleHubRegistrationError(error: any, vendorName: string = this.name): VendorRegistrationResult {
     // Check for common patterns indicating hub already exists
-    const errorMessage =
-      error?.response?.data?.message || error?.response?.data?.error || error?.message || '';
+    const errorMessage = error?.response?.data?.message || error?.response?.data?.error || error?.message || '';
     const errorData = error?.response?.data || {};
 
     // Check for various error patterns that indicate hub already exists
-    const hubExistsPatterns = [
-      /already exists/i,
-      /already registered/i,
-      /duplicate/i,
-      /already in use/i,
-      /already added/i,
-    ];
+    const hubExistsPatterns = [/already exists/i, /already registered/i, /duplicate/i, /already in use/i, /already added/i];
 
     // Check if any pattern matches the error message
     const isHubExists = hubExistsPatterns.some((pattern) => pattern.test(errorMessage));
@@ -277,11 +244,11 @@ export abstract class BaseVendor {
     pickupPincode: string,
     deliveryPincode: string,
     volumetricWeight: number,
-    dimensions: { length: number; width: number; height: number,  weight: number, },
+    dimensions: { length: number; width: number; height: number; weight: number },
     paymentType: 0 | 1,
     orderValue: number,
     collectableAmount?: number,
-    couriers?: string[],
+    couriers?: string[]
   ): Promise<VendorServiceabilityResult>;
 
   /**

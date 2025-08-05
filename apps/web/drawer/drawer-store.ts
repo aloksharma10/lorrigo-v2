@@ -61,9 +61,9 @@ export const useDrawerStore = create<DrawerState>((set, get) => ({
   closeDrawer: (id?: string) => {
     // If no id is provided, close the most recent drawer
     const drawerId = id || get().drawers[get().drawers.length - 1]?.id;
-    
+
     if (!drawerId) return; // No drawers to close
-    
+
     // First set animation state to "exiting"
     get().setDrawerAnimationState(drawerId, 'exiting');
 
@@ -88,8 +88,6 @@ export const useDrawerStore = create<DrawerState>((set, get) => ({
   },
   setDrawerAnimationState: (id, animationState) =>
     set((state) => ({
-      drawers: state.drawers.map((drawer) =>
-        drawer.id === id ? { ...drawer, animationState } : drawer
-      ),
+      drawers: state.drawers.map((drawer) => (drawer.id === id ? { ...drawer, animationState } : drawer)),
     })),
 }));

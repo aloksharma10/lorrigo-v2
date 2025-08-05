@@ -1,28 +1,28 @@
 // Keep the same structure but ensure iconName matches the iconMap keys
 export const USER_SETTINGS_TABS: UserSettingsTab[] = [
-  { id: "profile", name: "Profile", iconName: "User" },
-  { id: "bank-accounts", name: "Bank Accounts", iconName: "CreditCard" },
-  { id: "transactions", name: "Transactions", iconName: "CreditCard" },
-  { id: "disputes", name: "Disputes", iconName: "AlertTriangle" },
-  { id: "remittance", name: "Remittance", iconName: "HandCoins" },
-  { id: "billing", name: "Billing", iconName: "BadgeIndianRupee" },
-  { id: "notifications", name: "Notifications", iconName: "Bell" },
-  { id: "appearance", name: "Appearance", iconName: "Palette" },
-  { id: "messages", name: "Messages & media", iconName: "MessageSquare" },
-  { id: "language", name: "Language & region", iconName: "Globe" },
-  { id: "accessibility", name: "Accessibility", iconName: "Grid3X3" },
-  { id: "mark-read", name: "Mark as read", iconName: "Check" },
-  { id: "audio-video", name: "Audio & video", iconName: "Video" },
-  { id: "connected", name: "Connected accounts", iconName: "Link" },
-  { id: "privacy", name: "Privacy & visibility", iconName: "Lock" },
-  { id: "advanced", name: "Advanced", iconName: "Settings" },
-]
+  { id: 'profile', name: 'Profile', iconName: 'User' },
+  { id: 'bank-accounts', name: 'Bank Accounts', iconName: 'CreditCard' },
+  { id: 'transactions', name: 'Transactions', iconName: 'CreditCard' },
+  { id: 'disputes', name: 'Disputes', iconName: 'AlertTriangle' },
+  { id: 'remittance', name: 'Remittance', iconName: 'HandCoins' },
+  { id: 'billing', name: 'Billing', iconName: 'BadgeIndianRupee' },
+  { id: 'notifications', name: 'Notifications', iconName: 'Bell' },
+  { id: 'appearance', name: 'Appearance', iconName: 'Palette' },
+  { id: 'messages', name: 'Messages & media', iconName: 'MessageSquare' },
+  { id: 'language', name: 'Language & region', iconName: 'Globe' },
+  { id: 'accessibility', name: 'Accessibility', iconName: 'Grid3X3' },
+  { id: 'mark-read', name: 'Mark as read', iconName: 'Check' },
+  { id: 'audio-video', name: 'Audio & video', iconName: 'Video' },
+  { id: 'connected', name: 'Connected accounts', iconName: 'Link' },
+  { id: 'privacy', name: 'Privacy & visibility', iconName: 'Lock' },
+  { id: 'advanced', name: 'Advanced', iconName: 'Settings' },
+];
 
 export type UserSettingsTab = {
-  id: string
-  name: string
-  iconName: string
-}
+  id: string;
+  name: string;
+  iconName: string;
+};
 
 export function generateUserSettingsRoutes(userId: string) {
   return USER_SETTINGS_TABS.map((tab) => ({
@@ -30,5 +30,5 @@ export function generateUserSettingsRoutes(userId: string) {
     name: tab.name,
     path: `/admin/users/${userId}/${tab.id}`,
     iconName: tab.iconName, // Pass iconName instead of icon component
-  }))
+  }));
 }

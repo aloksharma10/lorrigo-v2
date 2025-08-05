@@ -73,9 +73,7 @@ export async function ensureDefaultPlan(fastify: FastifyInstance) {
       console.log('Default plan already exists:', existingDefaultPlan.id);
 
       // Check if zone pricing exists for the default plan
-      const hasZonePricing = existingDefaultPlan.plan_courier_pricings.some(
-        (pricing) => pricing.zone_pricing.length > 0
-      );
+      const hasZonePricing = existingDefaultPlan.plan_courier_pricings.some((pricing) => pricing.zone_pricing.length > 0);
 
       if (!hasZonePricing) {
         console.log('Default plan exists but missing zone pricing, updating...');

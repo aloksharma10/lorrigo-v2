@@ -15,9 +15,7 @@ interface UseCSVBulkOperationsReturn {
  * @param onComplete Optional callback to be called when an operation completes
  * @returns Modal state and control functions
  */
-export function useCSVBulkOperations(
-  onComplete?: (result: CSVUploadResult) => void
-): UseCSVBulkOperationsReturn {
+export function useCSVBulkOperations(onComplete?: (result: CSVUploadResult) => void): UseCSVBulkOperationsReturn {
   const [isOpen, setIsOpen] = useState(false);
 
   const openModal = useCallback(() => {

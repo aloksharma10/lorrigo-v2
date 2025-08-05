@@ -196,8 +196,7 @@ export const orderFormSchema = z
           }, 0) || 0;
         return (
           Number(data.amountToCollect ?? 0) > 0 &&
-          Number(data.amountToCollect ?? 0) <=
-            Number(data.productDetails ? data.productDetails.taxableValue : totalAmount)
+          Number(data.amountToCollect ?? 0) <= Number(data.productDetails ? data.productDetails.taxableValue : totalAmount)
         );
       }
       return true;
@@ -209,11 +208,7 @@ export const orderFormSchema = z
   )
   .refine(
     (data) => {
-      if (
-        data.productDetails &&
-        data.productDetails.taxableValue &&
-        data.productDetails.taxableValue >= 50000
-      ) {
+      if (data.productDetails && data.productDetails.taxableValue && data.productDetails.taxableValue >= 50000) {
         return (data.ewaybill ?? '').length === 12;
       }
       return true;
@@ -243,11 +238,7 @@ export const updateOrderFormSchema = z
   })
   .refine(
     (data) => {
-      if (
-        data.productDetails &&
-        data.productDetails.taxableValue &&
-        data.productDetails.taxableValue >= 50000
-      ) {
+      if (data.productDetails && data.productDetails.taxableValue && data.productDetails.taxableValue >= 50000) {
         return (data.ewaybill ?? '').length === 12;
       }
       return true;

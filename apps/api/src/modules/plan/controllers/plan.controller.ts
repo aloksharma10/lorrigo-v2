@@ -139,9 +139,7 @@ export class PlanController {
       const pricing = await this.planService.getDefaultPlanCourierPricing(courierId);
 
       if (!pricing) {
-        return reply
-          .code(404)
-          .send({ error: 'No pricing found for this courier in the default plan' });
+        return reply.code(404).send({ error: 'No pricing found for this courier in the default plan' });
       }
 
       return reply.code(200).send({ pricing });
@@ -165,9 +163,7 @@ export class PlanController {
       return reply.code(200).send({ rates });
     } catch (error) {
       request.log.error(error);
-      return reply
-        .code(500)
-        .send({ error: `Failed to calculate rates: ${(error as Error).message}` });
+      return reply.code(500).send({ error: `Failed to calculate rates: ${(error as Error).message}` });
     }
   }
 }

@@ -5,15 +5,7 @@ import { z } from 'zod';
  */
 
 // Order status enum used across the application
-export const OrderStatusEnum = z.enum([
-  'NEW',
-  'CONFIRMED',
-  'PROCESSING',
-  'SHIPPED',
-  'DELIVERED',
-  'CANCELLED',
-  'RETURNED',
-]);
+export const OrderStatusEnum = z.enum(['NEW', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'RETURNED']);
 
 // Schema for order query parameters
 export const OrderQuerySchema = z.object({

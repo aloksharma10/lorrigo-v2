@@ -25,12 +25,7 @@ export default function CloneOrder({
   side?: DrawerSide;
 }) {
   const {
-    createOrder: {
-      data: clonedOrder,
-      isPending: isCreatingOrder,
-      mutateAsync: createOrder,
-      isSuccess: isOrderCreated,
-    },
+    createOrder: { data: clonedOrder, isPending: isCreatingOrder, mutateAsync: createOrder, isSuccess: isOrderCreated },
   } = useOrderOperations();
 
   async function onSubmit(values: OrderFormValues) {
@@ -40,10 +35,7 @@ export default function CloneOrder({
       toast.success('Order created successfully');
       onClose();
     } catch (error: any) {
-      toast.error(
-        error.response?.data?.message ||
-          'Failed to create order, Please Report to Support at support@lorrigo.in'
-      );
+      toast.error(error.response?.data?.message || 'Failed to create order, Please Report to Support at support@lorrigo.in');
       console.error('Validation error:', error);
     }
   }
@@ -64,13 +56,7 @@ export default function CloneOrder({
         </DrawerComponent.Close>
       </div>
       <div className="flex-1 overflow-auto p-4 lg:py-0 lg:pt-4">
-        <OrderForm
-          initialValues={order}
-          onSubmit={onSubmit}
-          isSubmitting={isCreatingOrder}
-          submitButtonText="Clone Order"
-          mode="clone"
-        />
+        <OrderForm initialValues={order} onSubmit={onSubmit} isSubmitting={isCreatingOrder} submitButtonText="Clone Order" mode="clone" />
       </div>
     </DrawerComponent>
   );

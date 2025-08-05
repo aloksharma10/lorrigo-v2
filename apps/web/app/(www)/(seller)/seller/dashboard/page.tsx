@@ -27,7 +27,7 @@ export default function SellerDashboardOverview() {
   const yesterdayRevenue = summary.find((s) => s.title === 'Revenue Today')?.trend?.percentage || 0;
 
   // Example: Shipments total from overview
-  const shipmentsTotal = (shipmentsOverview && typeof shipmentsOverview.totalShipments === 'number') ? shipmentsOverview.totalShipments : 0;
+  const shipmentsTotal = shipmentsOverview && typeof shipmentsOverview.totalShipments === 'number' ? shipmentsOverview.totalShipments : 0;
 
   // Example: NDR summary (replace with real mapping as needed)
   const ndrTotal = ndrMetrics.length;
@@ -81,7 +81,7 @@ export default function SellerDashboardOverview() {
           <CardContent>
             <div className="flex items-center gap-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white">
-                <Boxes className="text-indigo-500 h-6 w-6" />
+                <Boxes className="h-6 w-6 text-indigo-500" />
               </div>
               <div>
                 <div className="text-3xl font-bold">{todayOrders}</div>
@@ -99,7 +99,7 @@ export default function SellerDashboardOverview() {
           <CardContent>
             <div className="flex items-center gap-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white">
-                <Boxes className="text-green-500 h-6 w-6" />
+                <Boxes className="h-6 w-6 text-green-500" />
               </div>
               <div>
                 <div className="text-3xl font-bold">{todayRevenue}</div>
@@ -207,14 +207,8 @@ export default function SellerDashboardOverview() {
           }))}
           isLoading={performance.isLoading}
         />
-        <ShipmentStatusChart
-          data={shipmentStatusChartData}
-          isLoading={performance.isLoading}
-        />
-        <DeliveryPerformanceChart
-          data={deliveryPerformanceChartData}
-          isLoading={performance.isLoading}
-        />
+        <ShipmentStatusChart data={shipmentStatusChartData} isLoading={performance.isLoading} />
+        <DeliveryPerformanceChart data={deliveryPerformanceChartData} isLoading={performance.isLoading} />
       </div>
       {/* Sixth row: Shipment Overview Table */}
       <ShipmentOverviewTable data={shipmentOverviewTableData} isLoading={performance.isLoading} />

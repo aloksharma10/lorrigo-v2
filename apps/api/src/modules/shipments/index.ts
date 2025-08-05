@@ -78,26 +78,11 @@ export async function shipmentRoutes(fastify: FastifyInstance) {
   await setupOptimizedTrackingCron(fastify);
 
   // Schedule initial bulk processing jobs
-  await addJob(
-    QueueNames.SHIPMENT_TRACKING,
-    JobType.PROCESS_BULK_STATUS_UPDATES,
-    { initial: true },
-    { delay: 5000 }
-  );
+  await addJob(QueueNames.SHIPMENT_TRACKING, JobType.PROCESS_BULK_STATUS_UPDATES, { initial: true }, { delay: 5000 });
 
-  await addJob(
-    QueueNames.SHIPMENT_TRACKING,
-    JobType.PROCESS_UNMAPPED_STATUSES,
-    { initial: true },
-    { delay: 10000 }
-  );
+  await addJob(QueueNames.SHIPMENT_TRACKING, JobType.PROCESS_UNMAPPED_STATUSES, { initial: true }, { delay: 10000 });
 
-  await addJob(
-    QueueNames.SHIPMENT_TRACKING,
-    JobType.PROCESS_EDD_UPDATES,
-    { initial: true },
-    { delay: 15000 }
-  );
+  await addJob(QueueNames.SHIPMENT_TRACKING, JobType.PROCESS_EDD_UPDATES, { initial: true }, { delay: 15000 });
 
   // Create controller instance
   const shipmentController = new ShipmentController(shipmentService);

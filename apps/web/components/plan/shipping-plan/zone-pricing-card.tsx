@@ -1,16 +1,4 @@
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  Badge,
-  Input,
-  Switch,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@lorrigo/ui/components';
+import { Card, CardContent, CardHeader, Badge, Input, Switch, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@lorrigo/ui/components';
 import type { UseFormReturn } from 'react-hook-form';
 import type { ShippingPlanFormData } from '../schemas/shipping-plan-schema';
 import { zoneLabels } from '../constants/shipping-plan-constants';
@@ -22,12 +10,7 @@ interface ZonePricingCardProps {
   originalPricing?: any[]; // Add this
 }
 
-export function ZonePricingCard({
-  zone,
-  courierIndex,
-  form,
-  originalPricing,
-}: ZonePricingCardProps) {
+export function ZonePricingCard({ zone, courierIndex, form, originalPricing }: ZonePricingCardProps) {
   const config = zoneLabels[zone];
 
   return (
@@ -52,13 +35,7 @@ export function ZonePricingCard({
               <FormItem>
                 <FormLabel className="text-sm font-semibold">Base Price (₹)</FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    className="border-primary/20 focus:border-primary border-2"
-                    {...field}
-                  />
+                  <Input type="number" step="0.01" min="0" className="border-primary/20 focus:border-primary border-2" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -72,13 +49,7 @@ export function ZonePricingCard({
               <FormItem>
                 <FormLabel className="text-sm font-semibold">Increment Price (₹)</FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    className="border-primary/20 focus:border-primary border-2"
-                    {...field}
-                  />
+                  <Input type="number" step="0.01" min="0" className="border-primary/20 focus:border-primary border-2" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -108,13 +79,7 @@ export function ZonePricingCard({
                 <FormItem>
                   <FormLabel className="text-sm font-semibold">RTO Base (₹)</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      className="bg-background border-2"
-                      {...field}
-                    />
+                    <Input type="number" step="0.01" min="0" className="bg-background border-2" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -128,13 +93,7 @@ export function ZonePricingCard({
                 <FormItem>
                   <FormLabel className="text-sm font-semibold">RTO Increment (₹)</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      className="bg-background border-2"
-                      {...field}
-                    />
+                    <Input type="number" step="0.01" min="0" className="bg-background border-2" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -148,13 +107,7 @@ export function ZonePricingCard({
                 <FormItem>
                   <FormLabel className="text-sm font-semibold">Flat RTO (₹)</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      className="bg-background border-2"
-                      {...field}
-                    />
+                    <Input type="number" step="0.01" min="0" className="bg-background border-2" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

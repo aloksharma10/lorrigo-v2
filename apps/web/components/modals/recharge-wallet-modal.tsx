@@ -254,16 +254,7 @@ export function RechargeWalletModal({ onClose, onSuccess }: RechargeWalletModalP
         pollIntervalRef.current = null;
       }
     };
-  }, [
-    paymentWindow,
-    processingPayment,
-    pendingTransactionId,
-    verifyWalletRecharge,
-    onSuccess,
-    form,
-    onClose,
-    router,
-  ]);
+  }, [paymentWindow, processingPayment, pendingTransactionId, verifyWalletRecharge, onSuccess, form, onClose, router]);
 
   const handleSubmit = async (data: FormData) => {
     if (processingRef.current) {
@@ -338,13 +329,7 @@ export function RechargeWalletModal({ onClose, onSuccess }: RechargeWalletModalP
                   : 'Enter amount to add to your wallet'}
             </CardDescription>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleClose}
-            className="h-8 w-8 rounded-full"
-            disabled={verifyingPayment}
-          >
+          <Button variant="ghost" size="icon" onClick={handleClose} className="h-8 w-8 rounded-full" disabled={verifyingPayment}>
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -402,13 +387,9 @@ export function RechargeWalletModal({ onClose, onSuccess }: RechargeWalletModalP
           <div className="mt-4 rounded-lg bg-blue-50 p-3 text-sm text-blue-800">
             <div className="flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin" />
-              {verifyingPayment
-                ? 'Verifying payment...'
-                : 'Complete your payment in the popup window'}
+              {verifyingPayment ? 'Verifying payment...' : 'Complete your payment in the popup window'}
             </div>
-            <p className="mt-1 text-xs">
-              The popup will close automatically after successful payment
-            </p>
+            <p className="mt-1 text-xs">The popup will close automatically after successful payment</p>
           </div>
         )}
       </CardContent>
@@ -418,10 +399,7 @@ export function RechargeWalletModal({ onClose, onSuccess }: RechargeWalletModalP
           <Button type="button" variant="outline" onClick={handleClose} disabled={verifyingPayment}>
             {processingPayment && !verifyingPayment ? 'Cancel Payment' : 'Cancel'}
           </Button>
-          <Button
-            onClick={form.handleSubmit(handleSubmit)}
-            disabled={processingPayment || !form.formState.isValid || rechargeWallet.isPending}
-          >
+          <Button onClick={form.handleSubmit(handleSubmit)} disabled={processingPayment || !form.formState.isValid || rechargeWallet.isPending}>
             {verifyingPayment ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
