@@ -270,7 +270,7 @@ export class ShopifyChannel extends BaseChannel {
   public async handleShopifyLogin(oauthData: ShopifyOAuthData, ipAddress: string, deviceInfo?: any): Promise<{ user: any; token: string } | { error: string }> {
     try {
       // First, check if there's already a Shopify connection for this shop
-      let existingConnection = await this.prisma.shopifyConnection.findFirst({
+      const existingConnection = await this.prisma.shopifyConnection.findFirst({
         where: { shop: oauthData.shop },
         include: { user: true },
       });

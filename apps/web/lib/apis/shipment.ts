@@ -3,7 +3,6 @@ import { api, apiDownload } from './axios';
 import { useAuthToken } from '@/components/providers/token-provider';
 import { toast } from '@lorrigo/ui/components';
 import { AxiosResponse } from 'axios';
-import { useRouter } from 'next/navigation';
 
 export interface RateCalculationParams {
   pickupPincode: string;

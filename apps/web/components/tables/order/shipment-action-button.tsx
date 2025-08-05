@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import React, { memo } from 'react';
 import { Button } from '@lorrigo/ui/components';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@lorrigo/ui/components';

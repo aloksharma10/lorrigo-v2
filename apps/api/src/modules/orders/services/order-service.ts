@@ -1,20 +1,9 @@
 import { calculateVolumetricWeight } from '@/utils/calculate-order-price';
-import { getPincodeDetails, PincodeDetails } from '@/utils/pincode';
+import { getPincodeDetails } from '@/utils/pincode';
 import { AddressType, Prisma, ShipmentStatus } from '@lorrigo/db';
 import { Channel, PaymentMethod } from '@lorrigo/db';
-import {
-  generateId,
-  getFinancialYear,
-  OrderFormValues,
-  parseSortField,
-  UpdateOrderFormValues,
-  ShipmentBucket,
-  getStatusBuckets,
-  ShipmentBucketManager,
-} from '@lorrigo/utils';
+import { generateId, getFinancialYear, OrderFormValues, parseSortField, ShipmentBucket, getStatusBuckets, ShipmentBucketManager } from '@lorrigo/utils';
 import { FastifyInstance } from 'fastify';
-import { addJob, QueueNames } from '@/lib/queue';
-import { BulkOrderJobType } from '../queues/bulk-order-worker';
 import { appCache } from '@/lib/cache';
 
 /**
@@ -32,7 +21,7 @@ export class OrderService {
     const skip = (page - 1) * limit;
 
     // Build the where clause
-    let where: any = {
+    const where: any = {
       user_id: userId,
       is_reverse_order,
     };
@@ -1046,7 +1035,7 @@ export class OrderService {
   async getOrderStats(user_id: string, period: string) {
     // Calculate date range based on period
     const now = new Date();
-    let start_date = new Date();
+    const start_date = new Date();
 
     switch (period) {
       case 'day':

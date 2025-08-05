@@ -3,7 +3,6 @@ import { cookies } from 'next/headers';
 import { SidebarInset, SidebarProvider } from '@lorrigo/ui/components';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { SiteHeader } from '@/components/layout/site-header';
-import { BackButton } from '@/components/back-btn';
 
 export default async function SellerLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();

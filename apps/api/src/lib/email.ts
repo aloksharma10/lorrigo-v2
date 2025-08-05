@@ -1,7 +1,6 @@
 import nodemailer from 'nodemailer';
 import { APP_CONFIG } from '@/config/app';
 import { captureException } from './sentry';
-import { EmailTemplate } from '@/types/notification';
 import * as fs from 'fs';
 import * as path from 'path';
 import Handlebars from 'handlebars';

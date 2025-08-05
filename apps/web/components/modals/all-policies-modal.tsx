@@ -3,7 +3,7 @@ import PrivacyPolicy from '../policies/privacy';
 import RefundPolicy from '../policies/refund';
 import TermsAndConditions from '../policies/terms-conditions';
 import ShipmentAndDeliveryPolicy from '../policies/shipment-delivery';
-import { Modal, ScrollArea } from '@lorrigo/ui/components';
+import { ScrollArea } from '@lorrigo/ui/components';
 
 export const AllPoliciesModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const { modals, closeModal } = useModalStore();

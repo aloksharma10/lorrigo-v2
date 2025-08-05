@@ -5,7 +5,6 @@ import { AlertCircle } from 'lucide-react';
 import { DataTable, DataTableColumnHeader, type ColumnDef } from '@lorrigo/ui/components';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { useBillingOperations, type BillingRecord } from '@/lib/apis/billing';
-import { CopyBtn } from '@/components/copy-btn';
 import {
   BillingCodeCell,
   OrderDetailsCell,

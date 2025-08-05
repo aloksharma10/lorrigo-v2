@@ -1,14 +1,10 @@
 'use client';
 
 import * as React from 'react';
-import { Checkbox } from '@lorrigo/ui/components';
 import { DataTable } from '@lorrigo/ui/components';
 import { DataTableColumnHeader } from '@lorrigo/ui/components';
 import { Badge } from '@lorrigo/ui/components';
-import { Button } from '@lorrigo/ui/components';
-import { MoreHorizontal, Plus, Edit, Trash2, Package, DollarSign, Weight } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@lorrigo/ui/components';
-import { toast } from '@lorrigo/ui/components';
+import { Package, Weight } from 'lucide-react';
 import type { ColumnDef } from '@lorrigo/ui/components';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { useProductOperations, type Product } from '@/lib/apis/products';

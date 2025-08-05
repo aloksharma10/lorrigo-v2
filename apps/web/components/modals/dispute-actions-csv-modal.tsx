@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Upload, FileText, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { Button, Modal, Alert, AlertDescription, AlertTitle, Progress, Input, Label } from '@lorrigo/ui/components';
+import { AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@lorrigo/ui/components';
 import { useBillingOperations } from '@/lib/apis/billing';
 import { useCSVUpload } from '../providers/csv-upload-provider';
 import { CSVUploadModal, type CSVField } from './csv-upload-modal';

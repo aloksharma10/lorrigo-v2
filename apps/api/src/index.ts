@@ -33,7 +33,6 @@ import shipmentAnalysisRoutes from '@/modules/shipment-analysis';
 import { setupSellerHooks } from '@/modules/sellers/hooks';
 import { ensureDefaultPlan } from '@/modules/plan/services/default-plan';
 import { queues } from '@/lib/queue';
-import { assignDefaultPlanToAllUsers } from './scripts/assign-default-plan';
 import multipart from '@fastify/multipart';
 import { billingRoutes } from '@/modules/billing';
 import { remittanceRoutes } from '@/modules/remittance';

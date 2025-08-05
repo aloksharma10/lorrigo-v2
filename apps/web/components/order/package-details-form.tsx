@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Info, LightbulbIcon } from 'lucide-react';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, Input, Label, Alert, AlertDescription, Badge } from '@lorrigo/ui/components';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage, Input, Label, Alert, AlertDescription, Badge } from '@lorrigo/ui/components';
 
 import { Control, UseFormWatch } from 'react-hook-form';
 import { OrderFormValues } from '@lorrigo/utils/validations';

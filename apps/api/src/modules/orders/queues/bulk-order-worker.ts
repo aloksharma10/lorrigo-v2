@@ -7,8 +7,6 @@ import { APP_CONFIG } from '@/config/app';
 import { OrderFormValues } from '@lorrigo/utils';
 import pLimit from 'p-limit';
 import fs from 'fs/promises';
-import path from 'path';
-import { prisma } from '@lorrigo/db';
 import csv from 'csvtojson';
 import { parse as parseDateFns, isValid as isValidDateFns } from 'date-fns';
 

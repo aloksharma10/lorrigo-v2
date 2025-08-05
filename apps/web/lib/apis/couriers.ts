@@ -1,12 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from './axios';
 import { useAuthToken } from '@/components/providers/token-provider';
-import { useSession } from 'next-auth/react';
 
 export const useCourierOperations = () => {
   const queryClient = useQueryClient();
   const { isTokenReady } = useAuthToken();
-  const { data: session } = useSession();
 
   // Fetch all couriers
   const getCouriersQuery = useQuery({

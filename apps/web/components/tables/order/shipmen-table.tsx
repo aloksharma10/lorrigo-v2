@@ -7,7 +7,7 @@ import { DataTable } from '@lorrigo/ui/components';
 import { DataTableColumnHeader } from '@lorrigo/ui/components';
 import { Badge } from '@lorrigo/ui/components';
 import { Button } from '@lorrigo/ui/components';
-import { Hash, IndianRupee, Package, Phone, Tag, TruckIcon, UserRound } from 'lucide-react';
+import { IndianRupee, Package, Phone, Tag, TruckIcon, UserRound } from 'lucide-react';
 import { toast } from '@lorrigo/ui/components';
 import type { ColumnDef } from '@lorrigo/ui/components';
 import { useDebounce } from '@/lib/hooks/use-debounce';
@@ -52,8 +52,6 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
   if (!csvUploadContext) {
     throw new Error('ShipmentsTable must be used within a CSVUploadProvider');
   }
-
-  const { showBulkOperationStatus } = csvUploadContext;
 
   // Fetch shipments with React Query
   const { data, isLoading, isError, isFetching, error } = useQuery({

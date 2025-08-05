@@ -1,5 +1,5 @@
 import { ChargeType, prisma, ShipmentStatus } from '@lorrigo/db';
-import { ShipmentBucketManager, ShipmentBucket, getShipmentBucket } from '@lorrigo/utils';
+import { ShipmentBucketManager, ShipmentBucket } from '@lorrigo/utils';
 import { FastifyInstance } from 'fastify';
 import { ShipmentService } from '../services/shipmentService';
 import { addJob, QueueNames } from '@/lib/queue';

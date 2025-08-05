@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Badge, Card, CardContent, CardHeader, CardTitle, Separator } from '@lorrigo/ui/components';
-import { Package, Weight, DollarSign, Truck, CreditCard, Clock, AlertTriangle, AlertCircle, CheckCircle, Calculator } from 'lucide-react';
+import { Package, Weight, DollarSign, Truck, Clock, AlertTriangle, AlertCircle, CheckCircle, Calculator } from 'lucide-react';
 import { currencyFormatter, formatDateTimeSmart } from '@lorrigo/utils';
 import { CopyBtn } from '@/components/copy-btn';
 import type { BillingRecord } from '@/lib/apis/billing';

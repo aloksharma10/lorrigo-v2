@@ -1,16 +1,9 @@
-import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import { FastifyInstance, FastifyRequest } from 'fastify';
 import { OrderController } from './controllers/orders-controller';
 import { OrderService } from './services/order-service';
 import { authorizeRoles } from '@/middleware/auth';
 import { Role } from '@lorrigo/db';
 import { initBulkOrderWorker } from './queues/bulk-order-worker';
-import path from 'path';
-import fs from 'fs-extra';
-import { randomUUID } from 'crypto';
-import { addJob, QueueNames } from '@/lib/queue';
-import { BulkOrderJobType } from './queues/bulk-order-worker';
-import { prisma } from '@lorrigo/db';
-import { Job } from 'bullmq';
 
 /**
  * Orders module routes
@@ -20,7 +13,7 @@ export default async function ordersRoutes(fastify: FastifyInstance) {
   const orderController = new OrderController(orderService);
 
   // Initialize bulk order worker
-  const { bulkOrderWorker } = initBulkOrderWorker(fastify, orderService);
+  initBulkOrderWorker(fastify, orderService);
 
   // All routes require authentication
   fastify.addHook('onRequest', fastify.authenticate);

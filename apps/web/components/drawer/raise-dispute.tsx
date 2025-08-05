@@ -1,12 +1,10 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { X, Upload, Camera, Info } from 'lucide-react';
+import { X, Upload, Info } from 'lucide-react';
 import {
   Button,
-  Input,
   Textarea,
-  Badge,
   Card,
   CardContent,
   CardHeader,
@@ -22,7 +20,6 @@ import {
 import { useDrawerStore } from '@/drawer/drawer-store';
 import { useBillingOperations, type WeightDispute } from '@/lib/apis/billing';
 import { toast } from '@lorrigo/ui/components';
-import { CopyBtn } from '@/components/copy-btn';
 
 interface RaiseDisputeProps {
   dispute: WeightDispute;

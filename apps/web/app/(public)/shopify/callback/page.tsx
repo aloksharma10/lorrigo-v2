@@ -13,7 +13,6 @@ export default function ShopifyCallback() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { setAuthToken } = useAuthToken();
-  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [processed, setProcessed] = useState(false);
 
@@ -27,27 +26,15 @@ export default function ShopifyCallback() {
         const code = searchParams.get('code');
         const state = searchParams.get('state');
         const shop = searchParams.get('shop');
-        const hmac = searchParams.get('hmac');
-        const timestamp = searchParams.get('timestamp');
-        const host = searchParams.get('host');
-
-        console.log('Shopify callback received:', {
-          shop,
-          code: code ? 'present' : 'missing',
-          state: state ? 'present' : 'missing',
-          host,
-        });
 
         // If we have shop but no code, this means we need to redirect to OAuth
         if (shop && !code) {
           try {
             const authUrl = await getShopifyAuthUrl(shop);
-            console.log('Redirecting to Shopify OAuth:', authUrl);
             window.location.href = authUrl;
             return;
           } catch (err) {
             console.error('Failed to get Shopify auth URL:', err);
-            setError('Failed to initiate Shopify authentication');
             setIsLoading(false);
             return;
           }
@@ -70,7 +57,6 @@ export default function ShopifyCallback() {
 
           if (signInResult?.error) {
             console.error('NextAuth signIn failed:', signInResult.error);
-            setError('Failed to create session');
             setIsLoading(false);
             return;
           }
@@ -93,11 +79,9 @@ export default function ShopifyCallback() {
         }
 
         // If we don't have the required parameters, show error
-        setError('Missing required OAuth parameters');
         setIsLoading(false);
       } catch (err) {
         console.error('Shopify callback error:', err);
-        setError(err instanceof Error ? err.message : 'Failed to authenticate with Shopify');
         setIsLoading(false);
       }
     };

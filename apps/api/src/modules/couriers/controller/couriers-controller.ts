@@ -2,7 +2,6 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { Role } from '@lorrigo/db';
 import { CourierService } from '../services/courier-services';
-import { checkAuth } from '@/middleware/auth';
 
 // Validation schemas
 const createCourierSchema = z.object({

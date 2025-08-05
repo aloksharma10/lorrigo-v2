@@ -1,9 +1,8 @@
-import { APP_CONFIG } from '@/config/app';
 import { BaseVendor } from './base-vendor';
 import { ShiprocketVendor } from './shiprocket.vendor';
 import { DelhiveryVendorFactory, DelhiveryVendor } from './delhivery.vendor';
 import { SmartShipVendor } from './smart-ship.vendor';
-import { VendorServiceabilityResult, ShipmentTrackingData, TrackingEventData, NDRData, VendorNDRResult } from '@/types/vendor';
+import { VendorServiceabilityResult, ShipmentTrackingData, TrackingEventData, NDRData } from '@/types/vendor';
 import { FastifyInstance } from 'fastify';
 import { Courier, Order, ShipmentStatus } from '@lorrigo/db';
 import { ShipmentBucketManager } from '@lorrigo/utils';

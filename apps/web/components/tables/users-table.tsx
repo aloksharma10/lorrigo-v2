@@ -1,13 +1,13 @@
 'use client';
 
 import * as React from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { Checkbox } from '@lorrigo/ui/components';
 import { DataTable } from '@lorrigo/ui/components';
 import { DataTableColumnHeader } from '@lorrigo/ui/components';
 import { Badge } from '@lorrigo/ui/components';
 import { Button } from '@lorrigo/ui/components';
-import { MoreHorizontal, Package, AlertTriangle } from 'lucide-react';
+import { MoreHorizontal, Package } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@lorrigo/ui/components';
 import { toast } from '@lorrigo/ui/components';
 import type { ColumnDef } from '@lorrigo/ui/components';
@@ -42,7 +42,7 @@ export default function UsersTable({ initialParams }: UsersTableProps) {
   const { isTokenReady } = useAuthToken();
 
   // Fetch shipments with React Query
-  const { data, isLoading, isError, isFetching } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['shipments', pagination.pageIndex, pagination.pageSize, sorting, filters, debouncedGlobalFilter, dateRange, activeTab],
     queryFn: () =>
       fetchShipments({

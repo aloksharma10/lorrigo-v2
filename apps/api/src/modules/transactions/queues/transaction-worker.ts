@@ -1,6 +1,6 @@
 import { Worker, Job } from 'bullmq';
 import { FastifyInstance } from 'fastify';
-import { TransactionService, TransactionEntityType } from '../services/transaction-service';
+import { TransactionService } from '../services/transaction-service';
 import { QueueNames } from '@/lib/queue';
 import { redis } from '@/lib/redis';
 import { APP_CONFIG } from '@/config/app';

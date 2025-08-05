@@ -2,7 +2,6 @@ import { FastifyPluginAsync } from 'fastify';
 import fp from 'fastify-plugin';
 import { NotificationService } from '@/lib/notification';
 import { createNotificationWorker } from '@/jobs/notification-worker';
-import { NotificationWorker } from '@/jobs/notification-worker';
 
 declare module 'fastify' {
   interface FastifyInstance {

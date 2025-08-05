@@ -3,7 +3,6 @@ import { ChartCard } from '@/components/charts/chart-card';
 import { PieChart } from '@/components/charts/pie-chart';
 import { SimpleDataTable } from '@lorrigo/ui/components';
 import { BarChart } from '@/components/charts/bar-chart';
-import { CalendarIcon, ChevronDown } from 'lucide-react';
 import { useShipmentAnalysis } from '@/lib/hooks/use-shipment-analysis';
 import type { ShipmentPerformanceAnalytics } from '@/lib/type/shipment-analysis';
 

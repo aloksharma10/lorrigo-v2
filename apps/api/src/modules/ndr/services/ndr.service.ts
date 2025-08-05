@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { NDRData, VendorNDRResult } from '@/types/vendor';
+import { NDRData } from '@/types/vendor';
 import { VendorService } from '../../vendors/vendor.service';
 import { QueueNames, addJob } from '@/lib/queue';
 import { ShipmentStatus } from '@lorrigo/db';

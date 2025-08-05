@@ -4,7 +4,7 @@ import { ShiprocketVendor, ShiprocketB2BVendor } from '@/modules/vendors/shiproc
 import { DelhiveryVendorFactory } from '@/modules/vendors/delhivery.vendor';
 import { getPincodeDetails } from '@/utils/pincode';
 import { FastifyInstance } from 'fastify';
-import { generateId, getFinancialYear, getFinancialYearStartDate, PickupAddress } from '@lorrigo/utils';
+import { generateId, getFinancialYear, PickupAddress } from '@lorrigo/utils';
 import { AddressType } from '@lorrigo/db';
 
 /**

@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { Role, prisma } from '@lorrigo/db';
+import { prisma } from '@lorrigo/db';
 
 export class UsersController {
   constructor(private fastify: FastifyInstance) {}

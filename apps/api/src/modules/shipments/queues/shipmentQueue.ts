@@ -9,11 +9,9 @@ import { generateCsvReport, mergePdfBuffers, BulkOperationResult } from '@/modul
 import pLimit from 'p-limit';
 import csv from 'csvtojson';
 import { TransactionEntityType, TransactionType } from '@/modules/transactions/services/transaction-service';
-import { mapShipmentToBilling } from '@/modules/billing/utils/billing-mapper';
-import { processShipmentTracking, processTrackingRetry, TrackingProcessor, TrackingProcessorConfig, processBulkShipmentTracking } from '../batch/processor';
+import { processTrackingRetry, TrackingProcessor, TrackingProcessorConfig, processBulkShipmentTracking } from '../batch/processor';
 import { ChargeType, ShipmentStatus } from '@lorrigo/db';
-import { calculateExcessCharges, getOrderZoneFromCourierZone } from '@/utils/calculate-order-price';
-import { TransactionService } from '@/modules/transactions/services/transaction-service';
+import { getOrderZoneFromCourierZone } from '@/utils/calculate-order-price';
 import { TransactionJobType } from '@/modules/transactions/queues/transaction-worker';
 import { VendorService } from '@/modules/vendors/vendor.service';
 
@@ -1215,7 +1213,7 @@ async function processDisputeActionsCsv(job: Job, fastify: FastifyInstance) {
       } else {
         // ADMIN flow: ACCEPT / REJECT, optional final_weight
         if (action === 'ACCEPT') {
-          let updateData: any = { status: 'RESOLVED' };
+          const updateData: any = { status: 'RESOLVED' };
           if (finalWeight) {
             updateData.final_weight = finalWeight;
           }

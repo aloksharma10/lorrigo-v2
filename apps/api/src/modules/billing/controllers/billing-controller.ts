@@ -1,6 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { BillingService } from '../services/billing-service';
-import { WeightDisputeStatus } from '@lorrigo/db';
 import { exportData } from '@/utils/exportData';
 
 export class BillingController {
@@ -479,7 +478,7 @@ export class BillingController {
       // Group billings by user
       const userBillings = new Map();
       let totalAmount = 0;
-      let totalOrders = billings.length;
+      const totalOrders = billings.length;
 
       for (const billing of billings) {
         const userId = billing.order?.user_id || '';

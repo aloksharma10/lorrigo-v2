@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { RotateCcw, Calendar, Settings, AlertTriangle, Users, Clock, CheckCircle, FileText, CalendarRange, List, Search, Loader2, User } from 'lucide-react';
+import { RotateCcw, Calendar, Settings, AlertTriangle, Users, Clock, CheckCircle, FileText, Search, Loader2, User } from 'lucide-react';
 import {
-  Modal,
   Button,
   Input,
   Label,
@@ -20,7 +19,6 @@ import {
   Alert,
   AlertDescription,
   AlertTitle,
-  Separator,
   Checkbox,
   toast,
   Tabs,
@@ -38,10 +36,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@lorrigo/ui/components';
-import { useBillingOperations, type BillingCycle } from '@/lib/apis/billing';
+import { useBillingOperations } from '@/lib/apis/billing';
 import { currencyFormatter } from '@lorrigo/utils';
-import { useQuery } from '@tanstack/react-query';
-import { api as axios } from '@/lib/apis/axios';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { useUserOperations, User as UserType } from '@/lib/apis/users';
 

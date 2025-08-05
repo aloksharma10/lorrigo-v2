@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { ChevronDown, ChevronUp, Edit, Plus } from 'lucide-react';
-import { Button, Input, Badge, Form, FormControl, FormField, FormItem, FormMessage } from '@lorrigo/ui/components';
+import { ChevronDown, ChevronUp, Plus } from 'lucide-react';
+import { Button, Input, Form, FormControl, FormField, FormItem, FormMessage } from '@lorrigo/ui/components';
 import { useForm } from 'react-hook-form';
 import { useModal } from '@/modal/modal-provider';
 import { useHubOperations } from '@/lib/apis/hub';

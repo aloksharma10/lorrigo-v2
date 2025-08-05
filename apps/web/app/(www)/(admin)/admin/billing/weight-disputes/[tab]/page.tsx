@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Badge, Card, CardContent, CardHeader, CardTitle } from '@lorrigo/ui/components';
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@lorrigo/ui/components';
 import { WeightDisputesTable } from '@/components/tables/billing/weight-disputes-table';
 import { useBillingOperations } from '@/lib/apis/billing';
 import { useParams } from 'next/navigation';

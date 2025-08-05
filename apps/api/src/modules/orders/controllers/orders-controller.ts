@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { captureException } from '@/lib/sentry';
-import { orderFormSchema, updateOrderFormSchema, OrderQuerySchema, OrderStatsQuerySchema } from '@lorrigo/utils';
+import { orderFormSchema, OrderStatsQuerySchema } from '@lorrigo/utils';
 import { z } from 'zod';
 import { checkAuth } from '@/middleware/auth';
 import { OrderService } from '../services/order-service';

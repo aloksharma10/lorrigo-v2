@@ -1,14 +1,5 @@
 'use client';
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-  navigationMenuTriggerStyle,
-  Button,
-} from '@lorrigo/ui/components';
+import { NavigationMenu, NavigationMenuItem, NavigationMenuList } from '@lorrigo/ui/components';
 import { cn } from '@lorrigo/ui/lib/utils';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';

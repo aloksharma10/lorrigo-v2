@@ -3,7 +3,6 @@ import { BaseVendor } from './base-vendor';
 import { APIs } from '@/config/api';
 import { CACHE_KEYS } from '@/config/cache';
 import { formatPhoneNumber, ShipmentBucketManager } from '@lorrigo/utils';
-import { prisma } from '@lorrigo/db';
 import {
   VendorRegistrationResult,
   VendorServiceabilityResult,

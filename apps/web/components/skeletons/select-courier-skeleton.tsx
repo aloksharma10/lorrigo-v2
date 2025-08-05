@@ -1,7 +1,7 @@
 'use client';
 
 import { Skeleton } from '@lorrigo/ui/components';
-import { Loader2, Menu } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { Button } from '@lorrigo/ui/components';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@lorrigo/ui/components';
 

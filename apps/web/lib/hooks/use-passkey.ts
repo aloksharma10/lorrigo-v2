@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { startRegistration, startAuthentication, type RegistrationResponseJSON, type AuthenticationResponseJSON } from '@simplewebauthn/browser';
+import { startRegistration, startAuthentication } from '@simplewebauthn/browser';
 import { api } from '@/lib/apis/axios';
 import { toast } from '@lorrigo/ui/components';
 

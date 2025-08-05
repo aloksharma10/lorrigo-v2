@@ -36,23 +36,7 @@ import {
   AlertDescription,
   toast,
 } from '@lorrigo/ui/components';
-import {
-  User,
-  CreditCard,
-  FileCheck,
-  Settings,
-  Bell,
-  DollarSign,
-  Building,
-  Package,
-  Wallet,
-  Truck,
-  Printer,
-  Save,
-  Loader2,
-  CheckCircle,
-  Shield,
-} from 'lucide-react';
+import { User, FileCheck, Settings, Bell, DollarSign, Building, Package, Wallet, Truck, Printer, Save, Loader2, CheckCircle, Shield } from 'lucide-react';
 import { UserProfile, useUserOperations } from '@/lib/apis/users';
 
 // Zod schema for form validation

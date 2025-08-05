@@ -5,7 +5,7 @@ import type React from 'react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { signIn, getSession } from 'next-auth/react';
+import { signIn } from 'next-auth/react';
 import { Eye, EyeOff, Building2, User, Mail, Phone, FileText, Lock, CheckCircle, AlertCircle, ShoppingBag } from 'lucide-react';
 import {
   Input,

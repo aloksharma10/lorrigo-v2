@@ -1,12 +1,10 @@
 'use client';
-import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from '@lorrigo/ui/components';
+import { Card, CardContent, CardHeader, CardTitle } from '@lorrigo/ui/components';
 
-import { Boxes, CircleHelp, Download, ExternalLink, MoreHorizontal, RefreshCw } from 'lucide-react';
+import { Boxes, CircleHelp } from 'lucide-react';
 import { ShipmentStatusChart } from './components/shipment-status-chart';
 import { DeliveryPerformanceChart } from './components/delivery-performance-chart';
 import { CourierSplitChart } from './components/courier-split-chart';
-import { IndiaMap } from './components/india-map';
-import { Header } from '@/components/header';
 import { ShipmentOverviewTable } from './components/shipment-overview-table';
 import { useShipmentAnalysis } from '@/lib/hooks/use-shipment-analysis';
 import ActionTooltip from '@/components/action-tooltip';

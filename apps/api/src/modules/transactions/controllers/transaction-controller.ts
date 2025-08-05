@@ -277,7 +277,7 @@ export class TransactionController {
    */
   async getTransactionHistory(request: FastifyRequest, reply: FastifyReply) {
     try {
-      let userId = (request.query as any).userId || request.userPayload!.id;
+      const userId = (request.query as any).userId || request.userPayload!.id;
       const isAdmin = request.userPayload!.role === Role.ADMIN;
       const query = request.query as z.infer<typeof GetTransactionHistorySchema>;
 

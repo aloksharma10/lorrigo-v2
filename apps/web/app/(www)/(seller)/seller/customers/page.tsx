@@ -1,13 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import { Checkbox } from '@lorrigo/ui/components';
 import { DataTable } from '@lorrigo/ui/components';
 import { DataTableColumnHeader } from '@lorrigo/ui/components';
-import { Button } from '@lorrigo/ui/components';
-import { MoreHorizontal, Plus, Edit, Trash2, User, Mail, Phone, MapPin } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@lorrigo/ui/components';
-import { toast } from '@lorrigo/ui/components';
+import { User, Mail, Phone, MapPin } from 'lucide-react';
 import type { ColumnDef } from '@lorrigo/ui/components';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { useCustomerOperations, type Customer } from '@/lib/apis/customers';

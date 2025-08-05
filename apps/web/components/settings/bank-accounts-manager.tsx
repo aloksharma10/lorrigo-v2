@@ -3,14 +3,11 @@
 import * as React from 'react';
 import {
   Card,
-  CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
   Button,
   Checkbox,
-  Dialog,
-  DialogTrigger,
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,

@@ -2,7 +2,7 @@
 import { format } from 'date-fns';
 import { useState } from 'react';
 
-import { Button, Calendar, Card, CardContent, Popover, PopoverContent, PopoverTrigger, Separator, Badge, CardHeader, CardTitle } from '@lorrigo/ui/components';
+import { Card, CardContent, Badge, CardHeader, CardTitle } from '@lorrigo/ui/components';
 import { PickupCard } from './pickup-card';
 import { DateRange } from 'react-day-picker';
 import { UpcomingPickupItem } from '@/lib/type/shipment-analysis';

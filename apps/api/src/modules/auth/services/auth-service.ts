@@ -2,7 +2,7 @@ import { PrismaClient } from '@lorrigo/db';
 import bcrypt from 'bcrypt';
 import { FastifyInstance } from 'fastify';
 import { generateId, getFinancialYear } from '@lorrigo/utils';
-import { ShopifyChannel, ShopifyOAuthData } from '../../channels/services/shopify/shopify-channel';
+import { ShopifyChannel } from '../../channels/services/shopify/shopify-channel';
 import { captureException } from '@sentry/node';
 
 interface RegisterData {

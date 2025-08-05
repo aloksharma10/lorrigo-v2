@@ -2,9 +2,9 @@
 
 import type React from 'react';
 
-import { ChevronRight, LucideProps, type LucideIcon } from 'lucide-react';
+import { ChevronRight, LucideProps } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Button, Collapsible, CollapsibleContent, CollapsibleTrigger } from '@lorrigo/ui/components';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@lorrigo/ui/components';
 import {
   SidebarGroup,
   SidebarGroupLabel,

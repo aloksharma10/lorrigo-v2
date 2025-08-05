@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Store, LinkIcon, AlertCircle, CheckCircle2, ShoppingCart, ExternalLink, Unlink } from 'lucide-react';
 import { Button, Alert, AlertTitle, AlertDescription, Skeleton, toast } from '@lorrigo/ui/components';
 import { ChannelCard } from '../channel-card-factory';

@@ -2,12 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { MapPin, Package, Weight, AlertTriangle, Clock, Calendar, Info, Search, Shield, Menu, Loader2 } from 'lucide-react';
+import { MapPin, Package, Weight, Clock, Calendar, Info, Search, Shield, Menu, Loader2 } from 'lucide-react';
 import {
   Button,
   Separator,
-  Alert,
-  AlertDescription,
   Badge,
   Select,
   SelectContent,

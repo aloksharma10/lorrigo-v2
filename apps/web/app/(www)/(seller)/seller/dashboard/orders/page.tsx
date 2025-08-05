@@ -1,21 +1,7 @@
 'use client';
-import { ChartCard } from '@/components/charts/chart-card';
-import { PieChart } from '@/components/charts/pie-chart';
 import { SimpleDataTable, type Column } from '@lorrigo/ui/components';
-import { Badge } from '@lorrigo/ui/components';
-import { Button } from '@lorrigo/ui/components';
-import { CalendarIcon, ChevronDown } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger } from '@lorrigo/ui/components';
-import Link from 'next/link';
 import { useShipmentAnalysis } from '@/lib/hooks/use-shipment-analysis';
-import type {
-  ShipmentPerformanceAnalytics,
-  ChannelAnalysisItem,
-  ZonePerformanceItem,
-  CourierPerformanceItem,
-  WeightAnalysisItem,
-  TopCustomerItem,
-} from '@/lib/type/shipment-analysis';
+import type { ShipmentPerformanceAnalytics, ChannelAnalysisItem, ZonePerformanceItem, WeightAnalysisItem, TopCustomerItem } from '@/lib/type/shipment-analysis';
 
 export default function OrdersPage() {
   const { performance, isTokenReady } = useShipmentAnalysis();

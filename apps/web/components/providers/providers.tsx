@@ -2,9 +2,9 @@
 
 import * as React from 'react';
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
-import { AppProgressProvider as ProgressProvider, useProgress } from '@bprogress/next';
+import { AppProgressProvider as ProgressProvider } from '@bprogress/next';
 
-import { SessionProvider, signOut } from 'next-auth/react';
+import { SessionProvider } from 'next-auth/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@lorrigo/ui/components';
 import { ModalRegistry } from '../../modal/modal-registry';

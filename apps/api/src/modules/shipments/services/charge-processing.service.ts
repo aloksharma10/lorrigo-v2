@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { ChargeType, TransactionStatus } from '@lorrigo/db';
-import { TransactionService, TransactionType, TransactionEntityType } from '../../transactions/services/transaction-service';
+import { TransactionService, TransactionType } from '../../transactions/services/transaction-service';
 
 interface ChargeProcessingResult {
   success: boolean;

@@ -1,4 +1,4 @@
-import { ChargeType, ShipmentStatus, TransactionStatus } from '@lorrigo/db';
+import { ChargeType, ShipmentStatus } from '@lorrigo/db';
 import { z } from 'zod';
 import { FastifyInstance } from 'fastify';
 import {

@@ -12,7 +12,7 @@ const useFetchCityState = (pincode?: string) => {
   const cacheRef = useRef<Map<string, CityStateResponse>>(new Map());
   const [cachedData, setCachedData] = useState<CityStateResponse | null>(null);
 
-  const { data, error, isLoading, refetch } = useQuery<CityStateResponse, Error>({
+  const { error, isLoading, refetch } = useQuery<CityStateResponse, Error>({
     queryKey: ['cityState', pincode],
     queryFn: async () => {
       if (!pincode || pincode.length !== 6) throw new Error('Invalid pincode');

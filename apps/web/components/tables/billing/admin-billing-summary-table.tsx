@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Eye, Info, TrendingUp, Users, Calculator, AlertCircle, RotateCcw, FileText } from 'lucide-react';
+import { Eye, TrendingUp, Users, Calculator, AlertCircle, RotateCcw, FileText } from 'lucide-react';
 import {
   Button,
   DataTable,
@@ -22,7 +22,6 @@ import { useDebounce } from '@/lib/hooks/use-debounce';
 import { useBillingOperations, type BillingSummaryByUser } from '@/lib/apis/billing';
 import { currencyFormatter } from '@lorrigo/utils';
 import { CopyBtn } from '@/components/copy-btn';
-import { BillingSummaryCard } from './billing-field-components';
 
 interface AdminBillingSummaryTableProps {
   month: string;

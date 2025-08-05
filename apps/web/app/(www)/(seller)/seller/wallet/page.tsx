@@ -2,7 +2,7 @@
 
 import { useWalletOperations } from '@/lib/apis/wallet';
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@lorrigo/ui/components';
-import { IndianRupee, Plus, Loader2 } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
 import { useModalStore } from '@/modal/modal-store';
 import { TransactionHistoryTable } from '@/components/tables/billing/transaction-history-table';
 import { currencyFormatter } from '@lorrigo/utils';

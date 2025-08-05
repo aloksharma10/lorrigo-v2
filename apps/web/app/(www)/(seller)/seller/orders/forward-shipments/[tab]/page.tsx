@@ -8,7 +8,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import ScrollableTabsProps from '@/components/client-tabs';
 import ShipmentsTable from '@/components/tables/order/shipmen-table';
 
-import { Badge, Button } from '@lorrigo/ui/components';
+import { Button } from '@lorrigo/ui/components';
 
 interface PageProps {
   params: {

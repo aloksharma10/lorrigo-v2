@@ -1,6 +1,5 @@
 import { FastifyInstance } from 'fastify';
 import { NDRController } from '../controllers/ndr.controller';
-import { authenticateUser } from '@/middleware/auth';
 
 /**
  * NDR Routes

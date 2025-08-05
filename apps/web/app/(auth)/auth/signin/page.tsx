@@ -110,7 +110,6 @@ function SignInForm({ onForgotPasswordClick }: { onForgotPasswordClick: () => vo
         router.push(redirectUrl);
       }
     } catch (error) {
-      console.error('Authentication error:', error);
       setError('An error occurred. Please try again.');
     } finally {
       setIsLoading(false);
@@ -142,7 +141,6 @@ function SignInForm({ onForgotPasswordClick }: { onForgotPasswordClick: () => vo
       // Note: The code below won't execute immediately because signIn will redirect
       // The actual session handling happens in the NextAuth callbacks
     } catch (error) {
-      console.error('Google login error:', error);
       setError('Google login failed. Please try again.');
       setIsGoogleLoading(false);
     }

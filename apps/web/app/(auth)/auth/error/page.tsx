@@ -26,8 +26,6 @@ function ErrorContent() {
         return 'Could not create your account. Email may already be in use.';
       case 'Callback':
         return 'Invalid callback URL.';
-      case 'OAuthAccountNotLinked':
-        return 'To confirm your identity, sign in with the same account you used originally.';
       default:
         return 'An unknown error occurred. Please try again.';
     }

@@ -1,13 +1,11 @@
 'use client';
 
-import { RefreshCw } from 'lucide-react';
 import { useParams, useSearchParams } from 'next/navigation';
 
 import NDRTable from '@/components/tables/order/ndr-table';
 import ScrollableTabsProps from '@/components/client-tabs';
 
 import { NDR_TAB_ROUTES } from '@/lib/routes/nested-shipments';
-import { Badge, Button } from '@lorrigo/ui/components';
 
 export default function NDRPage() {
   const { stage } = useParams<{ stage: string }>();

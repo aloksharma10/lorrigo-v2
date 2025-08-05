@@ -1,6 +1,6 @@
 'use client';
 
-import { IconCreditCard, IconDotsVertical, IconLogout, IconNotification, IconUserCircle } from '@tabler/icons-react';
+import { IconCreditCard, IconDotsVertical, IconLogout, IconUserCircle } from '@tabler/icons-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@lorrigo/ui/components';
 import {

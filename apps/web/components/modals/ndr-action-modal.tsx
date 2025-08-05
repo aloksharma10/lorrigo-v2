@@ -4,10 +4,9 @@ import * as React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { CalendarIcon, Loader2, AlertTriangle, X } from 'lucide-react';
+import { CalendarIcon, AlertTriangle, X } from 'lucide-react';
 import { format } from 'date-fns';
 
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@lorrigo/ui/components';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@lorrigo/ui/components';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@lorrigo/ui/components';
 import { Popover, PopoverContent, PopoverTrigger } from '@lorrigo/ui/components';

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@lorrigo/ui/components';
 import { Button } from '@lorrigo/ui/components';
-import { X, Fingerprint, Shield, Zap } from 'lucide-react';
+import { Fingerprint, Shield, Zap } from 'lucide-react';
 import { usePasskey } from '@/lib/hooks/use-passkey';
 import { useSession } from 'next-auth/react';
 import { toast } from '@lorrigo/ui/components';

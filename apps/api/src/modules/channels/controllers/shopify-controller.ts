@@ -2,7 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { captureException } from '@/lib/sentry';
 import { ChannelConnectionService, Channel } from '../services/channel-connection-service';
-import { ShopifyChannel, ShopifyConnection } from '../services/shopify/shopify-channel';
+import { ShopifyChannel } from '../services/shopify/shopify-channel';
 import {
   ShopifyWebhookService,
   ShopifyCustomerDataRequestPayload,

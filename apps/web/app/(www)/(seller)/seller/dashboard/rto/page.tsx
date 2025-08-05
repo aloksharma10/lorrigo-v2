@@ -2,16 +2,10 @@
 import { ChartCard } from '@/components/charts/chart-card';
 import { PieChart } from '@/components/charts/pie-chart';
 import { SimpleDataTable } from '@lorrigo/ui/components';
-import { Badge } from '@lorrigo/ui/components';
-import { Button } from '@lorrigo/ui/components';
-import { CalendarIcon, ChevronDown } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger } from '@lorrigo/ui/components';
-import Link from 'next/link';
 import { LineChart } from '@/components/charts/line-chart';
 import { BarChart } from '@/components/charts/bar-chart';
 import { MetricCard } from '@/components/charts/metric-card';
 import { useShipmentAnalysis } from '@/lib/hooks/use-shipment-analysis';
-import { RtoAnalytics } from '@/lib/type/analytics';
 import type { ShipmentPerformanceAnalytics } from '@/lib/type/shipment-analysis';
 
 export default function RTOPage() {
