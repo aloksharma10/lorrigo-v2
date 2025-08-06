@@ -3,13 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { signIn, useSession } from 'next-auth/react';
-import { handleShopifyLoginCallback, getShopifyLoginUrl } from '@/lib/apis/channels/shopify/shopify-auth';
+import { useShopifyAuth } from '@/lib/apis/channels/shopify/shopify-auth';
 import { useAuthToken } from '@/components/providers/token-provider';
 import { getRoleBasedRedirect } from '@/lib/routes/redirect';
 import { Role } from '@lorrigo/db';
 import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@lorrigo/ui/components';
-import { api } from '@/lib/apis/axios';
 
 export default function ShopifyCallback() {
   const searchParams = useSearchParams();
@@ -19,6 +18,9 @@ export default function ShopifyCallback() {
   const [processed, setProcessed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { data: session } = useSession();
+  
+  // Use React Query hooks for Shopify operations
+  const { getAuthUrl, handleLoginCallback, connectShopifyStore } = useShopifyAuth();
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -34,11 +36,12 @@ export default function ShopifyCallback() {
         // If we have shop but no code, this means we need to redirect to OAuth
         if (shop && !code) {
           try {
-            const authUrl = await getShopifyLoginUrl(shop);
+            const authUrl = await getAuthUrl.mutateAsync(shop);
             window.location.href = authUrl;
             return;
-          } catch (err) {
+          } catch (err: any) {
             console.error('Failed to get Shopify login URL:', err);
+            setError(err.message || 'Failed to get Shopify login URL');
             setIsLoading(false);
             return;
           }
@@ -47,69 +50,75 @@ export default function ShopifyCallback() {
         // If we have code, state, and shop, handle the OAuth callback
         if (code && state && shop) {
           if (isTokenReady || session?.user?.email) {
-            // User is authenticated - this is a connect flow
-            console.log('User is authenticated, treating as connect flow');
 
             try {
               // Call the connect API to attach Shopify store to existing account
-              const response = await api.post<any>('/channels/shopify/connect', { code, state, shop });
+              const response = await connectShopifyStore.mutateAsync({ code, state, shop });
 
-              if (response.status === 200) {
+              if (response.success) {
                 // Successfully connected, redirect to channels page
                 setTimeout(() => {
                   router.push('/seller/channels?shopify=connected');
                 }, 2000);
                 return;
               } else {
-                setError(response.data.error || 'Failed to connect Shopify store');
+                setError(response.error || 'Failed to connect Shopify store');
                 setIsLoading(false);
                 return;
               }
             } catch (err: any) {
               console.error('Error connecting Shopify store:', err);
-              setError(err.response.data.error || 'Failed to connect Shopify store');
+              setError(err.response?.data?.error || err.message || 'Failed to connect Shopify store');
               setIsLoading(false);
               return;
             }
           } else {
             // Handle Shopify OAuth callback for login
-            const result = await handleShopifyLoginCallback(code, state, shop);
+            try {
+              const result = await handleLoginCallback.mutateAsync({ code, state, shop });
 
-            // Use NextAuth signIn with the Shopify token
-            const signInResult = await signIn('credentials', {
-              email: result.user.email,
-              password: result.token, // Use token as password for Shopify auth
-              redirect: false,
-            });
+              // Use NextAuth signIn with the Shopify token
+              const signInResult = await signIn('credentials', {
+                email: result.user.email,
+                password: result.token, // Use token as password for Shopify auth
+                redirect: false,
+              });
 
-            if (signInResult?.error) {
-              setError('Failed to authenticate with Shopify');
+              if (signInResult?.error) {
+                setError('Failed to authenticate with Shopify');
+                setIsLoading(false);
+                return;
+              }
+
+              setAuthToken(result.token);
+
+              // For non-embedded apps, redirect to the app's dashboard
+              const redirectUrl = getRoleBasedRedirect(result.user.role as Role);
+
+              // Add a small delay to ensure session is created
+              setTimeout(() => {
+                router.push(redirectUrl);
+              }, 500);
+              return;
+            } catch (err: any) {
+              console.error('Error handling Shopify login callback:', err);
+              setError(err.message || 'Failed to authenticate with Shopify');
               setIsLoading(false);
               return;
             }
-
-            setAuthToken(result.token);
-
-            // For non-embedded apps, redirect to the app's dashboard
-            const redirectUrl = getRoleBasedRedirect(result.user.role as Role);
-
-            // Add a small delay to ensure session is created
-            setTimeout(() => {
-              router.push(redirectUrl);
-            }, 500);
-            return;
           }
         }
 
         // If we don't have the required parameters, show error
         setIsLoading(false);
       } catch (err) {
+        console.error('Unexpected error in Shopify callback:', err);
         setIsLoading(false);
       }
     };
 
     handleCallback();
-  }, [searchParams, router, setAuthToken, processed]);
+  }, [searchParams, router, setAuthToken, processed, getAuthUrl, handleLoginCallback, connectShopifyStore, isTokenReady, session]);
 
   if (isLoading) {
     return (
@@ -150,33 +159,6 @@ export default function ShopifyCallback() {
       </div>
     );
   }
-
-  // if (error) {
-  //   return (
-  //     <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
-  //       <div className="mx-auto max-w-md text-center">
-  //         <Alert variant="destructive" className="mb-4">
-  //           <AlertCircle className="h-4 w-4" />
-  //           <AlertDescription>{error}</AlertDescription>
-  //         </Alert>
-  //         <div className="space-y-2">
-  //           <button
-  //             onClick={() => router.push('/auth/signin')}
-  //             className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 mr-2"
-  //           >
-  //             Back to Sign In
-  //           </button>
-  //           <button
-  //             onClick={() => window.location.reload()}
-  //             className="rounded-md bg-gray-600 px-4 py-2 text-sm font-medium text-white hover:bg-gray-500"
-  //           >
-  //             Try Again
-  //           </button>
-  //         </div>
-  //       </div>
-  //     </div>
-  //   );
-  // }
 
   return null;
 }

@@ -307,7 +307,6 @@ export class ShopifyController {
       // Return connection details (without sensitive data like access_token)
       reply.send({
         shop: connection.shop,
-        scope: connection.scope,
         connected_at: connection.connected_at,
         status: 'active',
       });

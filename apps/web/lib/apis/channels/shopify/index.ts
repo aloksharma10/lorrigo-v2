@@ -61,7 +61,6 @@ export const useShopify = () => {
       return response.data;
     },
     enabled: isTokenReady,
-    retry: 1,
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
