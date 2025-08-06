@@ -98,24 +98,48 @@ export class CourierService {
       page?: number;
       limit?: number;
       search?: string;
-      is_active?: boolean;
+      is_active?: string[];
+      courier_type?: ('EXPRESS' | 'SURFACE' | 'AIR')[];
+      weight_slab?: number[];
+      is_reversed_courier?: string[];
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
     } = {}
   ) {
-    const { page = 1, limit = 15, search, is_active } = queryParams;
+    const { page = 1, limit = 15, search, is_active, courier_type, weight_slab, is_reversed_courier, sortBy = 'name', sortOrder = 'asc' } = queryParams;
 
     const skip = (page - 1) * limit;
 
     // Build base where clause
     let where: any = {};
 
-    // Add search filter
+    // Add global search filter
     if (search) {
-      where.OR = [{ name: { contains: search, mode: 'insensitive' } }, { courier_code: { contains: search, mode: 'insensitive' } }];
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { courier_code: { contains: search, mode: 'insensitive' } },
+        { channel_config: { nickname: { contains: search, mode: 'insensitive' } } },
+      ];
     }
 
     // Add status filter
-    if (is_active !== undefined) {
+    if (is_active && is_active.length > 0) {
       where.is_active = is_active;
+    }
+
+    // Add courier type filter
+    if (courier_type && courier_type.length > 0) {
+      where.type = { in: courier_type };
+    }
+
+    // Add weight slab filter
+    if (weight_slab && weight_slab.length > 0) {
+      where.weight_slab = { in: weight_slab };
+    }
+
+    // Add forward/reverse courier filter
+    if (is_reversed_courier && is_reversed_courier.length > 0) {
+      where.is_reversed_courier = is_reversed_courier;
     }
 
     // If not an admin, only show couriers available to the specific seller
@@ -143,9 +167,27 @@ export class CourierService {
         id: { in: courierIds },
         is_active: true,
       };
-    } else if (is_active === undefined) {
+    } else if (!is_active || is_active.length === 0) {
       // For admins, default to showing all active couriers unless explicitly filtering
       where.is_active = true;
+    }
+
+    // Build order by clause
+    let orderBy: any = {};
+    if (sortBy === 'name') {
+      orderBy.name = sortOrder;
+    } else if (sortBy === 'type') {
+      orderBy.type = sortOrder;
+    } else if (sortBy === 'weight_slab') {
+      orderBy.weight_slab = sortOrder;
+    } else if (sortBy === 'is_active') {
+      orderBy.is_active = sortOrder;
+    } else if (sortBy === 'is_reversed_courier') {
+      orderBy.is_reversed_courier = sortOrder;
+    } else if (sortBy === 'created_at') {
+      orderBy.created_at = sortOrder;
+    } else {
+      orderBy.name = 'asc'; // default sorting
     }
 
     // Get total count for pagination
@@ -154,9 +196,7 @@ export class CourierService {
     // Get couriers with pagination
     const couriers = await this.fastify.prisma.courier.findMany({
       where,
-      orderBy: {
-        name: 'asc',
-      },
+      orderBy,
       include: {
         channel_config: {
           select: {
@@ -170,12 +210,14 @@ export class CourierService {
 
     const formattedCouriers = couriers.map((courier) => ({
       id: courier.id,
-      name: `${courier.name} (${courier.channel_config?.nickname})`,
+      name: courier.name,
       type: courier.type,
       is_active: courier.is_active,
       is_reversed_courier: courier.is_reversed_courier,
       weight_slab: courier.weight_slab,
       increment_weight: courier.increment_weight,
+      weight_unit: courier.weight_unit,
+      channel_config: courier.channel_config,
     }));
 
     return {
@@ -184,6 +226,8 @@ export class CourierService {
       page,
       limit,
       totalPages: Math.ceil(total / limit),
+      hasNextPage: page < Math.ceil(total / limit),
+      hasPreviousPage: page > 1,
     };
   }
 

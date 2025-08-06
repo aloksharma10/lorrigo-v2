@@ -126,8 +126,9 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
     return () => subscription.unsubscribe();
   }, [form]);
 
-  const couriers: Courier[] = getCouriersQuery.data?.couriers || [];
-  const isLoadingCouriers = getCouriersQuery.isLoading;
+  const couriersQuery = getCouriersQuery();
+  const couriers = couriersQuery.data?.couriers || [];
+  const isLoadingCouriers = couriersQuery.isLoading;
   const isSubmitting = isEditing ? updatePlan.isPending : createPlan.isPending;
 
   // Get selected couriers

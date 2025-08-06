@@ -70,13 +70,54 @@ export class CourierController {
         limit?: string;
         search?: string;
         is_active?: string;
+        courier_type?: string;
+        weight_slab?: string;
+        is_reversed_courier?: string;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
+        globalFilter?: string;
+        filters?: string;
+        sorting?: string;
       };
 
+      // Parse comma-separated filter values
+      const parseCommaSeparatedValues = (value: string | undefined): string[] => {
+        if (!value) return [];
+        return value.split(',').map(v => v.trim()).filter(v => v.length > 0);
+      };
+
+      // Extract filter values
+      const isActiveValues = parseCommaSeparatedValues(queryParams.is_active);
+      const courierTypeValues = parseCommaSeparatedValues(queryParams.courier_type);
+      const weightSlabValues = parseCommaSeparatedValues(queryParams.weight_slab);
+      const isReversedCourierValues = parseCommaSeparatedValues(queryParams.is_reversed_courier);
+
+      // Determine sortBy and sortOrder from sorting array
+      let sortBy = 'name';
+      let sortOrder: 'asc' | 'desc' = 'asc';
+      
+      if (queryParams.sorting) {
+        try {
+          const sorting = JSON.parse(queryParams.sorting);
+          if (sorting.length > 0 && sorting[0]) {
+            sortBy = sorting[0].id;
+            sortOrder = sorting[0].desc ? 'desc' : 'asc';
+          }
+        } catch (e) {
+          // Ignore parsing errors, use defaults
+        }
+      }
+
       const parsedParams = {
-        page: queryParams.page ? parseInt(queryParams.page) : undefined,
-        limit: queryParams.limit ? parseInt(queryParams.limit) : undefined,
-        search: queryParams.search,
-        is_active: queryParams.is_active ? queryParams.is_active === 'true' : undefined,
+        page: queryParams.page ? parseInt(queryParams.page) : 1,
+        limit: queryParams.limit ? parseInt(queryParams.limit) : 15,
+        search: queryParams.globalFilter || queryParams.search,
+        is_active: isActiveValues.length > 0 ? isActiveValues : undefined,
+        courier_type: courierTypeValues.length > 0 ? courierTypeValues as ('EXPRESS' | 'SURFACE' | 'AIR')[] : undefined,
+        weight_slab: weightSlabValues.length > 0 ? weightSlabValues.map(v => parseFloat(v)) : undefined,
+        is_reversed_courier: isReversedCourierValues.length > 0 ? isReversedCourierValues : undefined,
+        sortBy,
+        sortOrder,
       };
 
       const result = await this.courierService.getAllCouriers(userId, userRole, parsedParams);

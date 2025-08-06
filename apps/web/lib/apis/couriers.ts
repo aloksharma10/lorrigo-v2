@@ -35,20 +35,83 @@ export interface CourierPricing {
   zone_pricing: ZonePricing[];
 }
 
+// Types for courier data
+export interface Courier {
+  id: string;
+  name: string;
+  code: string;
+  courier_code?: string;
+  type: 'EXPRESS' | 'SURFACE' | 'AIR';
+  is_active: boolean;
+  is_reversed_courier: boolean;
+  weight_slab?: number;
+  increment_weight?: number;
+  weight_unit?: string;
+  pickup_time?: string;
+  cod_charge_hard?: number;
+  cod_charge_percent?: number;
+  channel_config?: {
+    nickname: string;
+  };
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CouriersResponse {
+  couriers: Courier[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+export interface CouriersQueryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  is_active?: string;
+  courier_type?: string;
+  weight_slab?: string;
+  is_reversed_courier?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  globalFilter?: string;
+  sorting?: { id: string; desc: boolean }[];
+}
+
 export const useCourierOperations = () => {
   const queryClient = useQueryClient();
   const { isTokenReady } = useAuthToken();
 
-  // Fetch all couriers
-  const getCouriersQuery = useQuery({
-    queryKey: ['couriers'],
-    queryFn: () => api.get<any>('/couriers'),
-    staleTime: 1000 * 60 * 5,
-    gcTime: 1000 * 60 * 10,
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    enabled: isTokenReady, // Only run query when token is ready
-  });
+  // Fetch all couriers with advanced filtering
+  const getCouriersQuery = (params: CouriersQueryParams = {}) =>
+    useQuery({
+      queryKey: ['couriers', params],
+      queryFn: () => {
+        // Build query parameters
+        const queryParams = new URLSearchParams();
+
+        if (params.page) queryParams.append('page', params.page.toString());
+        if (params.limit) queryParams.append('limit', params.limit.toString());
+        if (params.globalFilter) queryParams.append('globalFilter', params.globalFilter);
+        if (params.is_active) queryParams.append('is_active', params.is_active);
+        if (params.courier_type) queryParams.append('courier_type', params.courier_type);
+        if (params.weight_slab) queryParams.append('weight_slab', params.weight_slab);
+        if (params.is_reversed_courier) queryParams.append('is_reversed_courier', params.is_reversed_courier);
+        if (params.sorting && params.sorting.length > 0) {
+          queryParams.append('sorting', JSON.stringify(params.sorting));
+        }
+
+        return api.get<CouriersResponse>(`/couriers?${queryParams.toString()}`);
+      },
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 10,
+      retry: 3,
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      enabled: isTokenReady,
+    });
 
   // Fetch courier pricing
   const getCourierPricing = (courierId: string) =>
@@ -59,7 +122,7 @@ export const useCourierOperations = () => {
       gcTime: 1000 * 60 * 10,
       retry: 3,
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-      enabled: isTokenReady && !!courierId, // Only run query when token is ready and courierId is provided
+      enabled: isTokenReady && !!courierId,
     });
 
   // Create Courier

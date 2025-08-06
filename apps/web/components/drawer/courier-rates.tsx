@@ -173,8 +173,8 @@ export default function CourierRates({
   return (
     <DrawerComponent open={isOpen} onOpenChange={onClose} size={size} side={side}>
       <div className="bg-background sticky top-0 z-10 flex items-center justify-between border-b px-4 py-4">
-        <DrawerComponent.Title className="flex items-center gap-2 text-sm md:text-base lg:text-xl font-semibold">
-          <Truck className="h-5 w-5 text-primary" />
+        <DrawerComponent.Title className="flex items-center gap-2 text-sm font-semibold md:text-base lg:text-xl">
+          <Truck className="text-primary h-5 w-5" />
           {courierName || 'Courier'} Rates
         </DrawerComponent.Title>
         <DrawerComponent.Close asChild>

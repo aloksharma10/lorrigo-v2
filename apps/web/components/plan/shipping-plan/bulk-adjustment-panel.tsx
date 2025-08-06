@@ -82,15 +82,12 @@ export function BulkAdjustmentPanel({
                 max="1000"
               />
             </div>
-            <Button onClick={handleApply} disabled={isApplying || selectedCourierIndices.size === 0} className=" font-semibold">
+            <Button onClick={handleApply} disabled={isApplying || selectedCourierIndices.size === 0} className="font-semibold">
               {isApplying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
               Apply to Selected ({selectedCourierIndices.size})
             </Button>
             {hasUnsavedChanges && (
-              <Button
-                onClick={onResetPricing}
-                variant="outline"
-              >
+              <Button onClick={onResetPricing} variant="outline">
                 <RotateCcw className="mr-2 h-4 w-4" />
                 Reset All
               </Button>

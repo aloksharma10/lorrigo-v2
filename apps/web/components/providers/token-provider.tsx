@@ -21,6 +21,7 @@ interface TokenContextType {
   setAuthToken: (token: string | null) => void;
   clearAuthToken: () => void;
   isTokenReady: boolean;
+  isAdmin: boolean;
 }
 
 const TokenContext = React.createContext<TokenContextType | undefined>(undefined);
@@ -36,6 +37,7 @@ export const useAuthToken = () => {
 export function TokenProvider({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const [isTokenReady, setIsTokenReady] = React.useState(false);
+  const isAdmin = session?.user?.role === 'ADMIN';
 
   const token = React.useMemo(() => session?.user?.token || null, [session]);
 
@@ -69,5 +71,5 @@ export function TokenProvider({ children }: { children: React.ReactNode }) {
     return null; // Prevent rendering children until session is loaded
   }
 
-  return <TokenContext.Provider value={{ setAuthToken, clearAuthToken, isTokenReady }}>{children}</TokenContext.Provider>;
+  return <TokenContext.Provider value={{ setAuthToken, clearAuthToken, isTokenReady, isAdmin }}>{children}</TokenContext.Provider>;
 }

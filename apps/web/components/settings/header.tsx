@@ -54,7 +54,13 @@ export function SettingsHeader({ id }: { id: string }) {
         </div>
         <div className="flex items-center gap-2">
           {user.plan && (
-            <Button tooltipLabel={` Editing plan can also affect the user's current plan`} tooltipDelayDuration={0} size="sm" onClick={handleEditPlan} tooltipIcon={AlertOctagonIcon}>
+            <Button
+              tooltipLabel={` Editing plan can also affect the user's current plan`}
+              tooltipDelayDuration={0}
+              size="sm"
+              onClick={handleEditPlan}
+              tooltipIcon={AlertOctagonIcon}
+            >
               Edit Plan
             </Button>
           )}

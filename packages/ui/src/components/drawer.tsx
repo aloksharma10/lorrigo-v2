@@ -17,19 +17,19 @@ export type DrawerSide = 'right' | 'left' | 'top' | 'bottom';
 function getDrawerWidth(size: DrawerSize): string {
   switch (size) {
     case 'xs':
-      return 'md:w-[300px]';
+      return 'lg:w-[300px]';
     case 'sm':
-      return 'md:w-[400px]';
+      return 'lg:w-[400px]';
     case 'md':
-      return 'md:w-[540px]';
+      return 'lg:w-[540px]';
     case 'lg': // greater-mid
-      return 'md:w-[680px]'; 
+      return 'lg:w-[680px]'; 
     case 'xl':
-      return 'md:w-[1080px]';
+      return 'lg:w-[1080px]';
     case 'full':
-      return 'md:w-[90vw]';
+      return 'lg:w-[90vw]';
     default:
-      return 'md:w-[540px]';
+      return 'lg:w-[540px]';
   }
 }
 

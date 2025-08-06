@@ -103,7 +103,7 @@ export default async function channelRoutes(fastify: FastifyInstance): Promise<v
 
   // Get active channel configurations (for dropdowns/selection)
   fastify.get('/active', {
-    preHandler: [authorizeRoles([Role.ADMIN, Role.SUBADMIN, Role.SELLER])],
+    preHandler: [authorizeRoles([Role.ADMIN, Role.SUBADMIN])],
     schema: {
       tags: ['Channel Configuration'],
       summary: 'Get active channel configurations',

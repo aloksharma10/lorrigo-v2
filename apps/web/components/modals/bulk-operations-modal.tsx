@@ -80,7 +80,8 @@ export function BulkOrdersOperationsModal({
 
   const { createBulkShipments, scheduleBulkPickups, cancelBulkShipments, downloadBulkOperationFile } = useShippingOperations();
   const { getCouriersQuery } = useCourierOperations();
-  const availableCouriers = getCouriersQuery.data?.couriers || [];
+  const couriersQuery = getCouriersQuery();
+  const availableCouriers = couriersQuery.data?.couriers || [];
 
   // Forms for each operation type
   const createShipmentForm = useForm<z.infer<typeof createShipmentSchema>>({
@@ -460,7 +461,7 @@ export function BulkOrdersOperationsModal({
                           <SelectValue placeholder="Select courier" />
                         </SelectTrigger>
                         <SelectContent>
-                          {getCouriersQuery.isLoading ? (
+                          {couriersQuery.isLoading ? (
                             <SelectItem value="loading" disabled>
                               Loading couriers...
                             </SelectItem>

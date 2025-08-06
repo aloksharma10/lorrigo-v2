@@ -180,8 +180,8 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
               <div className="flex flex-col">
                 <div className="font-medium">{shipment.customer?.name}</div>
                 <div className="text-muted-foreground text-sm">
-                  <CopyBtn label={shipment.customer?.phone} tooltipText="Copy Phone" text={shipment.customer?.phone || ''} />
-                  <CopyBtn label={shipment.customer?.email} tooltipText="Copy Email" text={shipment.customer?.email || ''} />
+                  <CopyBtn showVisibilityToggle={true} label={shipment.customer?.phone} tooltipText="Copy Phone" text={shipment.customer?.phone || ''} />
+                  <CopyBtn showVisibilityToggle={true} label={shipment.customer?.email} tooltipText="Copy Email" text={shipment.customer?.email || ''} />
                 </div>
               </div>
             }
