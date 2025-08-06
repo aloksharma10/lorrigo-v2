@@ -37,6 +37,7 @@ interface LoginResult {
     role: string;
     hasPasskeys?: boolean;
     hasShopifyConnection?: boolean;
+    hasPrimaryPickupAddress?: boolean;
   };
   token: string;
 }
@@ -178,6 +179,13 @@ export class AuthService {
     // Find user by email
     const user = await this.prisma.user.findUnique({
       where: { email },
+      include: {
+        hubs: {
+          where: {
+            is_primary: true,
+          },
+        },
+      },
     });
 
     // Check if user exists
@@ -269,9 +277,9 @@ export class AuthService {
             data: {
               user_id: newUser.id,
               notification_settings: {
-                whatsapp: true,
+                whatsapp: false,
                 email: true,
-                sms: true,
+                sms: false,
                 push: true,
               },
             },
@@ -370,6 +378,7 @@ export class AuthService {
         role: user.role,
         hasPasskeys: user.hasPasskeys,
         hasShopifyConnection: user.shopify_connection !== null,
+        hasPrimaryPickupAddress: user.hubs.length > 0,
       },
       token,
     };

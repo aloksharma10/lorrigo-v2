@@ -16,6 +16,7 @@ declare module 'next-auth' {
       token?: string;
       hasPasskeys?: boolean;
       hasShopifyConnection?: boolean;
+      hasPrimaryPickupAddress?: boolean;
     };
   }
 }
@@ -70,6 +71,7 @@ export const result = NextAuth({
                 token: credentials.password as string,
                 hasPasskeys: data.user.hasPasskeys,
                 hasShopifyConnection: data.user.hasShopifyConnection,
+                hasPrimaryPickupAddress: data.user.hasPrimaryPickupAddress,
               };
             }
             return null;
@@ -109,6 +111,7 @@ export const result = NextAuth({
             token: data.token,
             hasPasskeys: data.user.hasPasskeys,
             hasShopifyConnection: data.user.hasShopifyConnection,
+            hasPrimaryPickupAddress: data.user.hasPrimaryPickupAddress,
           };
         } catch (err) {
           console.error('Auth error:', err);
@@ -163,6 +166,7 @@ export const result = NextAuth({
           (user as any).hasPasskeys = data.user.hasPasskeys;
           (user as any).id = data.user.id;
           (user as any).hasShopifyConnection = data.user.hasShopifyConnection;
+          (user as any).hasPrimaryPickupAddress = data.user.hasPrimaryPickupAddress;
           return true;
         } catch (error) {
           console.error('Error in Google OAuth signIn:', error);
@@ -182,6 +186,8 @@ export const result = NextAuth({
         token.hasPasskeys = user.hasPasskeys;
         // @ts-ignore
         token.hasShopifyConnection = user.hasShopifyConnection;
+        // @ts-ignore
+        token.hasPrimaryPickupAddress = user.hasPrimaryPickupAddress;
       }
       return token;
     },
@@ -192,6 +198,7 @@ export const result = NextAuth({
         session.user.token = (token.token as any) || '';
         session.user.hasPasskeys = token.hasPasskeys as boolean;
         session.user.hasShopifyConnection = token.hasShopifyConnection as boolean;
+        session.user.hasPrimaryPickupAddress = token.hasPrimaryPickupAddress as boolean;
       }
       return session;
     },
