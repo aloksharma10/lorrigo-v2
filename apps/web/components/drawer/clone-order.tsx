@@ -13,7 +13,7 @@ export default function CloneOrder({
   isLoading = false,
   isOpen = false,
   drawerId,
-  size = 'greater-mid',
+  size = 'lg',
   side = 'right',
 }: {
   order?: any;

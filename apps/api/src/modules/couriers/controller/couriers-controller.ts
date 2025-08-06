@@ -20,7 +20,7 @@ const createCourierSchema = z.object({
   weight_slab: z.number().optional(),
   weight_unit: z.string().optional(),
   increment_weight: z.number().optional(),
-  type: z.enum(['EXPRESS', 'SURFACE']).default('SURFACE'),
+  type: z.enum(['EXPRESS', 'SURFACE', 'AIR']).default('SURFACE'),
   pickup_time: z.string().optional(),
   // api_credentials: z
   //   .object({

@@ -207,7 +207,6 @@ export const ShipmentActionButton: React.FC<ShipmentActionButtonProps> = ({ ship
           onClick={() => {
             openDrawer('clone-order', {
               order: shipment,
-              size: 'greater-mid',
               side: 'right',
             });
           }}
@@ -269,7 +268,6 @@ export const ShipmentCloneButton: React.FC<{ shipment: Shipment }> = ({ shipment
       onClick={() => {
         openDrawer('clone-order', {
           order: shipment,
-          size: 'greater-mid',
           side: 'right',
         });
       }}
@@ -286,7 +284,6 @@ export const ShipmentEditButton: React.FC<{ shipment: Shipment }> = ({ shipment 
       onClick={() => {
         openDrawer('edit-order', {
           order: shipment,
-          size: 'greater-mid',
           side: 'right',
         });
       }}
@@ -353,7 +350,6 @@ export const CreateReturnShipmentButton: React.FC<{ shipment: Shipment }> = ({ s
         orderNumber: `${shipment.orderNumber}-RT`,
         isReturnOrder: true,
       },
-      size: 'greater-mid',
       side: 'right',
     });
   };

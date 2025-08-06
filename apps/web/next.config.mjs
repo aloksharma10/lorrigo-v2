@@ -12,18 +12,10 @@ const nextConfig = {
   reactStrictMode: true,
 
   // Transpile only essential client-side monorepo packages
-  transpilePackages: [
-    '@lorrigo/ui',
-    '@lorrigo/utils',
-  ],
+  transpilePackages: ['@lorrigo/ui', '@lorrigo/utils'],
 
   // Exclude server-only packages from client bundles
-  serverExternalPackages: [
-    '@prisma/client',
-    '@prisma/client/runtime/library',
-    'bcrypt',
-    '@auth/prisma-adapter',
-  ],
+  serverExternalPackages: ['@prisma/client', '@prisma/client/runtime/library', 'bcrypt', '@auth/prisma-adapter'],
 
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname, '../../'),
@@ -34,9 +26,7 @@ const nextConfig = {
   },
 
   images: {
-    remotePatterns: [
-      { protocol: 'https', hostname: 'cdn.lorrigo.com' },
-    ],
+    remotePatterns: [{ protocol: 'https', hostname: 'cdn.lorrigo.com' }],
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 31536000,
   },
@@ -47,9 +37,7 @@ const nextConfig = {
     return [
       {
         source: '/:all*(css|js|png|jpg|jpeg|gif|svg|woff|woff2|avif|webp)',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
-        ],
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
       },
       {
         source: '/:path*',
@@ -86,7 +74,7 @@ const nextConfig = {
         }),
         new PrismaPlugin({
           clientPath: path.resolve(__dirname, '../../packages/db'),
-        }),
+        })
       );
     }
 

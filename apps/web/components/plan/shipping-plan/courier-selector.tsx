@@ -75,7 +75,7 @@ export function CourierSelector({ availableCouriers, onSelectCourier, onSelectMu
                 className="hover:bg-primary/10 flex cursor-pointer items-center space-x-2 rounded-md p-2"
                 onClick={() => handleToggleCourier(courier.id)}
               >
-                <Checkbox checked={selectedCouriers.includes(courier.id)} onCheckedChange={() => handleToggleCourier(courier.id)} />
+                <Checkbox checked={selectedCouriers.includes(courier.id)} />
                 <div className="flex w-full items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <Truck className="h-4 w-4" />

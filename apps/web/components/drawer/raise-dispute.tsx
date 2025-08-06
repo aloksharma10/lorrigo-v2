@@ -29,7 +29,7 @@ interface RaiseDisputeProps {
   side?: DrawerSide;
 }
 
-export default function RaiseDispute({ dispute, onClose, isOpen = false, size = 'greater-mid', side = 'right' }: RaiseDisputeProps) {
+export default function RaiseDispute({ dispute, onClose, isOpen = false, size = 'lg', side = 'right' }: RaiseDisputeProps) {
   const closeDrawer = useDrawerStore((state) => state.closeDrawer);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [images, setImages] = useState<(File | undefined)[]>([]);

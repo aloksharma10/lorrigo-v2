@@ -66,13 +66,11 @@ export default async function courierRoutes(fastify: FastifyInstance) {
 
   // Get all active couriers (All authenticated users)
   fastify.get('/', {
-    preHandler: [authenticateUser],
     handler: (request, reply) => courierController.getAllCouriers(request, reply),
   });
 
   // Get a specific courier
   fastify.get('/:id', {
-    preHandler: [authenticateUser],
     handler: (request, reply) => courierController.getCourierById(request, reply),
   });
 
@@ -90,7 +88,6 @@ export default async function courierRoutes(fastify: FastifyInstance) {
 
   // Get courier pricing for a user
   fastify.get('/pricing/:courierId', {
-    preHandler: [authenticateUser],
     handler: (request, reply) => courierController.getCourierPricing(request, reply),
   });
 

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Checkbox } from '@lorrigo/ui/components';
+import { Button, Checkbox } from '@lorrigo/ui/components';
 import { DataTable } from '@lorrigo/ui/components';
 import { DataTableColumnHeader } from '@lorrigo/ui/components';
 import { Badge } from '@lorrigo/ui/components';
@@ -11,6 +11,7 @@ import { useDebounce } from '@/lib/hooks/use-debounce';
 import { useCourierOperations } from '@/lib/apis/couriers';
 import { useSearchParams } from 'next/navigation';
 import { Truck } from 'lucide-react';
+import { useDrawer } from '@/components/providers/drawer-provider';
 
 interface Courier {
   id: string;
@@ -38,6 +39,7 @@ export default function CouriersPage() {
   const [filters, setFilters] = React.useState<{ id: string; value: any }[]>([]);
   const [globalFilter, setGlobalFilter] = React.useState(initialParams.search || '');
   const debouncedGlobalFilter = useDebounce(globalFilter, 500);
+  const { openDrawer } = useDrawer();
 
   // API hooks
   const { getCouriersQuery, createCourier, updateCourier, deleteCourier } = useCourierOperations();
@@ -68,28 +70,6 @@ export default function CouriersPage() {
 
   // Define the columns for the data table
   const columns: ColumnDef<Courier>[] = [
-    {
-      id: 'select',
-      header: ({ table }) => (
-        <Checkbox
-          checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-          disabled={isLoading}
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
-          onClick={(e) => e.stopPropagation()}
-          disabled={isLoading}
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
     {
       accessorKey: 'name',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Courier Name" />,
@@ -155,6 +135,20 @@ export default function CouriersPage() {
       enableSorting: true,
       enableHiding: true,
     },
+    {
+      accessorKey: 'rate_card',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Rate Card" />,
+      cell: ({ row }) => {
+        const courier = row.original;
+        return (
+          <Button variant="outline" size="sm" onClick={() => openDrawer('courier-rates', { courierId: courier.id, size: 'xl', courierName: courier.name })}>
+            View Rate Card
+          </Button>
+        );
+      },
+      enableSorting: true,
+      enableHiding: true,
+    },
   ];
 
   return (
@@ -167,6 +161,9 @@ export default function CouriersPage() {
       </div>
 
       <DataTable
+        dateRangeFilter={false}
+        advancedFilter={false}
+        searchPlaceholder="Search by courier name..."
         columns={columns}
         data={data?.couriers || []}
         count={data?.total || 0}

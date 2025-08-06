@@ -2,7 +2,7 @@ import type React from 'react';
 import { create } from 'zustand';
 import { DrawerSize, DrawerSide } from '@lorrigo/ui/components';
 
-export type DrawerType = 'clone-order' | 'edit-order' | 'raise-dispute';
+export type DrawerType = 'clone-order' | 'edit-order' | 'raise-dispute' | 'courier-rates';
 
 export type DrawerProps = Record<string, unknown> & {
   size?: DrawerSize;
@@ -40,6 +40,7 @@ export const useDrawerStore = create<DrawerState>((set, get) => ({
     'clone-order': undefined as unknown as DrawerComponent,
     'edit-order': undefined as unknown as DrawerComponent,
     'raise-dispute': undefined as unknown as DrawerComponent,
+    'courier-rates': undefined as unknown as DrawerComponent,
   },
   registerDrawer: (type, component) =>
     set((state) => ({

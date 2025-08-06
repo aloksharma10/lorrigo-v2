@@ -11,7 +11,7 @@ interface FormHeaderProps {
 
 export function FormHeader({ isEditing, isSubmitting, onSubmit }: FormHeaderProps) {
   return (
-    <Card className="from-secondary to-secondary/90 dark:from-secondary dark:to-secondary/90 border-0 bg-gradient-to-r shadow-lg">
+    <Card className="bg-secondary shadow-lg sticky top-20 z-10">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -23,7 +23,7 @@ export function FormHeader({ isEditing, isSubmitting, onSubmit }: FormHeaderProp
               <CardDescription>Configure pricing, features, and courier settings for your shipping plan</CardDescription>
             </div>
           </div>
-          <Button onClick={onSubmit} disabled={isSubmitting} className="bg-background text-primary hover:bg-background/90 px-6 font-semibold">
+          <Button onClick={onSubmit} disabled={isSubmitting} isLoading={isSubmitting} className=" bg-background text-primary hover:bg-background/90 px-6 font-semibold">
             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
             {isEditing ? 'Update Plan' : 'Create Plan'}
           </Button>

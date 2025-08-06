@@ -13,7 +13,7 @@ interface CourierData {
   weight_slab?: number;
   weight_unit?: string;
   increment_weight?: number;
-  type: 'EXPRESS' | 'SURFACE';
+  type: 'EXPRESS' | 'SURFACE' | 'AIR';
   pickup_time?: string;
   api_credentials?: {
     api_key?: string;
@@ -171,6 +171,7 @@ export class CourierService {
     const formattedCouriers = couriers.map((courier) => ({
       id: courier.id,
       name: `${courier.name} (${courier.channel_config?.nickname})`,
+      type: courier.type,
       is_active: courier.is_active,
       is_reversed_courier: courier.is_reversed_courier,
       weight_slab: courier.weight_slab,
@@ -320,6 +321,9 @@ export class CourierService {
           },
         },
         courier_id: courierId,
+      },
+      include: {
+        zone_pricing: true,
       },
     });
 

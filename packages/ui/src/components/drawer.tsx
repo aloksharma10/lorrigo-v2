@@ -4,18 +4,30 @@ import { cn } from '@lorrigo/ui/lib/utils';
 import { ComponentProps } from 'react';
 import { ContentProps, Drawer } from 'vaul';
 
-export type DrawerSize = 'default' | 'less-mid' | 'greater-mid' | 'full';
+export type DrawerSize =
+  | 'xs'
+  | 'sm'
+  | 'md'
+  | 'lg'
+  | 'xl'
+  | 'full';
+
 export type DrawerSide = 'right' | 'left' | 'top' | 'bottom';
 
 function getDrawerWidth(size: DrawerSize): string {
   switch (size) {
-    case 'less-mid':
+    case 'xs':
+      return 'md:w-[300px]';
+    case 'sm':
       return 'md:w-[400px]';
-    case 'greater-mid':
-      return 'md:w-[680px]';
+    case 'md':
+      return 'md:w-[540px]';
+    case 'lg': // greater-mid
+      return 'md:w-[680px]'; 
+    case 'xl':
+      return 'md:w-[1080px]';
     case 'full':
-      return 'md:w-[90%]';
-    case 'default':
+      return 'md:w-[90vw]';
     default:
       return 'md:w-[540px]';
   }
@@ -65,7 +77,7 @@ function SheetRoot({
   children,
   contentProps,
   nested = false,
-  size = 'default',
+  size = 'lg',
   side = 'right',
   ...rest
 }: {

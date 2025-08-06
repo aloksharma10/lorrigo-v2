@@ -75,7 +75,6 @@ export function BulkAdjustmentPanel({
               <Percent className="h-4 w-4" />
               <Input
                 type="number"
-                className="bg-background/90 text-foreground w-20 border-0"
                 placeholder="0"
                 value={bulkAdjustmentPercent}
                 onChange={(e) => setBulkAdjustmentPercent(Number(e.target.value))}
@@ -83,7 +82,7 @@ export function BulkAdjustmentPanel({
                 max="1000"
               />
             </div>
-            <Button onClick={handleApply} disabled={isApplying || selectedCourierIndices.size === 0} className="hover:bg-background/90 font-semibold">
+            <Button onClick={handleApply} disabled={isApplying || selectedCourierIndices.size === 0} className=" font-semibold">
               {isApplying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
               Apply to Selected ({selectedCourierIndices.size})
             </Button>
@@ -91,7 +90,6 @@ export function BulkAdjustmentPanel({
               <Button
                 onClick={onResetPricing}
                 variant="outline"
-                className="bg-background/20 border-background/30 text-secondary-foreground hover:bg-background/30"
               >
                 <RotateCcw className="mr-2 h-4 w-4" />
                 Reset All
@@ -135,8 +133,8 @@ export function BulkAdjustmentPanel({
       )}
 
       {hasUnsavedChanges && (
-        <div className="border-b bg-amber-50 p-4 dark:bg-amber-950/20">
-          <Alert>
+        <div className="border-b px-2">
+          <Alert className="bg-amber-200 dark:bg-amber-950/20">
             <Info className="h-4 w-4" />
             <AlertDescription>You have unsaved pricing changes. Don't forget to save your plan or reset to original values.</AlertDescription>
           </Alert>

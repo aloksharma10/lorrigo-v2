@@ -18,7 +18,7 @@ export default function ShopifyCallback() {
   const [processed, setProcessed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { data: session } = useSession();
-  
+
   // Use React Query hooks for Shopify operations
   const { getAuthUrl, handleLoginCallback, connectShopifyStore } = useShopifyAuth();
 
@@ -50,7 +50,6 @@ export default function ShopifyCallback() {
         // If we have code, state, and shop, handle the OAuth callback
         if (code && state && shop) {
           if (isTokenReady || session?.user?.email) {
-
             try {
               // Call the connect API to attach Shopify store to existing account
               const response = await connectShopifyStore.mutateAsync({ code, state, shop });
@@ -125,7 +124,7 @@ export default function ShopifyCallback() {
       <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
         <div className="mx-auto max-w-md text-center">
           <div className="mb-4">
-            <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+            <Loader2 className="text-primary mx-auto h-8 w-8 animate-spin" />
           </div>
           <h1 className="mb-2 text-xl font-semibold">{isTokenReady ? 'Connecting Shopify Store...' : 'Connecting to Shopify...'}</h1>
           <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -147,7 +146,7 @@ export default function ShopifyCallback() {
           <div className="space-y-2">
             <button
               onClick={() => router.push(isTokenReady ? '/seller/channels' : '/auth/signin')}
-              className="mr-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90"
+              className="bg-primary hover:bg-primary/90 mr-2 rounded-md px-4 py-2 text-sm font-medium text-white"
             >
               {isTokenReady ? 'Back to Channels' : 'Back to Sign In'}
             </button>

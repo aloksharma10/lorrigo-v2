@@ -19,24 +19,24 @@ interface PageProps {
 
 const mergeOptions = [
   {
-    label: "Sync Shopify",
-    description: "Sync orders from Shopify from last 7 days",
-    value: "recent",
+    label: 'Sync Shopify',
+    description: 'Sync orders from Shopify from last 7 days',
+    value: 'recent',
   },
   {
-    label: "Sync last 7 days",
-    description: "Sync orders from Shopify from last 7 days",
-    value: "last-7-days",
+    label: 'Sync last 7 days',
+    description: 'Sync orders from Shopify from last 7 days',
+    value: 'last-7-days',
   },
   {
-    label: "Sync last 30 days",
-    description: "Sync orders from Shopify from last 30 days",
-    value: "last-30-days",
+    label: 'Sync last 30 days',
+    description: 'Sync orders from Shopify from last 30 days',
+    value: 'last-30-days',
   },
   {
-    label: "Sync last 60 days",
-    description: "Sync orders from Shopify from last 60 days",
-    value: "last-60-days",
+    label: 'Sync last 60 days',
+    description: 'Sync orders from Shopify from last 60 days',
+    value: 'last-60-days',
   },
 ];
 
@@ -122,7 +122,7 @@ export default function ShipmentsPage() {
     // Show loading toast
     const loadingToastId = `sync-orders-${Date.now()}`;
     const syncTypeText = syncType === 'manual' ? 'Syncing recent orders' : `Syncing ${syncType.replace('-', ' ')}`;
-    
+
     toast.loading(`${syncTypeText} from Shopify...`, {
       id: loadingToastId,
     });

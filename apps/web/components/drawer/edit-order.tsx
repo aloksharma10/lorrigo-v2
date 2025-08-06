@@ -14,7 +14,7 @@ export default function EditOrder({
   isLoading = false,
   isOpen = false,
   drawerId,
-  size = 'greater-mid',
+  size = 'lg',
   side = 'right',
 }: {
   order?: any;
