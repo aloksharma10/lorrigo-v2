@@ -14,6 +14,7 @@ import { ChargeType, ShipmentStatus } from '@lorrigo/db';
 import { getOrderZoneFromCourierZone } from '@/utils/calculate-order-price';
 import { TransactionJobType } from '@/modules/transactions/queues/transaction-worker';
 import { VendorService } from '@/modules/vendors/vendor.service';
+import { ShopifySyncService } from '@/modules/channels/services/shopify/shopify-sync-service';
 
 // Job types for the shipment queue
 export enum JobType {
@@ -455,7 +456,32 @@ async function processVendorShipmentCreation(jobData: any, fastify: FastifyInsta
       entityType: TransactionEntityType.SHIPMENT,
     });
 
-    // Step 4: Emit real-time update to frontend
+    // Step 4: Send tracking information to Shopify if this is a Shopify order
+    try {
+      const shopifySyncService = new ShopifySyncService(fastify);
+      
+      // Generate tracking URL (you may need to adjust this based on your tracking system)
+      const trackingUrl = `${process.env.FRONTEND_URL || 'https://app.lorrigo.com'}/tracking/${awb}`;
+      
+      // Send tracking to Shopify
+      const shopifyResult = await shopifySyncService.sendTrackingToShopify(
+        order.id,
+        awb,
+        trackingUrl,
+        ['Tracking Sent', 'Courier Assigned'] // Add relevant tags
+      );
+
+      if (shopifyResult.success) {
+        fastify.log.info(`Shopify tracking update successful for order ${order.id}, AWB: ${awb}`);
+      } else {
+        fastify.log.warn(`Shopify tracking update failed for order ${order.id}: ${shopifyResult.error}`);
+      }
+    } catch (shopifyError) {
+      // Don't fail the entire shipment creation if Shopify update fails
+      fastify.log.error(`Error updating Shopify tracking for order ${order.id}:`, shopifyError);
+    }
+
+    // Step 5: Emit real-time update to frontend
     // fastify.io.to(`user-${userId}`).emit('shipment-updated', {
     //   shipmentId,
     //   awb,

@@ -111,6 +111,25 @@ export class ChannelConnectionService {
   }
 
   /**
+   * Get all connections for a specific channel
+   * @param channel Channel type
+   * @returns Array of connections
+   */
+  async getAllConnectionsByChannel(channel: Channel): Promise<ChannelConnection[]> {
+    try {
+      switch (channel) {
+        case Channel.SHOPIFY:
+          return await this.getAllShopifyConnections();
+        default:
+          throw new Error(`Unsupported channel type: ${channel}`);
+      }
+    } catch (error) {
+      console.error(`Error fetching all ${channel} connections:`, error);
+      return [];
+    }
+  }
+
+  /**
    * Save a Shopify connection
    * @param connection Connection details
    * @returns Saved connection
@@ -236,15 +255,46 @@ export class ChannelConnectionService {
    */
   private async deleteShopifyConnection(userId: string): Promise<boolean> {
     try {
-      await prisma.shopifyConnection.delete({
-        where: {
-          user_id: userId,
-        },
+      const result = await prisma.shopifyConnection.deleteMany({
+        where: { user_id: userId },
       });
-      return true;
+
+      return result.count > 0;
     } catch (error) {
       console.error('Error deleting Shopify connection:', error);
       return false;
+    }
+  }
+
+  /**
+   * Get all Shopify connections
+   * @returns Array of Shopify connections
+   */
+  private async getAllShopifyConnections(): Promise<ChannelConnection[]> {
+    try {
+      const connections = await prisma.shopifyConnection.findMany({
+        where: {
+          // You might want to add additional filters here
+          // For example, only active connections
+        },
+        select: {
+          id: true,
+          shop: true,
+          access_token: true,
+          scope: true,
+          user_id: true,
+          connected_at: true,
+          updated_at: true,
+        },
+      });
+
+      return connections.map(conn => ({
+        ...conn,
+        channel: Channel.SHOPIFY,
+      }));
+    } catch (error) {
+      console.error('Error fetching all Shopify connections:', error);
+      return [];
     }
   }
 }

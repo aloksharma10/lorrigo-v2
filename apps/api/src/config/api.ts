@@ -66,4 +66,7 @@ export const APIs = {
   SHOPIFY_ORDER: '/admin/api/{version}/orders/{id}.json',
   SHOPIFY_CUSTOMERS: '/admin/api/{version}/customers.json',
   SHOPIFY_CUSTOMER: '/admin/api/{version}/customers/{id}.json',
+  SHOPIFY_FULFILLMENTS: '/admin/api/{version}/orders/{order_id}/fulfillments.json',
+  SHOPIFY_FULFILLMENT: '/admin/api/{version}/orders/{order_id}/fulfillments/{fulfillment_id}.json',
+  SHOPIFY_ORDER_UPDATE: '/admin/api/{version}/orders/{order_id}.json',
 };

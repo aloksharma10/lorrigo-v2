@@ -7,7 +7,8 @@
     "build": "tsup",
     "kill": "kill -9 $(lsof -ti:8000)",
     "test": "vitest run",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "shopify:sync": "tsx src/scripts/shopify-sync.ts"
   },
   "keywords": [],
   "author": "",

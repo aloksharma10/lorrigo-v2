@@ -685,6 +685,132 @@ export class ShopifyChannel extends BaseChannel {
   }
 
   /**
+   * Send tracking information to Shopify order
+   * @param shopifyOrderId Shopify order ID
+   * @param trackingNumber Tracking number/AWB
+   * @param trackingUrl Tracking URL
+   * @param tags Optional tags to add to the order
+   * @returns Promise resolving to fulfillment response
+   */
+  public async sendTrackingToShopify(
+    shopifyOrderId: string | number,
+    trackingNumber: string,
+    trackingUrl: string,
+    tags?: string[]
+  ): Promise<{ success: boolean; fulfillment?: any; error?: string }> {
+    try {
+      const token = await this.getAuthToken();
+
+      if (!token) {
+        return { success: false, error: 'No access token available' };
+      }
+
+      // First, get the order to find the location_id for fulfillment
+      const order = await this.getOrder(shopifyOrderId);
+      if (!order) {
+        return { success: false, error: 'Order not found in Shopify' };
+      }
+
+      // Get the primary location ID from the shop
+      const shopInfo = await this.getShopInfo();
+      if (!shopInfo) {
+        return { success: false, error: 'Unable to get shop information' };
+      }
+
+      // Create fulfillment data
+      const fulfillmentData = {
+        fulfillment: {
+          location_id: shopInfo.primary_location_id,
+          tracking_number: trackingNumber,
+          tracking_urls: [trackingUrl],
+          notify_customer: true,
+          status: 'success',
+        },
+      };
+
+      // Send fulfillment to Shopify
+      const fulfillmentEndpoint = APIs.SHOPIFY_FULFILLMENTS
+        .replace('{version}', this.apiVersion)
+        .replace('{order_id}', shopifyOrderId.toString());
+
+      const fulfillmentResponse = await this.makeRequest(fulfillmentEndpoint, 'POST', fulfillmentData, {
+        'X-Shopify-Access-Token': token,
+        'Content-Type': 'application/json',
+      });
+
+      if (!fulfillmentResponse.data?.fulfillment) {
+        return { success: false, error: 'Failed to create fulfillment in Shopify' };
+      }
+
+      // If tags are provided, update the order with new tags
+      if (tags && tags.length > 0) {
+        const currentTags = order.tags ? order.tags.split(',').map((tag: string) => tag.trim()) : [];
+        const newTags = [...new Set([...currentTags, ...tags])]; // Remove duplicates
+
+        const orderUpdateData = {
+          order: {
+            id: shopifyOrderId,
+            tags: newTags.join(', '),
+          },
+        };
+
+        const orderUpdateEndpoint = APIs.SHOPIFY_ORDER_UPDATE
+          .replace('{version}', this.apiVersion)
+          .replace('{order_id}', shopifyOrderId.toString());
+
+        try {
+          await this.makeRequest(orderUpdateEndpoint, 'PUT', orderUpdateData, {
+            'X-Shopify-Access-Token': token,
+            'Content-Type': 'application/json',
+          });
+        } catch (tagError) {
+          console.error('Failed to update order tags:', tagError);
+          // Don't fail the entire operation if tag update fails
+        }
+      }
+
+      return {
+        success: true,
+        fulfillment: fulfillmentResponse.data.fulfillment,
+      };
+    } catch (error: any) {
+      console.error('Error sending tracking to Shopify:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to send tracking to Shopify',
+      };
+    }
+  }
+
+  /**
+   * Get shop information from Shopify
+   * @returns Promise resolving to shop info
+   */
+  public async getShopInfo(): Promise<ShopifyShopInfo | null> {
+    try {
+      const token = await this.getAuthToken();
+
+      if (!token) {
+        return null;
+      }
+
+      const endpoint = `/admin/api/${this.apiVersion}/shop.json`;
+
+      const response = await this.makeRequest(endpoint, 'GET', undefined, {
+        'X-Shopify-Access-Token': token,
+      });
+
+      if (response.data && response.data.shop) {
+        return response.data.shop;
+      }
+
+      return null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
    * Cache token in Redis
    * @param token Access token to cache
    */

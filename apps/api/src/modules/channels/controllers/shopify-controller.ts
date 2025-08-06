@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { captureException } from '@/lib/sentry';
 import { ChannelConnectionService, Channel } from '../services/channel-connection-service';
 import { ShopifyChannel } from '../services/shopify/shopify-channel';
+import { ShopifySyncService } from '../services/shopify/shopify-sync-service';
 import {
   ShopifyWebhookService,
   ShopifyCustomerDataRequestPayload,
@@ -71,6 +72,9 @@ export class ShopifyController {
 
     // Get a specific order
     fastify.get('/shopify/orders/:id', this.getOrder.bind(this));
+
+    // Sync orders from Shopify
+    fastify.post('/shopify/sync-orders', this.syncOrders.bind(this));
 
     // Mandatory webhooks for Shopify App Store compliance
     fastify.post('/shopify/webhooks/customers/data_request', this.handleCustomerDataRequest.bind(this));
@@ -461,6 +465,76 @@ export class ShopifyController {
       console.error('Error fetching Shopify order:', error);
       captureException(error as Error);
       reply.code(500).send({ error: 'Failed to fetch Shopify order' });
+    }
+  }
+
+  /**
+   * Sync orders from Shopify
+   * @param request Fastify request
+   * @param reply Fastify reply
+   */
+  private async syncOrders(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    try {
+      const result = shopifyOrdersQuerySchema.safeParse(request.query);
+
+      if (!result.success) {
+        return reply.code(400).send({
+          error: 'Validation error',
+          details: result.error.format(),
+        });
+      }
+
+      const { status, created_at_min, created_at_max, limit } = result.data;
+
+      // Get authenticated user from request
+      const user = request.userPayload;
+
+      if (!user) {
+        return reply.code(401).send({ error: 'Authentication required' });
+      }
+
+      // Create Shopify sync service
+      const shopifySyncService = new ShopifySyncService(this.fastify);
+
+      // Build query params for sync
+      const params: Record<string, string | number> = {};
+
+      if (status) {
+        params.status = status;
+      }
+
+      if (created_at_min) {
+        params.created_at_min = created_at_min;
+      }
+
+      if (created_at_max) {
+        params.created_at_max = created_at_max;
+      }
+
+      if (limit) {
+        params.limit = parseInt(limit, 10);
+      }
+
+      // Sync orders from Shopify
+      const syncResult = await shopifySyncService.syncOrdersFromShopify(user.id, params);
+
+      if (syncResult.success) {
+        reply.send({
+          success: true,
+          message: syncResult.message,
+          data: syncResult.data,
+        });
+      } else {
+        reply.code(400).send({
+          success: false,
+          error: syncResult.error,
+          message: syncResult.message,
+        });
+      }
+    } catch (error) {
+      console.error('Error syncing orders from Shopify:', error);
+      captureException(error as Error);
+      reply.code(500).send({ error: 'Failed to sync orders from Shopify' });
     }
   }
 

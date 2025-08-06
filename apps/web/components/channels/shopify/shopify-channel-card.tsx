@@ -95,13 +95,13 @@ export function ShopifyChannelCard() {
 
     return (
       <div className="space-y-4">
-        {isError && (
+        {/* {isError && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Connection Error</AlertTitle>
-            <AlertDescription>{error instanceof Error ? error.message : 'Failed to check connection status'}</AlertDescription>
+            <AlertDescription>{error instanceof Error ? error.response.data.error : 'Failed to check connection status'}</AlertDescription>
           </Alert>
-        )}
+        )} */}
 
         <div className="space-y-3 text-center">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/30">

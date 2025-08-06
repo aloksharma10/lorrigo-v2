@@ -43,7 +43,7 @@ export class PickupService {
 
       const { city, state } = pincodeDetails;
 
-      const [lastSequenceNumberHub, lastSequenceNumberAddress, b2bConfig, lastHub] = await Promise.all([
+      const [lastSequenceNumberHub, lastSequenceNumberAddress, b2bConfig, lastHub, lastHubForUser] = await Promise.all([
         this.fastify.prisma.hub.count({
           where: {
             created_at: {
@@ -66,14 +66,19 @@ export class PickupService {
             created_at: 'desc',
           },
         }),
-        // this.fastify.prisma.vendorConfig.findFirst({
-        //   where: { vendorName: 'SHIPROCKET_B2B' },
-        // }),
+        this.fastify.prisma.hub.findFirst({
+          where: {
+            user_id: sellerId,
+          },
+        }),
       ]);
+
+      const is_first_hub = lastHubForUser === null;
+      console.log(lastHubForUser === null, is_first_hub, lastHubForUser)
 
       const lorrigoPickupId = generateId({
         tableName: 'HUB',
-        prefix: `${sellerName}-HUB-`,
+        prefix: `HUB`,
         entityName: sellerName,
         lastUsedFinancialYear: getFinancialYear(lastHub?.created_at || new Date()),
         lastSequenceNumber: lastSequenceNumberHub,
@@ -143,6 +148,7 @@ export class PickupService {
 
             return await tx.hub.create({
               data: {
+                is_primary: is_first_hub,
                 code: lorrigoPickupId,
                 smart_ship_codes: {
                   create: {
