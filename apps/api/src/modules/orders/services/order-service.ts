@@ -903,13 +903,13 @@ export class OrderService {
           });
 
           // Step 8: Update order channel config
-          await tx.orderChannelConfig.update({
-            where: { id: existingOrder.order_channel_config_id },
-            data: {
-              channel: (data.orderChannel?.toUpperCase() as Channel) || 'CUSTOM',
-              channel_order_id: data.orderId || undefined,
-            },
-          });
+          // await tx.orderChannelConfig.update({
+          //   where: { id: existingOrder.order_channel_config_id },
+          //   data: {
+          //     channel: (data.orderChannel?.toUpperCase() as Channel) || 'CUSTOM',
+          //     channel_order_id: data.orderId || undefined,
+          //   },
+          // });
 
           // Step 9: Update order with all fields
           const orderUpdates = await tx.order.update({

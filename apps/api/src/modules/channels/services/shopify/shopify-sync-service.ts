@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { ShopifyChannel } from './shopify-channel';
 import { ChannelConnectionService, Channel } from '../channel-connection-service';
 import { captureException } from '@/lib/sentry';
-import { ShipmentBucketManager } from '@lorrigo/utils';
+import { formatPhoneNumber, ShipmentBucketManager } from '@lorrigo/utils';
 import { ShipmentStatus } from '@lorrigo/db';
 
 export interface ShopifySyncResult {
@@ -322,7 +322,7 @@ export class ShopifySyncService {
       }
 
       // Check if this is a Shopify order
-      if (order.order_channel_config.channel !== 'SHOPIFY') {
+      if (order.order_channel_config.channel !== Channel.SHOPIFY) {
         return {
           success: false,
           message: 'Not a Shopify order',
@@ -554,7 +554,7 @@ export class ShopifySyncService {
       // Create order in a transaction
       await this.fastify.prisma.$transaction(async (tx) => {
         // 1. Create or find customer - based on old code mapping
-        const customerPhone = shippingAddress.phone || shopifyOrder.customer?.phone || na_customer.phone || '0000000000';
+        const customerPhone = formatPhoneNumber(shippingAddress.phone || shopifyOrder.customer?.phone || na_customer.phone || '0000000000');
         const customerEmail = shopifyOrder.customer?.email || na_customer.email;
 
         // Try to find customer by phone first, then by email

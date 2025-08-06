@@ -76,8 +76,9 @@ export const useOrderOperations = (queryParams: OrderQueryParams = {}, orderId?:
   // Update order status
   const updateOrder = useMutation({
     mutationFn: (orderData: UpdateOrderFormValues) => api.patch(`/orders/${orderData.id}`, orderData),
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['shipping-rates', data.id] });
       queryClient.invalidateQueries({ queryKey: ['reverse-orders'] });
     },
   });

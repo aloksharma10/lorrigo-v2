@@ -772,31 +772,38 @@ export class ShopifyChannel extends BaseChannel {
         return { success: false, error: 'No access token available' };
       }
 
-      // First, get the order to find the location_id for fulfillment
+      // First, get the order to find fulfillment order IDs
       const order = await this.getOrder(shopifyOrderId);
       if (!order) {
         return { success: false, error: 'Order not found in Shopify' };
       }
 
-      // Get the primary location ID from the shop
-      const shopInfo = await this.getShopInfo();
-      if (!shopInfo) {
-        return { success: false, error: 'Unable to get shop information' };
+      // Get fulfillment orders for this order
+      const fulfillmentOrdersEndpoint = `/admin/api/${this.apiVersion}/orders/${shopifyOrderId}/fulfillment_orders.json`;
+      const fulfillmentOrdersResponse = await this.makeRequest(fulfillmentOrdersEndpoint, 'GET', undefined, {
+        'X-Shopify-Access-Token': token,
+      });
+
+      if (!fulfillmentOrdersResponse.data?.fulfillment_orders || fulfillmentOrdersResponse.data.fulfillment_orders.length === 0) {
+        return { success: false, error: 'No fulfillment orders found for this order' };
       }
 
-      // Create fulfillment data
+      // Create fulfillment data using the new API structure
       const fulfillmentData = {
         fulfillment: {
-          location_id: shopInfo.primary_location_id,
-          tracking_number: trackingNumber,
-          tracking_urls: [trackingUrl],
+          line_items_by_fulfillment_order: fulfillmentOrdersResponse.data.fulfillment_orders.map((fulfillmentOrder: any) => ({
+            fulfillment_order_id: fulfillmentOrder.id,
+          })),
+          tracking_info: {
+            number: trackingNumber,
+            url: trackingUrl,
+          },
           notify_customer: true,
-          status: 'success',
         },
       };
 
-      // Send fulfillment to Shopify
-      const fulfillmentEndpoint = APIs.SHOPIFY_FULFILLMENTS.replace('{version}', this.apiVersion).replace('{order_id}', shopifyOrderId.toString());
+      // Send fulfillment to Shopify using the new API endpoint
+      const fulfillmentEndpoint = `/admin/api/${this.apiVersion}/fulfillments.json`;
 
       const fulfillmentResponse = await this.makeRequest(fulfillmentEndpoint, 'POST', fulfillmentData, {
         'X-Shopify-Access-Token': token,
@@ -807,15 +814,37 @@ export class ShopifyChannel extends BaseChannel {
         return { success: false, error: 'Failed to create fulfillment in Shopify' };
       }
 
-      // If tags are provided, update the order with new tags
+      // If tags are provided, update the order with new tags using metafields
       if (tags && tags.length > 0) {
         const currentTags = order.tags ? order.tags.split(',').map((tag: string) => tag.trim()) : [];
         const newTags = [...new Set([...currentTags, ...tags])]; // Remove duplicates
 
+        // Create metafields for tracking information
+        const metafields = [
+          {
+            key: 'tracking_number',
+            value: trackingNumber,
+            type: 'single_line_text_field',
+            namespace: 'shipping',
+          },
+          {
+            key: 'tracking_url',
+            value: trackingUrl,
+            type: 'single_line_text_field',
+            namespace: 'shipping',
+          },
+          {
+            key: 'shipping_tags',
+            value: newTags.join(', '),
+            type: 'single_line_text_field',
+            namespace: 'shipping',
+          },
+        ];
+
         const orderUpdateData = {
           order: {
             id: shopifyOrderId,
-            tags: newTags.join(', '),
+            metafields: metafields,
           },
         };
 
@@ -827,8 +856,8 @@ export class ShopifyChannel extends BaseChannel {
             'Content-Type': 'application/json',
           });
         } catch (tagError) {
-          console.error('Failed to update order tags:', tagError);
-          // Don't fail the entire operation if tag update fails
+          console.error('Failed to update order metafields:', tagError);
+          // Don't fail the entire operation if metafield update fails
         }
       }
 
