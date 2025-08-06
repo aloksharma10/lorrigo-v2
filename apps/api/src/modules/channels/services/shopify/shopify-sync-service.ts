@@ -27,10 +27,7 @@ export class ShopifySyncService {
    * @param params Query parameters for fetching orders
    * @returns Promise resolving to sync result
    */
-  public async syncOrdersFromShopify(
-    userId: string,
-    params: Record<string, string | number> = {}
-  ): Promise<ShopifySyncResult> {
+  public async syncOrdersFromShopify(userId: string, params: Record<string, string | number> = {}): Promise<ShopifySyncResult> {
     try {
       // Get user's Shopify connection
       const connection = await this.connectionService.getConnectionByUserIdAndChannel(userId, Channel.SHOPIFY);
@@ -74,7 +71,7 @@ export class ShopifySyncService {
         try {
           // Fetch batch of orders from Shopify
           const shopifyOrders = await this.fetchOrdersBatch(shopifyChannel, defaultParams, pageInfo);
-          
+
           if (!shopifyOrders || shopifyOrders.length === 0) {
             console.log('No more orders to process');
             break;
@@ -85,18 +82,20 @@ export class ShopifySyncService {
           // Process orders in smaller batches for database efficiency
           for (let i = 0; i < shopifyOrders.length; i += batchSize) {
             const batch = shopifyOrders.slice(i, i + batchSize);
-            
+
             const batchResult = await this.processOrdersBatch(batch, userId, connection.shop, processedOrders);
-            
+
             totalSynced += batchResult.synced;
             totalSkipped += batchResult.skipped;
             totalErrors += batchResult.errors;
 
-            console.log(`Batch ${Math.floor(i / batchSize) + 1} completed: ${batchResult.synced} synced, ${batchResult.skipped} skipped, ${batchResult.errors} errors`);
+            console.log(
+              `Batch ${Math.floor(i / batchSize) + 1} completed: ${batchResult.synced} synced, ${batchResult.skipped} skipped, ${batchResult.errors} errors`
+            );
 
             // Add delay between batches to avoid overwhelming the database
             if (i + batchSize < shopifyOrders.length) {
-              await new Promise(resolve => setTimeout(resolve, 100));
+              await new Promise((resolve) => setTimeout(resolve, 100));
             }
           }
 
@@ -106,21 +105,20 @@ export class ShopifySyncService {
 
           // Add delay between API calls to respect rate limits
           if (hasMoreOrders) {
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise((resolve) => setTimeout(resolve, 500));
           }
-
         } catch (error) {
           console.error('Error processing batch:', error);
           totalErrors++;
-          
+
           // If it's a rate limit error, wait longer
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           if (errorMessage.includes('rate limit') || (error as any)?.status === 429) {
             console.log('Rate limit hit, waiting 10 seconds...');
-            await new Promise(resolve => setTimeout(resolve, 10000));
+            await new Promise((resolve) => setTimeout(resolve, 10000));
             continue;
           }
-          
+
           // For other errors, break to avoid infinite loops
           break;
         }
@@ -139,7 +137,6 @@ export class ShopifySyncService {
 
       console.log('Shopify sync completed:', result);
       return result;
-
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       console.error('Error syncing orders from Shopify:', error);
@@ -160,11 +157,7 @@ export class ShopifySyncService {
    * @param pageInfo Pagination information
    * @returns Promise resolving to orders array
    */
-  private async fetchOrdersBatch(
-    shopifyChannel: ShopifyChannel,
-    params: Record<string, string | number>,
-    pageInfo?: any
-  ): Promise<any[]> {
+  private async fetchOrdersBatch(shopifyChannel: ShopifyChannel, params: Record<string, string | number>, pageInfo?: any): Promise<any[]> {
     try {
       // Add pagination parameters if available
       const queryParams = { ...params };
@@ -203,7 +196,7 @@ export class ShopifySyncService {
     let errors = 0;
 
     // Check for existing orders in bulk to avoid individual queries
-    const orderIds = orders.map(order => order.id.toString());
+    const orderIds = orders.map((order) => order.id.toString());
     const existingOrders = await this.fastify.prisma.order.findMany({
       where: {
         user_id: userId,
@@ -219,9 +212,7 @@ export class ShopifySyncService {
       },
     });
 
-    const existingOrderIds = new Set(
-      existingOrders.map(order => order.order_channel_config.channel_order_id)
-    );
+    const existingOrderIds = new Set(existingOrders.map((order) => order.order_channel_config.channel_order_id));
 
     // Process orders in parallel with limited concurrency
     const concurrencyLimit = 10; // Process 10 orders simultaneously
@@ -265,7 +256,7 @@ export class ShopifySyncService {
 
       // Small delay between chunks
       if (chunks.indexOf(chunk) < chunks.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, 50));
       }
     }
 
@@ -308,12 +299,7 @@ export class ShopifySyncService {
    * @param tags Optional tags to add
    * @returns Promise resolving to tracking update result
    */
-  public async sendTrackingToShopify(
-    orderId: string,
-    trackingNumber: string,
-    trackingUrl: string,
-    tags?: string[]
-  ): Promise<ShopifySyncResult> {
+  public async sendTrackingToShopify(orderId: string, trackingNumber: string, trackingUrl: string, tags?: string[]): Promise<ShopifySyncResult> {
     try {
       // Get the order with channel information
       const order = await this.fastify.prisma.order.findUnique({
@@ -342,10 +328,7 @@ export class ShopifySyncService {
       }
 
       // Get Shopify connection
-      const connection = await this.connectionService.getConnectionByUserIdAndChannel(
-        order.user_id,
-        Channel.SHOPIFY
-      );
+      const connection = await this.connectionService.getConnectionByUserIdAndChannel(order.user_id, Channel.SHOPIFY);
 
       if (!connection || !connection.shop) {
         return {
@@ -374,7 +357,7 @@ export class ShopifySyncService {
       if (result.success) {
         // Log the tracking update
         await this.logTrackingUpdate(orderId, shopifyOrderId, trackingNumber, trackingUrl, tags);
-        
+
         return {
           success: true,
           message: 'Tracking information sent to Shopify successfully',
@@ -426,7 +409,7 @@ export class ShopifySyncService {
     } else {
       // Create new order
       await this.createNewOrder(shopifyOrder, userId, shop);
-      
+
       // Get the created order ID
       // const createdOrder = await this.fastify.prisma.order.findFirst({
       //   where: {
@@ -437,7 +420,7 @@ export class ShopifySyncService {
       //     },
       //   },
       // });
-      
+
       return { action: 'created', orderId: 'N/A' };
     }
   }
@@ -541,14 +524,14 @@ export class ShopifySyncService {
       // Extract note attributes for additional customer info - based on old code
       const noteAttributes = shopifyOrder.note_attributes || [];
       const na_customer = {
-        name: noteAttributes.find((na: any) => na.name === "Full name")?.value || '',
-        phone: noteAttributes.find((na: any) => na.name === "Phone number")?.value || shippingAddress.phone || '',
+        name: noteAttributes.find((na: any) => na.name === 'Full name')?.value || '',
+        phone: noteAttributes.find((na: any) => na.name === 'Phone number')?.value || shippingAddress.phone || '',
         email: shopifyOrder.customer?.email || '',
-        address: noteAttributes.find((na: any) => na.name === "Address")?.value || shippingAddress.address1 || '',
-        pincode: noteAttributes.find((na: any) => na.name === "zip_code")?.value || shippingAddress.zip || '',
-        city: noteAttributes.find((na: any) => na.name === "City")?.value || shippingAddress.city || '',
-        state: noteAttributes.find((na: any) => na.name === "State")?.value || shippingAddress.province || '',
-        country: shippingAddress.country || ''
+        address: noteAttributes.find((na: any) => na.name === 'Address')?.value || shippingAddress.address1 || '',
+        pincode: noteAttributes.find((na: any) => na.name === 'zip_code')?.value || shippingAddress.zip || '',
+        city: noteAttributes.find((na: any) => na.name === 'City')?.value || shippingAddress.city || '',
+        state: noteAttributes.find((na: any) => na.name === 'State')?.value || shippingAddress.province || '',
+        country: shippingAddress.country || '',
       };
 
       // Calculate package dimensions and weight from line items - based on old code
@@ -557,8 +540,8 @@ export class ShopifySyncService {
 
       // Standard dimensions if not available - based on old code
       const orderBoxHeight = Math.max(10, Math.sqrt(totalQuantity) * 5); // cm
-      const orderBoxWidth =  Math.max(10, Math.sqrt(totalQuantity) * 5); // cm
-      const orderBoxLength =  Math.max(5, Math.sqrt(totalQuantity) * 3); // cm
+      const orderBoxWidth = Math.max(10, Math.sqrt(totalQuantity) * 5); // cm
+      const orderBoxLength = Math.max(5, Math.sqrt(totalQuantity) * 3); // cm
 
       // Calculate volumetric weight
       const volumetricWeight = (orderBoxLength * orderBoxWidth * orderBoxHeight) / 5000; // cm³ to kg
@@ -571,7 +554,7 @@ export class ShopifySyncService {
         // 1. Create or find customer - based on old code mapping
         const customerPhone = shippingAddress.phone || shopifyOrder.customer?.phone || na_customer.phone || '0000000000';
         const customerEmail = shopifyOrder.customer?.email || na_customer.email;
-        
+
         // Try to find customer by phone first, then by email
         let customer = await tx.customer.findUnique({
           where: { phone: customerPhone },
@@ -593,8 +576,9 @@ export class ShopifySyncService {
             lastSequenceNumber: customerCount,
           }).id;
 
-          const customerName = `${shippingAddress.first_name || shopifyOrder.customer?.first_name || ''} ${shippingAddress.last_name || shopifyOrder.customer?.last_name || na_customer.name || ''}`.trim();
-          
+          const customerName =
+            `${shippingAddress.first_name || shopifyOrder.customer?.first_name || ''} ${shippingAddress.last_name || shopifyOrder.customer?.last_name || na_customer.name || ''}`.trim();
+
           customer = await tx.customer.create({
             data: {
               id: customerCode,
@@ -603,11 +587,11 @@ export class ShopifySyncService {
               phone: customerPhone,
             },
           });
-          
         } else {
           // Update existing customer with latest information
-          const customerName = `${shippingAddress.first_name || shopifyOrder.customer?.first_name || ''} ${shippingAddress.last_name || shopifyOrder.customer?.last_name || na_customer.name || ''}`.trim();
-          
+          const customerName =
+            `${shippingAddress.first_name || shopifyOrder.customer?.first_name || ''} ${shippingAddress.last_name || shopifyOrder.customer?.last_name || na_customer.name || ''}`.trim();
+
           await tx.customer.update({
             where: { id: customer.id },
             data: {
@@ -617,7 +601,6 @@ export class ShopifySyncService {
               updated_at: new Date(),
             },
           });
-          
         }
 
         // 2. Create or update customer address - based on old code mapping
@@ -760,7 +743,6 @@ export class ShopifySyncService {
             },
           });
         }
-
       });
     } catch (error) {
       console.error(`Error creating order from Shopify order ${shopifyOrder.id}:`, error);
@@ -775,10 +757,10 @@ export class ShopifySyncService {
    * @returns Amount to collect
    */
   private calculateAmountToCollect(financialStatus: string, shopifyOrder: any): number {
-    if (financialStatus === "pending") {
-      return parseFloat(shopifyOrder?.total_price || "0");
-    } else if (financialStatus === "partially_paid") {
-      return parseFloat(shopifyOrder?.total_outstanding || "0");
+    if (financialStatus === 'pending') {
+      return parseFloat(shopifyOrder?.total_price || '0');
+    } else if (financialStatus === 'partially_paid') {
+      return parseFloat(shopifyOrder?.total_outstanding || '0');
     }
     return 0;
   }
@@ -867,7 +849,6 @@ export class ShopifySyncService {
         // For now, we'll just log that items exist
         // In a more sophisticated implementation, you'd compare and update individual items
       }
-
     } catch (error) {
       console.error(`Error updating order ${orderId}:`, error);
       throw error;
@@ -882,13 +863,7 @@ export class ShopifySyncService {
    * @param trackingUrl Tracking URL
    * @param tags Tags added
    */
-  private async logTrackingUpdate(
-    orderId: string,
-    shopifyOrderId: string,
-    trackingNumber: string,
-    trackingUrl: string,
-    tags?: string[]
-  ): Promise<void> {
+  private async logTrackingUpdate(orderId: string, shopifyOrderId: string, trackingNumber: string, trackingUrl: string, tags?: string[]): Promise<void> {
     try {
       console.log('Shopify tracking update logged:', {
         orderId,
@@ -898,7 +873,7 @@ export class ShopifySyncService {
         tags,
         timestamp: new Date().toISOString(),
       });
-      
+
       // TODO: Add to database log table if needed
     } catch (error) {
       console.error('Error logging tracking update:', error);
@@ -912,7 +887,7 @@ export class ShopifySyncService {
    */
   private mapShopifyPaymentMethod(financialStatus: string): any {
     const { PaymentMethod } = require('@lorrigo/db');
-    
+
     // Based on old code: payment_mode :["pending", "partially_paid"].includes(financialStatus) ? 1 : 0
     switch (financialStatus?.toLowerCase()) {
       case 'paid':
@@ -926,4 +901,4 @@ export class ShopifySyncService {
         return PaymentMethod.COD;
     }
   }
-} 
+}

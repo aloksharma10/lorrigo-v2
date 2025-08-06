@@ -1,137 +1,108 @@
 # Shopify Integration
 
-This module provides comprehensive Shopify integration for the Lorrigo platform, including order synchronization and tracking updates.
+This module handles Shopify store integration with two distinct flows:
 
-## Features
+## 1. Login with Shopify (Creates New Session)
 
-### 1. Order Synchronization
-- **Manual Sync**: Sync orders from Shopify via API endpoint
-- **Automatic Sync**: Scheduled job to sync orders from all connected Shopify stores
-- **Incremental Sync**: Only sync orders from the last 24 hours to avoid rate limits
+**Purpose**: Allow users to sign up/login using their Shopify store credentials.
 
-### 2. Tracking Updates
-- **Automatic Tracking**: When a courier is assigned to a Shopify order, tracking information is automatically sent to Shopify
-- **Fulfillment Creation**: Creates fulfillment in Shopify with tracking number and URL
-- **Tag Management**: Adds relevant tags to Shopify orders (e.g., "Tracking Sent", "Courier Assigned")
+**Routes**: `/auth/shopify/*`
 
-## API Endpoints
+- `/auth/shopify/auth-url` - Generate OAuth URL for login
+- `/auth/shopify/callback` - Handle OAuth callback and create new user session
 
-### Authentication
-- `GET /shopify/auth/url` - Get Shopify OAuth URL
-- `GET /shopify/auth` - Initiate OAuth flow (legacy)
-- `GET /shopify/callback` - Handle OAuth callback
-- `GET /shopify/connection` - Get connection status
-- `DELETE /shopify/connection` - Disconnect Shopify
+**Behavior**:
 
-### Orders
-- `GET /shopify/orders` - Get orders from Shopify
-- `GET /shopify/orders/:id` - Get specific order from Shopify
-- `POST /shopify/sync-orders` - Manually sync orders from Shopify
+- Creates new user account if one doesn't exist
+- Creates new session and returns JWT token
+- User is logged in as the Shopify store owner
 
-### Webhooks (GDPR Compliance)
-- `POST /shopify/webhooks/customers/data_request` - Handle customer data requests
-- `POST /shopify/webhooks/customers/redact` - Handle customer data erasure
-- `POST /shopify/webhooks/shop/redact` - Handle shop data erasure
+**Frontend API**: `apps/web/lib/apis/shopify-login.ts`
 
-## Usage
+## 2. Connect Shopify Store (Adds to Existing Account)
 
-### Manual Order Sync
-```bash
-# Sync orders for the last 24 hours
-curl -X POST "http://localhost:8000/shopify/sync-orders?created_at_min=2024-01-01T00:00:00Z&limit=50" \
-  -H "Authorization: Bearer YOUR_TOKEN"
-```
+**Purpose**: Allow existing users to connect their Shopify store to their current account.
 
-### Run Sync Job
-```bash
-# Run the sync job manually
-npm run shopify:sync
-```
+**Routes**: `/channels/shopify/*`
 
-### Programmatic Usage
-```typescript
-import { ShopifySyncService } from './shopify-sync-service';
+- `/channels/shopify/auth/url` - Generate OAuth URL for connection
+- `/channels/shopify/callback` - Handle OAuth callback and connect to existing user
 
-const syncService = new ShopifySyncService(fastify);
+**Behavior**:
 
-// Sync orders for a user
-const result = await syncService.syncOrdersFromShopify(userId, {
-  created_at_min: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-  limit: 50
-});
+- Requires existing authenticated user
+- Connects Shopify store to current user account
+- Does NOT create new session
+- User remains logged in as their original account
 
-// Send tracking to Shopify
-const trackingResult = await syncService.sendTrackingToShopify(
-  orderId,
-  'AWB123456789',
-  'https://app.lorrigo.com/tracking/AWB123456789',
-  ['Tracking Sent', 'Courier Assigned']
-);
-```
+**Frontend API**: `apps/web/lib/apis/channels/shopify/index.ts`
 
-## Configuration
+## Key Differences
 
-### Environment Variables
-- `SHOPIFY_API_KEY` - Shopify app API key
-- `SHOPIFY_API_SECRET` - Shopify app API secret
-- `SHOPIFY_REDIRECT_URI` - OAuth redirect URI
-- `SHOPIFY_API_VERSION` - Shopify API version (e.g., "2023-10")
+| Aspect             | Login Flow                 | Connect Flow                     |
+| ------------------ | -------------------------- | -------------------------------- |
+| **Session**        | Creates new session        | No new session                   |
+| **User**           | Creates/finds user by shop | Uses existing authenticated user |
+| **Purpose**        | Authentication             | Store connection                 |
+| **Routes**         | `/auth/shopify/*`          | `/channels/shopify/*`            |
+| **Authentication** | Not required               | Required                         |
+
+## Implementation Details
+
+### ShopifyChannel Class
+
+The `ShopifyChannel` class provides two main methods:
+
+1. `handleShopifyLogin()` - For login flows (creates new session)
+2. `connectShopifyToExistingUser()` - For connect flows (no new session)
 
 ### Database Schema
-The integration uses the following database tables:
-- `shopifyConnection` - Stores Shopify OAuth connections
-- `orderChannelConfig` - Links orders to their source channel
-- `order` - Main order table with channel information
 
-## Flow
+Shopify connections are stored in the `shopifyConnection` table with:
 
-### Order Sync Flow
-1. User connects their Shopify store via OAuth
-2. Orders are synced from Shopify to local database
-3. Orders are processed through the normal Lorrigo workflow
+- `shop`: Store domain
+- `access_token`: OAuth access token
+- `user_id`: Associated user ID
+- `scope`: OAuth scopes
 
-### Tracking Update Flow
-1. User assigns a courier to a Shopify order
-2. Shipment is created with AWB/tracking number
-3. Tracking information is automatically sent to Shopify
-4. Fulfillment is created in Shopify with tracking details
-5. Relevant tags are added to the Shopify order
+## Usage Examples
+
+### Login Flow
+
+```typescript
+// Frontend - Login with Shopify
+import { getShopifyLoginUrl } from '@/lib/apis/shopify-login';
+
+const authUrl = await getShopifyLoginUrl('mystore.myshopify.com');
+window.location.href = authUrl;
+```
+
+### Connect Flow
+
+```typescript
+// Frontend - Connect Shopify to existing account
+import { useShopify } from '@/lib/apis/channels/shopify';
+
+const { initiateConnect } = useShopify();
+initiateConnect('mystore.myshopify.com');
+```
+
+## Security Considerations
+
+1. **OAuth State Validation**: Both flows validate OAuth state to prevent CSRF attacks
+2. **Shop Domain Validation**: Validates shop domain format
+3. **User Verification**: Connect flow verifies existing user is active
+4. **Connection Uniqueness**: Prevents connecting same shop to multiple users
+5. **Token Security**: Access tokens are stored securely and not exposed in responses
 
 ## Error Handling
 
-- **Rate Limiting**: Built-in delays between API calls to respect Shopify rate limits
-- **Connection Errors**: Graceful handling of network issues
-- **Authentication Errors**: Automatic token refresh and re-authentication
-- **Partial Failures**: Individual order failures don't stop the entire sync process
+Both flows handle common errors:
 
-## Monitoring
+- Invalid OAuth state
+- Invalid shop domain
+- Token exchange failures
+- User account issues
+- Connection conflicts
 
-- **Logging**: Comprehensive logging for all operations
-- **Error Tracking**: Integration with Sentry for error monitoring
-- **Metrics**: Track sync success rates and performance
-
-## Security
-
-- **OAuth 2.0**: Secure authentication with Shopify
-- **Token Storage**: Encrypted storage of access tokens
-- **GDPR Compliance**: Full support for data request and erasure webhooks
-- **Rate Limiting**: Respects Shopify API rate limits
-
-## Troubleshooting
-
-### Common Issues
-
-1. **"No access token available"**
-   - Check if the Shopify connection is active
-   - Re-authenticate the user with Shopify
-
-2. **"Order not found in Shopify"**
-   - Verify the Shopify order ID is correct
-   - Check if the order exists in the connected Shopify store
-
-3. **"Failed to create fulfillment"**
-   - Verify the shop has a primary location set
-   - Check if the order is in a fulfillable state
-
-### Debug Mode
-Enable debug logging by setting the log level to debug in your environment configuration. 
+Errors are redirected to appropriate frontend pages with descriptive messages.

@@ -65,8 +65,8 @@ export const useShopify = () => {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Generate Shopify auth URL
-  const initiateAuth = useMutation({
+  // Generate Shopify auth URL (works for both login and connect flows)
+  const initiateConnect = useMutation({
     mutationFn: async (shopDomain?: string) => {
       const params = shopDomain ? { shop: shopDomain } : {};
       const response = await apiClient.get<{ authUrl: string }>('/channels/shopify/auth/url', {
@@ -156,7 +156,7 @@ export const useShopify = () => {
   return {
     // Connection operations
     connection,
-    initiateAuth,
+    initiateConnect,
     disconnect,
 
     // Order operations

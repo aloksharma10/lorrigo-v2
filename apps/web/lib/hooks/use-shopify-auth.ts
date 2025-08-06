@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getShopifyAuthUrl } from '@/lib/apis/shopify-auth';
+import { getShopifyLoginUrl } from '@/lib/apis/channels/shopify/shopify-auth';
 
 export const useShopifyAuth = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -10,7 +10,7 @@ export const useShopifyAuth = () => {
     setError(null);
 
     try {
-      const authUrl = await getShopifyAuthUrl(shop);
+      const authUrl = await getShopifyLoginUrl(shop);
 
       // Redirect to Shopify OAuth
       window.location.href = authUrl;

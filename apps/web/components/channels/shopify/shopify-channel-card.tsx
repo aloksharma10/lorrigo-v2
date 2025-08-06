@@ -7,13 +7,13 @@ export function ShopifyChannelCard() {
   // Use our shopify hook
   const shopify = useShopify();
   const { data: connection, isLoading: isLoadingConnection, isError, error, refetch } = shopify.connection;
-  const { mutate: initiateAuth, isPending: isConnecting } = shopify.initiateAuth;
+  const { mutate: initiateConnect, isPending: isConnecting } = shopify.initiateConnect;
   const { mutate: disconnect, isPending: isDisconnecting } = shopify.disconnect;
 
   const handleConnect = () => {
     // Generate auth URL without specifying a shop domain
     // Shopify will handle the shop selection during OAuth flow
-    initiateAuth('', {
+    initiateConnect('', {
       onSuccess: (authUrl: string) => {
         // Show loading state
         toast.loading('Redirecting to Shopify...', {

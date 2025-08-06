@@ -74,7 +74,6 @@ export class PickupService {
       ]);
 
       const is_first_hub = lastHubForUser === null;
-      console.log(lastHubForUser === null, is_first_hub, lastHubForUser)
 
       const lorrigoPickupId = generateId({
         tableName: 'HUB',

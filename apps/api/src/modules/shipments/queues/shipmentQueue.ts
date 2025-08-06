@@ -459,10 +459,10 @@ async function processVendorShipmentCreation(jobData: any, fastify: FastifyInsta
     // Step 4: Send tracking information to Shopify if this is a Shopify order
     try {
       const shopifySyncService = new ShopifySyncService(fastify);
-      
+
       // Generate tracking URL (you may need to adjust this based on your tracking system)
       const trackingUrl = `${process.env.FRONTEND_URL || 'https://app.lorrigo.com'}/tracking/${awb}`;
-      
+
       // Send tracking to Shopify
       const shopifyResult = await shopifySyncService.sendTrackingToShopify(
         order.id,

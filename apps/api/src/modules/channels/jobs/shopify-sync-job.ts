@@ -54,7 +54,7 @@ export class ShopifySyncJob {
           }
 
           // Add a small delay between users to avoid rate limits
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         } catch (error) {
           totalErrors++;
           console.error(`Error syncing orders for user ${connection.user_id}:`, error);
@@ -90,4 +90,4 @@ export class ShopifySyncJob {
       captureException(error as Error);
     }
   }
-} 
+}

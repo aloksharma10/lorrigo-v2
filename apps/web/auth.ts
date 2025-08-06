@@ -15,6 +15,7 @@ declare module 'next-auth' {
       role?: Role;
       token?: string;
       hasPasskeys?: boolean;
+      hasShopifyConnection?: boolean;
     };
   }
 }
@@ -68,6 +69,7 @@ export const result = NextAuth({
                 role: data.user.role,
                 token: credentials.password as string,
                 hasPasskeys: data.user.hasPasskeys,
+                hasShopifyConnection: data.user.hasShopifyConnection,
               };
             }
             return null;
@@ -106,6 +108,7 @@ export const result = NextAuth({
             role: data.user.role,
             token: data.token,
             hasPasskeys: data.user.hasPasskeys,
+            hasShopifyConnection: data.user.hasShopifyConnection,
           };
         } catch (err) {
           console.error('Auth error:', err);
@@ -159,7 +162,7 @@ export const result = NextAuth({
           (user as any).role = data.user.role;
           (user as any).hasPasskeys = data.user.hasPasskeys;
           (user as any).id = data.user.id;
-
+          (user as any).hasShopifyConnection = data.user.hasShopifyConnection;
           return true;
         } catch (error) {
           console.error('Error in Google OAuth signIn:', error);
@@ -177,6 +180,8 @@ export const result = NextAuth({
         token.token = user.token as string;
         // @ts-ignore
         token.hasPasskeys = user.hasPasskeys;
+        // @ts-ignore
+        token.hasShopifyConnection = user.hasShopifyConnection;
       }
       return token;
     },
@@ -186,6 +191,7 @@ export const result = NextAuth({
         session.user.role = token.role as Role;
         session.user.token = (token.token as any) || '';
         session.user.hasPasskeys = token.hasPasskeys as boolean;
+        session.user.hasShopifyConnection = token.hasShopifyConnection as boolean;
       }
       return session;
     },

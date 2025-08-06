@@ -261,8 +261,75 @@ export class ShopifyChannel extends BaseChannel {
   }
 
   /**
-   * Handle Shopify OAuth login and user management
-   * @param oauthData Shopify OAuth data
+   * Connect Shopify store to existing user account (does not create new session)
+   * @param oauthData OAuth data from Shopify
+   * @param userId Existing user ID to connect to
+   * @returns Promise resolving to connection result
+   */
+  public async connectShopifyToExistingUser(oauthData: ShopifyOAuthData, userId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Verify the user exists and is active
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        return { success: false, error: 'User not found' };
+      }
+
+      if (!user.is_active) {
+        return { success: false, error: 'User account is not active' };
+      }
+
+      // Check if this shop is already connected to another user
+      const existingConnection = await this.prisma.shopifyConnection.findFirst({
+        where: { shop: oauthData.shop },
+        include: { user: true },
+      });
+
+      if (existingConnection && existingConnection.user_id !== userId) {
+        return {
+          success: false,
+          error: `This Shopify store is already connected to another account (${existingConnection.user.email})`,
+        };
+      }
+
+      // Update or create the connection
+      if (existingConnection) {
+        // Update existing connection
+        await this.prisma.shopifyConnection.update({
+          where: { id: existingConnection.id },
+          data: {
+            access_token: oauthData.access_token,
+            scope: oauthData.scope,
+            updated_at: new Date(),
+          },
+        });
+      } else {
+        // Create new connection
+        await this.prisma.shopifyConnection.create({
+          data: {
+            shop: oauthData.shop,
+            access_token: oauthData.access_token,
+            scope: oauthData.scope,
+            user_id: userId,
+          },
+        });
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error connecting Shopify to existing user:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to connect Shopify store',
+      };
+    }
+  }
+
+  /**
+   * Handle Shopify OAuth login (creates new user session)
+   * @param oauthData OAuth data from Shopify
    * @param ipAddress User's IP address
    * @param deviceInfo Device information
    * @returns Promise resolving to auth response
@@ -729,9 +796,7 @@ export class ShopifyChannel extends BaseChannel {
       };
 
       // Send fulfillment to Shopify
-      const fulfillmentEndpoint = APIs.SHOPIFY_FULFILLMENTS
-        .replace('{version}', this.apiVersion)
-        .replace('{order_id}', shopifyOrderId.toString());
+      const fulfillmentEndpoint = APIs.SHOPIFY_FULFILLMENTS.replace('{version}', this.apiVersion).replace('{order_id}', shopifyOrderId.toString());
 
       const fulfillmentResponse = await this.makeRequest(fulfillmentEndpoint, 'POST', fulfillmentData, {
         'X-Shopify-Access-Token': token,
@@ -754,9 +819,7 @@ export class ShopifyChannel extends BaseChannel {
           },
         };
 
-        const orderUpdateEndpoint = APIs.SHOPIFY_ORDER_UPDATE
-          .replace('{version}', this.apiVersion)
-          .replace('{order_id}', shopifyOrderId.toString());
+        const orderUpdateEndpoint = APIs.SHOPIFY_ORDER_UPDATE.replace('{version}', this.apiVersion).replace('{order_id}', shopifyOrderId.toString());
 
         try {
           await this.makeRequest(orderUpdateEndpoint, 'PUT', orderUpdateData, {

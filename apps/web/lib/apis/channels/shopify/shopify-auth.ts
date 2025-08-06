@@ -1,6 +1,6 @@
 import { apiClient } from '@/components/providers/token-provider';
 
-export interface ShopifyAuthResponse {
+export interface ShopifyLoginResponse {
   success: boolean;
   authUrl?: string;
   user?: {
@@ -15,24 +15,24 @@ export interface ShopifyAuthResponse {
 }
 
 /**
- * Get Shopify OAuth URL for login
+ * Get Shopify OAuth URL for login (creates new session)
  */
-export const getShopifyAuthUrl = async (shop?: string): Promise<string> => {
+export const getShopifyLoginUrl = async (shop?: string): Promise<string> => {
   const params = shop ? { shop } : {};
-  const response = await apiClient.get<ShopifyAuthResponse>('/auth/shopify/auth-url', { params });
+  const response = await apiClient.get<ShopifyLoginResponse>('/auth/shopify/auth-url', { params });
 
   if (!response.data.success || !response.data.authUrl) {
-    throw new Error(response.data.message || 'Failed to get Shopify auth URL');
+    throw new Error(response.data.message || 'Failed to get Shopify login URL');
   }
 
   return response.data.authUrl;
 };
 
 /**
- * Handle Shopify OAuth callback
+ * Handle Shopify OAuth callback for login (creates new session)
  */
-export const handleShopifyCallback = async (code: string, state: string, shop: string): Promise<{ user: any; token: string }> => {
-  const response = await apiClient.get<ShopifyAuthResponse>('/auth/shopify/callback', {
+export const handleShopifyLoginCallback = async (code: string, state: string, shop: string): Promise<{ user: any; token: string }> => {
+  const response = await apiClient.get<ShopifyLoginResponse>('/auth/shopify/callback', {
     params: { code, state, shop },
   });
 

@@ -13,7 +13,7 @@ export const APP_CONFIG = {
 
   // JWT settings
   JWT_SECRET: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
-  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
+  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || 7,
 
   // Rate limiting
   RATE_LIMIT: {

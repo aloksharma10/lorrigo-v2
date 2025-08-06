@@ -288,7 +288,7 @@ export class ChannelConnectionService {
         },
       });
 
-      return connections.map(conn => ({
+      return connections.map((conn) => ({
         ...conn,
         channel: Channel.SHOPIFY,
       }));

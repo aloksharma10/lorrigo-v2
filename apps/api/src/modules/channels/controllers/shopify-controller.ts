@@ -1,3 +1,13 @@
+/**
+ * Shopify Channel Controller
+ *
+ * This controller handles Shopify channel operations for CONNECTING Shopify stores to existing user accounts.
+ * It does NOT create new user sessions - that's handled by the AuthController for login flows.
+ *
+ * Key distinction:
+ * - /auth/shopify/* routes: For login (creates new user sessions)
+ * - /channels/shopify/* routes: For connecting stores to existing accounts (no new session)
+ */
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { captureException } from '@/lib/sentry';
@@ -52,14 +62,17 @@ export class ShopifyController {
    * @param fastify Fastify instance
    */
   public registerRoutes(fastify: FastifyInstance): void {
-    // Get auth URL
+    // Get auth URL for connecting to existing account
     fastify.get('/shopify/auth/url', this.getAuthUrl.bind(this));
 
     // Initiate OAuth flow (kept for backward compatibility)
     fastify.get('/shopify/auth', this.initiateAuth.bind(this));
 
-    // OAuth callback
+    // OAuth callback for connecting to existing account
     fastify.get('/shopify/callback', this.handleCallback.bind(this));
+
+    // Connect Shopify store to existing account (API endpoint)
+    fastify.post('/shopify/connect', this.connectShopify.bind(this));
 
     // Get connection status
     fastify.get('/shopify/connection', this.getConnection.bind(this));
@@ -212,22 +225,26 @@ export class ShopifyController {
         return reply.redirect(authUrl);
       }
 
-      // Exchange code for token
+      // Exchange code for token and connect to existing user
       try {
-        const connection = await shopifyChannel.exchangeCodeForToken(code);
+        const oauthData = await shopifyChannel.exchangeCodeForTokenWithShop(code, shop);
 
-        if (!connection) {
+        if (!oauthData) {
           console.error('Failed to exchange code for token');
           // Redirect to app with error
           const errorUrl = `${process.env.FRONTEND_URL || 'https://app.lorrigo.com'}/auth/signin?error=token_exchange_failed`;
           return reply.redirect(errorUrl);
         }
 
-        // Save the connection to the database
-        await this.connectionService.saveConnection({
-          ...connection,
-          channel: Channel.SHOPIFY,
-        });
+        // Connect Shopify to the existing user account (does not create new session)
+        const connectResult = await shopifyChannel.connectShopifyToExistingUser(oauthData, user.id);
+
+        if (!connectResult.success) {
+          console.error('Failed to connect Shopify to existing user:', connectResult.error);
+          // Redirect to app with error
+          const errorUrl = `${process.env.FRONTEND_URL || 'https://app.lorrigo.com'}/auth/signin?error=connection_failed&message=${encodeURIComponent(connectResult.error || 'Failed to connect Shopify store')}`;
+          return reply.redirect(errorUrl);
+        }
 
         // For non-embedded apps, redirect to the app's dashboard
         const dashboardUrl = `${process.env.FRONTEND_URL || 'https://app.lorrigo.com'}/seller/dashboard?shop=${shop}&status=success`;
@@ -298,6 +315,86 @@ export class ShopifyController {
       console.error('Error fetching Shopify connection:', error);
       captureException(error as Error);
       reply.code(500).send({ error: 'Failed to fetch Shopify connection' });
+    }
+  }
+
+  /**
+   * Connect Shopify store to existing account (API endpoint)
+   * @param request Fastify request
+   * @param reply Fastify reply
+   */
+  private async connectShopify(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    try {
+      // Get authenticated user from request
+      const user = request.userPayload;
+
+      if (!user) {
+        return reply.code(401).send({ error: 'Authentication required' });
+      }
+
+      // Parse request body
+      const { code, state, shop } = request.body as any;
+
+      if (!code || !state || !shop) {
+        return reply.code(400).send({ error: 'Missing required parameters: code, state, or shop' });
+      }
+
+      // Validate that the shop is a valid Shopify shop domain
+      if (!shop.match(/^[a-zA-Z0-9][a-zA-Z0-9\-]*\.myshopify\.com$/)) {
+        return reply.code(400).send({ error: 'Invalid shop domain' });
+      }
+
+      // Create Shopify channel instance
+      const shopifyChannel = new ShopifyChannel(shop, user.id, this.fastify);
+
+      // Exchange code for token and connect to existing user
+      try {
+        const oauthData = await shopifyChannel.exchangeCodeForTokenWithShop(code, shop);
+
+        if (!oauthData) {
+          return reply.code(400).send({ error: 'Failed to exchange code for token' });
+        }
+
+        // Connect Shopify to the existing user account (does not create new session)
+        const connectResult = await shopifyChannel.connectShopifyToExistingUser(oauthData, user.id);
+
+        if (!connectResult.success) {
+          return reply.code(400).send({ error: connectResult.error || 'Failed to connect Shopify store' });
+        }
+
+        return reply.code(200).send({
+          success: true,
+          message: 'Shopify store connected successfully',
+          shop: oauthData.shop,
+        });
+      } catch (exchangeError: any) {
+        console.error('Error exchanging code for token:', exchangeError);
+        const errorMessage = exchangeError.message || 'Failed to exchange code for token';
+
+        // Check if the error is due to the code already being used
+        const isCodeUsedError =
+          exchangeError.response?.data?.includes('authorization code was not found or was already used') ||
+          errorMessage.includes('authorization code was not found or was already used');
+
+        if (isCodeUsedError) {
+          // Check if we already have a connection for this shop and user
+          const existingConnection = await this.connectionService.getConnectionByShop(user.id, shop, Channel.SHOPIFY);
+
+          if (existingConnection) {
+            return reply.code(200).send({
+              success: true,
+              message: 'Shopify store already connected',
+              shop: shop,
+            });
+          }
+        }
+
+        return reply.code(400).send({ error: errorMessage });
+      }
+    } catch (error) {
+      console.error('Error connecting Shopify store:', error);
+      captureException(error as Error);
+      return reply.code(500).send({ error: 'Failed to connect Shopify store' });
     }
   }
 

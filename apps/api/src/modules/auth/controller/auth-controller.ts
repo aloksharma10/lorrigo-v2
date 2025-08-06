@@ -347,6 +347,7 @@ export class AuthController {
 
       // Get user data from database
       const user = await this.authService.getMe(request.userPayload.id);
+      const hasShopifyConnection = user?.shopify_connection !== null;
 
       if (!user) {
         return reply.code(401).send({
@@ -363,6 +364,7 @@ export class AuthController {
           name: user.name,
           role: user.role,
           hasPasskeys: user.hasPasskeys || false,
+          hasShopifyConnection: hasShopifyConnection || false,
         },
       });
     } catch (error) {

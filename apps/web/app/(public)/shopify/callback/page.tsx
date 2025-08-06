@@ -2,19 +2,23 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { signIn } from 'next-auth/react';
-import { handleShopifyCallback, getShopifyAuthUrl } from '@/lib/apis/shopify-auth';
+import { signIn, useSession } from 'next-auth/react';
+import { handleShopifyLoginCallback, getShopifyLoginUrl } from '@/lib/apis/channels/shopify/shopify-auth';
 import { useAuthToken } from '@/components/providers/token-provider';
 import { getRoleBasedRedirect } from '@/lib/routes/redirect';
 import { Role } from '@lorrigo/db';
-import { Loader2 } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@lorrigo/ui/components';
+import { api } from '@/lib/apis/axios';
 
 export default function ShopifyCallback() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { setAuthToken } = useAuthToken();
+  const { setAuthToken, isTokenReady } = useAuthToken();
   const [isLoading, setIsLoading] = useState(true);
   const [processed, setProcessed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { data: session } = useSession();
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -30,11 +34,11 @@ export default function ShopifyCallback() {
         // If we have shop but no code, this means we need to redirect to OAuth
         if (shop && !code) {
           try {
-            const authUrl = await getShopifyAuthUrl(shop);
+            const authUrl = await getShopifyLoginUrl(shop);
             window.location.href = authUrl;
             return;
           } catch (err) {
-            console.error('Failed to get Shopify auth URL:', err);
+            console.error('Failed to get Shopify login URL:', err);
             setIsLoading(false);
             return;
           }
@@ -42,46 +46,64 @@ export default function ShopifyCallback() {
 
         // If we have code, state, and shop, handle the OAuth callback
         if (code && state && shop) {
-          console.log('Processing OAuth callback with:', { code: code.substring(0, 10) + '...', state, shop });
+          if (isTokenReady || session?.user?.email) {
+            // User is authenticated - this is a connect flow
+            console.log('User is authenticated, treating as connect flow');
 
-          // Handle Shopify OAuth callback
-          const result = await handleShopifyCallback(code, state, shop);
-          console.log('OAuth callback result:', { user: result.user.email, hasToken: !!result.token });
+            try {
+              // Call the connect API to attach Shopify store to existing account
+              const response = await api.post<any>('/channels/shopify/connect', { code, state, shop });
 
-          // Use NextAuth signIn with the Shopify token
-          const signInResult = await signIn('credentials', {
-            email: result.user.email,
-            password: result.token, // Use token as password for Shopify auth
-            redirect: false,
-          });
+              if (response.status === 200) {
+                // Successfully connected, redirect to channels page
+                setTimeout(() => {
+                  router.push('/seller/channels?shopify=connected');
+                }, 2000);
+                return;
+              } else {
+                setError(response.data.error || 'Failed to connect Shopify store');
+                setIsLoading(false);
+                return;
+              }
+            } catch (err: any) {
+              console.error('Error connecting Shopify store:', err);
+              setError(err.response.data.error || 'Failed to connect Shopify store');
+              setIsLoading(false);
+              return;
+            }
+          } else {
+            // Handle Shopify OAuth callback for login
+            const result = await handleShopifyLoginCallback(code, state, shop);
 
-          if (signInResult?.error) {
-            console.error('NextAuth signIn failed:', signInResult.error);
-            setIsLoading(false);
+            // Use NextAuth signIn with the Shopify token
+            const signInResult = await signIn('credentials', {
+              email: result.user.email,
+              password: result.token, // Use token as password for Shopify auth
+              redirect: false,
+            });
+
+            if (signInResult?.error) {
+              setError('Failed to authenticate with Shopify');
+              setIsLoading(false);
+              return;
+            }
+
+            setAuthToken(result.token);
+
+            // For non-embedded apps, redirect to the app's dashboard
+            const redirectUrl = getRoleBasedRedirect(result.user.role as Role);
+
+            // Add a small delay to ensure session is created
+            setTimeout(() => {
+              router.push(redirectUrl);
+            }, 500);
             return;
           }
-
-          console.log('NextAuth signIn successful');
-
-          // Set auth token for API calls
-          setAuthToken(result.token);
-          console.log('Auth token set successfully');
-
-          // For non-embedded apps, redirect to the app's dashboard
-          const redirectUrl = getRoleBasedRedirect(result.user.role as Role);
-          console.log('Redirecting to app dashboard:', redirectUrl);
-
-          // Add a small delay to ensure session is created
-          setTimeout(() => {
-            router.push(redirectUrl);
-          }, 500);
-          return;
         }
 
         // If we don't have the required parameters, show error
         setIsLoading(false);
       } catch (err) {
-        console.error('Shopify callback error:', err);
         setIsLoading(false);
       }
     };
@@ -94,10 +116,36 @@ export default function ShopifyCallback() {
       <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
         <div className="mx-auto max-w-md text-center">
           <div className="mb-4">
-            <Loader2 className="mx-auto h-8 w-8 animate-spin text-blue-600" />
+            <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
           </div>
-          <h1 className="mb-2 text-xl font-semibold">Connecting to Shopify...</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400">Please wait while we complete your authentication.</p>
+          <h1 className="mb-2 text-xl font-semibold">{isTokenReady ? 'Connecting Shopify Store...' : 'Connecting to Shopify...'}</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            {isTokenReady ? 'Please wait while we connect your Shopify store to your account.' : 'Please wait while we complete your authentication.'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
+        <div className="mx-auto max-w-md text-center">
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+          <div className="space-y-2">
+            <button
+              onClick={() => router.push(isTokenReady ? '/seller/channels' : '/auth/signin')}
+              className="mr-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90"
+            >
+              {isTokenReady ? 'Back to Channels' : 'Back to Sign In'}
+            </button>
+            <button onClick={() => window.location.reload()} className="rounded-md bg-gray-600 px-4 py-2 text-sm font-medium text-white hover:bg-gray-500">
+              Try Again
+            </button>
+          </div>
         </div>
       </div>
     );

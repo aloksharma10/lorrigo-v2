@@ -4,6 +4,7 @@ import { FastifyInstance } from 'fastify';
 import { generateId, getFinancialYear } from '@lorrigo/utils';
 import { ShopifyChannel } from '../../channels/services/shopify/shopify-channel';
 import { captureException } from '@sentry/node';
+import { APP_CONFIG } from '@/config/app';
 
 interface RegisterData {
   email: string;
@@ -35,6 +36,7 @@ interface LoginResult {
     name: string;
     role: string;
     hasPasskeys?: boolean;
+    hasShopifyConnection?: boolean;
   };
   token: string;
 }
@@ -329,7 +331,16 @@ export class AuthService {
       data: {
         sessionToken,
         userId: user.id,
-        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        expires: new Date(
+          Date.now() +
+            (typeof APP_CONFIG.JWT_EXPIRES_IN === 'number'
+              ? APP_CONFIG.JWT_EXPIRES_IN
+              : Number(APP_CONFIG.JWT_EXPIRES_IN || 1)) *
+              24 *
+              60 *
+              60 *
+              1000
+        ),
         ipAddress: deviceInfo?.ipAddress || ipAddress,
         userAgent: deviceInfo?.userAgent,
         deviceType: deviceInfo?.deviceType,
@@ -358,6 +369,7 @@ export class AuthService {
         name: user.name,
         role: user.role,
         hasPasskeys: user.hasPasskeys,
+        hasShopifyConnection: user.shopify_connection !== null,
       },
       token,
     };
@@ -380,6 +392,7 @@ export class AuthService {
         is_verified: true,
         plan_id: true,
         hasPasskeys: true,
+        shopify_connection: true,
       },
     });
   }
