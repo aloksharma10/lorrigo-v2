@@ -54,7 +54,7 @@ function CopyBtn({
 }: CopyBtnProps) {
   // Generate unique ID for this component instance
   const componentId = useId();
-  
+
   // Each instance maintains its own independent state
   const [copied, setCopied] = useState<boolean>(false);
   const [isVisible, setIsVisible] = useState<boolean>(initiallyVisible);
@@ -72,30 +72,29 @@ function CopyBtn({
   }, [text, copyTimeout, onCopySuccess, onCopyError, componentId]);
 
   const toggleVisibility = useCallback(() => {
-    setIsVisible(prev => {
+    setIsVisible((prev) => {
       const newVisibility = !prev;
       onVisibilityChange?.(newVisibility);
       return newVisibility;
     });
   }, [onVisibilityChange]);
 
-  const getMaskedText = useCallback((text: string) => {
-    return maskedChar.repeat(text.length);
-  }, [maskedChar]);
+  const getMaskedText = useCallback(
+    (text: string) => {
+      return maskedChar.repeat(text.length);
+    },
+    [maskedChar]
+  );
 
   // Each instance determines its own display text
-  const displayText = showVisibilityToggle 
-    ? (isVisible ? label : (label ? getMaskedText(label) : ''))
-    : label;
+  const displayText = showVisibilityToggle ? (isVisible ? label : label ? getMaskedText(label) : '') : label;
 
   return (
     <div className="flex items-center gap-2" data-copy-btn-id={componentId}>
       {label && label !== 'N/A' && (
         <>
-          <span className={cn('text-sm font-medium text-gray-700 select-none', labelClassName)}>
-            {displayText}
-          </span>
-          
+          <span className={cn('select-none text-sm font-medium text-gray-700', labelClassName)}>{displayText}</span>
+
           {showVisibilityToggle && (
             <ActionTooltip label={isVisible ? visibilityTooltipHide : visibilityTooltipShow}>
               <Button
@@ -106,19 +105,9 @@ function CopyBtn({
                 aria-label={`${isVisible ? visibilityTooltipHide : visibilityTooltipShow} for ${componentId}`}
               >
                 {isVisible ? (
-                  <EyeOff
-                    size={iconSize}
-                    strokeWidth={strokeWidth}
-                    className="text-gray-500 hover:text-gray-700 transition-colors"
-                    aria-hidden="true"
-                  />
+                  <EyeOff size={iconSize} strokeWidth={strokeWidth} className="text-gray-500 transition-colors hover:text-gray-700" aria-hidden="true" />
                 ) : (
-                  <Eye
-                    size={iconSize}
-                    strokeWidth={strokeWidth}
-                    className="text-gray-500 hover:text-gray-700 transition-colors"
-                    aria-hidden="true"
-                  />
+                  <Eye size={iconSize} strokeWidth={strokeWidth} className="text-gray-500 transition-colors hover:text-gray-700" aria-hidden="true" />
                 )}
               </Button>
             </ActionTooltip>

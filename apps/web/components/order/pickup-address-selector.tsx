@@ -38,7 +38,7 @@ export function PickupAddressSelector({ onAddressSelect, error, initialAddressId
   const [hasInitiallyFetched, setHasInitiallyFetched] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const {
-    getHubsQuery: { data, refetch },
+    getHubsQueryLegacy: { data, refetch },
   } = useHubOperations();
 
   const form = useForm<AddressFormValues>({
@@ -85,6 +85,7 @@ export function PickupAddressSelector({ onAddressSelect, error, initialAddressId
         setIsLoading(true);
         try {
           const response = await refetch();
+          console.log(response);
           setAddresses(filterHubs(response.data ?? [], searchQuery));
           setHasInitiallyFetched(true);
         } catch (error) {

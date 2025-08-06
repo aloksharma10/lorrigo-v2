@@ -249,6 +249,7 @@ export const OrderForm = forwardRef<OrderFormRef, OrderFormProps>(
     }
 
     const handlePickupAddressSelect = (address: any) => {
+      console.log(address);
       form.setValue('pickupAddressId', address.id);
     };
 

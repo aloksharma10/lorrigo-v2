@@ -13,6 +13,7 @@ import {
   UsersRound,
   Weight,
   Truck,
+  MapPin,
 } from 'lucide-react';
 import { Home, LayoutDashboard, ClipboardList, FilePlus, RotateCcw, AlertCircle } from 'lucide-react';
 
@@ -93,6 +94,12 @@ export const SELLER_ROUTES = [
         title: 'Couriers',
         url: '/seller/couriers',
         icon: Truck,
+        isActive: false,
+      },
+      {
+        title: 'Pickup Addresses',
+        url: '/seller/pickup-addresses',
+        icon: MapPin,
         isActive: false,
       },
       {

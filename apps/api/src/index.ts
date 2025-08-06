@@ -118,7 +118,7 @@ const registerPlugins = async () => {
         fastify.register(customerRoutes, { prefix: '/customers' });
         fastify.register(courierRoutes, { prefix: '/couriers' });
         fastify.register(channelRoutes, { prefix: '/channels' });
-        fastify.register(hubRoutes, { prefix: '/hubs' });
+        fastify.register(hubRoutes, { prefix: '/pickup-address' });
         fastify.register(productRoutes, { prefix: '/products' });
         fastify.register(transactionRoutes, { prefix: '/transactions' });
         fastify.register(billingRoutes, { prefix: '/billing' });

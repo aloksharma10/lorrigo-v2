@@ -161,7 +161,7 @@ export function CreateCourierModal({ onClose, courier, onSuccess }: CreateCourie
   };
 
   return (
-    <div className="flex max-h-[85vh] flex-col overflow-hidden scrollbar-hide">
+    <div className="scrollbar-hide flex max-h-[85vh] flex-col overflow-hidden">
       <div className="flex items-center justify-between border-b p-6">
         <div>
           <h2 className="text-xl font-semibold">{isEditMode ? 'Edit Courier' : 'Create New Courier'}</h2>

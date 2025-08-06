@@ -19,7 +19,7 @@ export default async function hubRoutes(fastify: FastifyInstance) {
 
   /**
    * @route   GET /api/pickup-address/hub
-   * @desc    Get all hubs for authenticated seller
+   * @desc    Get all hubs for authenticated seller with advanced filtering
    * @access  Private (Seller only)
    */
   fastify.get('/', {
@@ -38,6 +38,30 @@ export default async function hubRoutes(fastify: FastifyInstance) {
     preHandler: [authorizeRoles([Role.SELLER])],
     handler: async (request, reply) => {
       return pickupController.getHubById(request, reply);
+    },
+  });
+
+  /**
+   * @route   PATCH /api/pickup-address/hub/:id/status
+   * @desc    Update hub status (active/inactive)
+   * @access  Private (Seller only)
+   */
+  fastify.patch('/:id/status', {
+    preHandler: [authorizeRoles([Role.SELLER])],
+    handler: async (request, reply) => {
+      return pickupController.updateHubStatus(request, reply);
+    },
+  });
+
+  /**
+   * @route   PATCH /api/pickup-address/hub/:id/primary
+   * @desc    Set hub as primary
+   * @access  Private (Seller only)
+   */
+  fastify.patch('/:id/primary', {
+    preHandler: [authorizeRoles([Role.SELLER])],
+    handler: async (request, reply) => {
+      return pickupController.setPrimaryHub(request, reply);
     },
   });
 }

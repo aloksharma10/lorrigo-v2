@@ -73,20 +73,21 @@ export function CouriersTable() {
   // Handle create courier
   const handleCreateCourier = () => {
     // TODO: Open create courier modal
-    openModal('create-courier', { 
+    openModal('create-courier', {
       courier: null,
       onSuccess: () => {
-      toast.success('Courier created successfully');
-    } });
+        toast.success('Courier created successfully');
+      },
+    });
   };
 
   // Handle edit courier
   const handleEditCourier = (courier: Courier) => {
-    openModal('create-courier', { 
+    openModal('create-courier', {
       courier: courier,
       onSuccess: () => {
         toast.success('Courier updated successfully');
-      }
+      },
     });
   };
 
@@ -114,8 +115,10 @@ export function CouriersTable() {
               <Truck className="h-4 w-4 text-blue-600" />
             </div>
             <div className="flex flex-col space-y-1">
-              <div className="font-medium">{courier.name} {courier.channel_config?.nickname && `(${courier.channel_config?.nickname})`}</div>
-            {isAdmin && <div className="text-muted-foreground text-sm">{courier.courier_code && `Code: ${courier.courier_code}`}</div>}
+              <div className="font-medium">
+                {courier.name} {courier.channel_config?.nickname && `(${courier.channel_config?.nickname})`}
+              </div>
+              {isAdmin && <div className="text-muted-foreground text-sm">{courier.courier_code && `Code: ${courier.courier_code}`}</div>}
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="w-fit text-xs">
                   {courier.type}
@@ -249,9 +252,7 @@ export function CouriersTable() {
   if (isAdmin) {
     columns.push({
       id: 'actions',
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Actions" />
-      ),
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Actions" />,
       cell: ({ row }) => {
         const courier = row.original;
         return (
@@ -272,14 +273,18 @@ export function CouriersTable() {
 
   // Define filterable columns
   const filterableColumns = [
-    ...(isAdmin ? [{
-      id: 'is_active',
-      title: 'Status',
-      options: [
-        { label: 'Active', value: 'true' },
-        { label: 'Inactive', value: 'false' },
-      ],
-    }] : []),
+    ...(isAdmin
+      ? [
+          {
+            id: 'is_active',
+            title: 'Status',
+            options: [
+              { label: 'Active', value: 'true' },
+              { label: 'Inactive', value: 'false' },
+            ],
+          },
+        ]
+      : []),
     {
       id: 'courier_type',
       title: 'Courier Type',
