@@ -500,7 +500,11 @@ export default function ShipOrderPage() {
               <div className="py-12 text-center">
                 <Package className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
                 <h3 className="mb-2 text-lg font-medium">No couriers found</h3>
-                <p className="text-muted-foreground">Try adjusting your filters or search criteria</p>
+                <p className="text-muted-foreground">
+                  Please contact your relation manager for support.
+                  <br />
+                  Mail to <a href="mailto:support@lorrigo.in">support@lorrigo.in</a>
+                </p>
               </div>
             )}
           </div>

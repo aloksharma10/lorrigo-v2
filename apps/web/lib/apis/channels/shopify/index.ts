@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient, useAuthToken } from '@/components/providers/token-provider';
 import { useSession } from 'next-auth/react';
 import { AxiosError } from 'axios';
+import { api } from '@/lib/apis/axios';
 
 // Types
 export interface ShopifyConnection {
@@ -79,6 +80,33 @@ export const useShopify = () => {
     },
   });
 
+  // Sync orders from Shopify with date range
+  const syncOrders = useMutation({
+    mutationFn: async (dateRange: { start: string; end: string }) => {
+      const params = {
+        created_at_min: dateRange.start,
+        created_at_max: dateRange.end,
+      };
+      const response = await apiClient.post<{
+        success: boolean;
+        message: string;
+        data?: {
+          synced: number;
+          skipped: number;
+          errors: number;
+          total: number;
+        };
+        error?: string;
+      }>('/channels/shopify/sync-orders', params);
+      return response.data;
+    },
+    onSuccess: () => {
+      // Invalidate relevant queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['shipments'] });
+    },
+  });
+
   // Disconnect Shopify store
   const disconnect = useMutation({
     mutationFn: async () => {
@@ -91,26 +119,13 @@ export const useShopify = () => {
   });
 
   // Get Shopify orders with pagination and filters
-  const getOrders = (page = 1, limit = 10, status?: string, dateRange?: { start: string; end: string }) => {
+  const syncOrdersFromShopify = (dateRange?: { start: string; end: string }) => {
     return useQuery({
-      queryKey: ['channels', 'shopify', 'orders', { page, limit, status, dateRange }],
+      queryKey: ['channels', 'shopify', 'orders', { dateRange }],
       queryFn: async () => {
-        const params: Record<string, string | number> = {
-          limit,
-          page,
-        };
+        const params = dateRange ? { created_at_min: dateRange.start, created_at_max: dateRange.end } : {};
 
-        if (status) params.status = status;
-        if (dateRange) {
-          params.created_at_min = dateRange.start;
-          params.created_at_max = dateRange.end;
-        }
-
-        const response = await apiClient.get<{
-          success: boolean;
-          count: number;
-          data: ShopifyOrder[];
-        }>('/channels/shopify/orders', { params });
+        const response = await api.get<any>('/channels/shopify/sync-orders', { params });
 
         return {
           orders: response.data.data,
@@ -160,7 +175,8 @@ export const useShopify = () => {
     disconnect,
 
     // Order operations
-    getOrders,
+    syncOrders,
+    syncOrdersFromShopify,
     getOrder,
   };
 };

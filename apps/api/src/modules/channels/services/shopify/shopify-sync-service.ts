@@ -22,132 +22,137 @@ export class ShopifySyncService {
   }
 
   /**
-   * Sync orders from Shopify to local database
+   * Sync orders from Shopify to local database (now async/background)
    * @param userId User ID
    * @param params Query parameters for fetching orders
-   * @returns Promise resolving to sync result
+   * @returns Promise resolving to early sync acceptance
    */
   public async syncOrdersFromShopify(userId: string, params: Record<string, string | number> = {}): Promise<ShopifySyncResult> {
-    try {
-      // Get user's Shopify connection
-      const connection = await this.connectionService.getConnectionByUserIdAndChannel(userId, Channel.SHOPIFY);
-      if (!connection || !connection.shop) {
-        return {
-          success: false,
-          message: 'Shopify connection not found',
-          error: 'No active Shopify connection found for this user',
-        };
-      }
-
-      // Create Shopify channel instance
-      const shopifyChannel = new ShopifyChannel(connection.shop, userId, this.fastify, connection.access_token);
-
-      // Set default parameters for efficient syncing
-      const defaultParams: Record<string, string | number> = {
-        limit: 250, // Shopify's recommended batch size
-        status: 'any',
-        ...params,
-      };
-
-      // If no date range specified, default to last 7 days
-      if (!defaultParams.created_at_min && !defaultParams.created_at_max) {
-        defaultParams.created_at_min = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-        defaultParams.created_at_max = new Date().toISOString();
-      }
-
-      console.log(`Starting Shopify sync for user ${userId} with params:`, defaultParams);
-
-      let totalSynced = 0;
-      let totalSkipped = 0;
-      let totalErrors = 0;
-      let hasMoreOrders = true;
-      let pageInfo: any = null;
-      const batchSize = 50; // Process orders in batches of 50
-      const maxOrders = 10000; // Safety limit
-      const processedOrders = new Set<string>(); // Track processed orders
-
-      // Process orders in batches with pagination
-      while (hasMoreOrders && totalSynced + totalSkipped < maxOrders) {
-        try {
-          // Fetch batch of orders from Shopify
-          const shopifyOrders = await this.fetchOrdersBatch(shopifyChannel, defaultParams, pageInfo);
-
-          if (!shopifyOrders || shopifyOrders.length === 0) {
-            console.log('No more orders to process');
-            break;
-          }
-
-          console.log(`Processing batch of ${shopifyOrders.length} orders`);
-
-          // Process orders in smaller batches for database efficiency
-          for (let i = 0; i < shopifyOrders.length; i += batchSize) {
-            const batch = shopifyOrders.slice(i, i + batchSize);
-
-            const batchResult = await this.processOrdersBatch(batch, userId, connection.shop, processedOrders);
-
-            totalSynced += batchResult.synced;
-            totalSkipped += batchResult.skipped;
-            totalErrors += batchResult.errors;
-
-            console.log(
-              `Batch ${Math.floor(i / batchSize) + 1} completed: ${batchResult.synced} synced, ${batchResult.skipped} skipped, ${batchResult.errors} errors`
-            );
-
-            // Add delay between batches to avoid overwhelming the database
-            if (i + batchSize < shopifyOrders.length) {
-              await new Promise((resolve) => setTimeout(resolve, 100));
-            }
-          }
-
-          // Update pagination info for next batch
-          pageInfo = this.extractPageInfo(shopifyOrders);
-          hasMoreOrders = pageInfo && pageInfo.hasNext;
-
-          // Add delay between API calls to respect rate limits
-          if (hasMoreOrders) {
-            await new Promise((resolve) => setTimeout(resolve, 500));
-          }
-        } catch (error) {
-          console.error('Error processing batch:', error);
-          totalErrors++;
-
-          // If it's a rate limit error, wait longer
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          if (errorMessage.includes('rate limit') || (error as any)?.status === 429) {
-            console.log('Rate limit hit, waiting 10 seconds...');
-            await new Promise((resolve) => setTimeout(resolve, 10000));
-            continue;
-          }
-
-          // For other errors, break to avoid infinite loops
-          break;
-        }
-      }
-
-      const result = {
-        success: true,
-        message: `Sync completed. Total: ${totalSynced + totalSkipped + totalErrors}, Synced: ${totalSynced}, Skipped: ${totalSkipped}, Errors: ${totalErrors}`,
-        data: {
-          synced: totalSynced,
-          skipped: totalSkipped,
-          errors: totalErrors,
-          total: totalSynced + totalSkipped + totalErrors,
-        },
-      };
-
-      console.log('Shopify sync completed:', result);
-      return result;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      console.error('Error syncing orders from Shopify:', error);
-      captureException(error as Error);
-
+    const connection = await this.connectionService.getConnectionByUserIdAndChannel(userId, Channel.SHOPIFY);
+    if (!connection || !connection.shop)
       return {
         success: false,
-        message: 'Failed to sync orders from Shopify',
-        error: errorMessage,
+        message: 'Shopify connection not found',
+        error: 'No active Shopify connection found for this user',
       };
-    }
+
+    const hasPrimaryHub = await this.fastify.prisma.hub.findFirst({
+      where: {
+        user_id: userId,
+        is_primary: true,
+        is_active: true,
+      },
+    });
+    if (!hasPrimaryHub)
+      return {
+        success: false,
+        message: 'No primary hub found for user',
+        error: 'No primary hub found for user',
+      };
+    // 1. Early response to user
+    setImmediate(async () => {
+      try {
+        // --- Begin background sync logic ---
+
+        const shopifyChannel = new ShopifyChannel(connection.shop!, userId, this.fastify, connection.access_token!);
+        const defaultParams: Record<string, string | number> = {
+          limit: 250, // Shopify's recommended batch size
+          status: 'any',
+          ...params,
+        };
+
+        // If no date range specified, default to last 7 days
+        if (!defaultParams.created_at_min && !defaultParams.created_at_max) {
+          defaultParams.created_at_min = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+          defaultParams.created_at_max = new Date().toISOString();
+        }
+
+        let totalSynced = 0;
+        let totalSkipped = 0;
+        let totalErrors = 0;
+        let hasMoreOrders = true;
+        let pageInfo: any = null;
+        const batchSize = 50; // Process orders in batches of 50
+        const processedOrders = new Set<string>(); // Track processed orders
+        const limitPerPage = defaultParams.limit as number;
+
+        // Process orders in batches with pagination
+        while (hasMoreOrders) {
+          try {
+            // Fetch batch of orders from Shopify
+            const shopifyOrders = await this.fetchOrdersBatch(shopifyChannel, defaultParams, pageInfo);
+
+            if (!shopifyOrders || shopifyOrders.length === 0) {
+              console.log('No more orders to process');
+              break;
+            }
+
+            // Process orders in smaller batches for database efficiency
+            for (let i = 0; i < shopifyOrders.length; i += batchSize) {
+              const batch = shopifyOrders.slice(i, i + batchSize);
+
+              const batchResult = await this.processOrdersBatch(batch, userId, connection.shop!, processedOrders);
+
+              totalSynced += batchResult.synced;
+              totalSkipped += batchResult.skipped;
+              totalErrors += batchResult.errors;
+
+              // Add delay between batches to avoid overwhelming the database
+              if (i + batchSize < shopifyOrders.length) {
+                await new Promise((resolve) => setTimeout(resolve, 100));
+              }
+            }
+
+            // Update pagination info for next batch
+            pageInfo = this.extractPageInfo(shopifyOrders);
+            hasMoreOrders = pageInfo && pageInfo.hasNext;
+
+            // If less than the limit per page, stop (no more pages)
+            if (shopifyOrders.length < limitPerPage) {
+              hasMoreOrders = false;
+            }
+
+            // Add delay between API calls to respect rate limits
+            if (hasMoreOrders) {
+              await new Promise((resolve) => setTimeout(resolve, 500));
+            }
+          } catch (error) {
+            totalErrors++;
+
+            // If it's a rate limit error, wait longer
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            if (errorMessage.includes('rate limit') || (error as any)?.status === 429) {
+              await new Promise((resolve) => setTimeout(resolve, 10000));
+              continue;
+            }
+
+            // For other errors, break to avoid infinite loops
+            break;
+          }
+        }
+
+        const result = {
+          success: true,
+          message: `Sync completed. Total: ${totalSynced + totalSkipped + totalErrors}, Synced: ${totalSynced}, Skipped: ${totalSkipped}, Errors: ${totalErrors}`,
+          data: {
+            synced: totalSynced,
+            skipped: totalSkipped,
+            errors: totalErrors,
+            total: totalSynced + totalSkipped + totalErrors,
+          },
+        };
+
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        captureException(error as Error);
+      }
+    });
+
+    // 2. Immediate response to user
+    return {
+      success: true,
+      message: 'Sync accepted. You will see Shopify orders on your panel shortly.',
+    };
   }
 
   /**
@@ -172,7 +177,6 @@ export class ShopifySyncService {
       const orders = await shopifyChannel.getOrders(queryParams);
       return orders || [];
     } catch (error) {
-      console.error('Error fetching orders batch:', error);
       throw error;
     }
   }
@@ -231,7 +235,6 @@ export class ShopifySyncService {
           processedOrders.add(order.id.toString());
           return result;
         } catch (error) {
-          console.error(`Error processing order ${order.id}:`, error);
           return { action: 'error', orderId: order.id, error: error instanceof Error ? error.message : 'Unknown error' };
         }
       });
@@ -372,7 +375,6 @@ export class ShopifySyncService {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      console.error('Error sending tracking to Shopify:', error);
       captureException(error as Error);
 
       return {
@@ -745,7 +747,6 @@ export class ShopifySyncService {
         }
       });
     } catch (error) {
-      console.error(`Error creating order from Shopify order ${shopifyOrder.id}:`, error);
       throw error;
     }
   }
@@ -772,7 +773,6 @@ export class ShopifySyncService {
    */
   private async updateExistingOrder(orderId: string, shopifyOrder: any): Promise<void> {
     try {
-      console.log(`Updating existing order: ${orderId} with Shopify data`);
 
       // Get the existing order with related data
       const existingOrder = await this.fastify.prisma.order.findUnique({
@@ -850,7 +850,6 @@ export class ShopifySyncService {
         // In a more sophisticated implementation, you'd compare and update individual items
       }
     } catch (error) {
-      console.error(`Error updating order ${orderId}:`, error);
       throw error;
     }
   }
@@ -865,14 +864,7 @@ export class ShopifySyncService {
    */
   private async logTrackingUpdate(orderId: string, shopifyOrderId: string, trackingNumber: string, trackingUrl: string, tags?: string[]): Promise<void> {
     try {
-      console.log('Shopify tracking update logged:', {
-        orderId,
-        shopifyOrderId,
-        trackingNumber,
-        trackingUrl,
-        tags,
-        timestamp: new Date().toISOString(),
-      });
+
 
       // TODO: Add to database log table if needed
     } catch (error) {
