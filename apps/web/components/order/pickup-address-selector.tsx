@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import { Button, Input, Form, FormControl, FormField, FormItem, FormMessage } from '@lorrigo/ui/components';
 import { useForm } from 'react-hook-form';
 import { useModal } from '@/modal/modal-provider';
 import { useHubOperations } from '@/lib/apis/hub';
 import { filterHubs } from '@/lib/filter-hubs';
+import { useDebounce } from '@/lib/hooks/use-debounce';
+import { api } from '@/lib/apis/axios';
 
 interface Address {
   id: string;
@@ -36,7 +38,13 @@ export function PickupAddressSelector({ onAddressSelect, error, initialAddressId
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hasInitiallyFetched, setHasInitiallyFetched] = useState(false);
+  const [isSearchingBackend, setIsSearchingBackend] = useState(false);
+  const [lastSearchQuery, setLastSearchQuery] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Debounce search query to avoid too many API calls
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
+
   const {
     getHubsQueryLegacy: { data, refetch },
   } = useHubOperations();
@@ -99,11 +107,79 @@ export function PickupAddressSelector({ onAddressSelect, error, initialAddressId
     fetchHubs();
   }, [isOpen, initialAddressId, hasInitiallyFetched, data, refetch, searchQuery]);
 
-  useEffect(() => {
-    if (data) {
-      setAddresses(filterHubs(data, searchQuery));
+  // Search backend API directly without using hooks
+  const searchBackendAPI = useCallback(async (query: string) => {
+    try {
+      const queryParams = new URLSearchParams();
+      queryParams.append('globalFilter', query);
+      queryParams.append('limit', '10');
+
+      const response = await api.get(`/pickup-address?${queryParams.toString()}`);
+      return (response as any).data?.hubs || [];
+    } catch (error) {
+      console.error('Error searching backend:', error);
+      return [];
     }
-  }, [searchQuery, data]);
+  }, []);
+
+  // Optimized search function with memoization
+  const performSearch = useCallback(
+    async (query: string) => {
+      // Prevent duplicate searches
+      if (query === lastSearchQuery) return;
+
+      setLastSearchQuery(query);
+
+      if (!query || query.length < 3) {
+        // Show all local data if search is too short
+        if (data) {
+          setAddresses(data);
+        }
+        return;
+      }
+
+      // First check if we have local data and filter it
+      const localResults = data ? filterHubs(data, query) : [];
+
+      // If no local results, search backend
+      if (localResults.length === 0) {
+        setIsSearchingBackend(true);
+        try {
+          const backendResults = await searchBackendAPI(query);
+
+          if (backendResults.length > 0) {
+            // Transform backend data to match local format
+            const transformedResults = backendResults.map((hub: any) => ({
+              id: hub.id,
+              name: hub.name,
+              address: {
+                address: hub.address?.address || '',
+              },
+            }));
+            setAddresses(transformedResults);
+          } else {
+            setAddresses([]);
+          }
+        } catch (error) {
+          console.error('Error searching backend:', error);
+          setAddresses([]);
+        } finally {
+          setIsSearchingBackend(false);
+        }
+      } else {
+        // Use local results
+        setAddresses(localResults);
+      }
+    },
+    [data, searchBackendAPI, lastSearchQuery]
+  );
+
+  // Search backend when local search returns no results
+  useEffect(() => {
+    if (debouncedSearchQuery !== lastSearchQuery) {
+      performSearch(debouncedSearchQuery);
+    }
+  }, [debouncedSearchQuery, performSearch, lastSearchQuery]);
 
   // Set initial selected address
   useEffect(() => {
@@ -118,10 +194,24 @@ export function PickupAddressSelector({ onAddressSelect, error, initialAddressId
   }, [initialAddressId, data, form, selectedAddress, onAddressSelect]);
 
   const handleAddressSelect = (address: Address) => {
-    setSelectedAddress(address);
-    form.setValue('address', address.id);
-    setIsOpen(false);
-    onAddressSelect(address);
+    if (address && address.id) {
+      setSelectedAddress(address);
+      form.setValue('address', address.id);
+      setIsOpen(false);
+      onAddressSelect(address);
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedAddress(null);
+    setSearchQuery('');
+    setLastSearchQuery('');
+    form.setValue('address', '');
+    onAddressSelect(null);
+    // Reset addresses to show all local data
+    if (data) {
+      setAddresses(data);
+    }
   };
 
   function onSubmit(values: AddressFormValues) {
@@ -148,13 +238,24 @@ export function PickupAddressSelector({ onAddressSelect, error, initialAddressId
                   <div className="relative">
                     <Input
                       placeholder="Search by pickup location"
-                      value={selectedAddress ? ` ${selectedAddress.name} | ${selectedAddress.address.address}` : searchQuery}
+                      value={selectedAddress ? `${selectedAddress.name} | ${selectedAddress.address.address}` : searchQuery}
                       onChange={(e) => {
-                        setSearchQuery(e.target.value);
-                        field.onChange(e.target.value);
-                        setSelectedAddress(null);
-                        onAddressSelect(null);
+                        const value = e.target.value;
+                        setSearchQuery(value);
+                        field.onChange(value);
+
+                        // Clear selection if user is typing something different
+                        if (selectedAddress && value !== `${selectedAddress.name} | ${selectedAddress.address.address}`) {
+                          handleClearSelection();
+                        }
+
                         if (!isOpen) setIsOpen(true);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') {
+                          handleClearSelection();
+                          setIsOpen(false);
+                        }
                       }}
                       onClick={() => setIsOpen(true)}
                       className="pr-10"
@@ -175,8 +276,8 @@ export function PickupAddressSelector({ onAddressSelect, error, initialAddressId
 
         {isOpen && (
           <div className="bg-background absolute z-10 mt-1 w-full rounded-md border shadow-lg">
-            {isLoading ? (
-              <div className="text-muted-foreground p-4 text-center text-sm">Loading...</div>
+            {isLoading || isSearchingBackend ? (
+              <div className="text-muted-foreground p-4 text-center text-sm">{isSearchingBackend ? 'Searching...' : 'Loading...'}</div>
             ) : addresses.length > 0 ? (
               <ul className="max-h-80 overflow-auto py-1">
                 {addresses.map((address) => (
@@ -191,6 +292,8 @@ export function PickupAddressSelector({ onAddressSelect, error, initialAddressId
                   </li>
                 ))}
               </ul>
+            ) : searchQuery.length > 0 ? (
+              <div className="text-muted-foreground p-4 text-center text-sm">No pickup addresses found for "{searchQuery}"</div>
             ) : (
               <div className="text-muted-foreground p-4 text-center text-sm">No addresses found</div>
             )}

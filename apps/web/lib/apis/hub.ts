@@ -67,6 +67,7 @@ export const useHubOperations = () => {
         if (params.globalFilter) queryParams.append('globalFilter', params.globalFilter);
         if (params.is_active) queryParams.append('is_active', params.is_active);
         if (params.is_primary) queryParams.append('is_primary', params.is_primary);
+        if (params.search) queryParams.append('search', params.search);
         if (params.sorting && params.sorting.length > 0) {
           queryParams.append('sorting', JSON.stringify(params.sorting));
         }

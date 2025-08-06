@@ -26,6 +26,7 @@ export default function OrderFormPage() {
       // Use type assertion to bypass strict TypeScript checking in production
       // while ensuring the data structure is correct
       await createOrder(validatedData as any);
+      router.push(`/seller/orders/forward-shipments/new`);
       toast.success('Order created successfully');
     } catch (error: any) {
       console.error('Order creation error:', error);
@@ -35,12 +36,12 @@ export default function OrderFormPage() {
 
   const OrderSubmitBtn = () => {
     const handleCreateOrder = () => {
-      setRedirectPath('/seller/orders/forward-shipments/new');
+      // setRedirectPath('/seller/orders/forward-shipments/new');
       formRef.current?.submitForm();
     };
 
     // const handleShipNow = () => {
-    //   setRedirectPath(`/seller/orders/${(order as any)?.id}`);
+    //   setRedirectPath(`/seller/orders/ship/${(order as any)?.id}`);
     //   formRef.current?.submitForm();
     // };
 
