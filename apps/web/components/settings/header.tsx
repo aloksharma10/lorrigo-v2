@@ -4,13 +4,14 @@ import { Button } from '@lorrigo/ui/components';
 import { format } from 'date-fns';
 import { useUserOperations } from '@/lib/apis/users';
 import { useModalStore } from '@/modal/modal-store';
-import { CreditCard, Package, Settings } from 'lucide-react';
+import { AlertOctagonIcon, CreditCard, Package, Settings } from 'lucide-react';
 import { currencyFormatter } from '@lorrigo/utils/functions';
 import { Card, CardContent, CardHeader, CardTitle } from '@lorrigo/ui/components';
+import { useRouter } from 'next/navigation';
 
 export function SettingsHeader({ id }: { id: string }) {
   const { openModal } = useModalStore();
-
+  const router = useRouter();
   // Use the users API hook
   const { getUserById } = useUserOperations();
   const { data: userData, isLoading } = getUserById(id as string);
@@ -18,6 +19,10 @@ export function SettingsHeader({ id }: { id: string }) {
 
   const handleAssignPlan = () => {
     openModal('assign-plan', { userId: id });
+  };
+
+  const handleEditPlan = () => {
+    router.push(`/admin/plans/${user?.plan?.id}/edit`);
   };
 
   if (isLoading) {
@@ -48,8 +53,13 @@ export function SettingsHeader({ id }: { id: string }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleAssignPlan}>
-            Assign Plan
+          {user.plan && (
+            <Button tooltipLabel={` Editing plan can also affect the user's current plan`} tooltipDelayDuration={0} size="sm" onClick={handleEditPlan} tooltipIcon={AlertOctagonIcon}>
+              Edit Plan
+            </Button>
+          )}
+          <Button size="sm" onClick={handleAssignPlan} tooltipLabel="Assign a new plan to the user">
+            Assign New Plan
           </Button>
         </div>
       </div>

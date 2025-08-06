@@ -50,6 +50,9 @@ export interface ButtonProps
   tooltipAlign?: 'start' | 'center' | 'end';
   tooltipDelayDuration?: number;
   tooltipDisabled?: boolean;
+  tooltipIcon?: React.ForwardRefExoticComponent<
+    Omit<LucideProps, 'ref'> & RefAttributes<SVGSVGElement>
+  >;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -68,6 +71,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       tooltipDelayDuration = 700,
       tooltipDisabled = false,
       disabled,
+      tooltipIcon: TooltipIcon,
       ...props
     },
     ref
@@ -109,7 +113,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             {buttonElement}
           </TooltipTrigger>
           <TooltipContent side={tooltipSide} align={tooltipAlign}>
-            <p>{tooltipLabel}</p>
+            <p className="flex items-center gap-2">{TooltipIcon && <TooltipIcon className={cn('h-4 w-4')} />}{tooltipLabel}</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
