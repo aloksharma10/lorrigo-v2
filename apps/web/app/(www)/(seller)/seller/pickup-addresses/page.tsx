@@ -264,9 +264,13 @@ export default function PickupAddressesPage() {
                 </div>
               }
             >
-              <p className="flex items-center space-x-2 text-muted-foreground">
-                Primary pickup address can't be disabled. Set another address as primary first.
-              </p>
+              {hub.is_primary ? (
+                <p className="text-muted-foreground flex items-center space-x-2 text-xs">
+                  Primary pickup address can't be disabled. Set another address as primary first.
+                </p>
+              ) : (
+                <p className="text-muted-foreground flex items-center space-x-2 text-xs">Setting this as primary will replace the current primary address. </p>
+              )}
             </HoverCardToolTip>
           </div>
         );
