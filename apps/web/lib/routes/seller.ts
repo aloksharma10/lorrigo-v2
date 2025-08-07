@@ -128,12 +128,6 @@ export const SELLER_ROUTES = [
         icon: Sigma,
       },
       {
-        title: 'Rate Card',
-        url: '/seller/rate-card',
-        icon: SquareSigma,
-        un_dev: true,
-      },
-      {
         title: 'Bulk Activity Log',
         url: '/seller/bulk-log',
         icon: ListTodo,

@@ -1,7 +1,7 @@
 import { addDays, startOfDay, isAfter, format, parseISO } from 'date-fns';
 import { exportData } from '@/utils/exportData';
 import { FastifyInstance } from 'fastify';
-import { Role } from '@lorrigo/db';
+import { Role, User, UserBankAccount, UserProfile, UserWallet } from '@lorrigo/db';
 import { ShipmentBucket } from '@lorrigo/utils';
 
 export class RemittanceService {
@@ -20,9 +20,19 @@ export class RemittanceService {
       console.log(`Found ${users.length} active users`);
       for (const user of users) {
         try {
-          await this.processUserRemittance(user);
+          if (!user.profile || !user.wallet || !user.user_bank_accounts || user.user_bank_accounts.length === 0) {
+            console.log(`User ${user.id} has no profile, wallet, or bank accounts, skipping`);
+            continue;
+          }
+          await this.processUserRemittance(
+            user as User & {
+              profile: UserProfile;
+              wallet: UserWallet;
+              user_bank_accounts: UserBankAccount[];
+            }
+          );
         } catch (error) {
-          console.error(`Error processing remittance for user ${user.id}:`, error);
+          this.fastify.log.error({ err: error, userId: user.id }, 'Error processing remittance for user');
         }
       }
       console.log('Daily remittance calculation completed');
@@ -35,7 +45,7 @@ export class RemittanceService {
   /**
    * Process remittance for a single user
    */
-  private async processUserRemittance(user: any) {
+  private async processUserRemittance(user: User & { profile: UserProfile; wallet: UserWallet; user_bank_accounts: UserBankAccount[] }) {
     // Allow remittance calculation even if user has no bank account
     // if (user.user_bank_accounts && user.user_bank_accounts.length > 10) {
     //   console.log(`User ${user.id} has more than 10 bank accounts, skipping`);
@@ -192,7 +202,7 @@ export class RemittanceService {
   /**
    * Create remittance record and update wallet
    */
-  private async createRemittanceRecord(user: any, bankAccount: any, orders: any[], calculation: any, remittanceDate: Date) {
+  private async createRemittanceRecord(user: User & { profile: UserProfile; wallet: UserWallet; user_bank_accounts: UserBankAccount[] }, bankAccount: any, orders: any[], calculation: any, remittanceDate: Date) {
     console.log('Creating remittance record for user', user.id, 'with amount', calculation.netAmount);
     return await this.fastify.prisma.$transaction(async (tx) => {
       const remittance = await tx.remittance.create({
@@ -208,13 +218,9 @@ export class RemittanceService {
           wallet_transfer_amount: calculation.totalCharges,
           early_remittance_charge: calculation.earlyRemittanceCharge,
           final_payout_amount: calculation.netAmount,
-          // user_id: user.id,
           user: {
             connect: { id: user.id },
           },
-          // bank_account: {
-          //   connect: { id: bankAccount ? bankAccount.id : null },
-          // },
           created_by: 'system',
           processing_details: {
             totalAmount: calculation.totalAmount,
@@ -230,12 +236,14 @@ export class RemittanceService {
         data: { remittanceId: remittance.id },
       });
 
-      await tx.userWallet.update({
-        where: { id: user.wallet.id },
-        data: {
-          available_amount: { increment: calculation.netAmount },
-        },
-      });
+      if (user.profile?.wallet_type === 'WALLET' || user.profile?.wallet_type === 'REMITTANCE_WALLET') {
+        await tx.userWallet.update({
+          where: { id: user.wallet.id },
+          data: {
+            available_amount: { increment: calculation.netAmount },
+          },
+        });
+      }
 
       // [ 16 Jul 2025 ]: Will be used later: when @nishant (owner) wants to add wallet balance to remittance
       // if (user.wallet) {

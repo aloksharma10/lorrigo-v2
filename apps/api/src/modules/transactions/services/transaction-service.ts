@@ -81,6 +81,11 @@ export class TransactionService {
    */
   async createShipmentTransaction(data: ShipmentTransactionData) {
     try {
+      
+      if (data.amount <= 0) {
+        return { success: false, error: 'Amount cannot be zero or negative' };
+      }
+
       // Check if transaction already exists to prevent duplicates
       if (data.awb && data.charge_type) {
         const existingTransaction = await this.prisma.shipmentTransaction.findFirst({
@@ -992,52 +997,79 @@ export class TransactionService {
    */
   private async getUserWallet(userId: string): Promise<WalletUpdateResult> {
     try {
-      // Check if wallet exists
-      let wallet = await this.prisma.userWallet.findUnique({
-        where: { user_id: userId },
-      });
-
-      // If wallet doesn't exist, create it
-      if (!wallet) {
-        // Get last wallet to generate code
-        const lastWalletSequenceNumber = await this.prisma.userWallet.count({
-          where: {
-            created_at: {
-              gte: new Date(new Date().getFullYear(), 0, 1),
-              lte: new Date(new Date().getFullYear(), 11, 31),
+      // Step 1: Get user + wallet_type in one lightweight call
+      const userWithProfile = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          name: true,
+          profile: {
+            select: { wallet_type: true },
+          },
+          wallet: {
+            select: {
+              id: true,
+              balance: true,
             },
           },
-        });
+        },
+      });
 
-        // Get user name for wallet code generation
-        const user = await this.prisma.user.findUnique({
-          where: { id: userId },
-          select: { name: true },
-        });
-
-        if (!user) {
-          return { success: false, error: 'User not found' };
-        }
-
-        // Generate wallet code
-        const walletCode = generateId({
-          tableName: 'wallet',
-          entityName: user.name,
-          lastUsedFinancialYear: getFinancialYear(new Date()),
-          lastSequenceNumber: lastWalletSequenceNumber,
-        }).id;
-
-        // Create wallet
-        wallet = await this.prisma.userWallet.create({
-          data: {
-            code: walletCode,
-            balance: 0,
-            user_id: userId,
-          },
-        });
+      if (!userWithProfile) {
+        return { success: false, error: 'User not found' };
       }
 
-      return { success: true, walletId: wallet.id, balance: wallet.balance };
+      const { name, profile, wallet: existingWallet } = userWithProfile;
+
+      // Step 2: Restrict postpaid users early
+      if (profile?.wallet_type === 'POSTPAID') {
+        return { success: false, error: 'Postpaid users cannot have a wallet' };
+      }
+
+      // Step 3: If wallet already exists, return it
+      if (existingWallet) {
+        return {
+          success: true,
+          walletId: existingWallet.id,
+          balance: existingWallet.balance,
+        };
+      }
+
+      // Step 4: Count how many wallets created this financial year
+      const now = new Date();
+      const financialYearStart = new Date(now.getFullYear(), 3, 1); // Assuming FY starts April 1
+      const financialYearEnd = new Date(now.getFullYear() + 1, 2, 31); // March 31
+
+      const lastWalletSequenceNumber = await this.prisma.userWallet.count({
+        where: {
+          created_at: {
+            gte: financialYearStart,
+            lte: financialYearEnd,
+          },
+        },
+      });
+
+      // Step 5: Generate wallet code
+      const walletCode = generateId({
+        tableName: 'wallet',
+        entityName: name,
+        lastUsedFinancialYear: getFinancialYear(now),
+        lastSequenceNumber: lastWalletSequenceNumber,
+      }).id;
+
+      // Step 6: Create the wallet
+      const newWallet = await this.prisma.userWallet.create({
+        data: {
+          code: walletCode,
+          balance: 0,
+          user_id: userId,
+        },
+      });
+
+      return {
+        success: true,
+        walletId: newWallet.id,
+        balance: newWallet.balance,
+      };
     } catch (error) {
       this.fastify.log.error(`Error getting user wallet: ${error}`);
       return { success: false, error: 'Failed to get or create user wallet' };

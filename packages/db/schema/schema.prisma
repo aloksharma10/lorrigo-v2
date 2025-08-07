@@ -261,8 +261,6 @@ model UserProfile {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  bank_accounts UserBankAccount[]
-
   @@index([user_id])
   @@index([billing_cycle_type])
 }
@@ -1352,10 +1350,7 @@ model UserBankAccount {
   created_at                 DateTime  @default(now())
   updated_at                 DateTime  @updatedAt
 
-  remittances     Remittance[]
-  // Enforce max 10 accounts per user at application level
-  user_profile    UserProfile? @relation(fields: [user_profile_id], references: [id])
-  user_profile_id String?
+  remittances Remittance[]
 
   @@unique([user_id, account_number])
   @@index([user_id])

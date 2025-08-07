@@ -72,27 +72,68 @@ export class ShipmentService {
   /**
    * Check if user can create shipment based on wallet balance
    */
-  async canCreateShipment(userId: string, shipmentAmount: number): Promise<{ canCreate: boolean; reason?: string; message?: string }> {
-    const wallet = await this.fastify.prisma.userWallet.findUnique({
-      where: { user_id: userId },
-    });
-
-    if (!wallet) {
-      return { canCreate: false, reason: 'Wallet not found' };
+  async canCreateShipment(
+    userId: string,
+    shipmentAmount: number
+  ): Promise<{ canCreate: boolean; reason?: string; message?: string }> {
+    try {
+      // Step 1: Fetch wallet_type early to skip full wallet fetch for POSTPAID users
+      const userProfile = await this.fastify.prisma.userProfile.findUnique({
+        where: { user_id: userId },
+        select: { wallet_type: true },
+      });
+  
+      if (!userProfile) {
+        return { canCreate: false, reason: 'User profile not found' };
+      }
+  
+      const { wallet_type } = userProfile;
+  
+      // Step 2: Allow POSTPAID users unconditionally
+      if (wallet_type === 'POSTPAID') {
+        return {
+          canCreate: true,
+          reason: 'Postpaid users can create shipments without a wallet transaction',
+        };
+      }
+  
+      // Step 3: Fetch wallet only when required
+      const wallet = await this.fastify.prisma.userWallet.findUnique({
+        where: { user_id: userId },
+        select: {
+          balance: true,
+          max_negative_amount: true,
+          available_amount: true,
+        },
+      });
+  
+      if (!wallet) {
+        return { canCreate: false, reason: 'Wallet not found' };
+      }
+  
+      // Step 4: Calculate available balance based on wallet type
+      let availableBalance = wallet.balance + wallet.max_negative_amount;
+  
+      if (wallet_type === 'REMITTANCE_WALLET') {
+        availableBalance += wallet.available_amount;
+      }
+  
+      // Step 5: Final validation
+      if (availableBalance < shipmentAmount) {
+        return {
+          canCreate: false,
+          reason: `Insufficient balance`,
+          message: `Insufficient balance. Available: ₹${availableBalance.toFixed(2)}, Required: ₹${shipmentAmount.toFixed(2)}. Please recharge your wallet.`,
+        };
+      }
+  
+      return { canCreate: true };
+    } catch (error) {
+      this.fastify.log.error(`Error in canCreateShipment: ${error}`);
+      return { canCreate: false, reason: 'Internal error while checking wallet balance' };
     }
-
-    const availableAmount = wallet.balance + wallet.max_negative_amount - shipmentAmount;
-
-    if (availableAmount <= 0) {
-      return {
-        canCreate: false,
-        reason: `Insufficient balance. Available: ${wallet.balance.toFixed(2)}, Max negative: ${wallet.max_negative_amount.toFixed(2)}`,
-        message: `Insufficient balance. Available: ${wallet.balance.toFixed(2)}, Required: ${shipmentAmount.toFixed(2)}, Please recharge your wallet`,
-      };
-    }
-    return { canCreate: true };
   }
-
+  
   async getServiceableCouriers(userId: string, params: RateCalculationParams) {
     const dimensionsStr = `${params.boxLength || 0}x${params.boxWidth || 0}x${params.boxHeight || 0}x${params.weight || 0}`;
     const ratesKey = `rates-${userId}-${params.isReversedOrder ? 'reverse' : 'forward'}-${params.pickupPincode}-${params.deliveryPincode}-${params.weight}-${dimensionsStr}-${params.paymentType}-${params.collectableAmount}`;

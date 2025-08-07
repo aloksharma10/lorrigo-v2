@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { format } from 'date-fns';
+import { addDays, format, startOfDay } from 'date-fns';
 
 import {
   DialogFooter,
@@ -77,12 +77,9 @@ export const PickupScheduleModal = () => {
   };
 
   // Calculate min and max dates for the calendar
-  const today = new Date();
-  const tomorrow = new Date();
-  tomorrow.setDate(today.getDate() + 1);
-
-  const maxDate = new Date();
-  maxDate.setDate(today.getDate() + 7); // Allow scheduling up to 7 days in advance
+  const today = startOfDay(new Date());
+  const tomorrow = addDays(today, 1);
+  const maxDate = addDays(today, 7);
 
   return (
     <div className="flex flex-col">
