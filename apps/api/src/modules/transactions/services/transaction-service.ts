@@ -18,6 +18,7 @@ export enum TransactionEntityType {
   SHIPMENT = 'SHIPMENT',
   INVOICE = 'INVOICE',
   WALLET = 'WALLET',
+  REMITTANCE = 'REMITTANCE',
 }
 
 interface BaseTransactionData {
@@ -47,6 +48,12 @@ interface InvoiceTransactionData extends BaseTransactionData {
 interface WalletRechargeTransactionData extends BaseTransactionData {
   transactionId?: string;
   gatewayReference?: string;
+}
+
+interface RemittanceTransactionData extends BaseTransactionData {
+  remittanceId: string;
+  remittanceCode?: string;
+  transactionId?: string;
 }
 
 interface WalletUpdateResult {
@@ -237,6 +244,99 @@ export class TransactionService {
   }
 
   /**
+   * Create a remittance transaction
+   * @param data Transaction data
+   * @returns Transaction details or error
+   */
+  async createRemittanceTransaction(data: RemittanceTransactionData) {
+    try {
+      // Get user wallet
+      const walletResult = await this.getUserWallet(data.userId);
+      if (!walletResult.success) {
+        return { success: false, error: walletResult.error };
+      }
+
+      // Generate transaction code
+      const transactionCode = await this.generateTransactionCode('remittance');
+
+      // Validate remittance exists and belongs to user
+      const remittance = await this.prisma.remittance.findUnique({
+        where: { id: data.remittanceId },
+        select: { 
+          id: true, 
+          user_id: true, 
+          amount: true, 
+          status: true, 
+          code: true,
+          wallet_balance_before: true,
+          wallet_balance_after: true
+        },
+      });
+
+      if (!remittance) {
+        return { success: false, error: 'Remittance not found' };
+      }
+
+      if (remittance.user_id !== data.userId) {
+        return { success: false, error: 'Unauthorized access to remittance' };
+      }
+
+      if (remittance.status !== 'PENDING') {
+        return { success: false, error: 'Remittance is not in pending status' };
+      }
+
+      // Check if amount is valid
+      if (data.amount <= 0) {
+        return { success: false, error: 'Amount must be greater than 0' };
+      }
+
+      if (data.amount > remittance.amount) {
+        return { success: false, error: 'Amount cannot be greater than remittance amount' };
+      }
+
+      // Check if wallet transfer already done
+      if (remittance.wallet_balance_before !== null && remittance.wallet_balance_after !== null) {
+        return { success: false, error: 'Wallet transfer already completed for this remittance' };
+      }
+
+      // Update wallet balance
+      const walletUpdateResult = await this.updateWalletBalance(walletResult.walletId!, data.amount, data.type);
+
+      if (!walletUpdateResult.success) {
+        return { success: false, error: walletUpdateResult.error };
+      }
+
+      // Create transaction record
+      const transaction = await this.prisma.remittanceTransaction.create({
+        data: {
+          before_balance: walletResult.balance,
+          after_balance: walletUpdateResult.balance,
+          code: transactionCode,
+          amount: data.amount,
+          type: data.type,
+          description: data.description,
+          status: data.status || TransactionStatus.COMPLETED,
+          merchant_transaction_id: data.merchantTransactionId || `RT-${remittance.code}`,
+          currency: data.currency || 'INR',
+          wallet_id: walletResult.walletId!,
+          user_id: data.userId,
+          remittance_id: data.remittanceId,
+          transaction_id: data.transactionId,
+        },
+      });
+
+      return {
+        success: true,
+        transaction,
+        walletBalance: walletUpdateResult.balance,
+      };
+    } catch (error) {
+      this.fastify.log.error(`Error creating remittance transaction: ${error}`);
+      return { success: false, error: 'Failed to create remittance transaction' };
+    }
+  }
+
+  /**
    * Create a wallet recharge transaction
    * @param data Transaction data
    * @returns Transaction details or error
@@ -337,11 +437,11 @@ export class TransactionService {
   /**
    * Create a transaction of any type
    * This is a generic function that can handle any transaction type
-   * @param entityType Type of transaction (SHIPMENT, INVOICE, WALLET)
+   * @param entityType Type of transaction (SHIPMENT, INVOICE, WALLET, REMITTANCE)
    * @param data Transaction data
    * @returns Transaction details or error
    */
-  async createTransaction(entityType: TransactionEntityType, data: ShipmentTransactionData | InvoiceTransactionData | WalletRechargeTransactionData) {
+  async createTransaction(entityType: TransactionEntityType, data: ShipmentTransactionData | InvoiceTransactionData | WalletRechargeTransactionData | RemittanceTransactionData) {
     try {
       switch (entityType) {
         case TransactionEntityType.SHIPMENT:
@@ -350,6 +450,8 @@ export class TransactionService {
           return this.createInvoiceTransaction(data as InvoiceTransactionData);
         case TransactionEntityType.WALLET:
           return this.createWalletRechargeTransaction(data as WalletRechargeTransactionData);
+        case TransactionEntityType.REMITTANCE:
+          return this.createRemittanceTransaction(data as RemittanceTransactionData);
         default:
           return { success: false, error: 'Invalid transaction type' };
       }
@@ -370,7 +472,7 @@ export class TransactionService {
   async processTransactionWithinTx(
     prisma: PrismaClient,
     entityType: TransactionEntityType,
-    data: ShipmentTransactionData | InvoiceTransactionData | WalletRechargeTransactionData
+    data: ShipmentTransactionData | InvoiceTransactionData | WalletRechargeTransactionData | RemittanceTransactionData
   ) {
     try {
       // Get user wallet
@@ -393,6 +495,12 @@ export class TransactionService {
           break;
         case TransactionEntityType.WALLET:
           prefix = 'WT';
+          break;
+        case TransactionEntityType.REMITTANCE:
+          prefix = 'RT';
+          break;
+        default:
+          prefix = 'TR';
           break;
       }
 
@@ -491,6 +599,28 @@ export class TransactionService {
                 wallet_id: wallet.id,
                 user_id: data.userId,
                 transaction_id: walletData.transactionId,
+              },
+            });
+          }
+          break;
+        case TransactionEntityType.REMITTANCE:
+          {
+            const remittanceData = data as RemittanceTransactionData;
+            transaction = await prisma.remittanceTransaction.create({
+              data: {
+                before_balance: wallet.balance,
+                after_balance: newBalance,
+                code: transactionCode,
+                amount: data.amount,
+                type: data.type,
+                description: data.description,
+                status: data.status || TransactionStatus.COMPLETED,
+                merchant_transaction_id: data.merchantTransactionId || `RT-${remittanceData.remittanceCode || 'REMITTANCE'}`,
+                currency: data.currency || 'INR',
+                wallet_id: wallet.id,
+                user_id: data.userId,
+                remittance_id: remittanceData.remittanceId,
+                transaction_id: remittanceData.transactionId,
               },
             });
           }
@@ -872,6 +1002,42 @@ export class TransactionService {
         }
       }
 
+      if (!type || type.includes(TransactionEntityType.REMITTANCE)) {
+        const remittanceTransactions = await this.prisma.remittanceTransaction.findMany({
+          where: whereClause,
+          skip,
+          // take: type ? limit : Math.floor(limit / 3),
+          orderBy: { created_at: 'desc' },
+          include: {
+            remittance: {
+              select: {
+                code: true,
+                amount: true,
+                status: true,
+              },
+            },
+          },
+        });
+
+        const remittanceCount = await this.prisma.remittanceTransaction.count({
+          where: whereClause,
+        });
+
+        transactions = [
+          ...transactions,
+          ...remittanceTransactions.map((t) => ({
+            ...t,
+            entity_type: TransactionEntityType.REMITTANCE,
+          })),
+        ];
+
+        if (type === TransactionEntityType.REMITTANCE) {
+          total = remittanceCount;
+        } else {
+          total += remittanceCount;
+        }
+      }
+
       // Sort combined transactions by created_at
       transactions.sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
 
@@ -934,6 +1100,9 @@ export class TransactionService {
                 break;
               case TransactionEntityType.WALLET:
                 result = await this.createWalletRechargeTransaction(transaction);
+                break;
+              case TransactionEntityType.REMITTANCE:
+                result = await this.createRemittanceTransaction(transaction);
                 break;
               default:
                 result = { success: false, error: 'Invalid entity type' };
@@ -1146,6 +1315,10 @@ export class TransactionService {
       case 'wallet':
         prefix = 'WT';
         table = this.prisma.walletRechargeTransaction;
+        break;
+      case 'remittance':
+        prefix = 'RT';
+        table = this.prisma.remittanceTransaction;
         break;
       default:
         prefix = 'TR';

@@ -194,6 +194,7 @@ model User {
   shipment_transactions        ShipmentTransaction[]
   invoice_transactions         InvoiceTransaction[]
   wallet_recharge_transactions WalletRechargeTransaction[]
+  remittance_transactions      RemittanceTransaction[]
   invoices                     Invoice[]
   remittances                  Remittance[]
   user_bank_accounts           UserBankAccount[]
@@ -605,6 +606,7 @@ model UserWallet {
   shipment_transactions ShipmentTransaction[]
   invoice_transactions  InvoiceTransaction[]
   wallet_transactions   WalletRechargeTransaction[]
+  remittance_transactions RemittanceTransaction[]
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -718,6 +720,40 @@ model WalletRechargeTransaction {
   @@index([code])
 }
 
+model RemittanceTransaction {
+  id                      String            @id @default(cuid())
+  code                    String            @unique // Format: RT-YYMM-XXXXX
+  before_balance          Float             @default(0)
+  after_balance           Float             @default(0)
+  amount                  Float             @default(0)
+  type                    String            @db.VarChar(20) // CREDIT, DEBIT
+  description             String            @db.VarChar(255)
+  status                  TransactionStatus @default(PENDING)
+  merchant_transaction_id String?           @unique @db.VarChar(50)
+  currency                String            @default("INR") @db.VarChar(3)
+  created_at              DateTime          @default(now())
+  updated_at              DateTime          @updatedAt
+
+  wallet_type WalletType @default(WALLET)
+
+  wallet_id String
+  wallet    UserWallet @relation(fields: [wallet_id], references: [id], onDelete: Cascade)
+
+  user_id String
+  user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  remittance_id String
+  remittance    Remittance @relation(fields: [remittance_id], references: [id], onDelete: Cascade)
+
+  transaction_id String?
+  transaction    Transaction? @relation(fields: [transaction_id], references: [id])
+
+  @@index([wallet_id, user_id, status, created_at])
+  @@index([merchant_transaction_id])
+  @@index([code])
+  @@index([remittance_id])
+}
+
 model Transaction {
   id                String            @id @default(cuid())
   code              String            @unique // Format: PY-YYMM-XXXXX
@@ -731,6 +767,7 @@ model Transaction {
   shipment_transactions ShipmentTransaction[]
   invoice_transactions  InvoiceTransaction[]
   wallet_transactions   WalletRechargeTransaction[]
+  remittance_transactions RemittanceTransaction[]
 
   @@index([status])
   @@index([code])
@@ -873,6 +910,7 @@ model Remittance {
   bank_account    UserBankAccount? @relation(fields: [bank_account_id], references: [id], onDelete: Restrict)
 
   orders Order[]
+  remittance_transactions RemittanceTransaction[]
 
   // Removed order_id and order relation for multi-order support
 

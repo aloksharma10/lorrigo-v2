@@ -3,6 +3,7 @@ import { exportData } from '@/utils/exportData';
 import { FastifyInstance } from 'fastify';
 import { Role, User, UserBankAccount, UserProfile, UserWallet } from '@lorrigo/db';
 import { ShipmentBucket } from '@lorrigo/utils';
+import { TransactionService, TransactionType, TransactionEntityType } from '@/modules/transactions/services/transaction-service';
 
 export class RemittanceService {
   constructor(private fastify: FastifyInstance) {}
@@ -401,10 +402,13 @@ export class RemittanceService {
           remittance_date: true,
           early_remittance_charge_amount: true,
           wallet_transfer_amount: true,
+          wallet_balance_before: true,
+          wallet_balance_after: true,
           status: true,
           amount: true,
           bank_account_id: true,
           orders_count: true,
+          processing_details: true,
         },
         skip,
         take: parseInt(limit),
@@ -443,7 +447,16 @@ export class RemittanceService {
       this.fastify.prisma.remittance.count({ where }),
       this.fastify.prisma.remittance.findMany({
         where,
-        include: {
+        select: {
+          id: true,
+          code: true,
+          remittance_date: true,
+          amount: true,
+          status: true,
+          wallet_transfer_amount: true,
+          wallet_balance_before: true,
+          wallet_balance_after: true,
+          processing_details: true,
           orders: {
             select: {
               id: true,
@@ -825,5 +838,121 @@ export class RemittanceService {
     }));
     const fields = ['remittance_id', 'remittance_code', 'id', 'code', 'order_number', 'total_amount', 'amount_to_collect', 'payment_method'];
     return exportData(fields, orders, 'xlsx', `remittance-${id}-${Date.now()}.xlsx`);
+  }
+
+  /**
+   * Transfer remittance amount to user's wallet (WALLET type users only)
+   */
+  async transferRemittanceToWallet(userId: string, remittanceId: string, amount: number) {
+    try {
+      // Get user with profile and wallet
+      const user = await this.fastify.prisma.user.findUnique({
+        where: { id: userId },
+        include: { profile: true, wallet: true },
+      });
+
+      if (!user) {
+        return { valid: false, message: 'User not found' };
+      }
+
+      if (!user.profile || !user.wallet) {
+        return { valid: false, message: 'User profile or wallet not found' };
+      }
+
+      // Check if user is WALLET type
+      if (user.profile.wallet_type !== 'WALLET') {
+        return { valid: false, message: 'This feature is only available for WALLET type users' };
+      }
+
+      // Get remittance
+      const remittance = await this.fastify.prisma.remittance.findFirst({
+        where: { 
+          id: remittanceId, 
+          user_id: userId,
+          status: 'PENDING'
+        },
+        select: {
+          id: true,
+          code: true,
+          amount: true,
+          status: true,
+          wallet_balance_before: true,
+          wallet_balance_after: true,
+          transaction_id: true,
+          processing_details: true,
+        },
+      });
+
+      if (!remittance) {
+        return { valid: false, message: 'Remittance not found or not in pending status' };
+      }
+
+      // Check if amount is valid
+      if (amount <= 0) {
+        return { valid: false, message: 'Amount must be greater than 0' };
+      }
+
+      if (amount > remittance.amount) {
+        return { valid: false, message: 'Amount cannot be greater than remittance amount' };
+      }
+
+      // Check if wallet transfer already done
+      if (remittance.wallet_balance_before !== null && remittance.wallet_balance_after !== null) {
+        return { valid: false, message: 'Wallet transfer already completed for this remittance' };
+      }
+
+      // Initialize transaction service
+      const transactionService = new TransactionService(this.fastify);
+
+      // Create remittance transaction
+      const transactionResult = await transactionService.createRemittanceTransaction({
+        userId,
+        remittanceId,
+        remittanceCode: remittance.code,
+        amount,
+        type: TransactionType.CREDIT,
+        description: `Remittance transfer: ${remittance.code}`,
+        status: 'COMPLETED',
+        merchantTransactionId: `RT-${remittance.transaction_id}`,
+        currency: 'INR',
+      });
+
+      if (!transactionResult.success || !transactionResult.transaction) {
+        return { valid: false, message: transactionResult.error || 'Failed to create transaction' };
+      }
+
+      // Update remittance with wallet transfer details
+      const updatedRemittance = await this.fastify.prisma.remittance.update({
+        where: { id: remittanceId },
+        data: {
+          wallet_balance_before: transactionResult.transaction.before_balance,
+          wallet_balance_after: transactionResult.transaction.after_balance,
+          wallet_transfer_amount: amount,
+          status: 'COMPLETED',
+          completed_at: new Date(),
+          processing_details: {
+            ...(remittance.processing_details as any || {}),
+            walletTransfer: {
+              amount,
+              balanceBefore: transactionResult.transaction.before_balance,
+              balanceAfter: transactionResult.transaction.after_balance,
+              transferredAt: new Date(),
+              transactionId: transactionResult.transaction.id,
+            },
+          },
+        },
+      });
+
+      return { 
+        valid: true, 
+        message: 'Remittance amount transferred to wallet successfully',
+        remittance: updatedRemittance,
+        walletBalanceAfter: transactionResult.walletBalance,
+        transaction: transactionResult.transaction,
+      };
+    } catch (error) {
+      console.error('Error transferring remittance to wallet:', error);
+      return { valid: false, message: 'Failed to transfer remittance to wallet' };
+    }
   }
 }

@@ -163,3 +163,28 @@ export function useVerifyBankAccount() {
     mutationFn: (data: any) => api.put(`/remittance/bank-accounts/${data.bankAccountId}/verify`, data).then((res: any) => res),
   });
 }
+
+export function useTransferRemittanceToWallet() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { remittanceId: string; amount: number }) => transferRemittanceToWallet(data).then((res: any) => res),
+    onSuccess: (data: any) => {
+      if (data.valid) {
+        toast.success(data.message);
+      } else {
+        toast.error(data.message);
+      }
+      queryClient.invalidateQueries({ queryKey: ['seller-remittances'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet', 'balance'] });
+    },
+    onError: (error: any) => {
+      toast.error((error as Error).message);
+    },
+  });
+}
+
+/**
+ * Seller: Transfer remittance amount to wallet
+ */
+export const transferRemittanceToWallet = (data: { remittanceId: string; amount: number }) => 
+  api.post('/remittance/transfer-to-wallet', data);

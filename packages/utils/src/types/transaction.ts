@@ -13,6 +13,7 @@ export enum TransactionEntityType {
   SHIPMENT = 'SHIPMENT',
   INVOICE = 'INVOICE',
   WALLET = 'WALLET',
+  REMITTANCE = 'REMITTANCE',
 }
 
 export interface BaseTransaction {
@@ -53,6 +54,15 @@ export interface WalletRechargeTransaction extends BaseTransaction {
   merchant_transaction_id?: string;
 }
 
+export interface RemittanceTransaction extends BaseTransaction {
+  wallet_id: string;
+  user_id: string;
+  remittance_id: string;
+  remittance_code?: string;
+  payment_id?: string;
+  merchant_transaction_id?: string;
+}
+
 export interface CreateShipmentTransactionRequest {
   amount: number;
   type: TransactionType;
@@ -82,6 +92,18 @@ export interface CreateWalletRechargeTransactionRequest {
   amount: number;
   type: TransactionType;
   description: string;
+  paymentId?: string;
+  currency?: string;
+  status?: TransactionStatus;
+  merchantTransactionId?: string;
+}
+
+export interface CreateRemittanceTransactionRequest {
+  amount: number;
+  type: TransactionType;
+  description: string;
+  remittanceId: string;
+  remittanceCode?: string;
   paymentId?: string;
   currency?: string;
   status?: TransactionStatus;

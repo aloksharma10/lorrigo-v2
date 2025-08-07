@@ -22,6 +22,7 @@ import { DisputeActionsCSVModal } from '@/components/modals/dispute-actions-csv-
 import { RemittanceDetailModal } from '@/components/modals/remittance-detail-modal';
 import ManageBankAccountsModal from '@/components/modals/manage-bank-accounts';
 import { BankAccountFormModal } from '@/components/modals/add-bank-account-modal';
+import { TransferRemittanceToWalletModal } from '@/components/modals/transfer-remittance-to-wallet-modal';
 import { AllPoliciesModal } from '@/components/modals/all-policies-modal';
 
 // Store to track registered modals
@@ -60,6 +61,7 @@ export function ModalRegistry() {
       registerModal('remittance-detail', RemittanceDetailModal);
       registerModal('manage-bank-accounts', ManageBankAccountsModal);
       registerModal('add-bank-account', BankAccountFormModal);
+      registerModal('transfer-remittance-to-wallet', TransferRemittanceToWalletModal);
       registerModal('all-policies', AllPoliciesModal);
 
       setRegistered(true);

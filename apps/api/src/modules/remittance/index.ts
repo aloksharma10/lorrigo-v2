@@ -69,6 +69,11 @@ export async function remittanceRoutes(fastify: FastifyInstance) {
     handler: remittanceController.selectBankAccountForRemittance.bind(remittanceController),
   });
 
+  fastify.post('/transfer-to-wallet', {
+    preHandler: [authorizeRoles([Role.SELLER])],
+    handler: remittanceController.transferRemittanceToWallet.bind(remittanceController),
+  });
+
   // Admin-specific routes
   fastify.get('/future', {
     preHandler: [authorizeRoles([Role.ADMIN, Role.SUBADMIN])],

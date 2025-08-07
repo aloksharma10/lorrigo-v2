@@ -204,6 +204,48 @@ export function RemittanceDetailModal() {
               </div>
             </div>
 
+            {/* Wallet Transfer Information */}
+            {(remittance.wallet_balance_before !== null || remittance.wallet_balance_after !== null) && (
+              <div className="rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-4">
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="rounded-lg bg-blue-100 p-2">
+                    <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">Wallet Transfer Details</h3>
+                </div>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                  <div className="rounded-lg border border-blue-100 bg-white p-4 text-center transition-shadow hover:shadow-md">
+                    <div className="mb-2 text-xl font-bold text-blue-600">
+                      {currencyFormatter(remittance.wallet_balance_before || 0)}
+                    </div>
+                    <p className="text-sm font-medium text-gray-600">Balance Before</p>
+                  </div>
+                  <div className="rounded-lg border border-green-100 bg-white p-4 text-center transition-shadow hover:shadow-md">
+                    <div className="mb-2 text-xl font-bold text-green-600">
+                      {currencyFormatter(remittance.wallet_transfer_amount || 0)}
+                    </div>
+                    <p className="text-sm font-medium text-gray-600">Amount Transferred</p>
+                  </div>
+                  <div className="rounded-lg border border-purple-100 bg-white p-4 text-center transition-shadow hover:shadow-md">
+                    <div className="mb-2 text-xl font-bold text-purple-600">
+                      {currencyFormatter(remittance.wallet_balance_after || 0)}
+                    </div>
+                    <p className="text-sm font-medium text-gray-600">Balance After</p>
+                  </div>
+                </div>
+                {remittance.processing_details?.walletTransfer?.transferredAt && (
+                  <div className="mt-3 rounded-lg border border-blue-100 bg-white p-3">
+                    <p className="text-sm text-gray-600">
+                      <span className="font-medium">Transferred on:</span>{' '}
+                      {new Date(remittance.processing_details.walletTransfer.transferredAt).toLocaleString('en-IN')}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Orders Table */}
             <div className="overflow-hidden rounded-lg border border-gray-200">
               <div className="border-b border-gray-200 bg-gray-50 px-4 py-3">

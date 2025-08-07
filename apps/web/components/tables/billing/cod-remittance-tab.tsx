@@ -1,6 +1,6 @@
 'use client';
 import { Button, DataTable, Badge, DataTableColumnHeader } from '@lorrigo/ui/components';
-import { Download, Settings, PlusCircleIcon } from 'lucide-react';
+import { Download, Settings, PlusCircleIcon, Wallet } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import {
   useAdminRemittances,
@@ -15,11 +15,20 @@ import { useModalStore } from '@/modal/modal-store';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { usePathname } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@lorrigo/ui/components';
+import { useWalletOperations } from '@/lib/apis/wallet';
+import { useSession } from 'next-auth/react';
 
 export default function CODRemittanceTab() {
   const pathname = usePathname();
   const isAdmin = pathname.includes('admin');
   const openModal = useModalStore((state) => state.openModal);
+
+  // Get wallet type for WALLET users - we'll check this from user profile
+  const { getWalletBalance: { data: walletData } } = useWalletOperations();
+  const { data: session } = useSession();
+  // For now, we'll show the button for all users and let the backend validate
+  // In a real implementation, you'd fetch user profile to check wallet_type
+  const isWalletUser = true; // This will be validated on the backend
 
   // DataTable state (like ShipmentsTable)
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 20 });
@@ -34,6 +43,18 @@ export default function CODRemittanceTab() {
 
   // Modal state for Add Bank Account
   const { mutate: selectUserBankAccount } = useSelectUserBankAccount();
+
+  // Handler for transferring to wallet
+  const handleTransferToWallet = (remittance: any) => {
+    openModal('transfer-remittance-to-wallet', {
+      remittance: {
+        id: remittance.id,
+        code: remittance.code,
+        amount: remittance.amount,
+        status: remittance.status,
+      },
+    });
+  };
 
   // Fetch remittance data
   const params = {
@@ -127,17 +148,38 @@ export default function CODRemittanceTab() {
       {
         id: 'actions',
         header: 'Action',
-        cell: ({ row }: any) => (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => {
-              openModal('remittance-detail', { id: row.original.id });
-            }}
-          >
-            <Download className="h-4 w-4" />
-          </Button>
-        ),
+        cell: ({ row }: any) => {
+          const remittance = row.original;
+          const canTransferToWallet = isWalletUser && 
+            remittance.status === 'PENDING' && 
+            !remittance.wallet_balance_before && 
+            !remittance.wallet_balance_after;
+
+          return (
+            <div className="flex gap-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  openModal('remittance-detail', { id: row.original.id });
+                }}
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+              {canTransferToWallet && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleTransferToWallet(remittance)}
+                  className="text-green-600 border-green-600 hover:bg-green-50"
+                  title="Transfer to Wallet"
+                >
+                  <Wallet className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          );
+        },
       },
     ],
     [isAdmin, bankAccounts, isBankLoading]

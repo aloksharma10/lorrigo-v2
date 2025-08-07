@@ -154,4 +154,15 @@ export class RemittanceController {
     reply.header('Content-Disposition', `attachment; filename=${result.filename}`);
     return reply.send(result.csvBuffer);
   }
+
+  /**
+   * Transfer remittance amount to wallet (SELLER only, WALLET type users)
+   */
+  async transferRemittanceToWallet(req: FastifyRequest, reply: FastifyReply) {
+    const userId = req.userPayload!.id;
+    const { remittanceId, amount } = req.body as any;
+    
+    const result = await this.remittanceService.transferRemittanceToWallet(userId, remittanceId, amount);
+    return reply.send(result);
+  }
 }
