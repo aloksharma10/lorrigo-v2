@@ -1,7 +1,8 @@
 import { FastifyInstance } from 'fastify';
 import { ShopifySyncService } from '../services/shopify/shopify-sync-service';
-import { ChannelConnectionService, Channel } from '../services/channel-connection-service';
+import { ChannelConnectionService } from '../services/channel-connection-service';
 import { captureException } from '@/lib/sentry';
+import { Channel } from '@lorrigo/db';
 
 export class ShopifySyncJob {
   private fastify: FastifyInstance;
