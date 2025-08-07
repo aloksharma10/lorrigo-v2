@@ -157,7 +157,7 @@ export const PickupScheduleModal = () => {
             <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
               I'll do it later
             </Button>
-            <Button type="submit" disabled={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700">
+            <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? 'Scheduling...' : 'Schedule Pick Up'}
             </Button>
           </DialogFooter>

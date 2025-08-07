@@ -6,6 +6,7 @@ import { ChannelConnectionService } from '../services/channel-connection-service
 import { captureException } from '@/lib/sentry';
 import { APP_CONFIG } from '@/config/app';
 import { Channel } from '@lorrigo/db';
+import { ShopifyChannel } from '../services/shopify/shopify-channel';
 
 /**
  * Shopify sync job types
@@ -296,8 +297,6 @@ async function processSyncOrders(
       throw new Error('No active Shopify connection found');
     }
 
-    // Create Shopify channel instance
-    const { ShopifyChannel } = await import('../services/shopify/shopify-channel');
     const shopifyChannel = new ShopifyChannel(connection.shop, data.userId, fastify, connection.access_token);
 
     // Set default parameters
