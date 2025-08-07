@@ -4,18 +4,16 @@ import { PlanService } from '../plan/services/plan.service';
 export async function setupSellerHooks(fastify: FastifyInstance) {
   fastify.addHook('onSend', async (request: FastifyRequest, reply: FastifyReply, payload: any) => {
     // Check if this is an authentication route that should trigger default plan assignment
-    const isAuthRoute = 
-      request.url.includes('/api') && 
-      (
-        // Regular registration (POST)
-        (request.method === 'POST' && request.url.includes('/auth/register') && !request.url.includes('/login')) ||
+    const isAuthRoute =
+      request.url.includes('/api') &&
+      // Regular registration (POST)
+      ((request.method === 'POST' && request.url.includes('/auth/register') && !request.url.includes('/login')) ||
         // Google OAuth login (POST)
         (request.method === 'POST' && request.url.includes('/auth/login/google')) ||
         // Shopify OAuth callback (GET)
         (request.method === 'GET' && request.url.includes('/auth/shopify/callback')) ||
         // Passkey authentication (POST)
-        (request.method === 'POST' && request.url.includes('/auth/passkey/authenticate/verify'))
-      );
+        (request.method === 'POST' && request.url.includes('/auth/passkey/authenticate/verify')));
 
     if (!isAuthRoute) return;
 
@@ -33,7 +31,7 @@ export async function setupSellerHooks(fastify: FastifyInstance) {
 
       // Extract user ID from different response formats
       let userId: string | undefined;
-      
+
       if (responseData?.id) {
         // Regular registration response format
         userId = responseData.id;
@@ -53,7 +51,7 @@ export async function setupSellerHooks(fastify: FastifyInstance) {
       // Check if user already has a plan assigned
       const user = await fastify.prisma.user.findUnique({
         where: { id: userId },
-        select: { plan_id: true }
+        select: { plan_id: true },
       });
 
       if (!user) {

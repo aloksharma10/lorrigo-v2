@@ -1,9 +1,10 @@
 import { FastifyInstance } from 'fastify';
 import { ShopifyChannel } from './shopify-channel';
-import { ChannelConnectionService, Channel } from '../channel-connection-service';
+import { ChannelConnectionService } from '../channel-connection-service';
 import { captureException } from '@/lib/sentry';
 import { formatPhoneNumber, ShipmentBucketManager } from '@lorrigo/utils';
-import { ShipmentStatus } from '@lorrigo/db';
+import { Channel, ShipmentStatus } from '@lorrigo/db';
+import { queueSyncOrders } from '../../queues/shopifySyncQueue';
 
 export interface ShopifySyncResult {
   success: boolean;
@@ -22,137 +23,65 @@ export class ShopifySyncService {
   }
 
   /**
-   * Sync orders from Shopify to local database (now async/background)
+   * Sync orders from Shopify to local database using queue system
    * @param userId User ID
    * @param params Query parameters for fetching orders
-   * @returns Promise resolving to early sync acceptance
+   * @returns Promise resolving to sync job queued result
    */
   public async syncOrdersFromShopify(userId: string, params: Record<string, string | number> = {}): Promise<ShopifySyncResult> {
-    const connection = await this.connectionService.getConnectionByUserIdAndChannel(userId, Channel.SHOPIFY);
-    if (!connection || !connection.shop)
-      return {
-        success: false,
-        message: 'Shopify connection not found',
-        error: 'No active Shopify connection found for this user',
-      };
-
-    const hasPrimaryHub = await this.fastify.prisma.hub.findFirst({
-      where: {
-        user_id: userId,
-        is_primary: true,
-        is_active: true,
-      },
-    });
-    if (!hasPrimaryHub)
-      return {
-        success: false,
-        message: 'No primary hub found for user',
-        error: 'No primary hub found for user',
-      };
-    // 1. Early response to user
-    setImmediate(async () => {
-      try {
-        // --- Begin background sync logic ---
-
-        const shopifyChannel = new ShopifyChannel(connection.shop!, userId, this.fastify, connection.access_token!);
-        const defaultParams: Record<string, string | number> = {
-          limit: 250, // Shopify's recommended batch size
-          status: 'any',
-          ...params,
+    try {
+      // Validate Shopify connection
+      const connection = await this.connectionService.getConnectionByUserIdAndChannel(userId, Channel.SHOPIFY);
+      if (!connection || !connection.shop) {
+        return {
+          success: false,
+          message: 'Shopify connection not found',
+          error: 'No active Shopify connection found for this user',
         };
-
-        // If no date range specified, default to last 7 days
-        if (!defaultParams.created_at_min && !defaultParams.created_at_max) {
-          defaultParams.created_at_min = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-          defaultParams.created_at_max = new Date().toISOString();
-        }
-
-        let totalSynced = 0;
-        let totalSkipped = 0;
-        let totalErrors = 0;
-        let hasMoreOrders = true;
-        let pageInfo: any = null;
-        const batchSize = 50; // Process orders in batches of 50
-        const processedOrders = new Set<string>(); // Track processed orders
-        const limitPerPage = defaultParams.limit as number;
-
-        // Process orders in batches with pagination
-        while (hasMoreOrders) {
-          try {
-            // Fetch batch of orders from Shopify
-            const shopifyOrders = await this.fetchOrdersBatch(shopifyChannel, defaultParams, pageInfo);
-
-            if (!shopifyOrders || shopifyOrders.length === 0) {
-              console.log('No more orders to process');
-              break;
-            }
-
-            // Process orders in smaller batches for database efficiency
-            for (let i = 0; i < shopifyOrders.length; i += batchSize) {
-              const batch = shopifyOrders.slice(i, i + batchSize);
-
-              const batchResult = await this.processOrdersBatch(batch, userId, connection.shop!, processedOrders);
-
-              totalSynced += batchResult.synced;
-              totalSkipped += batchResult.skipped;
-              totalErrors += batchResult.errors;
-
-              // Add delay between batches to avoid overwhelming the database
-              if (i + batchSize < shopifyOrders.length) {
-                await new Promise((resolve) => setTimeout(resolve, 100));
-              }
-            }
-
-            // Update pagination info for next batch
-            pageInfo = this.extractPageInfo(shopifyOrders);
-            hasMoreOrders = pageInfo && pageInfo.hasNext;
-
-            // If less than the limit per page, stop (no more pages)
-            if (shopifyOrders.length < limitPerPage) {
-              hasMoreOrders = false;
-            }
-
-            // Add delay between API calls to respect rate limits
-            if (hasMoreOrders) {
-              await new Promise((resolve) => setTimeout(resolve, 500));
-            }
-          } catch (error) {
-            totalErrors++;
-
-            // If it's a rate limit error, wait longer
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            if (errorMessage.includes('rate limit') || (error as any)?.status === 429) {
-              await new Promise((resolve) => setTimeout(resolve, 10000));
-              continue;
-            }
-
-            // For other errors, break to avoid infinite loops
-            break;
-          }
-        }
-
-        const result = {
-          success: true,
-          message: `Sync completed. Total: ${totalSynced + totalSkipped + totalErrors}, Synced: ${totalSynced}, Skipped: ${totalSkipped}, Errors: ${totalErrors}`,
-          data: {
-            synced: totalSynced,
-            skipped: totalSkipped,
-            errors: totalErrors,
-            total: totalSynced + totalSkipped + totalErrors,
-          },
-        };
-
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-        captureException(error as Error);
       }
-    });
 
-    // 2. Immediate response to user
-    return {
-      success: true,
-      message: 'Sync accepted. You will see Shopify orders on your panel shortly.',
-    };
+      // Validate user has primary hub
+      const hasPrimaryHub = await this.fastify.prisma.hub.findFirst({
+        where: {
+          user_id: userId,
+          is_primary: true,
+          is_active: true,
+        },
+      });
+
+      if (!hasPrimaryHub) {
+        return {
+          success: false,
+          message: 'No primary hub found for user',
+          error: 'No primary hub found for user',
+        };
+      }
+
+      // Queue the sync job
+      const jobId = await queueSyncOrders(userId, params);
+
+      this.fastify.log.info('Shopify sync job queued successfully', {
+        userId,
+        jobId,
+        params,
+      });
+
+      return {
+        success: true,
+        message: 'Sync job queued successfully. You will see Shopify orders on your panel shortly.',
+        data: { jobId },
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      this.fastify.log.error('Failed to queue Shopify sync job:', error);
+      captureException(error as Error);
+
+      return {
+        success: false,
+        message: 'Failed to queue sync job',
+        error: errorMessage,
+      };
+    }
   }
 
   /**
@@ -392,7 +321,7 @@ export class ShopifySyncService {
    * @param shop Shop domain
    * @returns Promise resolving to processing result
    */
-  private async processShopifyOrder(shopifyOrder: any, userId: string, shop: string): Promise<{ action: 'created' | 'updated'; orderId: string }> {
+  public async processShopifyOrder(shopifyOrder: any, userId: string, shop: string): Promise<{ action: 'created' | 'updated'; orderId: string }> {
     // Check if order already exists
     const existingOrder = await this.fastify.prisma.order.findFirst({
       where: {
@@ -773,7 +702,6 @@ export class ShopifySyncService {
    */
   private async updateExistingOrder(orderId: string, shopifyOrder: any): Promise<void> {
     try {
-
       // Get the existing order with related data
       const existingOrder = await this.fastify.prisma.order.findUnique({
         where: { id: orderId },
@@ -864,8 +792,6 @@ export class ShopifySyncService {
    */
   private async logTrackingUpdate(orderId: string, shopifyOrderId: string, trackingNumber: string, trackingUrl: string, tags?: string[]): Promise<void> {
     try {
-
-
       // TODO: Add to database log table if needed
     } catch (error) {
       console.error('Error logging tracking update:', error);

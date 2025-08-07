@@ -66,7 +66,10 @@ export class PickupController {
       // Parse comma-separated filter values
       const parseCommaSeparatedValues = (value: string | undefined): string[] => {
         if (!value) return [];
-        return value.split(',').map(v => v.trim()).filter(v => v.length > 0);
+        return value
+          .split(',')
+          .map((v) => v.trim())
+          .filter((v) => v.length > 0);
       };
 
       // Extract filter values
@@ -76,7 +79,7 @@ export class PickupController {
       // Determine sortBy and sortOrder from sorting array
       let sortBy = 'name';
       let sortOrder: 'asc' | 'desc' = 'asc';
-      
+
       if (queryParams.sorting) {
         try {
           const sorting = JSON.parse(queryParams.sorting);
@@ -150,7 +153,7 @@ export class PickupController {
       const userId = request.userPayload!.id;
 
       const result = await this.pickupService.updateHubStatus(id, is_active, userId);
-      
+
       if (!result.success) {
         return reply.code(400).send(result);
       }
@@ -178,7 +181,7 @@ export class PickupController {
       const userId = request.userPayload!.id;
 
       const result = await this.pickupService.setPrimaryHub(id, userId);
-      
+
       if (!result.success) {
         return reply.code(400).send(result);
       }

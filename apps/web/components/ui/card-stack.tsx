@@ -16,11 +16,11 @@ export const CardStack = ({ items, offset, scaleFactor }: { items: Card[]; offse
   const SCALE_FACTOR = scaleFactor || 0.06;
   const [cards, setCards] = useState<Card[]>(items);
 
-//   useEffect(() => {
-//     startFlipping();
+  //   useEffect(() => {
+  //     startFlipping();
 
-//     return () => clearInterval(interval);
-//   }, []);
+  //     return () => clearInterval(interval);
+  //   }, []);
 
   const startFlipping = () => {
     interval = setInterval(() => {
@@ -38,7 +38,7 @@ export const CardStack = ({ items, offset, scaleFactor }: { items: Card[]; offse
         return (
           <div
             key={card.id}
-            className="absolute rounded-3xl border border-neutral-200 bg-white p-4 shadow-xl shadow-black/[0.1] dark:border-white/[0.1] dark:bg-black dark:shadow-white/[0.05] w-full"
+            className="absolute w-full rounded-3xl border border-neutral-200 bg-white p-4 shadow-xl shadow-black/[0.1] dark:border-white/[0.1] dark:bg-black dark:shadow-white/[0.05]"
             style={{
               transformOrigin: 'top center',
               top: index * -CARD_OFFSET,

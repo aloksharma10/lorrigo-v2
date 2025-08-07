@@ -60,4 +60,4 @@ export * from './flip-card';
 
 export * from './input-otp';
 
-export * from './split-button'
+export * from './split-button';

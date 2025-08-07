@@ -11,7 +11,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { captureException } from '@/lib/sentry';
-import { ChannelConnectionService, Channel } from '../services/channel-connection-service';
+import { ChannelConnectionService } from '../services/channel-connection-service';
 import { ShopifyChannel } from '../services/shopify/shopify-channel';
 import { ShopifySyncService } from '../services/shopify/shopify-sync-service';
 import {
@@ -20,6 +20,9 @@ import {
   ShopifyCustomerRedactPayload,
   ShopifyShopRedactPayload,
 } from '../services/shopify/shopify-webhook-service';
+import { Channel } from '@lorrigo/db';
+import { initShopifySyncQueue, ShopifySyncJobType } from '../queues/shopifySyncQueue';
+import { addJob, QueueNames } from '@/lib/queue';
 
 // Validation schemas
 const shopifyAuthSchema = z.object({
@@ -62,6 +65,8 @@ export class ShopifyController {
    * @param fastify Fastify instance
    */
   public registerRoutes(fastify: FastifyInstance): void {
+    initShopifySyncQueue(fastify, new ShopifySyncService(fastify));
+
     // Get auth URL for connecting to existing account
     fastify.get('/shopify/auth/url', this.getAuthUrl.bind(this));
 
@@ -360,6 +365,14 @@ export class ShopifyController {
         if (!connectResult.success) {
           return reply.code(400).send({ error: connectResult.error || 'Failed to connect Shopify store' });
         }
+
+        addJob(QueueNames.SHOPIFY_SYNC, ShopifySyncJobType.SYNC_ORDERS, {
+          userId: user.id,
+          shop: shop,
+          params: {
+            created_at_min: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+          },
+        });
 
         return reply.code(200).send({
           success: true,

@@ -83,7 +83,10 @@ export class CourierController {
       // Parse comma-separated filter values
       const parseCommaSeparatedValues = (value: string | undefined): string[] => {
         if (!value) return [];
-        return value.split(',').map(v => v.trim()).filter(v => v.length > 0);
+        return value
+          .split(',')
+          .map((v) => v.trim())
+          .filter((v) => v.length > 0);
       };
 
       // Extract filter values
@@ -95,7 +98,7 @@ export class CourierController {
       // Determine sortBy and sortOrder from sorting array
       let sortBy = 'name';
       let sortOrder: 'asc' | 'desc' = 'asc';
-      
+
       if (queryParams.sorting) {
         try {
           const sorting = JSON.parse(queryParams.sorting);
@@ -113,8 +116,8 @@ export class CourierController {
         limit: queryParams.limit ? parseInt(queryParams.limit) : 15,
         search: queryParams.globalFilter || queryParams.search,
         is_active: isActiveValues.length > 0 ? isActiveValues : undefined,
-        courier_type: courierTypeValues.length > 0 ? courierTypeValues as ('EXPRESS' | 'SURFACE' | 'AIR')[] : undefined,
-        weight_slab: weightSlabValues.length > 0 ? weightSlabValues.map(v => parseFloat(v)) : undefined,
+        courier_type: courierTypeValues.length > 0 ? (courierTypeValues as ('EXPRESS' | 'SURFACE' | 'AIR')[]) : undefined,
+        weight_slab: weightSlabValues.length > 0 ? weightSlabValues.map((v) => parseFloat(v)) : undefined,
         is_reversed_courier: isReversedCourierValues.length > 0 ? isReversedCourierValues : undefined,
         sortBy,
         sortOrder,

@@ -18,6 +18,7 @@ export enum QueueNames {
   DISPUTE_RESOLUTION = 'dispute-resolution',
   BILLING_AUTOMATION = 'billing-automation',
   TRANSACTION_QUEUE = 'transaction-queue',
+  SHOPIFY_SYNC = 'shopify-sync',
 }
 
 // Define job types
@@ -155,6 +156,15 @@ export const queues = {
     defaultJobOptions: {
       ...queueConfig.defaultJobOptions,
       // Transactions need more retries
+      attempts: 5,
+      priority: 1,
+    },
+  }),
+  [QueueNames.SHOPIFY_SYNC]: new Queue(QueueNames.SHOPIFY_SYNC, {
+    ...connectionOptions,
+    defaultJobOptions: {
+      ...queueConfig.defaultJobOptions,
+      // Shopify sync jobs need more retries and high priority
       attempts: 5,
       priority: 1,
     },

@@ -5,6 +5,8 @@ import { generateId, getFinancialYear } from '@lorrigo/utils';
 import { ShopifyChannel } from '../../channels/services/shopify/shopify-channel';
 import { captureException } from '@sentry/node';
 import { APP_CONFIG } from '@/config/app';
+import { addJob, QueueNames } from '@/lib/queue';
+import { ShopifySyncJobType } from '@/modules/channels/queues/shopifySyncQueue';
 
 interface RegisterData {
   email: string;
@@ -341,13 +343,7 @@ export class AuthService {
         userId: user.id,
         expires: new Date(
           Date.now() +
-            (typeof APP_CONFIG.JWT_EXPIRES_IN === 'number'
-              ? APP_CONFIG.JWT_EXPIRES_IN
-              : Number(APP_CONFIG.JWT_EXPIRES_IN || 1)) *
-              24 *
-              60 *
-              60 *
-              1000
+            (typeof APP_CONFIG.JWT_EXPIRES_IN === 'number' ? APP_CONFIG.JWT_EXPIRES_IN : Number(APP_CONFIG.JWT_EXPIRES_IN || 1)) * 24 * 60 * 60 * 1000
         ),
         ipAddress: deviceInfo?.ipAddress || ipAddress,
         userAgent: deviceInfo?.userAgent,
@@ -560,6 +556,14 @@ export class AuthService {
 
         // Delete OAuth state after successful authentication
         await shopifyChannel.deleteState(state);
+
+        addJob(QueueNames.SHOPIFY_SYNC, ShopifySyncJobType.SYNC_ORDERS, {
+          userId: result.user.id,
+          shop: shop,
+          params: {
+            created_at_min: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+          },
+        });
 
         return result;
       } catch (oauthError: any) {

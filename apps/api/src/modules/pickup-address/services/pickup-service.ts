@@ -229,15 +229,7 @@ export class PickupService {
     } = {}
   ) {
     try {
-      const { 
-        page = 1, 
-        limit = 15, 
-        search, 
-        is_active, 
-        is_primary,
-        sortBy = 'name',
-        sortOrder = 'asc'
-      } = queryParams;
+      const { page = 1, limit = 15, search, is_active, is_primary, sortBy = 'name', sortOrder = 'asc' } = queryParams;
 
       const skip = (page - 1) * limit;
 
@@ -259,12 +251,12 @@ export class PickupService {
 
       // Add status filter
       if (is_active && is_active.length > 0) {
-        where.is_active = { in: is_active.map(v => v === 'true') };
+        where.is_active = { in: is_active.map((v) => v === 'true') };
       }
 
       // Add primary filter
       if (is_primary && is_primary.length > 0) {
-        where.is_primary = { in: is_primary.map(v => v === 'true') };
+        where.is_primary = { in: is_primary.map((v) => v === 'true') };
       }
 
       // Build order by clause

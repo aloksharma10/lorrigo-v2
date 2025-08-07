@@ -1,15 +1,4 @@
-import { prisma } from '@lorrigo/db';
-
-// Define Channel enum since we can't import it directly
-export enum Channel {
-  CUSTOM = 'CUSTOM',
-  WEBSITE = 'WEBSITE',
-  WHATSAPP = 'WHATSAPP',
-  INSTAGRAM = 'INSTAGRAM',
-  FACEBOOK = 'FACEBOOK',
-  EMAIL = 'EMAIL',
-  SHOPIFY = 'SHOPIFY',
-}
+import { Channel, prisma } from '@lorrigo/db';
 
 /**
  * Interface for channel connection data
