@@ -9,12 +9,16 @@ import type { ColumnDef } from '@lorrigo/ui/components';
 import { useDebounce } from '@/lib/hooks/use-debounce';
 import { useHubOperations, type Hub } from '@/lib/apis/hub';
 import { useSearchParams } from 'next/navigation';
-import { MapPin, Phone, User, Building2, Star, AlertCircle } from 'lucide-react';
+import { MapPin, Phone, User, Building2, Star, AlertCircle, Plus } from 'lucide-react';
 import { useAuthToken } from '@/components/providers/token-provider';
+import ActionTooltip from '@/components/action-tooltip';
+import HoverCardToolTip from '@/components/hover-card-tooltip';
+import { useModal } from '@/modal/modal-provider';
 
 export default function PickupAddressesPage() {
   const searchParams = useSearchParams();
   const { isTokenReady } = useAuthToken();
+  const { openModal } = useModal();
 
   const defaultParams = {
     page: searchParams.get('page') ? parseInt(searchParams.get('page')!) : 0,
@@ -40,7 +44,6 @@ export default function PickupAddressesPage() {
   // API hooks
   const { getHubsQuery, updateHubStatus, setPrimaryHub } = useHubOperations();
 
-  // Convert filters to comma-separated strings
   const convertFiltersToParams = (filters: { id: string; value: any }[]) => {
     const params: any = {
       page: pagination.pageIndex + 1, // API uses 1-based pagination
@@ -66,8 +69,9 @@ export default function PickupAddressesPage() {
 
   // Handle create pickup address
   const handleCreatePickupAddress = () => {
-    // TODO: Open create pickup address modal
-    toast.info('Create pickup address functionality coming soon');
+    openModal('seller:add-pickup-location', {
+      title: 'Create Your First Pickup Address',
+    });
   };
 
   // Handle edit pickup address
@@ -250,9 +254,20 @@ export default function PickupAddressesPage() {
         const hub = row.original;
         return (
           <div className="flex items-center space-x-2">
-            <Switch checked={hub.is_primary} onCheckedChange={() => handleSetPrimary(hub)} disabled={!hub.is_active || setPrimaryHub.isPending} />
-            <span className="text-sm">{hub.is_primary ? 'Primary' : 'Secondary'}</span>
-            {!hub.is_active && <AlertCircle className="h-4 w-4 text-red-500" />}
+            <HoverCardToolTip
+              side="top"
+              label="Set as primary"
+              triggerComponent={
+                <div className="flex items-center space-x-2">
+                  {!hub.is_active && <AlertCircle className="h-4 w-4 text-red-500" />}
+                  <Switch checked={hub.is_primary} onCheckedChange={() => handleSetPrimary(hub)} disabled={!hub.is_active || setPrimaryHub.isPending} />
+                </div>
+              }
+            >
+              <p className="flex items-center space-x-2 text-muted-foreground">
+                Primary pickup address can't be disabled. Set another address as primary first.
+              </p>
+            </HoverCardToolTip>
           </div>
         );
       },
@@ -324,13 +339,16 @@ export default function PickupAddressesPage() {
   }, []);
 
   return (
-    <div className="mx-auto">
+    <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Pickup Addresses</h1>
           <p className="text-muted-foreground">Manage your pickup addresses and warehouse locations</p>
         </div>
-        <Button onClick={handleCreatePickupAddress}>Add Pickup Address</Button>
+        <Button onClick={handleCreatePickupAddress}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Pickup Address
+        </Button>
       </div>
 
       <DataTable
