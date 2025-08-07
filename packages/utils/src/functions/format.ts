@@ -12,21 +12,37 @@ export const formatAddress = (address: string): string => {
   return modifiedAddress;
 };
 
-export const formatPhoneNumber = (phone: number): string => {
+export const formatPhoneNumber = (phone: string | number): string => {
+  // Convert input to string
   const phoneStr = phone.toString();
 
-  // Check if it's a 10 digit number
-  if (phoneStr.length === 10) {
-    return phoneStr;
+  // Remove all non-digit characters including spaces, tabs, +, -, etc.
+  const cleaned = phoneStr.replace(/\D/g, '');
+
+  let phoneNumber = cleaned;
+
+  // Handle country code prefix (91) if length > 10
+  if (phoneNumber.length > 10 && phoneNumber.startsWith('91')) {
+    phoneNumber = phoneNumber.slice(-10); // keep last 10 digits
   }
 
-  // If it's more than 10 digits, return the last 10 digits
-  if (phoneStr.length > 10) {
-    return phoneStr.slice(-10);
+  // Handle numbers with leading 0 if length > 10
+  if (phoneNumber.length > 10 && phoneNumber.startsWith('0')) {
+    phoneNumber = phoneNumber.slice(-10);
   }
 
-  // If it's less than 10 digits, pad with zeros (rare case)
-  return phoneStr.padStart(10, '0');
+  // If number is still longer than 10, trim to last 10 digits
+  if (phoneNumber.length > 10) {
+    phoneNumber = phoneNumber.slice(-10);
+  }
+
+  // If number is less than 10, throw an error (or pad optionally)
+  if (phoneNumber.length < 10) {
+    throw new Error('Invalid phone number: less than 10 digits');
+    // OR: return phoneNumber.padStart(10, '0'); // if you want to pad
+  }
+
+  return phoneNumber;
 };
 
 export const formatShiprocketAddress = (address = '') => {
