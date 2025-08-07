@@ -86,7 +86,7 @@ export async function remittanceRoutes(fastify: FastifyInstance) {
   });
 
   fastify.get('/export', {
-    preHandler: [authorizeRoles([Role.ADMIN, Role.SUBADMIN])],
+    preHandler: [authorizeRoles([Role.ADMIN, Role.SUBADMIN, Role.SELLER])],
     handler: remittanceController.exportRemittances.bind(remittanceController),
   });
 

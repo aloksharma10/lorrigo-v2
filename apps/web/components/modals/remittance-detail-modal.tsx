@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Badge } from '@lorrigo/ui/components';
-import { Calendar, CreditCard, Building2, User, FileText, Eye, DollarSign, X, XIcon } from 'lucide-react';
+import { Calendar, CreditCard, Building2, User, FileText, Eye, DollarSign, X, XIcon, Download } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { fetchAdminRemittanceById, fetchSellerRemittanceById, exportAdminRemittanceDetail, exportSellerRemittanceDetail } from '@/lib/apis/remittance';
 import { downloadBlob } from '@/lib/utils/downloadBlob';
@@ -268,7 +268,7 @@ export function RemittanceDetailModal() {
           <Button icon={XIcon} onClick={() => closeModal(modal_id)} variant="outline" className="px-6 hover:bg-gray-100">
             Close
           </Button>
-          {/* {remittance && (
+          {remittance && (
               <div className='flex gap-3'>
                 <Button 
                   onClick={() => handleExport('csv')} 
@@ -278,15 +278,15 @@ export function RemittanceDetailModal() {
                   <Download className="h-4 w-4 mr-2" /> 
                   Export CSV
                 </Button>
-                <Button 
+                {/* <Button 
                   onClick={() => handleExport('xlsx')} 
                   className="px-6 bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   <Download className="h-4 w-4 mr-2" /> 
                   Export XLSX
-                </Button>
+                </Button> */}
               </div>
-            )} */}
+            )}
         </div>
       </div>
     </div>
