@@ -3,7 +3,7 @@ import { ShopifyChannel } from './shopify-channel';
 import { ChannelConnectionService } from '../channel-connection-service';
 import { captureException } from '@/lib/sentry';
 import { formatPhoneNumber, ShipmentBucketManager } from '@lorrigo/utils';
-import { Channel, ShipmentStatus } from '@lorrigo/db';
+import { AddressType, Channel, OrderType, ShipmentStatus } from '@lorrigo/db';
 import { queueSyncOrders } from '../../queues/shopifySyncQueue';
 
 export interface ShopifySyncResult {
@@ -366,7 +366,6 @@ export class ShopifySyncService {
     try {
       // Import required utilities
       const { generateId, getFinancialYear } = await import('@lorrigo/utils');
-      const { AddressType, Channel, OrderType, PaymentMethod } = await import('@lorrigo/db');
 
       // Get user's primary hub for seller details
       const userHub = await this.fastify.prisma.hub.findFirst({
@@ -674,6 +673,8 @@ export class ShopifySyncService {
             },
           });
         }
+      }, {
+        timeout: 10000,
       });
     } catch (error) {
       throw error;
