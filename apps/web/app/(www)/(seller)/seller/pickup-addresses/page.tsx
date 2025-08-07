@@ -262,25 +262,25 @@ export default function PickupAddressesPage() {
         return value.includes(row.getValue(id));
       },
     },
-    {
-      id: 'actions',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Actions" />,
-      cell: ({ row }) => {
-        const hub = row.original;
-        return (
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => handleEditPickupAddress(hub)}>
-              Edit
-            </Button>
-            <Button variant="destructive" size="sm" onClick={() => handleDeletePickupAddress(hub.id)} disabled={hub.is_primary}>
-              Delete
-            </Button>
-          </div>
-        );
-      },
-      enableSorting: false,
-      enableHiding: false,
-    },
+    // {
+    //   id: 'actions',
+    //   header: ({ column }) => <DataTableColumnHeader column={column} title="Actions" />,
+    //   cell: ({ row }) => {
+    //     const hub = row.original;
+    //     return (
+    //       <div className="flex items-center gap-2">
+    //         <Button variant="outline" size="sm" onClick={() => handleEditPickupAddress(hub)}>
+    //           Edit
+    //         </Button>
+    //         <Button variant="destructive" size="sm" onClick={() => handleDeletePickupAddress(hub.id)} disabled={hub.is_primary}>
+    //           Delete
+    //         </Button>
+    //       </div>
+    //     );
+    //   },
+    //   enableSorting: false,
+    //   enableHiding: false,
+    // },
   ];
 
   // Define filterable columns
@@ -324,7 +324,7 @@ export default function PickupAddressesPage() {
   }, []);
 
   return (
-    <div className="container mx-auto">
+    <div className="mx-auto">
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Pickup Addresses</h1>

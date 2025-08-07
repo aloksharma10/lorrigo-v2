@@ -21,7 +21,7 @@ export default function ChannelsPage() {
   }, [searchParams, shopify.connection]);
 
   return (
-    <div className="container space-y-8">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Sales Channels</h1>
       </div>
