@@ -8,6 +8,7 @@ import { SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, Side
 import { Skeleton } from '@lorrigo/ui/components';
 import { Switch } from '@lorrigo/ui/components';
 import { useModalStore } from '@/modal/modal-store';
+import { useDrawerStore } from '@/drawer/drawer-store';
 
 export function NavSecondary({
   items,
@@ -21,6 +22,7 @@ export function NavSecondary({
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
+  const { openDrawer } = useDrawerStore();
   const { openModal } = useModalStore();
   React.useEffect(() => {
     setMounted(true);
@@ -33,7 +35,16 @@ export function NavSecondary({
           {items.map((item) => (
             <SidebarMenuItem key={item.title} className="flex flex-col items-center justify-center">
               <SidebarMenuButton asChild>
-                <div onClick={() => openModal('all-policies', { type: item.url.split('/').pop(), title: item.title, className: 'max-w-4xl p-4' })}>
+                <div
+                  onClick={() => {
+                    if (item.title === 'Settings') {
+                      openModal('seller-settings', { type: item.url.split('/').pop(), title: item.title,  className: 'max-w-4xl p-4' });
+                      // openDrawer('seller-settings', { side: "bottom", size: "screen" , className: "p-4"});
+                    } else {
+                      openModal('all-policies', { type: item.url.split('/').pop(), title: item.title, className: 'max-w-4xl p-4' });
+                    }
+                  }}
+                >
                   <item.icon />
                   <span>{item.title}</span>
                 </div>

@@ -22,7 +22,8 @@ export type ModalType =
   | 'manage-bank-accounts'
   | 'add-bank-account'
   | 'transfer-remittance-to-wallet'
-  | 'all-policies';
+  | 'all-policies'
+  | 'seller-settings';
 
 // Modal props interface
 export interface ModalProps {
@@ -81,6 +82,7 @@ export const useModalStore = create<ModalState>((set, get) => ({
     'add-bank-account': undefined as unknown as ModalComponent,
     'transfer-remittance-to-wallet': undefined as unknown as ModalComponent,
     'all-policies': undefined as unknown as ModalComponent,
+    'seller-settings': undefined as unknown as ModalComponent,
   },
   registerModal: (type, component) =>
     set((state) => ({

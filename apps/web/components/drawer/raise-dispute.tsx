@@ -37,7 +37,6 @@ export default function RaiseDispute({ dispute, onClose, isOpen = false, size = 
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([null, null, null, null, null]);
 
   const { actOnDispute } = useBillingOperations();
-  console.log('dispute', dispute, actOnDispute);
 
   const handleFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {

@@ -4,7 +4,7 @@ import { cn } from '@lorrigo/ui/lib/utils';
 import { ComponentProps } from 'react';
 import { ContentProps, Drawer } from 'vaul';
 
-export type DrawerSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'full';
+export type DrawerSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'full' | 'screen';
 
 export type DrawerSide = 'right' | 'left' | 'top' | 'bottom';
 
@@ -22,6 +22,8 @@ function getDrawerWidth(size: DrawerSize): string {
       return 'lg:w-[1080px]';
     case 'full':
       return 'lg:w-[90vw]';
+    case 'screen':
+      return 'lg:w-[100vw] h-[calc(100vh-4rem)]';
     default:
       return 'lg:w-[540px]';
   }
