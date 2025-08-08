@@ -24,7 +24,6 @@ import ManageBankAccountsModal from '@/components/modals/manage-bank-accounts';
 import { BankAccountFormModal } from '@/components/modals/add-bank-account-modal';
 import { TransferRemittanceToWalletModal } from '@/components/modals/transfer-remittance-to-wallet-modal';
 import { AllPoliciesModal } from '@/components/modals/all-policies-modal';
-import { SellerSettingsModal } from '@/components/settings/seller-settings';
 
 // Store to track registered modals
 interface ModalRegistryState {
@@ -64,7 +63,6 @@ export function ModalRegistry() {
       registerModal('add-bank-account', BankAccountFormModal);
       registerModal('transfer-remittance-to-wallet', TransferRemittanceToWalletModal);
       registerModal('all-policies', AllPoliciesModal);
-      registerModal('seller-settings', SellerSettingsModal);
 
       setRegistered(true);
       console.log('Modal components registered successfully');
