@@ -374,8 +374,6 @@ export class ShopifySyncService {
         throw new Error('User not found');
       }
 
-      console.log(user, 'user')
-      // Get user's primary hub for seller details
       const userHub = await this.fastify.prisma.hub.findFirst({
         where: {
           user_id: userId,
@@ -465,15 +463,44 @@ export class ShopifySyncService {
       const totalQuantity = shopifyOrder.line_items?.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0) || 1;
 
       // Standard dimensions if not available - based on old code
-      const orderBoxHeight = Math.max(10, Math.sqrt(totalQuantity) * 5); // cm
-      const orderBoxWidth = Math.max(10, Math.sqrt(totalQuantity) * 5); // cm
-      const orderBoxLength = Math.max(5, Math.sqrt(totalQuantity) * 3); // cm
+      const orderBoxHeight = 0
+      const orderBoxWidth = 0
+      const orderBoxLength = 0
 
       // Calculate volumetric weight
-      const volumetricWeight = (orderBoxLength * orderBoxWidth * orderBoxHeight) / 5000; // cm³ to kg
+      const volumetricWeight = 0; // cm³ to kg
 
       // Use the higher of actual weight and volumetric weight
       const applicableWeight = Math.max(totalWeight, volumetricWeight);
+
+      // Prefetch product images for all unique product_ids in this order
+      const productImagesByProductId = new Map<number, Array<{ id: number; src: string; variant_ids: number[] }>>();
+      try {
+        const connection = await this.connectionService.getConnectionByUserIdAndChannel(userId, Channel.SHOPIFY);
+        if (connection?.shop && connection?.access_token && Array.isArray(shopifyOrder.line_items) && shopifyOrder.line_items.length > 0) {
+          const shopifyChannel = new ShopifyChannel(connection.shop, userId, this.fastify, connection.access_token);
+          const uniqueProductIds = Array.from(
+            new Set(
+              (shopifyOrder.line_items || [])
+                .map((li: any) => li?.product_id)
+                .filter((pid: any) => typeof pid === 'number' || typeof pid === 'string')
+            )
+          ) as Array<number | string>;
+
+          const imagesResults = await Promise.all(
+            uniqueProductIds.map(async (pid) => {
+              const images = await shopifyChannel.getProductImages(pid);
+              return { pid: Number(pid), images };
+            })
+          );
+
+          imagesResults.forEach(({ pid, images }) => {
+            productImagesByProductId.set(pid, images || []);
+          });
+        }
+      } catch (e) {
+        // ignore image prefetch failures
+      }
 
       // Create order in a transaction
       await this.fastify.prisma.$transaction(
@@ -650,8 +677,28 @@ export class ShopifySyncService {
               lastSequenceNumber: itemCount + shopifyOrder.line_items.indexOf(lineItem),
             }).id;
 
-            await tx.orderItem.create({
-              data: {
+            let imageUrls: string[] = [];
+            try {
+              const productId = lineItem?.product_id;
+              const variantId = lineItem?.variant_id;
+              const images = productImagesByProductId.get(Number(productId)) || [];
+              if (images.length > 0) {
+                const allSrcs = images.map((img: any) => img?.src).filter((src: any) => typeof src === 'string' && src.length > 0);
+                let primary: string | undefined;
+                if (variantId) {
+                  const matched = images.find((img: any) => Array.isArray(img?.variant_ids) && img.variant_ids.includes(Number(variantId)));
+                  primary = matched?.src;
+                }
+                if (!primary) {
+                  primary = allSrcs[0];
+                }
+                imageUrls = primary ? [primary, ...allSrcs.filter((s) => s !== primary)] : allSrcs;
+                // ensure unique
+                imageUrls = Array.from(new Set(imageUrls));
+              }
+            } catch {}
+
+            const orderItemData: any = {
                 id: itemCode,
                 code: itemCode,
                 order_id: order.id,
@@ -662,12 +709,16 @@ export class ShopifySyncService {
                 discount: 0,
                 tax: 0,
                 hsn: lineItem.hsn || '',
+                image_url: imageUrls,
                 // B2C specific dimensions (if available)
                 length: lineItem.grams ? Math.sqrt(lineItem.grams / 1000) * 2 : null,
                 breadth: lineItem.grams ? Math.sqrt(lineItem.grams / 1000) * 2 : null,
                 height: lineItem.grams ? Math.sqrt(lineItem.grams / 1000) : null,
                 weight: lineItem.grams ? lineItem.grams / 1000 : null,
-              },
+              };
+
+            await tx.orderItem.create({
+              data: orderItemData,
             });
           }
         },

@@ -43,11 +43,13 @@ export interface UserProfile {
   payment_method: string;
   remittance_cycle: string;
   remittance_min_amount: number;
-  cod_remittance_pending: number;
   remittance_days_of_week: number[];
   remittance_days_after_delivery: number;
   early_remittance_charge: number;
   ndr_boost?: Record<string, any>;
+
+  // Wallet Configuration (Admin Set)
+  max_negative_amount?: number;
 
   // Billing Cycle Configuration
   billing_cycle_type: string;

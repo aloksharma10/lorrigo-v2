@@ -224,7 +224,7 @@ model UserProfile {
   // Seller Config
   is_d2c          Boolean @default(true)
   is_b2b          Boolean @default(true)
-  is_prepaid      Boolean @default(true)
+  
   is_fw           Boolean @default(true)
   is_rto          Boolean @default(true)
   is_cod          Boolean @default(true)
@@ -242,7 +242,6 @@ model UserProfile {
   // Billing and Remittance Configuration
   remittance_cycle               CycleType     @default(WEEKLY)
   remittance_min_amount          Float         @default(0)
-  cod_remittance_pending         Float         @default(0)
   remittance_days_of_week        Int[]         @default([5])
   remittance_days_after_delivery Int           @default(7)
   early_remittance_charge        Float         @default(0)
@@ -463,6 +462,7 @@ model OrderItem {
   discount      Float?  @default(0)
   tax           Float?  @default(0)
   hsn           String? @db.VarChar(8)
+  image_url     String[]
 
   // B2C Specific
   length  Float?

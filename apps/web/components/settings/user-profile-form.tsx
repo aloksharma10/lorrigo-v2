@@ -83,6 +83,9 @@ const userProfileSchema = z
     billing_week_of_month: z.number().optional(),
     billing_days: z.array(z.number().min(0).max(31)).refine((days) => days.length > 0, { message: 'At least one billing day must be selected' }),
 
+    // Wallet Configuration (Admin Set)
+    max_negative_amount: z.number().min(0, 'Amount cannot be negative').optional(),
+
     // Label/Manifest Format
     label_format: z.enum(['THERMAL', 'A4']),
     manifest_format: z.enum(['THERMAL', 'A4']),
@@ -187,6 +190,7 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
       billing_day_of_month: undefined,
       billing_week_of_month: undefined,
       billing_days: [1, 15],
+      max_negative_amount: undefined,
       label_format: 'THERMAL',
       manifest_format: 'THERMAL',
     },
@@ -288,6 +292,7 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
       'billing_days',
       'billing_day_of_month',
       'billing_week_of_month',
+      'max_negative_amount',
       'label_format',
       'manifest_format',
     ];
@@ -338,6 +343,7 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
         billing_day_of_month: profile.billing_day_of_month,
         billing_week_of_month: profile.billing_week_of_month,
         billing_days: profile.billing_days || [1, 15],
+        max_negative_amount: profile.max_negative_amount,
         label_format: (profile.label_format as 'THERMAL' | 'A4') || 'THERMAL',
         manifest_format: (profile.manifest_format as 'THERMAL' | 'A4') || 'THERMAL',
       };
@@ -732,6 +738,51 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
                           <FormControl>
                             <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                           </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+                <Card className="lg:col-span-2">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Shield className="h-5 w-5" />
+                      Wallet Configuration
+                    </CardTitle>
+                    <CardDescription>Admin-configured wallet settings</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="max_negative_amount"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Maximum Negative Balance (₹)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              min="0" 
+                              step="0.01" 
+                              placeholder="0.00"
+                              {...field} 
+                              onChange={(e) => field.onChange(Number(e.target.value))}
+                              // readOnly={profile?.max_negative_amount !== undefined} // Read-only if value is set by admin
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            {profile?.max_negative_amount !== undefined 
+                              ? "This value is set by the administrator and cannot be modified by users."
+                              : "Maximum amount the wallet balance can go negative (Admin configurable)"
+                            }
+                          </FormDescription>
+                          <FormMessage />
+                          {profile?.max_negative_amount !== undefined && (
+                            <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
+                              <p className="text-sm text-yellow-800">
+                                <strong>Current Admin Setting:</strong> ₹{profile.max_negative_amount.toFixed(2)}
+                              </p>
+                            </div>
+                          )}
                         </FormItem>
                       )}
                     />

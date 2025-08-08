@@ -298,7 +298,6 @@ export class UsersController {
           // Seller Config
           is_d2c: profileData.is_d2c,
           is_b2b: profileData.is_b2b,
-          is_prepaid: profileData.is_prepaid,
           is_cod: profileData.is_cod,
           is_fw: profileData.is_fw,
           is_rto: profileData.is_rto,
@@ -341,7 +340,6 @@ export class UsersController {
           // Seller Config
           is_d2c: profileData.is_d2c !== undefined ? profileData.is_d2c : true,
           is_b2b: profileData.is_b2b !== undefined ? profileData.is_b2b : true,
-          is_prepaid: profileData.is_prepaid !== undefined ? profileData.is_prepaid : true,
           is_cod: profileData.is_cod !== undefined ? profileData.is_cod : true,
           is_fw: profileData.is_fw !== undefined ? profileData.is_fw : true,
           is_rto: profileData.is_rto !== undefined ? profileData.is_rto : true,
@@ -364,6 +362,17 @@ export class UsersController {
           manifest_format: profileData.manifest_format || 'THERMAL',
         },
       });
+
+      if (profileData.max_negative_amount !== undefined) {
+        await prisma.user.update({
+          where: { id },
+          data: {
+            wallet: {
+              update: { max_negative_amount: profileData.max_negative_amount ?? 0 },
+            },
+          },
+        });
+      }
 
       return reply.send({ success: true, profile: updatedProfile });
     } catch (error) {
@@ -392,7 +401,6 @@ export class UsersController {
           kyc_verified: profileData.kyc_verified,
           is_d2c: profileData.is_d2c,
           is_b2b: profileData.is_b2b,
-          is_prepaid: profileData.is_prepaid,
           is_cod: profileData.is_cod,
           is_fw: profileData.is_fw,
           is_rto: profileData.is_rto,
@@ -419,7 +427,6 @@ export class UsersController {
           kyc_verified: profileData.kyc_verified || false,
           is_d2c: profileData.is_d2c !== undefined ? profileData.is_d2c : true,
           is_b2b: profileData.is_b2b !== undefined ? profileData.is_b2b : true,
-          is_prepaid: profileData.is_prepaid !== undefined ? profileData.is_prepaid : true,
           is_cod: profileData.is_cod !== undefined ? profileData.is_cod : true,
           is_fw: profileData.is_fw !== undefined ? profileData.is_fw : true,
           is_rto: profileData.is_rto !== undefined ? profileData.is_rto : true,

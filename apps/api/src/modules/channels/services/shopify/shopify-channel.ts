@@ -752,6 +752,59 @@ export class ShopifyChannel extends BaseChannel {
   }
 
   /**
+   * Fetch product images for a Shopify product
+   * @param productId Shopify product ID
+   * @returns Promise resolving to array of product images
+   */
+  public async getProductImages(
+    productId: number | string
+  ): Promise<Array<{ id: number; src: string; variant_ids: number[] }>> {
+    try {
+      const token = await this.getAuthToken();
+
+      if (!token) {
+        return [];
+      }
+
+      const cacheKey = `vendor:shopify:product_images:${this.shop}:${productId}`;
+
+      // Try cache first
+      try {
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed)) {
+            return parsed;
+          }
+        }
+      } catch {
+        // ignore cache read errors
+      }
+
+      const endpoint = `/admin/api/${this.apiVersion}/products/${productId}/images.json`;
+
+      const response = await this.makeRequest(endpoint, 'GET', undefined, {
+        'X-Shopify-Access-Token': token,
+      });
+
+      if (response.data && response.data.images) {
+        const images = response.data.images;
+        // Cache for 6 hours
+        try {
+          await redis.set(cacheKey, JSON.stringify(images), 'EX', 6 * 60 * 60);
+        } catch {
+          // ignore cache write errors
+        }
+        return images;
+      }
+
+      return [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  /**
    * Send tracking information to Shopify order
    * @param shopifyOrderId Shopify order ID
    * @param trackingNumber Tracking number/AWB

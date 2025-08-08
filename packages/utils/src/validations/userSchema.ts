@@ -62,7 +62,6 @@ export const UserProfileSchema = z.object({
   payment_method: PaymentMethod,
   remittance_cycle: CycleType,
   remittance_min_amount: z.number().min(0),
-  cod_remittance_pending: z.number().min(0),
   remittance_days_of_week: z.array(z.number().min(0).max(6)),
   remittance_days_after_delivery: z.number().min(0),
   early_remittance_charge: z.number().min(0).max(100),
