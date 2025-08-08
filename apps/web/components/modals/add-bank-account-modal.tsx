@@ -51,14 +51,13 @@ interface UserBankAccount {
 }
 
 interface BankAccountFormDialogProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
+  onClose: () => void;
   editingAccount: UserBankAccount | null;
   onSubmit: (data: BankAccountFormData) => Promise<void>;
   isSubmitting: boolean;
 }
 
-export function BankAccountFormModal({ isOpen, onOpenChange, editingAccount, onSubmit, isSubmitting }: BankAccountFormDialogProps) {
+export function BankAccountFormModal({ onClose, editingAccount, onSubmit, isSubmitting }: BankAccountFormDialogProps) {
   const { mutate: addBankAccount, isPending } = useAddBankAccount();
 
   const form = useForm<BankAccountFormData>({
@@ -92,23 +91,14 @@ export function BankAccountFormModal({ isOpen, onOpenChange, editingAccount, onS
       return;
     }
 
-    addBankAccount(data, {
-      onSuccess: () => {
-        toast.success('Bank account added successfully');
-        form.reset();
-      },
-      onError: (err: any) => {
-        toast.error(err?.message || 'Failed to add bank account');
-      },
-    });
+    addBankAccount(data)
   };
 
   const handleClose = (open: boolean) => {
     if (!open) {
       form.reset(); // Reset form on close
-      onOpenChange(open);
+      onClose()
     } else {
-      onOpenChange(open);
     }
   };
 

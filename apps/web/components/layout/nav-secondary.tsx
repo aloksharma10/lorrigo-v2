@@ -9,6 +9,7 @@ import { Skeleton } from '@lorrigo/ui/components';
 import { Switch } from '@lorrigo/ui/components';
 import { useModalStore } from '@/modal/modal-store';
 import { useDrawerStore } from '@/drawer/drawer-store';
+import { useRouter } from 'next/navigation';
 
 export function NavSecondary({
   items,
@@ -21,6 +22,7 @@ export function NavSecondary({
   }[];
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
   const { resolvedTheme, setTheme } = useTheme();
+  const router = useRouter();
   const [mounted, setMounted] = React.useState(false);
   const { openDrawer } = useDrawerStore();
   const { openModal } = useModalStore();
@@ -38,8 +40,7 @@ export function NavSecondary({
                 <div
                   onClick={() => {
                     if (item.title === 'Settings') {
-                      openModal('seller-settings', { type: item.url.split('/').pop(), title: item.title,  className: 'max-w-4xl p-4' });
-                      // openDrawer('seller-settings', { side: "bottom", size: "screen" , className: "p-4"});
+                      router.push(`/seller/settings/general`);
                     } else {
                       openModal('all-policies', { type: item.url.split('/').pop(), title: item.title, className: 'max-w-4xl p-4' });
                     }

@@ -370,244 +370,151 @@ export class UsersController {
     return null;
   }
 
-  async getUserBankAccounts(request: FastifyRequest, reply: FastifyReply) {
-    try {
-      const { id } = request.params as { id: string };
-      const { page = 1, limit = 15, search, is_verified, is_selected_for_remittance, bank_name, account_holder, sort, filters } = request.query as any;
-      const skip = (page - 1) * limit;
-
-      const where: any = { user_id: id };
-
-      // Global search
-      if (search) {
-        where.OR = [
-          { account_number: { contains: search, mode: 'insensitive' } },
-          { ifsc: { contains: search, mode: 'insensitive' } },
-          { bank_name: { contains: search, mode: 'insensitive' } },
-          { account_holder: { contains: search, mode: 'insensitive' } },
-        ];
-      }
-
-      // Specific filters
-      if (is_verified !== undefined) {
-        where.is_verified = is_verified === 'true';
-      }
-
-      if (is_selected_for_remittance !== undefined) {
-        where.is_selected_for_remittance = is_selected_for_remittance === 'true';
-      }
-
-      if (bank_name) {
-        where.bank_name = { contains: bank_name, mode: 'insensitive' };
-      }
-
-      if (account_holder) {
-        where.account_holder = { contains: account_holder, mode: 'insensitive' };
-      }
-
-      // Handle column filters
-      if (filters && Array.isArray(filters)) {
-        filters.forEach((filter: any) => {
-          if (filter.id === 'is_verified' && filter.value !== undefined) {
-            where.is_verified = filter.value === 'true';
-          }
-          if (filter.id === 'is_selected_for_remittance' && filter.value !== undefined) {
-            where.is_selected_for_remittance = filter.value === 'true';
-          }
-          if (filter.id === 'bank_name' && filter.value) {
-            where.bank_name = { contains: filter.value, mode: 'insensitive' };
-          }
-          if (filter.id === 'account_holder' && filter.value) {
-            where.account_holder = { contains: filter.value, mode: 'insensitive' };
-          }
-        });
-      }
-
-      // Handle sorting
-      let orderBy: any = { created_at: 'desc' };
-      if (sort && Array.isArray(sort) && sort.length > 0) {
-        const sortItem = sort[0];
-        const sortField = sortItem.id;
-        const sortDirection = sortItem.desc ? 'desc' : 'asc';
-
-        // Map frontend field names to database field names
-        const fieldMapping: Record<string, string> = {
-          account_holder: 'account_holder',
-          bank_name: 'bank_name',
-          account_number: 'account_number',
-          ifsc: 'ifsc',
-          is_verified: 'is_verified',
-          is_selected_for_remittance: 'is_selected_for_remittance',
-          created_at: 'created_at',
-          updated_at: 'updated_at',
-        };
-
-        if (fieldMapping[sortField]) {
-          orderBy = { [fieldMapping[sortField]]: sortDirection };
-        }
-      }
-
-      const [total, bankAccounts] = await Promise.all([
-        prisma.userBankAccount.count({ where }),
-        prisma.userBankAccount.findMany({
-          where,
-          select: {
-            id: true,
-            account_number: true,
-            ifsc: true,
-            bank_name: true,
-            account_holder: true,
-            is_verified: true,
-            verified_by: true,
-            verified_at: true,
-            is_selected_for_remittance: true,
-            created_at: true,
-            updated_at: true,
-          },
-          skip,
-          take: limit,
-          orderBy,
-        }),
-      ]);
-
-      return reply.send({
-        success: true,
-        data: bankAccounts,
-        pagination: {
-          total,
-          page,
-          limit,
-          totalPages: Math.ceil(total / limit),
+  /**
+   * Get user bank accounts (SELLER)
+   */
+  async getUserBankAccounts(userId: string, { page = 1, limit = 20, search }: any) {
+    const skip = (page - 1) * limit;
+    const where: any = { user_id: userId };
+    if (search) {
+      where.OR = [
+        { account_number: { contains: search, mode: 'insensitive' } },
+        { ifsc: { contains: search, mode: 'insensitive' } },
+        { bank_name: { contains: search, mode: 'insensitive' } },
+        { account_holder: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+    const [total, bankAccounts] = await Promise.all([
+      this.fastify.prisma.userBankAccount.count({ where }),
+      this.fastify.prisma.userBankAccount.findMany({
+        where,
+        select: {
+          id: true,
+          account_number: true,
+          bank_name: true,
+          account_holder: true,
+          ifsc: true,
+          is_verified: true,
+          is_selected_for_remittance: true,
+          created_at: true,
+          user: { select: { role: true } },
         },
-      });
-    } catch (error) {
-      this.fastify.log.error(error);
-      return reply.code(500).send({ success: false, error: 'Failed to fetch bank accounts' });
-    }
+        skip,
+        take: limit,
+        orderBy: { created_at: 'desc' },
+      }),
+    ]);
+
+    const formattedBankAccounts = bankAccounts.map((bankAccount: any) => ({
+      ...bankAccount,
+      account_number: bankAccount.account_number?.slice(-6),
+    }));
+
+    return {
+      valid: true,
+      bankAccounts: formattedBankAccounts,
+      pagination: { total, page, limit, pages: Math.ceil(total / limit) },
+      message: total ? 'Bank accounts fetched successfully' : 'No bank accounts found',
+    };
   }
 
-  async addUserBankAccount(request: FastifyRequest, reply: FastifyReply) {
-    try {
-      const { id } = request.params as { id: string };
-      const { account_number, ifsc, bank_name, account_holder } = request.body as any;
+  /**
+   * Get all bank accounts (ADMIN/SUBADMIN)
+   */
+  async getAllBankAccounts({ search, page = 1, limit = 20, userId, is_verified }: any) {
+    const skip = (page - 1) * limit;
+    const where: any = {};
+    if (userId) where.user_id = userId;
+    if (is_verified !== undefined) where.is_verified = is_verified;
 
-      // Check if user exists
-      const user = await prisma.user.findUnique({ where: { id } });
-      if (!user) {
-        return reply.code(404).send({ success: false, error: 'User not found' });
-      }
+    if (search) {
+      where.OR = [
+        { user: { name: { contains: search, mode: 'insensitive' } } },
+        { user: { email: { contains: search, mode: 'insensitive' } } },
+        { user: { phone: { contains: search, mode: 'insensitive' } } },
+        { account_number: { contains: search, mode: 'insensitive' } },
+        { ifsc: { contains: search, mode: 'insensitive' } },
+        { bank_name: { contains: search, mode: 'insensitive' } },
+        { account_holder: { contains: search, mode: 'insensitive' } },
+      ];
+    }
 
-      // Check if user already has 10 bank accounts
-      const existingCount = await prisma.userBankAccount.count({ where: { user_id: id } });
-      if (existingCount >= 10) {
-        return reply.code(400).send({ success: false, error: 'Maximum 10 bank accounts allowed per user' });
-      }
-
-      // Check if account number already exists for this user
-      const existingAccount = await prisma.userBankAccount.findFirst({
-        where: { user_id: id, account_number },
-      });
-      if (existingAccount) {
-        return reply.code(400).send({ success: false, error: 'Bank account already exists for this user' });
-      }
-
-      const bankAccount = await prisma.userBankAccount.create({
-        data: {
-          user_id: id,
-          account_number,
-          ifsc,
-          bank_name,
-          account_holder,
+    const [total, bankAccounts] = await Promise.all([
+      this.fastify.prisma.userBankAccount.count({ where }),
+      this.fastify.prisma.userBankAccount.findMany({
+        where,
+        include: {
+          user: { select: { id: true, name: true, email: true, phone: true, role: true } },
         },
-      });
-
-      return reply.send({ success: true, bankAccount });
-    } catch (error) {
-      this.fastify.log.error(error);
-      return reply.code(500).send({ success: false, error: 'Failed to add bank account' });
-    }
+        skip,
+        take: limit,
+        orderBy: { created_at: 'desc' },
+      }),
+    ]);
+    return {
+      valid: true,
+      bankAccounts,
+      pagination: { total, page, limit, pages: Math.ceil(total / limit) },
+      message: total ? 'Bank accounts fetched successfully' : 'No bank accounts found',
+    };
   }
 
-  async updateUserBankAccount(request: FastifyRequest, reply: FastifyReply) {
-    try {
-      const { id, bankAccountId } = request.params as { id: string; bankAccountId: string };
-      const { account_number, ifsc, bank_name, account_holder, is_verified, is_selected_for_remittance } = request.body as any;
-
-      // Check if bank account exists and belongs to user
-      const existingAccount = await prisma.userBankAccount.findFirst({
-        where: { id: bankAccountId, user_id: id },
-      });
-      if (!existingAccount) {
-        return reply.code(404).send({ success: false, error: 'Bank account not found' });
-      }
-
-      // If updating account number, check for duplicates
-      if (account_number && account_number !== existingAccount.account_number) {
-        const duplicateAccount = await prisma.userBankAccount.findFirst({
-          where: { user_id: id, account_number, id: { not: bankAccountId } },
-        });
-        if (duplicateAccount) {
-          return reply.code(400).send({ success: false, error: 'Bank account number already exists for this user' });
-        }
-      }
-
-      const updateData: any = {};
-      if (account_number !== undefined) updateData.account_number = account_number;
-      if (ifsc !== undefined) updateData.ifsc = ifsc;
-      if (bank_name !== undefined) updateData.bank_name = bank_name;
-      if (account_holder !== undefined) updateData.account_holder = account_holder;
-      if (is_verified !== undefined) {
-        updateData.is_verified = is_verified;
-        if (is_verified) {
-          updateData.verified_by = request.userPayload?.id;
-          updateData.verified_at = new Date();
-        } else {
-          updateData.verified_by = null;
-          updateData.verified_at = null;
-        }
-      }
-      if (is_selected_for_remittance !== undefined) updateData.is_selected_for_remittance = is_selected_for_remittance;
-
-      const updatedAccount = await prisma.userBankAccount.update({
-        where: { id: bankAccountId },
-        data: updateData,
-      });
-
-      return reply.send({ success: true, bankAccount: updatedAccount });
-    } catch (error) {
-      this.fastify.log.error(error);
-      return reply.code(500).send({ success: false, error: 'Failed to update bank account' });
+  /**
+   * Add bank account for user
+   */
+  async addBankAccount(userId: string, bankAccountData: any) {
+    const existingCount = await this.fastify.prisma.userBankAccount.count({ where: { user_id: userId } });
+    if (existingCount >= 10) {
+      return { valid: false, message: 'Maximum 10 bank accounts allowed' };
     }
+    const existingAccount = await this.fastify.prisma.userBankAccount.findFirst({
+      where: { user_id: userId, account_number: bankAccountData.account_number },
+    });
+    if (existingAccount) {
+      return { valid: false, message: 'Bank account already exists' };
+    }
+    const bankAccount = await this.fastify.prisma.userBankAccount.create({
+      data: {
+        user_id: userId,
+        account_number: bankAccountData.account_number,
+        ifsc: bankAccountData.ifsc,
+        bank_name: bankAccountData.bank_name,
+        account_holder: bankAccountData.account_holder,
+      },
+    });
+    return { valid: true, bankAccount };
   }
 
-  async deleteUserBankAccount(request: FastifyRequest, reply: FastifyReply) {
-    try {
-      const { id, bankAccountId } = request.params as { id: string; bankAccountId: string };
 
-      // Check if bank account exists and belongs to user
-      const existingAccount = await prisma.userBankAccount.findFirst({
-        where: { id: bankAccountId, user_id: id },
-      });
-      if (!existingAccount) {
-        return reply.code(404).send({ success: false, error: 'Bank account not found' });
-      }
-
-      // Check if account is being used in any remittances
-      const remittanceCount = await prisma.remittance.count({
-        where: { bank_account_id: bankAccountId },
-      });
-      if (remittanceCount > 0) {
-        return reply.code(400).send({ success: false, error: 'Cannot delete bank account that is being used in remittances' });
-      }
-
-      await prisma.userBankAccount.delete({
-        where: { id: bankAccountId },
-      });
-
-      return reply.send({ success: true, message: 'Bank account deleted successfully' });
-    } catch (error) {
-      this.fastify.log.error(error);
-      return reply.code(500).send({ success: false, error: 'Failed to delete bank account' });
+  /**
+   * Verify bank account (ADMIN/SUBADMIN)
+   */
+  async verifyBankAccount(bankAccountId: string, isVerified: boolean, adminId: string) {
+    const bankAccount = await this.fastify.prisma.userBankAccount.findUnique({ where: { id: bankAccountId } });
+    if (!bankAccount) {
+      throw new Error('Bank account not found');
     }
+    const updateData: any = { is_verified: isVerified };
+    if (isVerified) {
+      updateData.verified_by = adminId;
+      updateData.verified_at = new Date();
+    } else {
+      updateData.verified_by = null;
+      updateData.verified_at = null;
+    }
+    const updatedBankAccount = await this.fastify.prisma.userBankAccount.update({
+      where: { id: bankAccountId },
+      data: updateData,
+    });
+    return updatedBankAccount;
+  }
+
+  async deleteBankAccount(bankAccountId: string) {
+    const bankAccount = await this.fastify.prisma.userBankAccount.findUnique({ where: { id: bankAccountId } });
+    if (!bankAccount) {
+      throw new Error('Bank account not found');
+    }
+    await this.fastify.prisma.userBankAccount.delete({ where: { id: bankAccountId } });
+    return { valid: true, message: 'Bank account deleted successfully' };
   }
 }

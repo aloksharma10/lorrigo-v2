@@ -50,7 +50,7 @@ export const fetchAdminRemittanceById = (id: string) => api.get<any>(`/remittanc
  * Export remittances (admin or seller, based on endpoint)
  * @param params - All filters and 'type' (csv|xlsx)
  */
-export const exportAdminRemittances = (params: any): Promise<AxiosResponse<Blob>> => apiDownload.get('/export/remittances', { params });
+export const exportAdminRemittances = (params: any): Promise<AxiosResponse<Blob>> => apiDownload.get('/remittance/export', { params });
 
 export const exportSellerRemittances = (params: any): Promise<AxiosResponse<Blob>> => apiDownload.get('/remittance/export', { params });
 
@@ -66,9 +66,10 @@ export const exportSellerRemittanceDetail = (id: string, type: 'csv' | 'xlsx' = 
   apiDownload.get(`/remittance/${id}/export`, { params: { type } });
 
 /**
- * Seller: Fetch own bank accounts
+ * Seller: Fetch own bank accounts (moved under users module)
  */
-export const fetchUserBankAccounts = (params: { search?: string; page?: number; limit?: number } = {}) => api.get('/remittance/bank-accounts', { params });
+export const fetchUserBankAccounts = (params: { search?: string; page?: number; limit?: number } = {}) =>
+  api.get('/users/bank-accounts', { params });
 
 /**
  * Seller: Select a bank account for remittance
@@ -113,14 +114,14 @@ export function useAdminRemittances(params: any) {
 export function useAddBankAccount() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: any) => api.post('/remittance/bank-accounts', data).then((res: any) => res),
+    mutationFn: (data: any) => api.post('/users/bank-accounts', data).then((res: any) => res),
     onSuccess: (data: any) => {
-      if (data.valid) {
-        toast.success(data.message);
+      if (data.success || data.valid) {
+        toast.success(data.message || 'Bank account added');
+        queryClient.invalidateQueries({ queryKey: ['user-bank-accounts'] });
       } else {
-        toast.error(data.message);
+        toast.error(data.message || 'Failed to add bank account');
       }
-      queryClient.invalidateQueries({ queryKey: ['user-bank-accounts'] });
     },
     onError: (error: any) => {
       toast.error((error as Error).message);
@@ -160,7 +161,7 @@ export function useUserBankAccounts(params: { search?: string; page?: number; li
 
 export function useVerifyBankAccount() {
   return useMutation({
-    mutationFn: (data: any) => api.put(`/remittance/bank-accounts/${data.bankAccountId}/verify`, data).then((res: any) => res),
+    mutationFn: (data: any) => api.put(`/users/bank-accounts/${data.bankAccountId}/verify`, data).then((res: any) => res),
   });
 }
 

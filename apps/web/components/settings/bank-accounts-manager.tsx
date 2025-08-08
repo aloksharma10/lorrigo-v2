@@ -40,6 +40,7 @@ import { CopyBtn } from '@/components/copy-btn';
 import ActionTooltip from '@/components/action-tooltip';
 import HoverCardToolTip from '@/components/hover-card-tooltip';
 import { useModalStore } from '@/modal/modal-store';
+import { useVerifyBankAccount } from '@/lib/apis/remittance';
 // import { BankAccountFormDialog, type BankAccountFormData } from "@/components/bank-account" // Import the new component and type
 
 interface BankAccountsManagerProps {
@@ -67,6 +68,7 @@ export function BankAccountsManager({ userId }: BankAccountsManagerProps) {
   const addBankAccount = useAddUserBankAccount();
   const updateBankAccount = useUpdateUserBankAccount();
   const deleteBankAccount = useDeleteUserBankAccount();
+  const { mutate: verifyBankAccount, isPending: isVerifying } = useVerifyBankAccount();
 
   // Fetch bank accounts with React Query
   const params: BankAccountParams = {
@@ -111,7 +113,7 @@ export function BankAccountsManager({ userId }: BankAccountsManagerProps) {
 
   const handleEdit = (account: UserBankAccount) => {
     setEditingAccount(account);
-    openModal('add-bank-account', { onSubmit: handleFormSubmit });
+    openModal('add-bank-account', { onSubmit: handleFormSubmit, editingAccount });
   };
 
   const handleDelete = async (accountId: string) => {
@@ -125,11 +127,12 @@ export function BankAccountsManager({ userId }: BankAccountsManagerProps) {
 
   const handleVerify = async (account: UserBankAccount) => {
     try {
-      await updateBankAccount.mutateAsync({
-        userId,
-        bankAccountId: account.id,
-        data: { is_verified: !account.is_verified },
-      });
+      verifyBankAccount({ bankAccountId: account.id, is_verified: !account.is_verified });
+      // await updateBankAccount.mutateAsync({
+      //   userId,
+      //   bankAccountId: account.id,
+      //   data: { is_verified: !account.is_verified },
+      // });
       toast.success(`Bank account ${account.is_verified ? 'unverified' : 'verified'} successfully`);
     } catch (error) {
       toast.error('Failed to update verification status');
@@ -328,7 +331,7 @@ export function BankAccountsManager({ userId }: BankAccountsManagerProps) {
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <ActionTooltip label="Delete account">
-                  <Trash2 className="h-7 w-7" />
+                  <Trash2 className="h-7 w-7" onClick={() => handleDelete(account.id)}/>
                 </ActionTooltip>
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -338,7 +341,7 @@ export function BankAccountsManager({ userId }: BankAccountsManagerProps) {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => handleDelete(account.id)} className="bg-destructive hover:bg-destructive/90 text-white">
+                  <AlertDialogAction className="bg-destructive hover:bg-destructive/90 text-white">
                     Delete
                   </AlertDialogAction>
                 </AlertDialogFooter>
@@ -454,7 +457,7 @@ export function BankAccountsManager({ userId }: BankAccountsManagerProps) {
             columns={columns}
             data={data?.data || []}
             count={data?.meta?.total || 0}
-            pageCount={data?.meta?.pageCount || 0}
+            pageCount={data?.meta?.total || 0}
             page={pagination.pageIndex}
             pageSize={pagination.pageSize}
             filterableColumns={filterableColumns}

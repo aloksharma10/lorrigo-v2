@@ -53,17 +53,6 @@ export async function remittanceRoutes(fastify: FastifyInstance) {
     handler: remittanceController.getRemittanceAnalytics.bind(remittanceController),
   });
 
-  fastify.get('/bank-accounts', {
-    preHandler: [authorizeRoles([Role.SELLER, Role.ADMIN, Role.SUBADMIN])],
-    handler: remittanceController.getBankAccounts.bind(remittanceController),
-  });
-
-  // Seller-specific routes
-  fastify.post('/bank-accounts', {
-    preHandler: [authorizeRoles([Role.SELLER])],
-    handler: remittanceController.addBankBot.bind(remittanceController),
-  });
-
   fastify.post('/bank-accounts/select', {
     preHandler: [authorizeRoles([Role.SELLER])],
     handler: remittanceController.selectBankAccountForRemittance.bind(remittanceController),
@@ -83,11 +72,6 @@ export async function remittanceRoutes(fastify: FastifyInstance) {
   fastify.post('/manage', {
     preHandler: [authorizeRoles([Role.ADMIN, Role.SUBADMIN])],
     handler: remittanceController.manageUserRemittance.bind(remittanceController),
-  });
-
-  fastify.put('/bank-accounts/:bankAccountId/verify', {
-    preHandler: [authorizeRoles([Role.ADMIN, Role.SUBADMIN])],
-    handler: remittanceController.verifyBankAccount.bind(remittanceController),
   });
 
   fastify.get('/export', {

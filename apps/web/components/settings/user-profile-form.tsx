@@ -80,7 +80,7 @@ const userProfileSchema = z
     billing_cycle_type: z.enum(['DAILY', 'WEEKLY', 'FORTNIGHTLY', 'MONTHLY', 'CUSTOM']),
     billing_days_of_week: z.array(z.number().min(0).max(6)),
     billing_day_of_month: z.number().min(1).max(31).optional(),
-    billing_week_of_month: z.number().min(1).max(4).optional(),
+    billing_week_of_month: z.number().optional(),
     billing_days: z.array(z.number().min(0).max(31)).refine((days) => days.length > 0, { message: 'At least one billing day must be selected' }),
 
     // Label/Manifest Format
@@ -153,7 +153,6 @@ interface UserProfileFormProps {
 }
 
 export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
-  console.log(profile);
   const [activeTab, setActiveTab] = useState('basic');
   const { updateUserProfile } = useUserOperations();
 

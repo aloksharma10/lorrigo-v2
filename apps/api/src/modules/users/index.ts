@@ -508,7 +508,6 @@ export async function usersRoutes(fastify: FastifyInstance) {
     handler: (request, reply) => usersController.updateUserProfile(request, reply),
   });
 
-  // Get user bank accounts
   fastify.get('/:id/bank-accounts', {
     schema: {
       tags: ['Users'],
@@ -558,7 +557,7 @@ export async function usersRoutes(fastify: FastifyInstance) {
           type: 'object',
           properties: {
             success: { type: 'boolean' },
-            data: {
+            bankAccounts: {
               type: 'array',
               items: {
                 type: 'object',
@@ -604,204 +603,58 @@ export async function usersRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    preHandler: authorizeRoles([Role.ADMIN]),
-    handler: (request, reply) => usersController.getUserBankAccounts(request, reply),
+    preHandler: [authorizeRoles([Role.ADMIN])],
+    handler: (request, reply) => {
+      const { id } = request.params as { id: string };
+      return usersController.getUserBankAccounts(id, request.query as Record<string, any>);
+    },
   });
 
-  // Add user bank account
-  fastify.post('/:id/bank-accounts', {
-    schema: {
-      tags: ['Users'],
-      summary: 'Add user bank account',
-      security: [{ bearerAuth: [] }],
-      params: {
-        type: 'object',
-        required: ['id'],
-        properties: {
-          id: { type: 'string' },
-        },
-      },
-      body: {
-        type: 'object',
-        required: ['account_number', 'ifsc', 'bank_name', 'account_holder'],
-        properties: {
-          account_number: { type: 'string', minLength: 1 },
-          ifsc: { type: 'string', minLength: 1 },
-          bank_name: { type: 'string', minLength: 1 },
-          account_holder: { type: 'string', minLength: 1 },
-        },
-      },
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            bankAccount: {
-              type: 'object',
-              properties: {
-                id: { type: 'string' },
-                user_id: { type: 'string' },
-                account_number: { type: 'string' },
-                ifsc: { type: 'string' },
-                bank_name: { type: 'string' },
-                account_holder: { type: 'string' },
-                is_verified: { type: 'boolean' },
-                is_selected_for_remittance: { type: 'boolean' },
-                created_at: { type: 'string', format: 'date-time' },
-                updated_at: { type: 'string', format: 'date-time' },
-              },
-            },
-          },
-        },
-        400: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            error: { type: 'string' },
-          },
-        },
-        404: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            error: { type: 'string' },
-          },
-        },
-        500: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            error: { type: 'string' },
-          },
-        },
-      },
+  fastify.get('/bank-accounts', {
+    preHandler: [authorizeRoles([Role.SELLER, Role.ADMIN, Role.SUBADMIN])],
+    handler: async (request, reply) => {
+      const userId = request.userPayload!.id;
+      const userRole = request.userPayload!.role;
+      const { page = 1, limit = 10, userId: queryUserId, is_verified, search } = request.query as any;
+
+      if (userRole === Role.SELLER) {
+        const result = await usersController.getUserBankAccounts(userId, { page, limit, search });
+        return reply.send(result);
+      } else {
+        const result = await usersController.getAllBankAccounts({ search, page, limit, userId: queryUserId, is_verified });
+        return reply.send(result);
+      }
     },
-    preHandler: authorizeRoles([Role.ADMIN]),
-    handler: (request, reply) => usersController.addUserBankAccount(request, reply),
   });
 
-  // Update user bank account
-  fastify.put('/:id/bank-accounts/:bankAccountId', {
-    schema: {
-      tags: ['Users'],
-      summary: 'Update user bank account',
-      security: [{ bearerAuth: [] }],
-      params: {
-        type: 'object',
-        required: ['id', 'bankAccountId'],
-        properties: {
-          id: { type: 'string' },
-          bankAccountId: { type: 'string' },
-        },
-      },
-      body: {
-        type: 'object',
-        properties: {
-          account_number: { type: 'string' },
-          ifsc: { type: 'string' },
-          bank_name: { type: 'string' },
-          account_holder: { type: 'string' },
-          is_verified: { type: 'boolean' },
-          is_selected_for_remittance: { type: 'boolean' },
-        },
-      },
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            bankAccount: {
-              type: 'object',
-              properties: {
-                id: { type: 'string' },
-                user_id: { type: 'string' },
-                account_number: { type: 'string' },
-                ifsc: { type: 'string' },
-                bank_name: { type: 'string' },
-                account_holder: { type: 'string' },
-                is_verified: { type: 'boolean' },
-                verified_by: { type: 'string' },
-                verified_at: { type: 'string', format: 'date-time' },
-                is_selected_for_remittance: { type: 'boolean' },
-                created_at: { type: 'string', format: 'date-time' },
-                updated_at: { type: 'string', format: 'date-time' },
-              },
-            },
-          },
-        },
-        400: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            error: { type: 'string' },
-          },
-        },
-        404: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            error: { type: 'string' },
-          },
-        },
-        500: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            error: { type: 'string' },
-          },
-        },
-      },
+  // Seller-specific routes
+  fastify.post('/bank-accounts', {
+    preHandler: [authorizeRoles([Role.SELLER])],
+    handler: async (request, reply) => {
+      const userId = request.userPayload!.id;
+      const bankAccountData = request.body as any;
+      const result = await usersController.addBankAccount(userId, bankAccountData);
+      return reply.send(result);
     },
-    preHandler: authorizeRoles([Role.ADMIN]),
-    handler: (request, reply) => usersController.updateUserBankAccount(request, reply),
   });
 
-  // Delete user bank account
-  fastify.delete('/:id/bank-accounts/:bankAccountId', {
-    schema: {
-      tags: ['Users'],
-      summary: 'Delete user bank account',
-      security: [{ bearerAuth: [] }],
-      params: {
-        type: 'object',
-        required: ['id', 'bankAccountId'],
-        properties: {
-          id: { type: 'string' },
-          bankAccountId: { type: 'string' },
-        },
-      },
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            message: { type: 'string' },
-          },
-        },
-        400: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            error: { type: 'string' },
-          },
-        },
-        404: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            error: { type: 'string' },
-          },
-        },
-        500: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            error: { type: 'string' },
-          },
-        },
-      },
+  fastify.put('/bank-accounts/:bankAccountId/verify', {
+    preHandler: [authorizeRoles([Role.ADMIN, Role.SUBADMIN])],
+    handler: async (request, reply) => {
+      const { bankAccountId } = request.params as { bankAccountId: string };
+      const { is_verified } = request.body as { is_verified: boolean };
+      const adminId = request.userPayload!.id;
+      const result = await usersController.verifyBankAccount(bankAccountId, is_verified, adminId);
+      return reply.send(result);
     },
-    preHandler: authorizeRoles([Role.ADMIN]),
-    handler: (request, reply) => usersController.deleteUserBankAccount(request, reply),
+  });
+
+  fastify.delete('/"id/bank-accounts/:bankAccountId', {
+    preHandler: [authorizeRoles([Role.ADMIN, Role.SUBADMIN])],
+    handler: async (request, reply) => {
+      const { bankAccountId } = request.params as { bankAccountId: string };
+      const result = await usersController.deleteBankAccount(bankAccountId);
+      return reply.send(result);
+    },
   });
 }

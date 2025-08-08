@@ -154,6 +154,11 @@ export const usersAPI = {
     return await axios.get(`/users/${id}`);
   },
 
+  // getMyProfile
+  getMyProfile: async (): Promise<{ success: boolean; user: User }> => {
+    return await axios.get('/users/me');
+  },
+
   // Update user
   updateUser: async (id: string, data: Partial<User>): Promise<{ success: boolean; user: User }> => {
     return await axios.put(`/users/${id}`, data);
@@ -180,7 +185,7 @@ export const usersAPI = {
 
     const response = await axios.get<{
       success: boolean;
-      data: UserBankAccount[];
+      bankAccounts: UserBankAccount[];
       pagination: {
         total: number;
         page: number;
@@ -191,10 +196,9 @@ export const usersAPI = {
 
     return {
       success: response.success,
-      data: response.data,
+      data: response.bankAccounts,
       meta: {
         total: response.pagination.total,
-        pageCount: response.pagination.totalPages,
         page: response.pagination.page,
         limit: response.pagination.limit,
       },
@@ -253,6 +257,13 @@ export function useUserOperations(params: PaginationParams = {}) {
     });
   };
 
+  // getMyProfile
+  const getMyProfile = useQuery({
+    queryKey: ['my-profile'],
+    queryFn: () => usersAPI.getMyProfile(),
+    enabled: isTokenReady,
+  });
+
   // Update user
   const updateUser = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<User> }) => usersAPI.updateUser(id, data),
@@ -285,6 +296,7 @@ export function useUserOperations(params: PaginationParams = {}) {
     getUserById,
     updateUser,
     updateUserProfile,
+    getMyProfile,
   };
 }
 
