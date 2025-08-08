@@ -102,6 +102,55 @@ export class UsersController {
     }
   }
 
+  async getMe(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const id = (request as any).userPayload!.id as string;
+
+      const user = await prisma.user.findUnique({
+        where: { id },
+        include: {
+          plan: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          profile: true,
+          _count: {
+            select: {
+              orders: true,
+              shipments: true,
+              invoice_transactions: true,
+              weight_disputes: true,
+              shipment_transactions: true,
+              wallet_recharge_transactions: true,
+            },
+          },
+        },
+      });
+
+      if (!user) {
+        return reply.code(404).send({ success: false, error: 'User not found' });
+      }
+
+      const wallet = await prisma.userWallet.findUnique({
+        where: { user_id: user.id },
+        select: { balance: true },
+      });
+
+      return reply.send({
+        success: true,
+        user: {
+          ...user,
+          wallet_balance: wallet?.balance || 0,
+        },
+      });
+    } catch (error) {
+      this.fastify.log.error(error);
+      return reply.code(500).send({ success: false, error: 'Failed to fetch profile' });
+    }
+  }
+
   async getUserById(request: FastifyRequest, reply: FastifyReply) {
     try {
       const { id } = request.params as { id: string };
@@ -323,6 +372,75 @@ export class UsersController {
     }
   }
 
+  async updateMyProfile(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const id = (request as any).userPayload!.id as string;
+      const profileData = request.body as any;
+
+      const updatedProfile = await prisma.userProfile.upsert({
+        where: { user_id: id },
+        update: {
+          company: profileData.company,
+          company_name: profileData.company_name,
+          logo_url: profileData.logo_url,
+          notification_settings: profileData.notification_settings,
+          business_type: profileData.business_type,
+          pan: profileData.pan,
+          adhaar: profileData.adhaar,
+          gst_no: profileData.gst_no,
+          kyc_submitted: profileData.kyc_submitted,
+          kyc_verified: profileData.kyc_verified,
+          is_d2c: profileData.is_d2c,
+          is_b2b: profileData.is_b2b,
+          is_prepaid: profileData.is_prepaid,
+          is_cod: profileData.is_cod,
+          is_fw: profileData.is_fw,
+          is_rto: profileData.is_rto,
+          is_cod_reversal: profileData.is_cod_reversal,
+          remittance_cycle: profileData.remittance_cycle,
+          remittance_min_amount: profileData.remittance_min_amount,
+          remittance_days_after_delivery: profileData.remittance_days_after_delivery,
+          early_remittance_charge: profileData.early_remittance_charge,
+          remittance_days_of_week: profileData.remittance_days_of_week,
+          label_format: profileData.label_format,
+          manifest_format: profileData.manifest_format,
+        },
+        create: {
+          user_id: id,
+          company: profileData.company,
+          company_name: profileData.company_name,
+          logo_url: profileData.logo_url,
+          notification_settings: profileData.notification_settings || { email: true, whatsapp: true, system: true },
+          business_type: profileData.business_type,
+          pan: profileData.pan,
+          adhaar: profileData.adhaar,
+          gst_no: profileData.gst_no,
+          kyc_submitted: profileData.kyc_submitted || false,
+          kyc_verified: profileData.kyc_verified || false,
+          is_d2c: profileData.is_d2c !== undefined ? profileData.is_d2c : true,
+          is_b2b: profileData.is_b2b !== undefined ? profileData.is_b2b : true,
+          is_prepaid: profileData.is_prepaid !== undefined ? profileData.is_prepaid : true,
+          is_cod: profileData.is_cod !== undefined ? profileData.is_cod : true,
+          is_fw: profileData.is_fw !== undefined ? profileData.is_fw : true,
+          is_rto: profileData.is_rto !== undefined ? profileData.is_rto : true,
+          is_cod_reversal: profileData.is_cod_reversal !== undefined ? profileData.is_cod_reversal : true,
+          remittance_cycle: profileData.remittance_cycle || 'WEEKLY',
+          remittance_min_amount: profileData.remittance_min_amount || 0,
+          remittance_days_after_delivery: profileData.remittance_days_after_delivery || 7,
+          early_remittance_charge: profileData.early_remittance_charge || 0,
+          remittance_days_of_week: profileData.remittance_days_of_week || [5],
+          label_format: profileData.label_format || 'THERMAL',
+          manifest_format: profileData.manifest_format || 'THERMAL',
+        },
+      });
+
+      return reply.send({ success: true, profile: updatedProfile });
+    } catch (error) {
+      this.fastify.log.error(error);
+      return reply.code(500).send({ success: false, error: 'Failed to update user profile' });
+    }
+  }
+
   private validateBillingConfiguration(profileData: any): string | null {
     const { billing_cycle_type, billing_days, billing_day_of_month, billing_week_of_month } = profileData;
 
@@ -411,10 +529,9 @@ export class UsersController {
     }));
 
     return {
-      valid: true,
+      success: true,
       bankAccounts: formattedBankAccounts,
-      pagination: { total, page, limit, pages: Math.ceil(total / limit) },
-      message: total ? 'Bank accounts fetched successfully' : 'No bank accounts found',
+      pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
   }
 
@@ -452,10 +569,9 @@ export class UsersController {
       }),
     ]);
     return {
-      valid: true,
+      success: true,
       bankAccounts,
-      pagination: { total, page, limit, pages: Math.ceil(total / limit) },
-      message: total ? 'Bank accounts fetched successfully' : 'No bank accounts found',
+      pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
   }
 
@@ -515,6 +631,32 @@ export class UsersController {
       throw new Error('Bank account not found');
     }
     await this.fastify.prisma.userBankAccount.delete({ where: { id: bankAccountId } });
-    return { valid: true, message: 'Bank account deleted successfully' };
+    return { success: true, message: 'Bank account deleted successfully' };
+  }
+
+  async updateBankAccountForUser(userId: string, bankAccountId: string, data: any) {
+    const bankAccount = await this.fastify.prisma.userBankAccount.findUnique({ where: { id: bankAccountId } });
+    if (!bankAccount || bankAccount.user_id !== userId) {
+      throw new Error('Bank account not found');
+    }
+    const updated = await this.fastify.prisma.userBankAccount.update({
+      where: { id: bankAccountId },
+      data: {
+        account_number: data.account_number,
+        ifsc: data.ifsc,
+        bank_name: data.bank_name,
+        account_holder: data.account_holder,
+      },
+    });
+    return { success: true, bankAccount: updated };
+  }
+
+  async deleteBankAccountForUser(userId: string, bankAccountId: string) {
+    const bankAccount = await this.fastify.prisma.userBankAccount.findUnique({ where: { id: bankAccountId } });
+    if (!bankAccount || bankAccount.user_id !== userId) {
+      throw new Error('Bank account not found');
+    }
+    await this.fastify.prisma.userBankAccount.delete({ where: { id: bankAccountId } });
+    return { success: true, message: 'Bank account deleted successfully' };
   }
 }

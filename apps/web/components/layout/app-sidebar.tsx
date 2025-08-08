@@ -79,7 +79,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session } = useSession();
   const user = session?.user;
   const isAdmin = user?.role === 'ADMIN';
-  const { state, setOpenMobile, openMobile, isMobile } = useSidebar();
+  const { state, setOpen, openMobile, isMobile } = useSidebar();
   const isCollapsed = state === 'collapsed';
   const pathname = usePathname();
 
@@ -87,8 +87,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const greeting = useMemo(() => getTimeGreeting(firstName), [firstName]);
 
   useEffect(() => {
-    setOpenMobile(false);
-  }, [pathname, setOpenMobile]);
+    setOpen(false);
+  }, [pathname]);
 
   return (
     <Sidebar collapsible="icon" variant="inset" {...props}>

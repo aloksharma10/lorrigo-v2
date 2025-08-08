@@ -1190,9 +1190,9 @@ export class TransactionService {
       const { name, profile, wallet: existingWallet } = userWithProfile;
 
       // Step 2: Restrict postpaid users early
-      if (profile?.wallet_type === 'POSTPAID') {
-        return { success: false, error: 'Postpaid users cannot have a wallet' };
-      }
+      // if (profile?.wallet_type === 'POSTPAID') {
+      //   return { success: false, error: 'Postpaid users cannot have a wallet' };
+      // }
 
       // Step 3: If wallet already exists, return it
       if (existingWallet) {

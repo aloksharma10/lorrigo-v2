@@ -30,16 +30,6 @@ export class ShopifySyncService {
    */
   public async syncOrdersFromShopify(userId: string, params: Record<string, string | number> = {}): Promise<ShopifySyncResult> {
     try {
-      // Validate Shopify connection
-      const connection = await this.connectionService.getConnectionByUserIdAndChannel(userId, Channel.SHOPIFY);
-      if (!connection || !connection.shop) {
-        return {
-          success: false,
-          message: 'Shopify connection not found',
-          error: 'No active Shopify connection found for this user',
-        };
-      }
-
       // Validate user has primary hub
       const hasPrimaryHub = await this.fastify.prisma.hub.findFirst({
         where: {
@@ -57,14 +47,20 @@ export class ShopifySyncService {
         };
       }
 
+      // Validate Shopify connection
+      const connection = await this.connectionService.getConnectionByUserIdAndChannel(userId, Channel.SHOPIFY);
+      if (!connection || !connection.shop) {
+        return {
+          success: false,
+          message: 'Shopify connection not found',
+          error: 'No active Shopify connection found for this user',
+        };
+      }
+
       // Queue the sync job
       const jobId = await queueSyncOrders(userId, params);
 
-      this.fastify.log.info('Shopify sync job queued successfully', {
-        userId,
-        jobId,
-        params,
-      });
+      this.fastify.log.info(`Shopify sync job queued successfully: ${userId}`);
 
       return {
         success: true,
@@ -367,6 +363,18 @@ export class ShopifySyncService {
       // Import required utilities
       const { generateId, getFinancialYear } = await import('@lorrigo/utils');
 
+      const user = await this.fastify.prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+          profile: true,
+        },
+      });
+
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      console.log(user, 'user')
       // Get user's primary hub for seller details
       const userHub = await this.fastify.prisma.hub.findFirst({
         where: {
@@ -381,18 +389,6 @@ export class ShopifySyncService {
 
       if (!userHub) {
         throw new Error('No primary hub found for user');
-      }
-
-      // Get user details for seller information
-      const user = await this.fastify.prisma.user.findUnique({
-        where: { id: userId },
-        include: {
-          profile: true,
-        },
-      });
-
-      if (!user) {
-        throw new Error('User not found');
       }
 
       // Get sequence numbers for ID generation
@@ -480,202 +476,205 @@ export class ShopifySyncService {
       const applicableWeight = Math.max(totalWeight, volumetricWeight);
 
       // Create order in a transaction
-      await this.fastify.prisma.$transaction(async (tx) => {
-        // 1. Create or find customer - based on old code mapping
-        const customerPhone = formatPhoneNumber(shippingAddress.phone || shopifyOrder.customer?.phone || na_customer.phone || '0000000000');
-        const customerEmail = shopifyOrder.customer?.email || na_customer.email;
+      await this.fastify.prisma.$transaction(
+        async (tx) => {
+          // 1. Create or find customer - based on old code mapping
+          const customerPhone = formatPhoneNumber(shippingAddress.phone || shopifyOrder.customer?.phone || na_customer.phone || '0000000000');
+          const customerEmail = shopifyOrder.customer?.email || na_customer.email;
 
-        // Try to find customer by phone first, then by email
-        let customer = await tx.customer.findUnique({
-          where: { phone: customerPhone },
-        });
-
-        if (!customer && customerEmail) {
-          // Try to find by email if not found by phone (email is not unique, so use findFirst)
-          customer = await tx.customer.findFirst({
-            where: { email: customerEmail },
+          // Try to find customer by phone first, then by email
+          let customer = await tx.customer.findUnique({
+            where: { phone: customerPhone },
           });
-        }
 
-        if (!customer) {
-          // Create new customer
-          const customerCode = generateId({
-            tableName: 'customer',
-            entityName: na_customer.name || shopifyOrder.shipping_address?.first_name || 'Customer',
-            lastUsedFinancialYear: getFinancialYear(new Date()),
-            lastSequenceNumber: customerCount,
-          }).id;
+          if (!customer && customerEmail) {
+            // Try to find by email if not found by phone (email is not unique, so use findFirst)
+            customer = await tx.customer.findFirst({
+              where: { email: customerEmail },
+            });
+          }
 
-          const customerName =
-            `${shippingAddress.first_name || shopifyOrder.customer?.first_name || ''} ${shippingAddress.last_name || shopifyOrder.customer?.last_name || na_customer.name || ''}`.trim();
+          if (!customer) {
+            // Create new customer
+            const customerCode = generateId({
+              tableName: 'customer',
+              entityName: na_customer.name || shopifyOrder.shipping_address?.first_name || 'Customer',
+              lastUsedFinancialYear: getFinancialYear(new Date()),
+              lastSequenceNumber: customerCount,
+            }).id;
 
-          customer = await tx.customer.create({
+            const customerName =
+              `${shippingAddress.first_name || shopifyOrder.customer?.first_name || ''} ${shippingAddress.last_name || shopifyOrder.customer?.last_name || na_customer.name || ''}`.trim();
+
+            customer = await tx.customer.create({
+              data: {
+                id: customerCode,
+                name: customerName || 'Shopify Customer',
+                email: customerEmail,
+                phone: customerPhone,
+              },
+            });
+          } else {
+            // Update existing customer with latest information
+            const customerName =
+              `${shippingAddress.first_name || shopifyOrder.customer?.first_name || ''} ${shippingAddress.last_name || shopifyOrder.customer?.last_name || na_customer.name || ''}`.trim();
+
+            await tx.customer.update({
+              where: { id: customer.id },
+              data: {
+                name: customerName || customer.name, // Keep existing name if new one is empty
+                email: customerEmail || customer.email, // Keep existing email if new one is empty
+                phone: customerPhone, // Always update phone as it's the primary identifier
+                updated_at: new Date(),
+              },
+            });
+          }
+
+          // 2. Create or update customer address - based on old code mapping
+          let customerAddress = await tx.address.findUnique({
+            where: { customer_id: customer.id },
+          });
+
+          if (!customerAddress) {
+            // Create new address if customer doesn't have one
+            customerAddress = await tx.address.create({
+              data: {
+                type: AddressType.CUSTOMER,
+                name: `${shippingAddress.first_name || shopifyOrder.customer?.first_name || ''} ${shippingAddress.last_name || shopifyOrder.customer?.last_name || na_customer.name || ''}`.trim(),
+                address: `${shippingAddress.address1 || na_customer.address || ''} ${shippingAddress.address2 || ''}`.trim(),
+                address_2: shippingAddress.address2 || '',
+                city: shippingAddress.city || na_customer.city || '',
+                state: shippingAddress.province || na_customer.state || '',
+                pincode: shippingAddress.zip || na_customer.pincode || '000000',
+                phone: customerPhone,
+                country: shippingAddress.country || na_customer.country || 'India',
+                customer_id: customer.id,
+              },
+            });
+          } else {
+            // Update existing address with latest shipping information
+            customerAddress = await tx.address.update({
+              where: { id: customerAddress.id },
+              data: {
+                name: `${shippingAddress.first_name || shopifyOrder.customer?.first_name || ''} ${shippingAddress.last_name || shopifyOrder.customer?.last_name || na_customer.name || ''}`.trim(),
+                address: `${shippingAddress.address1 || na_customer.address || ''} ${shippingAddress.address2 || ''}`.trim(),
+                address_2: shippingAddress.address2 || '',
+                city: shippingAddress.city || na_customer.city || '',
+                state: shippingAddress.province || na_customer.state || '',
+                pincode: shippingAddress.zip || na_customer.pincode || '000000',
+                phone: customerPhone,
+                country: shippingAddress.country || na_customer.country || 'India',
+                updated_at: new Date(),
+              },
+            });
+          }
+
+          // 3. Create package - based on old code mapping
+          const packageRecord = await tx.package.create({
             data: {
-              id: customerCode,
-              name: customerName || 'Shopify Customer',
-              email: customerEmail,
-              phone: customerPhone,
+              id: packageCode,
+              weight: totalWeight,
+              dead_weight: totalWeight,
+              volumetric_weight: volumetricWeight,
+              length: orderBoxLength,
+              breadth: orderBoxWidth,
+              height: orderBoxHeight,
             },
           });
-        } else {
-          // Update existing customer with latest information
-          const customerName =
-            `${shippingAddress.first_name || shopifyOrder.customer?.first_name || ''} ${shippingAddress.last_name || shopifyOrder.customer?.last_name || na_customer.name || ''}`.trim();
 
-          await tx.customer.update({
-            where: { id: customer.id },
+          // 4. Create seller details - based on old code mapping
+          const sellerDetails = await tx.orderSellerDetails.create({
             data: {
-              name: customerName || customer.name, // Keep existing name if new one is empty
-              email: customerEmail || customer.email, // Keep existing email if new one is empty
-              phone: customerPhone, // Always update phone as it's the primary identifier
-              updated_at: new Date(),
+              seller_name: user.profile?.company_name || user.name || userHub.name,
+              contact_number: userHub.phone,
+              address_id: userHub.address_id,
             },
           });
-        }
 
-        // 2. Create or update customer address - based on old code mapping
-        let customerAddress = await tx.address.findUnique({
-          where: { customer_id: customer.id },
-        });
-
-        if (!customerAddress) {
-          // Create new address if customer doesn't have one
-          customerAddress = await tx.address.create({
+          // 5. Create order channel config - based on old code mapping
+          const orderChannelConfig = await tx.orderChannelConfig.create({
             data: {
-              type: AddressType.CUSTOMER,
-              name: `${shippingAddress.first_name || shopifyOrder.customer?.first_name || ''} ${shippingAddress.last_name || shopifyOrder.customer?.last_name || na_customer.name || ''}`.trim(),
-              address: `${shippingAddress.address1 || na_customer.address || ''} ${shippingAddress.address2 || ''}`.trim(),
-              address_2: shippingAddress.address2 || '',
-              city: shippingAddress.city || na_customer.city || '',
-              state: shippingAddress.province || na_customer.state || '',
-              pincode: shippingAddress.zip || na_customer.pincode || '000000',
-              phone: customerPhone,
-              country: shippingAddress.country || na_customer.country || 'India',
+              channel: Channel.SHOPIFY,
+              channel_order_id: shopifyOrder.id.toString(),
+            },
+          });
+
+          // 6. Determine payment method - based on old code mapping
+          const paymentMethod = this.mapShopifyPaymentMethod(financialStatus);
+
+          // 7. Calculate amounts - based on old code mapping
+          const totalAmount = parseFloat(shopifyOrder.total_price || 0);
+          const amountToCollect = this.calculateAmountToCollect(financialStatus, shopifyOrder);
+
+          // 8. Create the order - based on old code mapping
+          const order = await tx.order.create({
+            data: {
+              id: orderCode,
+              code: orderCode,
+              order_number: shopifyOrder.name || `SHOP-${shopifyOrder.id}`,
+              type: OrderType.B2C,
+              payment_method: paymentMethod,
+              is_reverse_order: false,
+              order_channel_config_id: orderChannelConfig.id,
+              order_reference_id: shopifyOrder.name, // Based on old code
+              total_amount: totalAmount,
+              amount_to_collect: amountToCollect,
+              applicable_weight: applicableWeight,
+              order_invoice_date: new Date(shopifyOrder.created_at),
+              order_invoice_number: shopifyOrder.name, // Based on old code
+              user_id: userId,
               customer_id: customer.id,
-            },
-          });
-        } else {
-          // Update existing address with latest shipping information
-          customerAddress = await tx.address.update({
-            where: { id: customerAddress.id },
-            data: {
-              name: `${shippingAddress.first_name || shopifyOrder.customer?.first_name || ''} ${shippingAddress.last_name || shopifyOrder.customer?.last_name || na_customer.name || ''}`.trim(),
-              address: `${shippingAddress.address1 || na_customer.address || ''} ${shippingAddress.address2 || ''}`.trim(),
-              address_2: shippingAddress.address2 || '',
-              city: shippingAddress.city || na_customer.city || '',
-              state: shippingAddress.province || na_customer.state || '',
-              pincode: shippingAddress.zip || na_customer.pincode || '000000',
-              phone: customerPhone,
-              country: shippingAddress.country || na_customer.country || 'India',
-              updated_at: new Date(),
-            },
-          });
-        }
-
-        // 3. Create package - based on old code mapping
-        const packageRecord = await tx.package.create({
-          data: {
-            id: packageCode,
-            weight: totalWeight,
-            dead_weight: totalWeight,
-            volumetric_weight: volumetricWeight,
-            length: orderBoxLength,
-            breadth: orderBoxWidth,
-            height: orderBoxHeight,
-          },
-        });
-
-        // 4. Create seller details - based on old code mapping
-        const sellerDetails = await tx.orderSellerDetails.create({
-          data: {
-            seller_name: user.profile?.company_name || user.name || userHub.name,
-            contact_number: userHub.phone,
-            address_id: userHub.address_id,
-          },
-        });
-
-        // 5. Create order channel config - based on old code mapping
-        const orderChannelConfig = await tx.orderChannelConfig.create({
-          data: {
-            channel: Channel.SHOPIFY,
-            channel_order_id: shopifyOrder.id.toString(),
-          },
-        });
-
-        // 6. Determine payment method - based on old code mapping
-        const paymentMethod = this.mapShopifyPaymentMethod(financialStatus);
-
-        // 7. Calculate amounts - based on old code mapping
-        const totalAmount = parseFloat(shopifyOrder.total_price || 0);
-        const amountToCollect = this.calculateAmountToCollect(financialStatus, shopifyOrder);
-
-        // 8. Create the order - based on old code mapping
-        const order = await tx.order.create({
-          data: {
-            id: orderCode,
-            code: orderCode,
-            order_number: shopifyOrder.name || `SHOP-${shopifyOrder.id}`,
-            type: OrderType.B2C,
-            payment_method: paymentMethod,
-            is_reverse_order: false,
-            order_channel_config_id: orderChannelConfig.id,
-            order_reference_id: shopifyOrder.name, // Based on old code
-            total_amount: totalAmount,
-            amount_to_collect: amountToCollect,
-            applicable_weight: applicableWeight,
-            order_invoice_date: new Date(shopifyOrder.created_at),
-            order_invoice_number: shopifyOrder.name, // Based on old code
-            user_id: userId,
-            customer_id: customer.id,
-            hub_id: userHub.id,
-            seller_details_id: sellerDetails.id,
-            package_id: packageRecord.id,
-            shipment: {
-              create: {
-                code: `${shopifyOrder.id}-${orderCode}`,
-                user_id: userId,
-                status: ShipmentStatus.NEW,
-                bucket: ShipmentBucketManager.getBucketFromStatus(ShipmentStatus.NEW),
-                tracking_events: {
-                  create: [{ description: 'Order Created', status: 'NEW', timestamp: new Date() }],
+              hub_id: userHub.id,
+              seller_details_id: sellerDetails.id,
+              package_id: packageRecord.id,
+              shipment: {
+                create: {
+                  code: `${shopifyOrder.id}-${orderCode}`,
+                  user_id: userId,
+                  status: ShipmentStatus.NEW,
+                  bucket: ShipmentBucketManager.getBucketFromStatus(ShipmentStatus.NEW),
+                  tracking_events: {
+                    create: [{ description: 'Order Created', status: 'NEW', timestamp: new Date() }],
+                  },
                 },
               },
             },
-          },
-        });
-
-        // 9. Create order items - based on old code mapping
-        for (const lineItem of shopifyOrder.line_items || []) {
-          const itemCode = generateId({
-            tableName: 'orderItem',
-            entityName: lineItem.name || 'Item',
-            lastUsedFinancialYear: getFinancialYear(new Date()),
-            lastSequenceNumber: itemCount + shopifyOrder.line_items.indexOf(lineItem),
-          }).id;
-
-          await tx.orderItem.create({
-            data: {
-              id: itemCode,
-              code: itemCode,
-              order_id: order.id,
-              name: lineItem.name,
-              sku: lineItem.sku || '',
-              units: lineItem.quantity,
-              selling_price: parseFloat(lineItem.price) || 0,
-              discount: 0,
-              tax: 0,
-              hsn: lineItem.hsn || '',
-              // B2C specific dimensions (if available)
-              length: lineItem.grams ? Math.sqrt(lineItem.grams / 1000) * 2 : null,
-              breadth: lineItem.grams ? Math.sqrt(lineItem.grams / 1000) * 2 : null,
-              height: lineItem.grams ? Math.sqrt(lineItem.grams / 1000) : null,
-              weight: lineItem.grams ? lineItem.grams / 1000 : null,
-            },
           });
+
+          // 9. Create order items - based on old code mapping
+          for (const lineItem of shopifyOrder.line_items || []) {
+            const itemCode = generateId({
+              tableName: 'orderItem',
+              entityName: lineItem.name || 'Item',
+              lastUsedFinancialYear: getFinancialYear(new Date()),
+              lastSequenceNumber: itemCount + shopifyOrder.line_items.indexOf(lineItem),
+            }).id;
+
+            await tx.orderItem.create({
+              data: {
+                id: itemCode,
+                code: itemCode,
+                order_id: order.id,
+                name: lineItem.name,
+                sku: lineItem.sku || '',
+                units: lineItem.quantity,
+                selling_price: parseFloat(lineItem.price) || 0,
+                discount: 0,
+                tax: 0,
+                hsn: lineItem.hsn || '',
+                // B2C specific dimensions (if available)
+                length: lineItem.grams ? Math.sqrt(lineItem.grams / 1000) * 2 : null,
+                breadth: lineItem.grams ? Math.sqrt(lineItem.grams / 1000) * 2 : null,
+                height: lineItem.grams ? Math.sqrt(lineItem.grams / 1000) : null,
+                weight: lineItem.grams ? lineItem.grams / 1000 : null,
+              },
+            });
+          }
+        },
+        {
+          timeout: 10000,
         }
-      }, {
-        timeout: 10000,
-      });
+      );
     } catch (error) {
       throw error;
     }

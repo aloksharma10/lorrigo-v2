@@ -89,13 +89,13 @@ export class ShipmentService {
   
       const { wallet_type } = userProfile;
   
-      // Step 2: Allow POSTPAID users unconditionally
-      if (wallet_type === 'POSTPAID') {
-        return {
-          canCreate: true,
-          reason: 'Postpaid users can create shipments without a wallet transaction',
-        };
-      }
+      // // Step 2: Allow POSTPAID users unconditionally
+      // if (wallet_type === 'POSTPAID') {
+      //   return {
+      //     canCreate: true,
+      //     reason: 'Postpaid users can create shipments without a wallet transaction',
+      //   };
+      // }
   
       // Step 3: Fetch wallet only when required
       const wallet = await this.fastify.prisma.userWallet.findUnique({

@@ -26,12 +26,14 @@ import { AdminBillingDetailTable } from '@/components/tables/billing/admin-billi
 import { Calculator, Users, TrendingUp, DollarSign } from 'lucide-react';
 import { currencyFormatter } from '@lorrigo/utils';
 import { useModalStore } from '@/modal/modal-store';
+import { useAuthToken } from './providers/token-provider';
 
 export default function BillingCharges() {
   const [selectedMonth, setSelectedMonth] = useState<string>('');
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [selectedUserName, setSelectedUserName] = useState<string>('');
   const [expandedSection, setExpandedSection] = useState<string>('summary');
+  const {isAdmin} =useAuthToken()
 
   // Use the billing operations hook
   const { billingCyclesQuery, getBillingSummaryByMonthQuery, uploadWeightDisputeCSV } = useBillingOperations({
@@ -147,14 +149,14 @@ export default function BillingCharges() {
           </Button>
         </div>
 
-        <div className="flex items-center gap-2">
+        {isAdmin && <div className="flex items-center gap-2">
           <Button variant="default" size="sm" className="gap-2" onClick={handleOpenCSVModal}>
             <Upload className="h-4 w-4" /> Upload Billing CSV
           </Button>
           <Button variant="outline" size="sm" className="gap-2" onClick={handleOpenBillingCycleModal}>
             <Calendar className="h-4 w-4" /> Manage Billing Cycles
           </Button>
-        </div>
+        </div>}
       </div>
 
       {/* Loading State */}

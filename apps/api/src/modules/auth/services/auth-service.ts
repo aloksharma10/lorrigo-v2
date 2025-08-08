@@ -508,14 +508,10 @@ export class AuthService {
     if (!isCurrentPasswordValid) {
       throw new Error('Current password is incorrect');
     }
-
-    // Hash new password
-    const hashedNewPassword = await bcrypt.hash(newPassword, 12);
-
     // Update password
     await this.prisma.user.update({
       where: { id: userId },
-      data: { password: hashedNewPassword },
+      data: { password: user.password },
     });
 
     return { message: 'Password updated successfully' };

@@ -10,6 +10,26 @@ export async function usersRoutes(fastify: FastifyInstance) {
   // Initialize controller
   const usersController = new UsersController(fastify);
 
+  // Seller: Get my profile (self)
+  fastify.get('/me', {
+    schema: {
+      tags: ['Users'],
+      summary: 'Get current logged-in user profile',
+      security: [{ bearerAuth: [] }],
+    },
+    handler: (request, reply) => usersController.getMe(request, reply),
+  });
+
+  // Seller: Update my profile (self)
+  fastify.put('/me/profile', {
+    schema: {
+      tags: ['Users'],
+      summary: 'Update current user profile',
+      security: [{ bearerAuth: [] }],
+    },
+    handler: (request, reply) => usersController.updateMyProfile(request, reply),
+  });
+
   // Get users with pagination
   fastify.get('/', {
     schema: {
@@ -638,6 +658,28 @@ export async function usersRoutes(fastify: FastifyInstance) {
     },
   });
 
+  // Seller: update own bank account
+  fastify.put('/bank-accounts/:bankAccountId', {
+    preHandler: [authorizeRoles([Role.SELLER])],
+    handler: async (request, reply) => {
+      const userId = request.userPayload!.id;
+      const { bankAccountId } = request.params as { bankAccountId: string };
+      const result = await usersController.updateBankAccountForUser(userId, bankAccountId, request.body as any);
+      return reply.send(result);
+    },
+  });
+
+  // Seller: delete own bank account
+  fastify.delete('/bank-accounts/:bankAccountId', {
+    preHandler: [authorizeRoles([Role.SELLER])],
+    handler: async (request, reply) => {
+      const userId = request.userPayload!.id;
+      const { bankAccountId } = request.params as { bankAccountId: string };
+      const result = await usersController.deleteBankAccountForUser(userId, bankAccountId);
+      return reply.send(result);
+    },
+  });
+
   fastify.put('/bank-accounts/:bankAccountId/verify', {
     preHandler: [authorizeRoles([Role.ADMIN, Role.SUBADMIN])],
     handler: async (request, reply) => {
@@ -649,7 +691,8 @@ export async function usersRoutes(fastify: FastifyInstance) {
     },
   });
 
-  fastify.delete('/"id/bank-accounts/:bankAccountId', {
+  // Admin: delete a user's bank account
+  fastify.delete('/:id/bank-accounts/:bankAccountId', {
     preHandler: [authorizeRoles([Role.ADMIN, Role.SUBADMIN])],
     handler: async (request, reply) => {
       const { bankAccountId } = request.params as { bankAccountId: string };

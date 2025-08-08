@@ -252,6 +252,41 @@ export default async function auth(fastify: FastifyInstance) {
     handler: (request, reply) => authController.resetPassword(request, reply),
   });
 
+  // Change password (authenticated)
+  fastify.post('/change-password', {
+    schema: {
+      tags: ['Auth'],
+      summary: 'Change password (requires current password)',
+      security: [{ bearerAuth: [] }],
+      body: {
+        type: 'object',
+        required: ['currentPassword', 'newPassword'],
+        properties: {
+          currentPassword: { type: 'string', minLength: 6 },
+          newPassword: { type: 'string', minLength: 6 },
+        },
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' },
+          },
+        },
+        400: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' },
+          },
+        },
+      },
+    },
+    preHandler: fastify.authenticate,
+    handler: (request, reply) => authController.changePassword(request, reply),
+  });
+
   // Verify token (for passkey authentication)
   fastify.post('/verify-token', {
     schema: {

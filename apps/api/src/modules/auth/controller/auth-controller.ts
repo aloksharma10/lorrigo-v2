@@ -88,6 +88,22 @@ export class AuthController {
     }
   }
 
+  async changePassword(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      if (!request.userPayload) {
+        return reply.code(401).send({ success: false, message: 'Unauthorized' });
+      }
+      const { currentPassword, newPassword } = request.body as any;
+      if (!currentPassword || !newPassword) {
+        return reply.code(400).send({ success: false, message: 'Current and new password are required' });
+      }
+      await this.authService.updatePassword(request.userPayload.id, currentPassword, newPassword);
+      return reply.code(200).send({ success: true, message: 'Password updated successfully' });
+    } catch (error: any) {
+      return reply.code(400).send({ success: false, message: error?.message || 'Failed to update password' });
+    }
+  }
+
   async login(request: FastifyRequest, reply: FastifyReply) {
     try {
       // Validate request body

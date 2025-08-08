@@ -34,7 +34,8 @@ import {
 import { useUserOperations } from '@/lib/apis/users';
 import { Loader2, ChevronLeft, Building2, CreditCard, Webhook, Code, Bell, Shield, DollarSign } from 'lucide-react';
 import { useSession } from 'next-auth/react';
-import { BankAccountManager } from '@/components/settings/bank-account-manager';
+import ManageBankAccountsModal from '@/components/modals/manage-bank-accounts';
+import { useModalStore } from '@/modal/modal-store';
 import { WebhookConfig } from '@/components/settings/webhook-config';
 import { ApiConfig } from '@/components/settings/api-config';
 
@@ -73,8 +74,6 @@ const billingFormSchema = z.object({
   manifest_format: z.enum(['THERMAL', 'A4']),
 });
 
-
-
 const notificationFormSchema = z.object({
   email_notifications: z.boolean(),
   whatsapp_notifications: z.boolean(),
@@ -89,14 +88,12 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
   const router = useRouter();
   const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState(initialTab);
-  const [searchQuery, setSearchQuery] = useState('');
+  const { openModal } = useModalStore();
 
   // Get user data
-  const { getUserById, updateUserProfile } = useUserOperations();
-  const userQuery = getUserById(session?.user?.id || '');
+  const { updateMyProfile, getMyProfile } = useUserOperations();
+  const userQuery = getMyProfile;
   const user = userQuery.data?.user;
-
-
 
   // Form instances
   const companyForm = useForm({
@@ -128,8 +125,6 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
     },
   });
 
-
-
   const notificationForm = useForm({
     resolver: zodResolver(notificationFormSchema),
     defaultValues: {
@@ -147,7 +142,7 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
   useEffect(() => {
     if (user?.profile) {
       const profile = user.profile;
-      
+
       companyForm.reset({
         company_name: profile.company_name || '',
         company: profile.company || '',
@@ -197,18 +192,15 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
 
   const handleCompanySubmit = async (data: z.infer<typeof companyFormSchema>) => {
     if (!user?.id) return;
-    
+
     try {
-      await updateUserProfile.mutateAsync({
-        userId: user.id,
-        data: {
-          company_name: data.company_name,
-          company: data.company,
-          logo_url: data.logo_url,
-          business_type: data.business_type,
-          pan: data.pan,
-          gst_no: data.gst_no,
-        },
+      await updateMyProfile.mutateAsync({
+        company_name: data.company_name,
+        company: data.company,
+        logo_url: data.logo_url,
+        business_type: data.business_type,
+        pan: data.pan,
+        gst_no: data.gst_no,
       });
       toast.success('Company details updated successfully');
     } catch (error) {
@@ -218,23 +210,24 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
 
   const handleBillingSubmit = async (data: z.infer<typeof billingFormSchema>) => {
     if (!user?.id) return;
-    
+    if (user?.role === 'SELLER') {
+      toast.error('Billing configuration cannot be updated by seller. Please contact support.');
+      return;
+    }
+
     try {
-      await updateUserProfile.mutateAsync({
-        userId: user.id,
-        data: {
-          billing_cycle_type: data.billing_cycle_type,
-          billing_days_of_week: data.billing_days_of_week,
-          billing_day_of_month: data.billing_day_of_month,
-          billing_week_of_month: data.billing_week_of_month,
-          billing_days: data.billing_days,
-          remittance_cycle: data.remittance_cycle,
-          remittance_min_amount: data.remittance_min_amount,
-          remittance_days_after_delivery: data.remittance_days_after_delivery,
-          early_remittance_charge: data.early_remittance_charge,
-          label_format: data.label_format,
-          manifest_format: data.manifest_format,
-        },
+      await updateMyProfile.mutateAsync({
+        billing_cycle_type: data.billing_cycle_type,
+        billing_days_of_week: data.billing_days_of_week,
+        billing_day_of_month: data.billing_day_of_month,
+        billing_week_of_month: data.billing_week_of_month,
+        billing_days: data.billing_days,
+        remittance_cycle: data.remittance_cycle,
+        remittance_min_amount: data.remittance_min_amount,
+        remittance_days_after_delivery: data.remittance_days_after_delivery,
+        early_remittance_charge: data.early_remittance_charge,
+        label_format: data.label_format,
+        manifest_format: data.manifest_format,
       });
       toast.success('Billing settings updated successfully');
     } catch (error) {
@@ -244,20 +237,17 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
 
   const handleNotificationSubmit = async (data: z.infer<typeof notificationFormSchema>) => {
     if (!user?.id) return;
-    
+
     try {
-      await updateUserProfile.mutateAsync({
-        userId: user.id,
-        data: {
-          notification_settings: {
-            email: data.email_notifications,
-            whatsapp: data.whatsapp_notifications,
-            system: data.system_notifications,
-            order_updates: data.order_updates,
-            shipment_updates: data.shipment_updates,
-            billing_updates: data.billing_updates,
-            remittance_updates: data.remittance_updates,
-          },
+      await updateMyProfile.mutateAsync({
+        notification_settings: {
+          email: data.email_notifications,
+          whatsapp: data.whatsapp_notifications,
+          system: data.system_notifications,
+          order_updates: data.order_updates,
+          shipment_updates: data.shipment_updates,
+          billing_updates: data.billing_updates,
+          remittance_updates: data.remittance_updates,
         },
       });
       toast.success('Notification settings updated successfully');
@@ -265,10 +255,6 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
       toast.error('Failed to update notification settings');
     }
   };
-
-  const filteredNavItems = SETTINGS_NAV_ITEMS.filter(item =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   if (userQuery.isLoading) {
     return (
@@ -279,32 +265,27 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
   }
 
   return (
-    <div className="flex w-full max-w-7xl overflow-hidden rounded-lg bg-white shadow-xl">
-
+    <div className="flex w-full max-w-7xl overflow-hidden rounded-lg dark:bg-card dark:text-white shadow-xl">
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto">
         <div className="p-6">
           {/* Content Header */}
           <div className="mb-6">
             <div className="flex items-center space-x-3">
-                {activeTab !== 'general' && (
+              {activeTab !== 'general' && (
                 <button
                   onClick={() => {
                     setActiveTab('general');
                     router.push('/seller/settings/general');
                   }}
-                  className="rounded-full p-1 hover:bg-gray-100 transition-colors"
+                  className="rounded-full p-1 transition-colors hover:bg-gray-100"
                 >
-                  <ChevronLeft className="h-5 w-5 text-gray-500" />
+                  <ChevronLeft className="h-5 w-5 text-gray-500 dark:text-white" />
                 </button>
               )}
               <div>
-                <h2 className="text-2xl font-semibold text-gray-900">
-                  {SETTINGS_NAV_ITEMS.find(item => item.id === activeTab)?.name}
-                </h2>
-                <p className="text-gray-500">
-                  {SETTINGS_NAV_ITEMS.find(item => item.id === activeTab)?.description}
-                </p>
+                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">{SETTINGS_NAV_ITEMS.find((item) => item.id === activeTab)?.name}</h2>
+                <p className="text-gray-500 dark:text-white">{SETTINGS_NAV_ITEMS.find((item) => item.id === activeTab)?.description}</p>
               </div>
             </div>
           </div>
@@ -318,14 +299,12 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
                     <Building2 className="h-5 w-5" />
                     <span>Company Details</span>
                   </CardTitle>
-                  <CardDescription>
-                    Update your company information and business details
-                  </CardDescription>
+                  <CardDescription>Update your company information and business details</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Form {...companyForm}>
                     <form onSubmit={companyForm.handleSubmit(handleCompanySubmit)} className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <FormField
                           control={companyForm.control}
                           name="company_name"
@@ -353,7 +332,7 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
                           )}
                         />
                       </div>
-                      
+
                       <FormField
                         control={companyForm.control}
                         name="logo_url"
@@ -368,7 +347,7 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
                         )}
                       />
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <FormField
                           control={companyForm.control}
                           name="business_type"
@@ -412,8 +391,8 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
                       />
 
                       <div className="flex justify-end">
-                        <Button type="submit" disabled={updateUserProfile.isPending}>
-                          {updateUserProfile.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        <Button type="submit" disabled={updateMyProfile.isPending}>
+                          {updateMyProfile.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                           Save Changes
                         </Button>
                       </div>
@@ -432,14 +411,12 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
                     <DollarSign className="h-5 w-5" />
                     <span>Billing Configuration</span>
                   </CardTitle>
-                  <CardDescription>
-                    Configure your billing cycle and payment settings
-                  </CardDescription>
+                  <CardDescription>Configure your billing cycle and payment settings</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Form {...billingForm}>
                     <form onSubmit={billingForm.handleSubmit(handleBillingSubmit)} className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                         <div className="space-y-4">
                           <h4 className="font-medium">Billing Cycle</h4>
                           <FormField
@@ -476,10 +453,10 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
                               <FormItem>
                                 <FormLabel>Billing Day of Month</FormLabel>
                                 <FormControl>
-                                  <Input 
-                                    type="number" 
-                                    min="1" 
-                                    max="31" 
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    max="31"
                                     placeholder="1-31"
                                     {...field}
                                     onChange={(e) => field.onChange(parseInt(e.target.value))}
@@ -527,9 +504,9 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
                               <FormItem>
                                 <FormLabel>Minimum Remittance Amount</FormLabel>
                                 <FormControl>
-                                  <Input 
-                                    type="number" 
-                                    min="0" 
+                                  <Input
+                                    type="number"
+                                    min="0"
                                     step="0.01"
                                     placeholder="0.00"
                                     {...field}
@@ -543,7 +520,7 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                         <FormField
                           control={billingForm.control}
                           name="remittance_days_after_delivery"
@@ -551,13 +528,7 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
                             <FormItem>
                               <FormLabel>Remittance Days After Delivery</FormLabel>
                               <FormControl>
-                                <Input 
-                                  type="number" 
-                                  min="1"
-                                  placeholder="7"
-                                  {...field}
-                                  onChange={(e) => field.onChange(parseInt(e.target.value))}
-                                />
+                                <Input type="number" min="1" placeholder="7" {...field} onChange={(e) => field.onChange(parseInt(e.target.value))} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -571,9 +542,9 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
                             <FormItem>
                               <FormLabel>Early Remittance Charge (%)</FormLabel>
                               <FormControl>
-                                <Input 
-                                  type="number" 
-                                  min="0" 
+                                <Input
+                                  type="number"
+                                  min="0"
                                   step="0.01"
                                   placeholder="0.00"
                                   {...field}
@@ -586,7 +557,7 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
                         />
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                         <FormField
                           control={billingForm.control}
                           name="label_format"
@@ -633,8 +604,8 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
                       </div>
 
                       <div className="flex justify-end">
-                        <Button type="submit" disabled={updateUserProfile.isPending}>
-                          {updateUserProfile.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        <Button type="submit" disabled={updateMyProfile.isPending}>
+                          {updateMyProfile.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                           Save Changes
                         </Button>
                       </div>
@@ -646,16 +617,17 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
           )}
 
           {activeTab === 'bank-accounts' && (
-            <BankAccountManager userId={session?.user?.id || ''} />
+            <div className="space-y-4">
+              <div className="flex items-center justify-end">
+                <Button onClick={() => openModal('add-bank-account', {})}>Add Bank Account</Button>
+              </div>
+              <ManageBankAccountsModal />
+            </div>
           )}
 
-          {activeTab === 'webhook' && (
-            <WebhookConfig userId={session?.user?.id || ''} />
-          )}
+          {activeTab === 'webhook' && <WebhookConfig userId={session?.user?.id || ''} />}
 
-          {activeTab === 'api' && (
-            <ApiConfig userId={session?.user?.id || ''} />
-          )}
+          {activeTab === 'api' && <ApiConfig userId={session?.user?.id || ''} />}
 
           {activeTab === 'notifications' && (
             <div className="space-y-6">
@@ -665,9 +637,7 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
                     <Bell className="h-5 w-5" />
                     <span>Notification Preferences</span>
                   </CardTitle>
-                  <CardDescription>
-                    Choose how and when you want to receive notifications
-                  </CardDescription>
+                  <CardDescription>Choose how and when you want to receive notifications</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Form {...notificationForm}>
@@ -682,15 +652,10 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
                               <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                                 <div className="space-y-0.5">
                                   <FormLabel className="text-base">Email Notifications</FormLabel>
-                                  <FormDescription>
-                                    Receive notifications via email
-                                  </FormDescription>
+                                  <FormDescription>Receive notifications via email</FormDescription>
                                 </div>
                                 <FormControl>
-                                  <Switch
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                  />
+                                  <Switch checked={field.value} onCheckedChange={field.onChange} />
                                 </FormControl>
                               </FormItem>
                             )}
@@ -703,15 +668,10 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
                               <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                                 <div className="space-y-0.5">
                                   <FormLabel className="text-base">WhatsApp Notifications</FormLabel>
-                                  <FormDescription>
-                                    Receive notifications via WhatsApp
-                                  </FormDescription>
+                                  <FormDescription>Receive notifications via WhatsApp</FormDescription>
                                 </div>
                                 <FormControl>
-                                  <Switch
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                  />
+                                  <Switch checked={field.value} onCheckedChange={field.onChange} />
                                 </FormControl>
                               </FormItem>
                             )}
@@ -724,15 +684,10 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
                               <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                                 <div className="space-y-0.5">
                                   <FormLabel className="text-base">System Notifications</FormLabel>
-                                  <FormDescription>
-                                    Receive in-app notifications
-                                  </FormDescription>
+                                  <FormDescription>Receive in-app notifications</FormDescription>
                                 </div>
                                 <FormControl>
-                                  <Switch
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                  />
+                                  <Switch checked={field.value} onCheckedChange={field.onChange} />
                                 </FormControl>
                               </FormItem>
                             )}
@@ -752,15 +707,10 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
                               <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                                 <div className="space-y-0.5">
                                   <FormLabel className="text-base">Order Updates</FormLabel>
-                                  <FormDescription>
-                                    Get notified about order status changes
-                                  </FormDescription>
+                                  <FormDescription>Get notified about order status changes</FormDescription>
                                 </div>
                                 <FormControl>
-                                  <Switch
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                  />
+                                  <Switch checked={field.value} onCheckedChange={field.onChange} />
                                 </FormControl>
                               </FormItem>
                             )}
@@ -773,15 +723,10 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
                               <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                                 <div className="space-y-0.5">
                                   <FormLabel className="text-base">Shipment Updates</FormLabel>
-                                  <FormDescription>
-                                    Get notified about shipment tracking updates
-                                  </FormDescription>
+                                  <FormDescription>Get notified about shipment tracking updates</FormDescription>
                                 </div>
                                 <FormControl>
-                                  <Switch
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                  />
+                                  <Switch checked={field.value} onCheckedChange={field.onChange} />
                                 </FormControl>
                               </FormItem>
                             )}
@@ -794,15 +739,10 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
                               <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                                 <div className="space-y-0.5">
                                   <FormLabel className="text-base">Billing Updates</FormLabel>
-                                  <FormDescription>
-                                    Get notified about billing and payment updates
-                                  </FormDescription>
+                                  <FormDescription>Get notified about billing and payment updates</FormDescription>
                                 </div>
                                 <FormControl>
-                                  <Switch
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                  />
+                                  <Switch checked={field.value} onCheckedChange={field.onChange} />
                                 </FormControl>
                               </FormItem>
                             )}
@@ -815,15 +755,10 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
                               <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                                 <div className="space-y-0.5">
                                   <FormLabel className="text-base">Remittance Updates</FormLabel>
-                                  <FormDescription>
-                                    Get notified about remittance status changes
-                                  </FormDescription>
+                                  <FormDescription>Get notified about remittance status changes</FormDescription>
                                 </div>
                                 <FormControl>
-                                  <Switch
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                  />
+                                  <Switch checked={field.value} onCheckedChange={field.onChange} />
                                 </FormControl>
                               </FormItem>
                             )}
@@ -832,10 +767,10 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
                       </div>
 
                       <div className="flex justify-end">
-                        <Button type="submit" disabled={updateUserProfile.isPending}>
-                          {updateUserProfile.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        <Button type="submit" disabled={updateMyProfile.isPending}>
+                          {updateMyProfile.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                           Save Notification Settings
-      </Button>
+                        </Button>
                       </div>
                     </form>
                   </Form>
@@ -844,7 +779,7 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
             </div>
           )}
 
-          {activeTab === 'security' && (
+          {/* {activeTab === 'security' && (
             <div className="space-y-6">
               <Card>
                 <CardHeader>
@@ -863,7 +798,7 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
                         <h4 className="font-medium">Two-Factor Authentication</h4>
                         <p className="text-sm text-gray-500">Add an extra layer of security to your account</p>
                       </div>
-                      <Button variant="outline">Enable</Button>
+                      <Button variant="outline" onClick={() => openModal('passkey-setup', {})}>Enable</Button>
                     </div>
 
                     <div className="flex items-center justify-between p-4 border rounded-lg">
@@ -871,7 +806,7 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
                         <h4 className="font-medium">Password</h4>
                         <p className="text-sm text-gray-500">Change your account password</p>
                       </div>
-                      <Button variant="outline">Change</Button>
+                      <Button variant="outline" onClick={() => openModal('confirm', { title: 'Change Password', description: 'Please use the change-password option in your profile dropdown for now.' })}>Change</Button>
                     </div>
 
                     <div className="flex items-center justify-between p-4 border rounded-lg">
@@ -879,13 +814,13 @@ export const SellerSettingsPage = ({ initialTab = 'general' }: { initialTab?: st
                         <h4 className="font-medium">Session Management</h4>
                         <p className="text-sm text-gray-500">View and manage active sessions</p>
                       </div>
-                      <Button variant="outline">Manage</Button>
+                      <Button variant="outline" disabled>Manage</Button>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
-          )}
+          )} */}
         </div>
       </div>
     </div>

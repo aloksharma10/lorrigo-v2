@@ -169,6 +169,11 @@ export const usersAPI = {
     return await axios.put(`/users/${userId}/profile`, data);
   },
 
+  // Update my profile (self)
+  updateMyProfile: async (data: Partial<UserProfile>): Promise<{ success: boolean; profile: UserProfile }> => {
+    return await axios.put(`/users/me/profile`, data);
+  },
+
   // Bank Account functions
   getUserBankAccounts: async (userId: string, params: BankAccountParams = {}) => {
     const queryParams = {
@@ -181,6 +186,7 @@ export const usersAPI = {
       account_holder: params.account_holder,
       sort: params.sort,
       filters: params.filters,
+      userId: userId,
     };
 
     const response = await axios.get<{
@@ -192,7 +198,7 @@ export const usersAPI = {
         limit: number;
         totalPages: number;
       };
-    }>(`/users/${userId}/bank-accounts`, { params: queryParams });
+    }>(`/users/bank-accounts`, { params: queryParams });
 
     return {
       success: response.success,
@@ -205,16 +211,16 @@ export const usersAPI = {
     };
   },
 
-  addUserBankAccount: async (userId: string, data: BankAccountFormData) => {
-    return await axios.post<{ success: boolean; bankAccount: UserBankAccount }>(`/users/${userId}/bank-accounts`, data);
+  addUserBankAccount: async (_userId: string, data: BankAccountFormData) => {
+    return await axios.post<{ success: boolean; bankAccount: UserBankAccount }>(`/users/bank-accounts`, data);
   },
 
-  updateUserBankAccount: async (userId: string, bankAccountId: string, data: BankAccountUpdateData) => {
-    return await axios.put<{ success: boolean; bankAccount: UserBankAccount }>(`/users/${userId}/bank-accounts/${bankAccountId}`, data);
+  updateUserBankAccount: async (_userId: string, bankAccountId: string, data: BankAccountUpdateData) => {
+    return await axios.put<{ success: boolean; bankAccount: UserBankAccount }>(`/users/bank-accounts/${bankAccountId}`, data);
   },
 
-  deleteUserBankAccount: async (userId: string, bankAccountId: string) => {
-    return await axios.delete<{ success: boolean; message: string }>(`/users/${userId}/bank-accounts/${bankAccountId}`);
+  deleteUserBankAccount: async (_userId: string, bankAccountId: string) => {
+    return await axios.delete<{ success: boolean; message: string }>(`/users/bank-accounts/${bankAccountId}`);
   },
 
   // Password reset functions
@@ -244,6 +250,8 @@ export function useUserOperations(params: PaginationParams = {}) {
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
     enabled: isTokenReady,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 
   // Fetch user by ID
@@ -270,6 +278,7 @@ export function useUserOperations(params: PaginationParams = {}) {
     onSuccess: (data) => {
       toast.success('User updated successfully');
       queryClient.invalidateQueries({ queryKey: ['user'] });
+      queryClient.invalidateQueries({ queryKey: ['my-profile'] });
       queryClient.invalidateQueries({ queryKey: ['users'] });
       return data;
     },
@@ -284,10 +293,24 @@ export function useUserOperations(params: PaginationParams = {}) {
     onSuccess: (data) => {
       toast.success('User profile updated successfully');
       queryClient.invalidateQueries({ queryKey: ['user'] });
+      queryClient.invalidateQueries({ queryKey: ['my-profile'] });
       return data;
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.error || 'Failed to update user profile');
+    },
+  });
+
+  // Update my profile (self)
+  const updateMyProfile = useMutation({
+    mutationFn: (data: Partial<UserProfile>) => usersAPI.updateMyProfile(data),
+    onSuccess: (data) => {
+      toast.success('Profile updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['my-profile'] });
+      return data;
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to update profile');
     },
   });
 
@@ -296,6 +319,7 @@ export function useUserOperations(params: PaginationParams = {}) {
     getUserById,
     updateUser,
     updateUserProfile,
+    updateMyProfile,
     getMyProfile,
   };
 }

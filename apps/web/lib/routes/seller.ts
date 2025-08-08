@@ -169,12 +169,12 @@ export type SellerSettingsTab = {
 
 export const SELLER_SETTINGS_TABS: SellerSettingsTab[] = [
   { id: 'general', name: 'General', iconName: 'Home' },
-  { id: 'billing', name: 'Billing', iconName: 'BadgeIndianRupee' },
+  // { id: 'billing', name: 'Billing', iconName: 'BadgeIndianRupee' },
   { id: 'bank-accounts', name: 'Bank Accounts', iconName: 'CreditCard' },
-  { id: 'webhook', name: 'Webhooks', iconName: 'Link' },
-  { id: 'api', name: 'API', iconName: 'Settings' },
+  // { id: 'webhook', name: 'Webhooks', iconName: 'Link' },
+  // { id: 'api', name: 'API', iconName: 'Settings' },
   { id: 'notifications', name: 'Notifications', iconName: 'Bell' },
-  { id: 'security', name: 'Security', iconName: 'Lock' },
+  // { id: 'security', name: 'Security', iconName: 'Lock' },
 ];
 
 export function generateSellerSettingsRoutes() {
