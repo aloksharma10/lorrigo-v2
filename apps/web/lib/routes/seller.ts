@@ -159,3 +159,29 @@ export const SELLER_ROUTES = [
     ],
   },
 ];
+
+
+export type SellerSettingsTab = {
+  id: string;
+  name: string;
+  iconName: string;
+};
+
+export const SELLER_SETTINGS_TABS: SellerSettingsTab[] = [
+  { id: 'general', name: 'General', iconName: 'Home' },
+  { id: 'billing', name: 'Billing', iconName: 'BadgeIndianRupee' },
+  { id: 'bank-accounts', name: 'Bank Accounts', iconName: 'CreditCard' },
+  { id: 'webhook', name: 'Webhooks', iconName: 'Link' },
+  { id: 'api', name: 'API', iconName: 'Settings' },
+  { id: 'notifications', name: 'Notifications', iconName: 'Bell' },
+  { id: 'security', name: 'Security', iconName: 'Lock' },
+];
+
+export function generateSellerSettingsRoutes() {
+  return SELLER_SETTINGS_TABS.map((tab) => ({
+    id: tab.id,
+    name: tab.name,
+    path: `/seller/settings/${tab.id}`,
+    iconName: tab.iconName,
+  }));
+}
