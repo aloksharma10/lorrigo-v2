@@ -9,18 +9,12 @@ import { APP_CONFIG } from '@/config/app';
 
 // WhatsApp notification job types
 export enum WhatsAppJobTypes {
-  SEND_TRACKING_NOTIFICATION = 'send-tracking-notification',
   SEND_NDR_NOTIFICATION = 'send-ndr-notification',
   SEND_TEMPLATE_MESSAGE = 'send-template-message',
   SEND_TEXT_MESSAGE = 'send-text-message',
 }
 
-export interface TrackingNotificationJobData {
-  event: 'courier_assigned' | 'picked_up' | 'out_for_delivery' | 'delivered';
-  trackingData: TrackingNotificationData;
-  shipmentId?: string;
-  userId?: string;
-}
+
 
 export interface NDRNotificationJobData {
   ndrOrderId: string;
@@ -120,10 +114,6 @@ export class WhatsAppNotificationWorker {
       });
 
       switch (job.name) {
-        case WhatsAppJobTypes.SEND_TRACKING_NOTIFICATION:
-          await this.processTrackingNotification(job.data as TrackingNotificationJobData);
-          break;
-
         case WhatsAppJobTypes.SEND_NDR_NOTIFICATION:
           await this.processNDRNotification(job.data as NDRNotificationJobData);
           break;
@@ -146,21 +136,7 @@ export class WhatsAppNotificationWorker {
     }
   }
 
-  /**
-   * Process tracking notification job
-   */
-  private async processTrackingNotification(data: TrackingNotificationJobData): Promise<void> {
-    const { TrackingNotificationService } = await import('@/lib/tracking-notifications');
-    const trackingService = new TrackingNotificationService(this.fastify);
 
-    const result = await trackingService.sendCustomerTrackingNotification(data.event, data.trackingData);
-
-    if (!result.success) {
-      throw new Error(`Failed to send tracking notification: ${result.message}`);
-    }
-
-    this.fastify.log.info(`Tracking notification sent successfully for order: ${data.trackingData.orderNumber}`);
-  }
 
   /**
    * Process NDR notification job

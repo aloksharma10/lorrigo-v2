@@ -313,6 +313,7 @@ export class OrderService {
         user_id: userId,
       },
       include: {
+        items: true,
         hub: {
           select: {
             name: true,

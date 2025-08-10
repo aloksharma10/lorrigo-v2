@@ -3,7 +3,6 @@ import { addJob, QueueNames, queues } from '@/lib/queue';
 import { TrackingNotificationData } from '@/types/notification';
 import { 
   WhatsAppJobTypes, 
-  TrackingNotificationJobData,
   NDRNotificationJobData,
   TemplateMessageJobData,
   TextMessageJobData
@@ -13,58 +12,7 @@ import { captureException } from '@/lib/sentry';
 export class WhatsAppQueueService {
   constructor(private fastify: FastifyInstance) {}
 
-  /**
-   * Queue tracking notification job
-   */
-  async queueTrackingNotification(
-    event: 'courier_assigned' | 'picked_up' | 'out_for_delivery' | 'delivered',
-    trackingData: TrackingNotificationData,
-    options?: {
-      priority?: number;
-      delay?: number;
-      shipmentId?: string;
-      userId?: string;
-    }
-  ): Promise<{ success: boolean; jobId?: string; message: string }> {
-    try {
-      const jobData: TrackingNotificationJobData = {
-        event,
-        trackingData,
-        shipmentId: options?.shipmentId,
-        userId: options?.userId,
-      };
 
-      const job = await addJob(
-        QueueNames.WHATSAPP_NOTIFICATION,
-        WhatsAppJobTypes.SEND_TRACKING_NOTIFICATION,
-        jobData,
-        {
-          priority: options?.priority || 1,
-          delay: options?.delay || 0,
-          attempts: 5,
-        }
-      );
-
-      this.fastify.log.info(`Tracking notification queued for order: ${trackingData.orderNumber}`, {
-        jobId: job.id,
-        event,
-      });
-
-      return {
-        success: true,
-        jobId: job.id,
-        message: 'Tracking notification queued successfully',
-      };
-    } catch (error) {
-      captureException(error as Error);
-      this.fastify.log.error('Failed to queue tracking notification:', error);
-      
-      return {
-        success: false,
-        message: 'Failed to queue tracking notification',
-      };
-    }
-  }
 
   /**
    * Queue NDR notification job
@@ -229,58 +177,7 @@ export class WhatsAppQueueService {
     }
   }
 
-  /**
-   * Queue bulk tracking notifications
-   */
-  async queueBulkTrackingNotifications(
-    notifications: Array<{
-      event: 'courier_assigned' | 'picked_up' | 'out_for_delivery' | 'delivered';
-      trackingData: TrackingNotificationData;
-      shipmentId?: string;
-      userId?: string;
-    }>,
-    options?: {
-      priority?: number;
-      delay?: number;
-    }
-  ): Promise<{ success: boolean; queuedCount: number; errors: string[] }> {
-    const results = {
-      success: true,
-      queuedCount: 0,
-      errors: [] as string[],
-    };
 
-    for (const notification of notifications) {
-      try {
-        const result = await this.queueTrackingNotification(
-          notification.event,
-          notification.trackingData,
-          {
-            priority: options?.priority,
-            delay: options?.delay,
-            shipmentId: notification.shipmentId,
-            userId: notification.userId,
-          }
-        );
-
-        if (result.success) {
-          results.queuedCount++;
-        } else {
-          results.errors.push(`Failed to queue notification for order ${notification.trackingData.orderNumber}: ${result.message}`);
-        }
-      } catch (error) {
-        results.errors.push(`Error queuing notification for order ${notification.trackingData.orderNumber}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      }
-    }
-
-    if (results.errors.length > 0) {
-      results.success = false;
-    }
-
-    this.fastify.log.info(`Bulk tracking notifications queued: ${results.queuedCount} successful, ${results.errors.length} failed`);
-
-    return results;
-  }
 
   /**
    * Get queue statistics

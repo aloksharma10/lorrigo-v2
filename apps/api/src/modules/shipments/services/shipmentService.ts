@@ -34,6 +34,7 @@ import { TransactionJobType } from '@/modules/transactions/queues/transaction-wo
 import { RateCalculationParams } from '@/modules/plan/services/plan.service';
 import { getPincodeDetails } from '@/utils/pincode';
 import { WhatsAppQueueService } from '@/lib/whatsapp-queue.service';
+import { APP_CONFIG } from '@/config/app';
 
 // Define the interface for the extended FastifyInstance
 interface ExtendedFastifyInstance extends FastifyInstance {
@@ -81,23 +82,20 @@ export class ShipmentService {
   /**
    * Check if user can create shipment based on wallet balance
    */
-  async canCreateShipment(
-    userId: string,
-    shipmentAmount: number
-  ): Promise<{ canCreate: boolean; reason?: string; message?: string }> {
+  async canCreateShipment(userId: string, shipmentAmount: number): Promise<{ canCreate: boolean; reason?: string; message?: string }> {
     try {
       // Step 1: Fetch wallet_type early to skip full wallet fetch for POSTPAID users
       const userProfile = await this.fastify.prisma.userProfile.findUnique({
         where: { user_id: userId },
         select: { wallet_type: true },
       });
-  
+
       if (!userProfile) {
         return { canCreate: false, reason: 'User profile not found' };
       }
-  
+
       const { wallet_type } = userProfile;
-  
+
       // // Step 2: Allow POSTPAID users unconditionally
       // if (wallet_type === 'POSTPAID') {
       //   return {
@@ -105,7 +103,7 @@ export class ShipmentService {
       //     reason: 'Postpaid users can create shipments without a wallet transaction',
       //   };
       // }
-  
+
       // Step 3: Fetch wallet only when required
       const wallet = await this.fastify.prisma.userWallet.findUnique({
         where: { user_id: userId },
@@ -115,18 +113,18 @@ export class ShipmentService {
           available_amount: true,
         },
       });
-  
+
       if (!wallet) {
         return { canCreate: false, reason: 'Wallet not found' };
       }
-  
+
       // Step 4: Calculate available balance based on wallet type
       let availableBalance = wallet.balance + wallet.max_negative_amount;
-  
+
       if (wallet_type === 'REMITTANCE_WALLET') {
         availableBalance += wallet.available_amount;
       }
-  
+
       // Step 5: Final validation
       if (availableBalance < shipmentAmount) {
         return {
@@ -135,14 +133,14 @@ export class ShipmentService {
           message: `Insufficient balance. Available: ₹${availableBalance.toFixed(2)}, Required: ₹${shipmentAmount.toFixed(2)}. Please recharge your wallet.`,
         };
       }
-  
+
       return { canCreate: true };
     } catch (error) {
       this.fastify.log.error(`Error in canCreateShipment: ${error}`);
       return { canCreate: false, reason: 'Internal error while checking wallet balance' };
     }
   }
-  
+
   async getServiceableCouriers(userId: string, params: RateCalculationParams) {
     const dimensionsStr = `${params.boxLength || 0}x${params.boxWidth || 0}x${params.boxHeight || 0}x${params.weight || 0}`;
     const ratesKey = `rates-${userId}-${params.isReversedOrder ? 'reverse' : 'forward'}-${params.pickupPincode}-${params.deliveryPincode}-${params.weight}-${dimensionsStr}-${params.paymentType}-${params.collectableAmount}`;
@@ -646,22 +644,22 @@ export class ShipmentService {
         }
       );
 
-              // Queue WhatsApp notification for courier assignment
-        try {
-          await this.whatsappQueueService.queueTemplateMessage(
-            order.customer.phone,
-            process.env.WHATSAPP_TEMPLATE_READY_FOR_DISPATCH || '',
-            [
-              order.customer.name || 'Customer',
-              order.code,
-              'your items', // TODO: Get actual items from order
-              courier.name,
-            ],
-            { priority: 1 }
-          );
-        } catch (whatsappError) {
-          this.fastify.log.error('Failed to queue WhatsApp notification:', whatsappError);
-        }
+      // Queue WhatsApp notification for courier assignment
+      try {
+        await this.whatsappQueueService.queueTemplateMessage(
+          order.customer.phone,
+          APP_CONFIG.WHATSAPP.TEMPLATE_READY_FOR_DISPATCH || '',
+          [
+            order.customer.name || 'Customer',
+            order.code,
+            order.items?.map((item: any) => item.name).join(', ') || 'your items',
+            courier.name,
+          ],
+          { priority: 1 }
+        );
+      } catch (whatsappError) {
+        this.fastify.log.error('Failed to queue WhatsApp notification:', whatsappError);
+      }
 
       // Step 8: Return immediate response with preliminary data
       return {
@@ -1963,41 +1961,36 @@ export class ShipmentService {
             order: {
               include: {
                 customer: {
-                  select: { id: true, phone: true, name: true }
+                  select: { id: true, phone: true, name: true },
                 },
                 user: {
-                  select: { phone: true }
+                  select: { phone: true },
                 },
                 items: {
-                  select: { name: true, units: true }
-                }
-              }
+                  select: { name: true, units: true },
+                },
+              },
             },
             courier: {
-              select: { name: true }
-            }
+              select: { name: true },
+            },
           },
         });
 
         // Send tracking notifications
         try {
-          await this.trackingNotificationService.handleShipmentStatusChange(
-            shipmentId,
-            shipment.status,
-            status_code as ShipmentStatus,
-            {
-              awb: updatedShipment.awb!,
-              order: {
-                id: updatedShipment.order.id,
-                code: updatedShipment.order.code,
-                user_id: updatedShipment.order.user_id,
-                customer: updatedShipment.order.customer,
-                items: updatedShipment.order.items,
-              },
-              courier: updatedShipment.courier,
-              edd: updatedShipment.edd || undefined,
-            }
-          );
+          await this.trackingNotificationService.handleShipmentStatusChange(shipmentId, shipment.status, status_code as ShipmentStatus, {
+            awb: updatedShipment.awb!,
+            order: {
+              id: updatedShipment.order.id,
+              code: updatedShipment.order.code,
+              user_id: updatedShipment.order.user_id,
+              customer: updatedShipment.order.customer,
+              items: updatedShipment.order.items,
+            },
+            courier: updatedShipment.courier,
+            edd: updatedShipment.edd || undefined,
+          });
         } catch (notificationError) {
           this.fastify.log.error('Failed to send tracking notifications:', notificationError);
         }
@@ -2322,11 +2315,7 @@ export class ShipmentService {
 
       // Send notification about the action taken
       try {
-        await this.ndrNotificationService.handleNDRActionTaken(
-          ndrId,
-          actionType,
-          comment
-        );
+        await this.ndrNotificationService.handleNDRActionTaken(ndrId, actionType, comment);
       } catch (notificationError) {
         this.fastify.log.error('Failed to send NDR action notification:', notificationError);
       }

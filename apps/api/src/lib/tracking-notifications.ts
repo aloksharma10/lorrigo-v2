@@ -30,7 +30,7 @@ export class TrackingNotificationService {
     data: TrackingNotificationData
   ): Promise<{ success: boolean; message: string; jobId?: string }> {
     try {
-      // Quick check if customer wants WhatsApp notifications (optimization for queue)
+      // Quick check if customer wants WhatsApp notifications
       const userProfile = await this.getUserProfile(data.userId);
       if (!userProfile || !this.shouldSendWhatsAppNotification(userProfile.notification_settings)) {
         return {
@@ -39,11 +39,36 @@ export class TrackingNotificationService {
         };
       }
 
-      // Queue the notification for async processing
-      return await this.whatsappQueueService.queueTrackingNotification(event, data, {
-        priority: 1, // High priority for customer notifications
-        userId: data.userId,
-      });
+      // Get template for the event
+      const templateKey = this.getCustomerTemplateKey(event);
+      console.log(templateKey, 'templateKey');
+      const template = WhatsAppTemplates[templateKey];
+      
+      if (!template.id) {
+        return {
+          success: false,
+          message: `Template ID not configured for ${event}`,
+        };
+      }
+
+      // Build variables for the template
+      const variables = this.buildCustomerVariables(event, data);
+
+      // Use SEND_TEMPLATE_MESSAGE instead of SEND_TRACKING_NOTIFICATION
+      return await this.whatsappQueueService.queueTemplateMessage(
+        data.customerPhone,
+        template.id,
+        variables,
+        {
+          priority: 1, // High priority for customer notifications
+          metadata: {
+            event,
+            orderId: data.orderId,
+            awb: data.awb,
+            userId: data.userId,
+          },
+        }
+      );
     } catch (error) {
       captureException(error as Error);
       return {
