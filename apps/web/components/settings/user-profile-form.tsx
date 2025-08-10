@@ -42,6 +42,7 @@ import { UserProfile, useUserOperations } from '@/lib/apis/users';
 // Zod schema for form validation
 const userProfileSchema = z
   .object({
+    wallet_type: z.enum(['WALLET', 'REMITTANCE_WALLET', 'POSTPAID']).optional(),
     // Company Details
     company: z.string().optional(),
     company_name: z.string().optional(),
@@ -65,7 +66,6 @@ const userProfileSchema = z
     // Seller Config
     is_d2c: z.boolean(),
     is_b2b: z.boolean(),
-    is_prepaid: z.boolean(),
     is_cod: z.boolean(),
     is_fw: z.boolean(),
     is_rto: z.boolean(),
@@ -163,6 +163,7 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
   const form = useForm<UserProfileFormData>({
     resolver: zodResolver(userProfileSchema),
     defaultValues: {
+      wallet_type: 'WALLET' as any,
       company: '',
       company_name: '',
       logo_url: '',
@@ -175,7 +176,6 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
       kyc_verified: false,
       is_d2c: true,
       is_b2b: true,
-      is_prepaid: true,
       is_cod: true,
       is_fw: true,
       is_rto: true,
@@ -278,7 +278,6 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
       'acc_type',
       'is_d2c',
       'is_b2b',
-      'is_prepaid',
       'is_cod',
       'is_fw',
       'is_rto',
@@ -312,6 +311,7 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
   useEffect(() => {
     if (profile) {
       const formData: UserProfileFormData = {
+        wallet_type: profile.wallet_type as any,
         company: profile.company || '',
         company_name: profile.company_name || '',
         logo_url: profile.logo_url || '',
@@ -328,7 +328,6 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
         kyc_verified: profile.kyc_verified,
         is_d2c: profile.is_d2c,
         is_b2b: profile.is_b2b,
-        is_prepaid: profile.is_prepaid,
         is_cod: profile.is_cod,
         is_fw: profile.is_fw,
         is_rto: profile.is_rto,
@@ -705,53 +704,37 @@ export function UserProfileForm({ userId, profile }: UserProfileFormProps) {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Wallet className="h-5 w-5" />
-                      Payment Methods
-                    </CardTitle>
-                    <CardDescription>Configure accepted payment methods</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="is_prepaid"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                          <div className="space-y-0.5">
-                            <FormLabel className="text-base">Prepaid Orders</FormLabel>
-                            <FormDescription>Accept prepaid orders</FormDescription>
-                          </div>
-                          <FormControl>
-                            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="is_cod"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                          <div className="space-y-0.5">
-                            <FormLabel className="text-base">Cash on Delivery (COD)</FormLabel>
-                            <FormDescription>Accept COD orders</FormDescription>
-                          </div>
-                          <FormControl>
-                            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
-                <Card className="lg:col-span-2">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
                       <Shield className="h-5 w-5" />
                       Wallet Configuration
                     </CardTitle>
                     <CardDescription>Admin-configured wallet settings</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="wallet_type"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Wallet Type</FormLabel>
+                          <FormControl>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select wallet type" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="WALLET">Wallet</SelectItem>
+                                <SelectItem value="REMITTANCE_WALLET">Remittance Wallet</SelectItem>
+                                <SelectItem value="POSTPAID">Postpaid</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormDescription>Select the type of wallet to be used for the seller</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     <FormField
                       control={form.control}
                       name="max_negative_amount"

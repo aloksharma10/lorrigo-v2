@@ -8,6 +8,7 @@ import {
   OTPVerificationPayload,
   SystemNotification,
   NotificationJob,
+  WhatsAppNotificationPayload,
 } from '@/types/notification';
 import { emailService } from './email';
 import { otpService } from './otp';
@@ -16,12 +17,15 @@ import { captureException } from './sentry';
 import { v4 as uuidv4 } from 'uuid';
 import { redis } from './redis';
 import { APP_CONFIG } from '@/config/app';
+import { WhatsAppService } from './whatsapp';
 
 export class NotificationService {
   private fastify: FastifyInstance;
+  private whatsappService: WhatsAppService;
 
   constructor(fastify: FastifyInstance) {
     this.fastify = fastify;
+    this.whatsappService = new WhatsAppService(fastify);
   }
 
   /**
@@ -80,6 +84,9 @@ export class NotificationService {
         case NotificationType.EMAIL:
           return await this.sendEmailNotification(payload);
 
+        case NotificationType.WHATSAPP:
+          return await this.sendWhatsAppNotification(payload as WhatsAppNotificationPayload);
+
         case NotificationType.SYSTEM:
           return await this.sendSystemNotification(payload);
 
@@ -115,6 +122,48 @@ export class NotificationService {
       return {
         success: false,
         message: 'Failed to send email notification',
+      };
+    }
+  }
+
+  /**
+   * Send WhatsApp notification
+   */
+  private async sendWhatsAppNotification(payload: WhatsAppNotificationPayload): Promise<{ success: boolean; message: string }> {
+    try {
+      if (!this.whatsappService.isConfigured()) {
+        return {
+          success: false,
+          message: 'WhatsApp service is not configured',
+        };
+      }
+
+      let result;
+      
+      if (payload.templateId) {
+        // Send template message
+        result = await this.whatsappService.sendTemplateMessage(
+          payload.phoneNumber,
+          payload.templateId,
+          payload.variables || [],
+          payload.buttonVariables || [],
+          payload.media || ''
+        );
+      } else {
+        // Send text message
+        result = await this.whatsappService.sendTextMessage(
+          payload.phoneNumber,
+          payload.message,
+          payload.media || ''
+        );
+      }
+
+      return result;
+    } catch (error) {
+      captureException(error as Error);
+      return {
+        success: false,
+        message: 'Failed to send WhatsApp notification',
       };
     }
   }
@@ -346,19 +395,23 @@ export class NotificationService {
    */
   async getServiceStatus(): Promise<{
     email: { connected: boolean };
+    whatsapp: { configured: boolean; baseUrl: string; deviceId: string };
     redis: { connected: boolean };
   }> {
     try {
       const emailStatus = await emailService.getStatus();
+      const whatsappStatus = this.whatsappService.getStatus();
 
       return {
         email: { connected: emailStatus.connected },
+        whatsapp: whatsappStatus,
         redis: { connected: redis.status === 'ready' },
       };
     } catch (error) {
       captureException(error as Error);
       return {
         email: { connected: false },
+        whatsapp: { configured: false, baseUrl: '', deviceId: '' },
         redis: { connected: false },
       };
     }

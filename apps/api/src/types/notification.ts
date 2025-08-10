@@ -1,5 +1,6 @@
 export enum NotificationType {
   EMAIL = 'email',
+  WHATSAPP = 'whatsapp',
   SYSTEM = 'system',
 }
 
@@ -138,4 +139,29 @@ export interface NotificationChannel {
   priority: number;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface WhatsAppNotificationPayload extends NotificationPayload {
+  type: NotificationType.WHATSAPP;
+  phoneNumber: string;
+  templateId?: string;
+  variables?: string[];
+  buttonVariables?: string[];
+  media?: string;
+}
+
+export interface TrackingNotificationData {
+  orderId: string;
+  orderNumber: string;
+  customerPhone: string;
+  sellerPhone: string;
+  customerName?: string;
+  itemsDescription?: string;
+  awb?: string;
+  courierName?: string;
+  trackingUrl?: string;
+  edd?: string;
+  ndrReason?: string;
+  userId: string;
+  customerId: string;
 }

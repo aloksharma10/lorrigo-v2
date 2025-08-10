@@ -1,7 +1,14 @@
 import { FastifyInstance } from 'fastify';
 import { NotificationType, OTPType, NotificationPriority } from '@/types/notification';
+import whatsappRoutes from './whatsapp.routes';
+import preferencesRoutes from './preferences.routes';
 
 export default async function notifications(fastify: FastifyInstance) {
+  // Register WhatsApp routes
+  await fastify.register(whatsappRoutes, { prefix: '/whatsapp' });
+  
+  // Register notification preferences routes
+  await fastify.register(preferencesRoutes, { prefix: '/preferences' });
   // Send notification route
   fastify.post('/send', {
     schema: {

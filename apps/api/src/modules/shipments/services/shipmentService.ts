@@ -28,9 +28,12 @@ import { format } from 'date-fns';
 import { TransactionService, TransactionType, TransactionEntityType } from '@/modules/transactions/services/transaction-service';
 import { JobType } from '../queues/shipmentQueue';
 import { ChargeProcessingService } from './charge-processing.service';
+import { TrackingNotificationService } from '@/lib/tracking-notifications';
+import { NDRNotificationService } from './ndr-notification.service';
 import { TransactionJobType } from '@/modules/transactions/queues/transaction-worker';
 import { RateCalculationParams } from '@/modules/plan/services/plan.service';
 import { getPincodeDetails } from '@/utils/pincode';
+import { WhatsAppQueueService } from '@/lib/whatsapp-queue.service';
 
 // Define the interface for the extended FastifyInstance
 interface ExtendedFastifyInstance extends FastifyInstance {
@@ -50,6 +53,9 @@ export class ShipmentService {
   private fastify: ExtendedFastifyInstance;
   private transactionService: TransactionService;
   private chargeProcessingService: ChargeProcessingService;
+  private trackingNotificationService: TrackingNotificationService;
+  private ndrNotificationService: NDRNotificationService;
+  private whatsappQueueService: WhatsAppQueueService;
   constructor(
     fastify: FastifyInstance,
     private orderService: OrderService
@@ -58,6 +64,9 @@ export class ShipmentService {
     this.vendorService = new VendorService(fastify);
     this.transactionService = new TransactionService(fastify);
     this.chargeProcessingService = new ChargeProcessingService(fastify);
+    this.trackingNotificationService = new TrackingNotificationService(fastify);
+    this.ndrNotificationService = new NDRNotificationService(fastify);
+    this.whatsappQueueService = new WhatsAppQueueService(fastify);
 
     this.fastify.redis
       .flushall()
@@ -636,6 +645,23 @@ export class ShipmentService {
           delay: 0,
         }
       );
+
+              // Queue WhatsApp notification for courier assignment
+        try {
+          await this.whatsappQueueService.queueTemplateMessage(
+            order.customer.phone,
+            process.env.WHATSAPP_TEMPLATE_READY_FOR_DISPATCH || '',
+            [
+              order.customer.name || 'Customer',
+              order.code,
+              'your items', // TODO: Get actual items from order
+              courier.name,
+            ],
+            { priority: 1 }
+          );
+        } catch (whatsappError) {
+          this.fastify.log.error('Failed to queue WhatsApp notification:', whatsappError);
+        }
 
       // Step 8: Return immediate response with preliminary data
       return {
@@ -1929,10 +1955,52 @@ export class ShipmentService {
           updateData.picked_up_date = eventTimestamp;
         }
 
-        await this.fastify.prisma.shipment.update({
+        // Get full shipment data for notifications
+        const updatedShipment = await this.fastify.prisma.shipment.update({
           where: { id: shipmentId },
           data: updateData,
+          include: {
+            order: {
+              include: {
+                customer: {
+                  select: { id: true, phone: true, name: true }
+                },
+                user: {
+                  select: { phone: true }
+                },
+                items: {
+                  select: { name: true, units: true }
+                }
+              }
+            },
+            courier: {
+              select: { name: true }
+            }
+          },
         });
+
+        // Send tracking notifications
+        try {
+          await this.trackingNotificationService.handleShipmentStatusChange(
+            shipmentId,
+            shipment.status,
+            status_code as ShipmentStatus,
+            {
+              awb: updatedShipment.awb!,
+              order: {
+                id: updatedShipment.order.id,
+                code: updatedShipment.order.code,
+                user_id: updatedShipment.order.user_id,
+                customer: updatedShipment.order.customer,
+                items: updatedShipment.order.items,
+              },
+              courier: updatedShipment.courier,
+              edd: updatedShipment.edd || undefined,
+            }
+          );
+        } catch (notificationError) {
+          this.fastify.log.error('Failed to send tracking notifications:', notificationError);
+        }
 
         // If status changed to RTO, schedule RTO charges processing
         if (newStatus.includes('RTO')) {
@@ -2025,6 +2093,19 @@ export class ShipmentService {
           action_taken: false,
         },
       });
+
+      // Queue NDR notification to seller (optimized for low latency)
+      try {
+        await this.ndrNotificationService.queueNDRNotification(ndr.id, {
+          orderId: ndr.order_id || undefined,
+          shipmentId: ndr.shipment_id || undefined,
+          awb: ndr.awb,
+          userId: shipment.order.user_id,
+          priority: 2, // High priority
+        });
+      } catch (notificationError) {
+        this.fastify.log.error('Failed to queue NDR notification:', notificationError);
+      }
 
       return {
         success: true,
@@ -2237,6 +2318,17 @@ export class ShipmentService {
           }
           message = 'Shipment has been cancelled';
           break;
+      }
+
+      // Send notification about the action taken
+      try {
+        await this.ndrNotificationService.handleNDRActionTaken(
+          ndrId,
+          actionType,
+          comment
+        );
+      } catch (notificationError) {
+        this.fastify.log.error('Failed to send NDR action notification:', notificationError);
       }
 
       return {

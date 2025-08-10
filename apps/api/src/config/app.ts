@@ -123,6 +123,20 @@ export const APP_CONFIG = {
     },
   },
 
+  // WhatsApp settings
+  WHATSAPP: {
+    API_URL: process.env.WHATSAPP_API_URL || 'https://web.wabridge.com/api',
+    APP_KEY: process.env.WHATSAPP_APP_KEY || '',
+    AUTH_KEY: process.env.WHATSAPP_AUTH_KEY || '',
+    DEVICE_ID: process.env.WHATSAPP_DEVICE_ID || 'DEVICE_ID',
+
+    TEMPLATE_READY_FOR_DISPATCH: process.env.WHATSAPP_TEMPLATE_READY_FOR_DISPATCH || '',
+    TEMPLATE_ORDER_SHIPPED: process.env.WHATSAPP_TEMPLATE_ORDER_SHIPPED || '',
+    TEMPLATE_OUT_FOR_DELIVERY: process.env.WHATSAPP_TEMPLATE_OUT_FOR_DELIVERY || '',
+    TEMPLATE_ORDER_DELIVERED: process.env.WHATSAPP_TEMPLATE_ORDER_DELIVERED || '',
+    TEMPLATE_NDR_NOTIFICATION: process.env.WHATSAPP_TEMPLATE_NDR_NOTIFICATION || '',
+  },
+
   // Frontend URL for redirects
   FRONTEND_URL: process.env.FRONTEND_URL || 'https://app.lorrigo.com',
 };

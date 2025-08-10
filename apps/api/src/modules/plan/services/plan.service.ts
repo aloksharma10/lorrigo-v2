@@ -436,6 +436,8 @@ export class PlanService {
       return null;
     }
 
+    await Promise.all([flushKeysByPattern(`serviceability-${userId}-*`), flushKeysByPattern(`rates-${userId}-*`)]);
+
     // Assign plan to user
     return this.fastify.prisma.user.update({
       where: { id: userId },

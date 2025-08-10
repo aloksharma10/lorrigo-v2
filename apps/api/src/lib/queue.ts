@@ -7,6 +7,7 @@ import { FastifyInstance } from 'fastify';
 export enum QueueNames {
   SHIPMENT_TRACKING = 'shipment-tracking',
   NOTIFICATION = 'notification',
+  WHATSAPP_NOTIFICATION = 'whatsapp-notification',
   BULK_OPERATION = 'bulk-operation',
   BULK_ORDER_UPLOAD = 'bulk-order-upload',
   REPORT_GENERATION = 'report-generation',
@@ -61,6 +62,21 @@ export const queues = {
       ...queueConfig.defaultJobOptions,
       // Notifications should be processed quickly
       priority: 2,
+    },
+  }),
+  [QueueNames.WHATSAPP_NOTIFICATION]: new Queue(QueueNames.WHATSAPP_NOTIFICATION, {
+    ...connectionOptions,
+    defaultJobOptions: {
+      ...queueConfig.defaultJobOptions,
+      // WhatsApp notifications are high priority but can be async
+      priority: 1,
+      attempts: 5, // More retries for external API calls
+      backoff: {
+        type: 'exponential',
+        delay: 2000, // Longer delay for external API failures
+      },
+      removeOnComplete: 100, // Keep successful jobs for monitoring
+      removeOnFail: 500, // Keep failed jobs for debugging
     },
   }),
   [QueueNames.BULK_OPERATION]: new Queue(QueueNames.BULK_OPERATION, {

@@ -2,6 +2,7 @@ import { FastifyPluginAsync } from 'fastify';
 import fp from 'fastify-plugin';
 import { NotificationService } from '@/lib/notification';
 import { createNotificationWorker } from '@/jobs/notification-worker';
+import { createWhatsAppNotificationWorker } from '@/jobs/whatsapp-notification-worker';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -41,8 +42,9 @@ const notificationPlugin: FastifyPluginAsync = async (fastify) => {
   // Initialize notification service
   const notificationService = new NotificationService(fastify);
 
-  // Initialize notification worker
+  // Initialize notification workers
   const notificationWorker = createNotificationWorker(fastify);
+  const whatsAppNotificationWorker = createWhatsAppNotificationWorker(fastify);
 
   // Decorate fastify instance with notification object
   fastify.decorate('notification', {
@@ -123,9 +125,12 @@ const notificationPlugin: FastifyPluginAsync = async (fastify) => {
     },
   });
 
-  // Add hook to gracefully close notification worker on server shutdown
+  // Add hook to gracefully close notification workers on server shutdown
   fastify.addHook('onClose', async () => {
-    await notificationWorker.close();
+    await Promise.all([
+      notificationWorker.close(),
+      whatsAppNotificationWorker.close(),
+    ]);
   });
 
   console.log('Notification plugin registered');

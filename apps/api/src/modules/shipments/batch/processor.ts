@@ -8,6 +8,7 @@ import pLimit from 'p-limit';
 import { TrackingEventData } from '@/types/vendor';
 import { JobType } from '../queues/shipmentQueue';
 import { ChargeProcessingService } from '../services/charge-processing.service';
+import { TrackingNotificationService } from '@/lib/tracking-notifications';
 
 /**
  * Tracking processor configuration

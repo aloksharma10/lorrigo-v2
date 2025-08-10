@@ -674,16 +674,6 @@ export class ShopifyController {
 
       // Parse the webhook payload
       const payload: ShopifyCustomerDataRequestPayload = this.webhookService.parseCustomerDataRequestPayload(bodyString);
-
-      console.log('[SHOPIFY] Customer data request payload:', {
-        shop_id: payload.shop_id,
-        shop_domain: payload.shop_domain,
-        customer_id: payload.customer.id,
-        customer_email: payload.customer.email,
-        orders_requested: payload.orders_requested.length,
-        data_request_id: payload.data_request.id,
-      });
-
       // Get shop connection
       const connection = await this.connectionService.getConnectionByShop(
         '', // We'll need to get user ID from shop domain

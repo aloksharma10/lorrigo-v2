@@ -7,6 +7,7 @@ import { useAuthToken } from '@/components/providers/token-provider';
 export interface UserProfile {
   id: string;
   user_id: string;
+  wallet_type: 'WALLET' | 'REMITTANCE_WALLET' | 'POSTPAID';
 
   // Company Details
   company?: string;

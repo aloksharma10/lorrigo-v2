@@ -279,6 +279,7 @@ export class UsersController {
       const updatedProfile = await prisma.userProfile.upsert({
         where: { user_id: id },
         update: {
+          wallet_type: profileData.wallet_type,
           // Company Details
           company: profileData.company,
           company_name: profileData.company_name,
