@@ -41,7 +41,6 @@ export class TrackingNotificationService {
 
       // Get template for the event
       const templateKey = this.getCustomerTemplateKey(event);
-      console.log(templateKey, 'templateKey');
       const template = WhatsAppTemplates[templateKey];
       
       if (!template.id) {
@@ -60,6 +59,7 @@ export class TrackingNotificationService {
         template.id,
         variables,
         {
+          buttonVariables: [data.awb!],
           priority: 1, // High priority for customer notifications
           metadata: {
             event,
@@ -322,6 +322,7 @@ export class TrackingNotificationService {
           orderNumber,
           itemsDescription,
           courierName,
+          edd
         ];
       case 'picked_up':
         // order_shipped: {{1}} name, {{2}} order number, {{3}} items, {{4}} courier, {{5}} expected delivery

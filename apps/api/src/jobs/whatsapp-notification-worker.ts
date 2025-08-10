@@ -4,7 +4,6 @@ import { QueueNames } from '@/lib/queue';
 import { redis } from '@/lib/redis';
 import { WhatsAppService } from '@/lib/whatsapp';
 import { captureException } from '@/lib/sentry';
-import { TrackingNotificationData } from '@/types/notification';
 import { APP_CONFIG } from '@/config/app';
 
 // WhatsApp notification job types

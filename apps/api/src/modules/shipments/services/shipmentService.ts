@@ -654,8 +654,9 @@ export class ShipmentService {
             order.code,
             order.items?.map((item: any) => item.name).join(', ') || 'your items',
             courier.name,
+            selectedCourierRate.etd ? formatDateAddDays(selectedCourierRate.etd) : '',
           ],
-          { priority: 1 }
+          { buttonVariables: [vendorResult.awb], priority: 1 }
         );
       } catch (whatsappError) {
         this.fastify.log.error('Failed to queue WhatsApp notification:', whatsappError);

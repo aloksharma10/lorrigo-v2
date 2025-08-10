@@ -80,6 +80,8 @@ export class WhatsAppService {
         timeout: 30000, // 30 seconds timeout
       });
 
+      console.log(response.data, 'response');
+
       // Check if the response indicates success
       if (response.data?.success !== false) {
         return {
