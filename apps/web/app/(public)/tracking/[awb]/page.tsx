@@ -103,7 +103,7 @@ export default function PublicTrackingPage() {
 
   return (
     <div className="container mx-auto max-w-6xl p-6">
-       <LorrigoLogo className="lg:h-24 lg:w-56 mb-4" />
+       <LorrigoLogo className="lg:h-16 lg:w-56 mb-4" />
       <Card className="shadow-sm">
         <CardHeader className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
@@ -113,7 +113,7 @@ export default function PublicTrackingPage() {
           <div className="grid w-full grid-cols-1 gap-4 text-sm text-muted-foreground sm:grid-cols-3">
             <div className="space-y-1">
               <div className="font-medium text-foreground">{data.awb}</div>
-              <div className="text-xs">via {data.courier_name || "Courier"}</div>
+              <div className="text-xs">via {data.courier_name?.split(" ")[0] || "Courier"}</div>
             </div>
             <div className="space-y-1 sm:text-center">
               <div className="font-medium text-foreground">Current Location</div>
