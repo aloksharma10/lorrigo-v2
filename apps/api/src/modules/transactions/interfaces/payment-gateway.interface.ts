@@ -56,6 +56,21 @@ export interface PaymentGatewayInterface {
    * @returns Boolean indicating if signature is valid
    */
   verifyWebhookSignature?(signature: string, payload: string, timestamp?: string): boolean;
+
+  /**
+   * Create a refund on the gateway for a successful order
+   */
+  createRefund?(params: {
+    orderId: string; // merchantTransactionId we used as order_id
+    refundId: string; // unique id we generate
+    amount: number; // refund amount
+    reason?: string;
+  }): Promise<PaymentRefundResponse>;
+
+  /**
+   * Fetch refund status
+   */
+  fetchRefundStatus?(orderId: string, refundId: string): Promise<PaymentRefundResponse>;
 }
 
 /**
@@ -99,6 +114,17 @@ export interface PaymentCallbackResponse {
   merchantTransactionId?: string;
   gatewayReference?: string;
   paymentStatus: 'SUCCESS' | 'FAILURE' | 'PENDING';
+  data?: any;
+  error?: string;
+}
+
+/**
+ * Refund response
+ */
+export interface PaymentRefundResponse {
+  success: boolean;
+  refundId?: string;
+  status?: 'PENDING' | 'SUCCESS' | 'FAILURE';
   data?: any;
   error?: string;
 }

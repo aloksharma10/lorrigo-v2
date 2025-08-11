@@ -5,7 +5,8 @@ import {
   PaymentLinkResponse, 
   PaymentStatusResponse, 
   PaymentCallbackResponse, 
-  PaymentSessionResponse
+  PaymentSessionResponse,
+  PaymentRefundResponse,
 } from '../interfaces/payment-gateway.interface';
 import { APP_CONFIG } from '@/config/app';
 
@@ -30,6 +31,39 @@ export class CashfreeService implements PaymentGatewayInterface {
       APP_CONFIG.CASHFREE.CLIENT_ID,
       APP_CONFIG.CASHFREE.CLIENT_SECRET
     );
+  }
+
+  /**
+   * Create refund for an order
+   */
+  async createRefund(params: { orderId: string; refundId: string; amount: number; reason?: string }): Promise<PaymentRefundResponse> {
+    try {
+      const payload: any = {
+        refund_amount: params.amount,
+        refund_id: params.refundId,
+        refund_note: params.reason || 'Auto refund for wallet credit failure',
+      };
+      const resp = await (this.cashfree as any).PGOrderCreateRefund(params.orderId, payload);
+      const data = resp?.data || {};
+      return { success: true, refundId: data.refund_id || params.refundId, status: (data.refund_status || 'PENDING').toUpperCase() };
+    } catch (error: any) {
+      this.fastify.log.error(`Error creating refund: ${error?.message || error}`);
+      return { success: false, error: error?.message || 'Failed to create refund' };
+    }
+  }
+
+  /**
+   * Fetch refund status
+   */
+  async fetchRefundStatus(orderId: string, refundId: string): Promise<PaymentRefundResponse> {
+    try {
+      const resp = await (this.cashfree as any).PGOrderFetchRefund(orderId, refundId);
+      const data = resp?.data || {};
+      return { success: true, refundId: data.refund_id || refundId, status: (data.refund_status || 'PENDING').toUpperCase(), data };
+    } catch (error: any) {
+      this.fastify.log.error(`Error fetching refund status: ${error?.message || error}`);
+      return { success: false, error: error?.message || 'Failed to fetch refund status' };
+    }
   }
 
    /**
@@ -193,8 +227,6 @@ export class CashfreeService implements PaymentGatewayInterface {
 
       // Then try link (payment link flow)
       const response = await this.cashfree.PGFetchLink(merchantTransactionId);
-
-      console.log(response.data, 'response.data')
 
       if (response && response.data) {
         const orderData = response.data as any;

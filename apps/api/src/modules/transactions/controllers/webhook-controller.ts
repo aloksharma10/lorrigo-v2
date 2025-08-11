@@ -19,8 +19,8 @@ export class WebhookController {
    */
   async handleCashfreeWebhook(request: FastifyRequest, reply: FastifyReply) {
     try {
-      const signature = request.headers['x-webhook-signature'] as string;
-      const timestamp = request.headers['x-webhook-timestamp'] as string;
+      const signature = (request.headers['x-webhook-signature'] || request.headers['x-webhook-signature-v2']) as string;
+      const timestamp = (request.headers['x-webhook-timestamp'] || request.headers['x-webhook-timestamp-v2']) as string;
       const rawBody = JSON.stringify(request.body);
 
       // Verify webhook signature
@@ -37,10 +37,12 @@ export class WebhookController {
       // Process the webhook based on type
       const { type, data } = webhookData;
 
-      switch (type) {
+      switch ((type || webhookData?.event)?.toString()) {
         case 'PAYMENT_SUCCESS_WEBHOOK':
         case 'PAYMENT_FAILED_WEBHOOK':
         case 'PAYMENT_USER_DROPPED_WEBHOOK':
+        case 'ORDER.PAID':
+        case 'ORDER.FAILED':
           await this.handlePaymentWebhook(data, request);
           break;
         default:
@@ -60,27 +62,29 @@ export class WebhookController {
    * @param request Fastify request for logging
    */
   private async handlePaymentWebhook(paymentData: any, request: FastifyRequest) {
-    const { orderId, txStatus } = paymentData;
+    const { orderId, txStatus, order_id, order_status } = paymentData || {};
+    const id = orderId || order_id;
+    const status = (txStatus || order_status || '').toString().toUpperCase();
 
-    if (!orderId) {
+    if (!id) {
       request.log.warn('Missing orderId in payment webhook data');
       return;
     }
 
     try {
       // Check if this is a wallet recharge transaction
-      if (orderId.startsWith('WT-')) {
-        await this.transactionService.verifyWalletRecharge(orderId);
-        request.log.info(`Processed wallet recharge webhook for transaction: ${orderId}`);
+      if (id.startsWith('WT-')) {
+        await this.transactionService.verifyWalletRecharge(id);
+        request.log.info(`Processed wallet recharge webhook for transaction: ${id} [${status}]`);
       }
       // Check if this is an invoice payment transaction
-      else if (orderId.startsWith('IV-')) {
+      else if (id.startsWith('IV-')) {
         // For invoice payments, we need to extract invoice ID from order meta or use a different approach
         // Since we can't easily get the invoice ID from webhook, we'll handle this in the verification endpoint
-        request.log.info(`Received invoice payment webhook for transaction: ${orderId}`);
+        request.log.info(`Received invoice payment webhook for transaction: ${id} [${status}]`);
       }
       else {
-        request.log.warn(`Unknown transaction type for order: ${orderId}`);
+        request.log.warn(`Unknown transaction type for order: ${id}`);
       }
     } catch (error) {
       request.log.error(`Error processing payment webhook for order ${orderId}: ${error}`);

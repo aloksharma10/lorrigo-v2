@@ -5,6 +5,7 @@ import { Queue } from 'bullmq';
 import { QueueNames } from '@/lib/queue';
 import { PaymentGatewayFactory } from './payment-gateway.factory';
 import { PaymentGatewayType } from '../interfaces/payment-gateway.interface';
+import { TransactionJobType } from '../queues/transaction-worker';
 
 /**
  * Type definitions for transaction service
@@ -79,8 +80,8 @@ export class TransactionService {
     this.prisma = fastify.prisma;
 
     // Try to get the queue from fastify instance if available
-    if (fastify.queues && fastify.queues[QueueNames.BULK_OPERATION]) {
-      this.transactionQueue = fastify.queues[QueueNames.BULK_OPERATION];
+    if (fastify.queues && fastify.queues[QueueNames.TRANSACTION_QUEUE]) {
+      this.transactionQueue = fastify.queues[QueueNames.TRANSACTION_QUEUE];
     }
   }
 
@@ -801,12 +802,28 @@ export class TransactionService {
           },
         });
 
+        // enqueue a refund check job to re-verify and refund if needed later
+        await this.enqueueRefundCheck({ merchantTransactionId, userId: transaction.user_id, attempt: 1 });
         return {
           success: false,
           transaction: updatedTransaction,
           error: 'Transaction is pending',
         };
       } else {
+        // Attempt auto-refund if gateway shows success but wallet credit failed or if user reports deduction
+        try {
+          const paymentGateway = PaymentGatewayFactory.getPaymentGateway(PaymentGatewayType.CASHFREE, this.fastify);
+          const refundId = `RF-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+          await (paymentGateway as any).createRefund?.({
+            orderId: merchantTransactionId,
+            refundId,
+            amount: transaction.amount,
+            reason: 'Auto refund: wallet credit failed',
+          });
+        } catch (e) {
+          this.fastify.log.error(`Auto-refund failure for ${merchantTransactionId}: ${e}`);
+        }
+
         // Mark transaction as failed
         const updatedTransaction = await this.prisma.walletRechargeTransaction.update({
           where: { id: transaction.id },
@@ -825,6 +842,75 @@ export class TransactionService {
     } catch (error) {
       this.fastify.log.error(`Error verifying wallet recharge: ${error}`);
       return { success: false, error: 'Failed to verify wallet recharge' };
+    }
+  }
+
+  /**
+   * Enqueue refund check job
+   */
+  private async enqueueRefundCheck(payload: { merchantTransactionId: string; userId: string; attempt: number }) {
+    try {
+      if (!this.transactionQueue) return;
+      await this.transactionQueue.add(
+        TransactionJobType.REFUND_CHECK,
+        payload,
+        {
+          delay: Math.min(5, payload.attempt) * 60 * 1000, // 1-5 minutes backoff
+          attempts: 1,
+          removeOnComplete: true,
+          removeOnFail: 50,
+        }
+      );
+    } catch (e) {
+      this.fastify.log.error(`Failed to enqueue refund check: ${e}`);
+    }
+  }
+
+  /**
+   * Worker entrypoint for refund check job
+   */
+  async processRefundCheck(data: { merchantTransactionId: string; userId: string; attempt: number }) {
+    const { merchantTransactionId, userId, attempt } = data;
+    try {
+      const tx = await this.prisma.walletRechargeTransaction.findUnique({ where: { merchant_transaction_id: merchantTransactionId } });
+      if (!tx) return { success: false, error: 'Transaction not found' };
+      if (tx.status !== TransactionStatus.PENDING) return { success: true, message: 'No action needed' };
+
+      const paymentGateway = PaymentGatewayFactory.getPaymentGateway(PaymentGatewayType.CASHFREE, this.fastify);
+      const status = await paymentGateway.checkPaymentStatus(merchantTransactionId);
+
+      if (status.success && status.paymentStatus === 'SUCCESS') {
+        // complete now
+        await this.verifyWalletRecharge(merchantTransactionId, 'SUCCESS');
+        return { success: true, message: 'Completed on retry' };
+      }
+
+      if (attempt >= 3) {
+        // final attempt – refund
+        try {
+          const refundId = `RF-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+          await (paymentGateway as any).createRefund?.({
+            orderId: merchantTransactionId,
+            refundId,
+            amount: tx.amount,
+            reason: 'Auto refund after retry',
+          });
+        } catch (e) {
+          this.fastify.log.error(`Refund create failed on final attempt: ${e}`);
+        }
+        await this.prisma.walletRechargeTransaction.update({
+          where: { id: tx.id },
+          data: { status: TransactionStatus.FAILED },
+        });
+        return { success: true, message: 'Refund initiated' };
+      }
+
+      // schedule next attempt
+      await this.enqueueRefundCheck({ merchantTransactionId, userId, attempt: attempt + 1 });
+      return { success: true, message: 'Rescheduled' };
+    } catch (e) {
+      this.fastify.log.error(`processRefundCheck error: ${e}`);
+      return { success: false, error: 'Internal error' };
     }
   }
 

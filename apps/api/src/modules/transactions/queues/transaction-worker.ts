@@ -7,6 +7,7 @@ import { APP_CONFIG } from '@/config/app';
 
 export enum TransactionJobType {
   BULK_PROCESS_TRANSACTIONS = 'bulk-process-transactions',
+  REFUND_CHECK = 'refund-check',
 }
 /**
  * Worker for processing transaction-related background jobs
@@ -25,6 +26,8 @@ export class TransactionWorker {
         switch (job.name) {
           case TransactionJobType.BULK_PROCESS_TRANSACTIONS:
             return this.transactionService.processBulkTransactions(job.data.transactions, job.data.entityType);
+          case TransactionJobType.REFUND_CHECK:
+            return this.transactionService.processRefundCheck(job.data);
           default:
             return { success: false, error: 'Unknown job type' };
         }
