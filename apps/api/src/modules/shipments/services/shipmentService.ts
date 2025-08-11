@@ -755,8 +755,8 @@ export class ShipmentService {
     // Verify shipment exists and belongs to user
     const shipment = await this.fastify.prisma.shipment.findFirst({
       where: {
-        id,
-        user_id: user_id,
+        order_id: id,
+        // user_id: user_id,
       },
     });
 
@@ -767,7 +767,7 @@ export class ShipmentService {
     // Get tracking events
     const tracking_events = await this.fastify.prisma.trackingEvent.findMany({
       where: {
-        shipment_id: id,
+        shipment_id: shipment.id,
       },
       orderBy: {
         timestamp: 'desc',
@@ -2031,6 +2031,112 @@ export class ShipmentService {
         message: `Error tracking shipment: ${error instanceof Error ? error.message : 'Unknown error'}`,
         updated: false,
       };
+    }
+  }
+
+  /**
+   * Public: Fetch shipment tracking by AWB without authentication
+   */
+  async getPublicTrackingByAwb(awb: string): Promise<{
+    success: boolean;
+    statusCode?: number;
+    message?: string;
+    data?: {
+      awb: string;
+      courier_name: string | null;
+      status: string;
+      bucket?: number | null;
+      edd?: string | null;
+      order_code?: string | null;
+      branding?: {
+        name: string;
+        seller_name?: string | null;
+        user_name?: string | null;
+        hub_name?: string | null;
+        logo_url?: string | null;
+      };
+      events: Array<{
+        status: string | null;
+        description: string | null;
+        location: string | null;
+        timestamp: string;
+        bucket?: number | null;
+      }>;
+    };
+  }> {
+    try {
+      // Find shipment by AWB
+      const shipment = await this.fastify.prisma.shipment.findFirst({
+        where: { awb },
+        include: {
+          order: {
+            select: {
+              code: true,
+              user_id: true,
+              user: { select: { id: true, name: true } },
+              hub: { select: { name: true } },
+              seller_details: { select: { seller_name: true } },
+            },
+          },
+          courier: { select: { name: true, channel_config: true } },
+        },
+      });
+
+      if (!shipment) {
+        return { success: false, statusCode: 404, message: 'Shipment not found' };
+      }
+
+      // Fetch user profile for logo
+      let logoUrl: string | null = null;
+      if (shipment.order?.user_id) {
+        const profile = await this.fastify.prisma.userProfile.findUnique({
+          where: { user_id: shipment.order.user_id },
+          select: { logo_url: true },
+        });
+        logoUrl = profile?.logo_url || null;
+      }
+
+      // Fetch tracking events
+      const events = await this.fastify.prisma.trackingEvent.findMany({
+        where: { shipment_id: shipment.id },
+        orderBy: { timestamp: 'asc' },
+      });
+
+      const brandName =
+        shipment.order?.seller_details?.seller_name ||
+        shipment.order?.user?.name ||
+        shipment.order?.hub?.name ||
+        'Your Company';
+
+      const eventsToUse = events as Array<{ status: string | null; description: string | null; location: string | null; timestamp: Date | string; bucket?: number | null }>;
+
+      const data = {
+        awb: shipment.awb || awb,
+        courier_name: shipment.courier?.name || null,
+        status: shipment.status,
+        bucket: shipment.bucket,
+        edd: shipment.edd ? shipment.edd.toISOString().split('T')[0] : null,
+        order_code: shipment.order?.code || null,
+        branding: {
+          name: brandName,
+          seller_name: shipment.order?.seller_details?.seller_name || null,
+          user_name: shipment.order?.user?.name || null,
+          hub_name: shipment.order?.hub?.name || null,
+          logo_url: logoUrl,
+        },
+        events: eventsToUse.map((e) => ({
+          status: e.status,
+          description: e.description,
+          location: e.location,
+          timestamp: (e as any).timestamp?.toISOString?.() || new Date((e as any).timestamp).toISOString(),
+          bucket: (e as any).bucket as any,
+        })),
+      };
+
+      return { success: true, data };
+    } catch (error) {
+      this.fastify.log.error('Error in getPublicTrackingByAwb:', error);
+      return { success: false, statusCode: 500, message: 'Failed to fetch tracking' };
     }
   }
 

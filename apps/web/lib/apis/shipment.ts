@@ -396,6 +396,36 @@ export const useShippingOperations = () => {
   };
 };
 
+export interface PublicTrackingEvent {
+  status: string | null;
+  description: string | null;
+  location: string | null;
+  timestamp: string;
+  bucket?: number | null;
+}
+
+export interface PublicTrackingResponse {
+  awb: string;
+  courier_name: string | null;
+  status: string;
+  bucket?: number | null;
+  edd?: string | null;
+  order_code?: string | null;
+  branding?: {
+    name: string;
+    seller_name?: string | null;
+    user_name?: string | null;
+    hub_name?: string | null;
+    logo_url?: string | null;
+  };
+  events: PublicTrackingEvent[];
+}
+
+export async function fetchPublicTrackingByAwb(awb: string): Promise<PublicTrackingResponse> {
+  const data = await api.get<PublicTrackingResponse>(`/shipments/public/tracking/${encodeURIComponent(awb)}`);
+  return data as unknown as PublicTrackingResponse;
+}
+
 // Download bulk labels (PDF)
 // export async function downloadBulkLabels({
 //   shipmentIds,

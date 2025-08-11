@@ -1,9 +1,9 @@
 import Image from 'next/image';
 
-export function LorrigoLogo() {
+export function LorrigoLogo({ className }: { className?: string }) {
   return (
     <div>
-      <Image src="/lorrigo-logo.png" alt="Lorrigo Logo" width={100} height={100} />
+      <Image src="/lorrigo-logo.png" alt="Lorrigo Logo" width={100} height={100} className={className} />
     </div>
   );
 }

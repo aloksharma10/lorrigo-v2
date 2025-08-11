@@ -136,8 +136,8 @@ export class ShipmentController {
    */
   async getTrackingEvents(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
     try {
-      // Check if user is authenticated
-      await checkAuth(request, reply);
+      // // Check if user is authenticated
+      // await checkAuth(request, reply);
 
       const { id } = request.params;
       const user_id = request.userPayload!.id;
@@ -149,6 +149,26 @@ export class ShipmentController {
       }
 
       return reply.send(result.tracking_events);
+    } catch (error) {
+      request.log.error(error);
+      return reply.code(500).send({ error: 'Internal Server Error' });
+    }
+  }
+
+  /**
+   * Public: Get tracking by AWB (no auth required)
+   */
+  async getPublicTrackingByAwb(request: FastifyRequest<{ Params: { awb: string } }>, reply: FastifyReply) {
+    try {
+      const { awb } = request.params;
+
+      const result = await this.shipmentService.getPublicTrackingByAwb(awb);
+
+      if (!result.success) {
+        return reply.code(result.statusCode || 400).send({ error: result.message });
+      }
+
+      return reply.send(result.data);
     } catch (error) {
       request.log.error(error);
       return reply.code(500).send({ error: 'Internal Server Error' });

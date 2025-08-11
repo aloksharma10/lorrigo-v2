@@ -64,12 +64,21 @@ async function setupOptimizedTrackingCron(fastify: FastifyInstance) {
 export * from './utils/label-manifest-generator';
 
 export async function shipmentRoutes(fastify: FastifyInstance) {
-  fastify.addHook('onRequest', fastify.authenticate);
-
   // Initialize services
   const orderService = new OrderService(fastify);
   const shipmentService = new ShipmentService(fastify, orderService);
   const vendorService = new VendorService(fastify);
+  const shipmentController = new ShipmentController(shipmentService);
+
+  // Public route: tracking by AWB (no auth)
+  fastify.get<{ Params: { awb: string } }>(
+    '/public/tracking/:awb',
+    {},
+    shipmentController.getPublicTrackingByAwb.bind(shipmentController)
+  );
+
+  // From here on, protect routes
+  fastify.addHook('onRequest', fastify.authenticate);
 
   // Initialize the shipment queue
   initShipmentQueue(fastify, shipmentService, vendorService);
@@ -83,9 +92,6 @@ export async function shipmentRoutes(fastify: FastifyInstance) {
   await addJob(QueueNames.SHIPMENT_TRACKING, JobType.PROCESS_UNMAPPED_STATUSES, { initial: true }, { delay: 10000 });
 
   await addJob(QueueNames.SHIPMENT_TRACKING, JobType.PROCESS_EDD_UPDATES, { initial: true }, { delay: 15000 });
-
-  // Create controller instance
-  const shipmentController = new ShipmentController(shipmentService);
 
   // Shipment routes
   fastify.post(
