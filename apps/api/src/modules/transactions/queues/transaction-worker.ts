@@ -8,6 +8,7 @@ import { APP_CONFIG } from '@/config/app';
 export enum TransactionJobType {
   BULK_PROCESS_TRANSACTIONS = 'bulk-process-transactions',
   REFUND_CHECK = 'refund-check',
+  ABANDONED_SWEEP = 'abandoned-sweep',
 }
 /**
  * Worker for processing transaction-related background jobs
@@ -28,6 +29,8 @@ export class TransactionWorker {
             return this.transactionService.processBulkTransactions(job.data.transactions, job.data.entityType);
           case TransactionJobType.REFUND_CHECK:
             return this.transactionService.processRefundCheck(job.data);
+          case TransactionJobType.ABANDONED_SWEEP:
+            return this.transactionService.sweepAbandonedPendingTransactions();
           default:
             return { success: false, error: 'Unknown job type' };
         }
@@ -65,6 +68,25 @@ export class TransactionWorker {
       await this.worker.close();
       fastify.log.info('Transaction worker closed');
     });
+
+    // Schedule periodic abandoned sweep if queue available
+    try {
+      const queue = (fastify as any).queues?.[QueueNames.TRANSACTION_QUEUE];
+      if (queue) {
+        queue.add(
+          TransactionJobType.ABANDONED_SWEEP,
+          {},
+          {
+            repeat: { every: 5 * 60 * 1000 }, // every 5 minutes
+            removeOnComplete: true,
+            removeOnFail: 10,
+          }
+        );
+        fastify.log.info('Scheduled ABANDONED_SWEEP repeat job');
+      }
+    } catch (e) {
+      fastify.log.error(`Failed to schedule ABANDONED_SWEEP: ${e}`);
+    }
   }
 }
 

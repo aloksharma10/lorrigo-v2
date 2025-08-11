@@ -731,7 +731,11 @@ export class TransactionService {
    * @param gatewayReference Gateway reference ID (optional)
    * @returns Updated transaction details
    */
-  async verifyWalletRecharge(merchantTransactionId: string, paymentStatus?: 'SUCCESS' | 'PENDING' | 'FAILURE', gatewayReference?: string) {
+  async verifyWalletRecharge(
+    merchantTransactionId: string,
+    paymentStatus?: 'SUCCESS' | 'PENDING' | 'FAILURE',
+    _gatewayReference?: string
+  ) {
     try {
       // Find the pending transaction
       const transaction = await this.prisma.walletRechargeTransaction.findUnique({
@@ -758,11 +762,12 @@ export class TransactionService {
       // Use the payment gateway factory to get Cashfree service
       const paymentGateway = PaymentGatewayFactory.getPaymentGateway(PaymentGatewayType.CASHFREE, this.fastify);
 
-      // Verify payment status with Cashfree
-      const verificationResult = await paymentGateway.checkPaymentStatus(merchantTransactionId);
-
-      // Use verified status or fallback to provided status
-      const finalPaymentStatus = verificationResult.success ? verificationResult.paymentStatus : paymentStatus || 'FAILURE';
+      // Determine final payment status. Only hit gateway if no hint provided.
+      let finalPaymentStatus: 'SUCCESS' | 'FAILURE' | 'PENDING' = paymentStatus || 'PENDING';
+      if (!paymentStatus) {
+        const verificationResult = await paymentGateway.checkPaymentStatus(merchantTransactionId);
+        finalPaymentStatus = verificationResult.success ? verificationResult.paymentStatus : 'PENDING';
+      }
 
       // Process the transaction based on payment status
       if (finalPaymentStatus === 'SUCCESS') {
@@ -814,7 +819,7 @@ export class TransactionService {
         try {
           const paymentGateway = PaymentGatewayFactory.getPaymentGateway(PaymentGatewayType.CASHFREE, this.fastify);
           const refundId = `RF-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-          await (paymentGateway as any).createRefund?.({
+          await paymentGateway.createRefund?.({
             orderId: merchantTransactionId,
             refundId,
             amount: transaction.amount,
@@ -910,6 +915,38 @@ export class TransactionService {
       return { success: true, message: 'Rescheduled' };
     } catch (e) {
       this.fastify.log.error(`processRefundCheck error: ${e}`);
+      return { success: false, error: 'Internal error' };
+    }
+  }
+
+  /**
+   * Sweep abandoned pending transactions (no webhook, no verification), older than threshold
+   * Strategy: if > 30 minutes pending, re-verify; if still PENDING/FAILED, enqueue refund check chain
+   */
+  async sweepAbandonedPendingTransactions() {
+    try {
+      const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
+      const pending = await this.prisma.walletRechargeTransaction.findMany({
+        where: { status: TransactionStatus.PENDING, created_at: { lte: thirtyMinAgo } },
+        take: 50,
+      });
+
+      const paymentGateway = PaymentGatewayFactory.getPaymentGateway(PaymentGatewayType.CASHFREE, this.fastify);
+      for (const tx of pending) {
+        try {
+          const status = await paymentGateway.checkPaymentStatus(tx.merchant_transaction_id!);
+          if (status.success && status.paymentStatus === 'SUCCESS') {
+            await this.verifyWalletRecharge(tx.merchant_transaction_id!, 'SUCCESS');
+          } else {
+            await this.enqueueRefundCheck({ merchantTransactionId: tx.merchant_transaction_id!, userId: tx.user_id, attempt: 1 });
+          }
+        } catch (e) {
+          this.fastify.log.error(`sweepAbandonedPendingTransactions error for ${tx.merchant_transaction_id}: ${e}`);
+        }
+      }
+      return { success: true, processed: pending.length };
+    } catch (e) {
+      this.fastify.log.error(`sweepAbandonedPendingTransactions fatal: ${e}`);
       return { success: false, error: 'Internal error' };
     }
   }

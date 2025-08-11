@@ -34,19 +34,26 @@ export class WebhookController {
       const webhookData = request.body as any;
       request.log.info(`Received Cashfree webhook: ${JSON.stringify(webhookData)}`);
 
-      // Process the webhook based on type
-      const { type, data } = webhookData;
+      // Normalize event type
+      const rawType = (webhookData?.type || webhookData?.event || webhookData?.event_type || '').toString().toUpperCase();
+      const data = webhookData?.data || webhookData?.payload || webhookData;
 
-      switch ((type || webhookData?.event)?.toString()) {
-        case 'PAYMENT_SUCCESS_WEBHOOK':
-        case 'PAYMENT_FAILED_WEBHOOK':
-        case 'PAYMENT_USER_DROPPED_WEBHOOK':
-        case 'ORDER.PAID':
-        case 'ORDER.FAILED':
-          await this.handlePaymentWebhook(data, request);
-          break;
-        default:
-          request.log.warn(`Unhandled Cashfree webhook type: ${type}`);
+      // Map multiple variants to our internal actions
+      const isSuccessPayment = ['PAYMENT_SUCCESS_WEBHOOK', 'ORDER.PAID', 'PAYMENT_SUCCESS', 'ORDER PAID'].some((t) => rawType.includes(t.replace(/\./g, '')) || rawType === t);
+      const isFailedPayment = ['PAYMENT_FAILED_WEBHOOK', 'ORDER.FAILED', 'PAYMENT_FAILED', 'ORDER FAILED'].some((t) => rawType.includes(t.replace(/\./g, '')) || rawType === t);
+      const isUserDropped = ['PAYMENT_USER_DROPPED_WEBHOOK', 'USER.DROPPED', 'USER_DROPPED'].some((t) => rawType.includes(t.replace(/\./g, '')) || rawType === t);
+      const isVerificationUpdate = ['VERIFICATION', 'PAYMENT_VERIFICATION', 'PAYMENT.VERIFICATION'].some((t) => rawType.includes(t.replace(/\./g, '')));
+      const isRefundEvent = ['REFUND', 'AUTO_REFUND'].some((t) => rawType.includes(t));
+      const isSettlementEvent = ['SETTLEMENT'].some((t) => rawType.includes(t));
+
+      if (isSuccessPayment || isFailedPayment || isUserDropped || isVerificationUpdate) {
+        await this.handlePaymentWebhook(data, request, rawType);
+      } else if (isRefundEvent) {
+        await this.handleRefundWebhook(data, request);
+      } else if (isSettlementEvent) {
+        await this.handleSettlementWebhook(data, rawType, request);
+      } else {
+        request.log.warn(`Unhandled Cashfree webhook type: ${rawType}`);
       }
 
       return reply.code(200).send({ success: true });
@@ -61,10 +68,12 @@ export class WebhookController {
    * @param paymentData Payment data from webhook
    * @param request Fastify request for logging
    */
-  private async handlePaymentWebhook(paymentData: any, request: FastifyRequest) {
+  private async handlePaymentWebhook(paymentData: any, request: FastifyRequest, rawType?: string) {
     const { orderId, txStatus, order_id, order_status } = paymentData || {};
     const id = orderId || order_id;
     const status = (txStatus || order_status || '').toString().toUpperCase();
+    const typeNorm = (rawType || '').toUpperCase();
+    const isAbandoned = typeNorm.includes('ABANDON') || typeNorm.includes('DROPPED') || status === 'ABANDONED' || status === 'DROPPED';
 
     if (!id) {
       request.log.warn('Missing orderId in payment webhook data');
@@ -74,7 +83,16 @@ export class WebhookController {
     try {
       // Check if this is a wallet recharge transaction
       if (id.startsWith('WT-')) {
-        await this.transactionService.verifyWalletRecharge(id);
+        if (status === 'PAID' || status === 'SUCCESS') {
+          await this.transactionService.verifyWalletRecharge(id, 'SUCCESS');
+        } else if (status === 'FAILED' || status === 'FAILURE' || status === 'CANCELLED') {
+          await this.transactionService.verifyWalletRecharge(id, 'FAILURE');
+        } else if (isAbandoned) {
+          // Treat abandoned/dropped checkout as pending and start recovery flow (retry + refund chain)
+          await this.transactionService.verifyWalletRecharge(id, 'PENDING');
+        } else {
+          await this.transactionService.verifyWalletRecharge(id);
+        }
         request.log.info(`Processed wallet recharge webhook for transaction: ${id} [${status}]`);
       }
       // Check if this is an invoice payment transaction
@@ -87,7 +105,48 @@ export class WebhookController {
         request.log.warn(`Unknown transaction type for order: ${id}`);
       }
     } catch (error) {
-      request.log.error(`Error processing payment webhook for order ${orderId}: ${error}`);
+      request.log.error(`Error processing payment webhook for order ${id}: ${error}`);
+    }
+  }
+
+  /**
+   * Handle refund webhooks (success/failed/auto-refund)
+   */
+  private async handleRefundWebhook(refundData: any, request: FastifyRequest) {
+    try {
+      const { order_id, orderId, refund_id, refundId, refund_status, status } = refundData || {};
+      const id = orderId || order_id;
+      const refundIdNorm = refundId || refund_id;
+      const refundStatus = (refund_status || status || '').toString().toUpperCase();
+
+      if (!id) return;
+      if (!id.startsWith('WT-')) return; // only wallet context for now
+
+      // If refund succeeded, ensure transaction is FAILED (non-credit)
+      if (refundStatus.includes('SUCCESS')) {
+        const prisma = (request.server as any).prisma;
+        await prisma.walletRechargeTransaction.updateMany({
+          where: { merchant_transaction_id: id, status: { not: 'FAILED' } },
+          data: { status: 'FAILED' },
+        });
+        request.log.info(`Marked transaction ${id} FAILED after refund ${refundIdNorm}`);
+      }
+    } catch (e) {
+      request.log.error(`Refund webhook handling error: ${e}`);
+    }
+  }
+
+  /**
+   * Handle settlement events (processed/reversed/initiated/failed)
+   * We only log them for now as settlements are gateway-level post-processing
+   */
+  private async handleSettlementWebhook(settlementData: any, rawType: string, request: FastifyRequest) {
+    try {
+      const { order_id, orderId, settlement_id, status } = settlementData || {};
+      const id = orderId || order_id;
+      request.log.info(`Settlement event ${rawType} for ${id || 'n/a'} with settlement ${settlement_id || 'n/a'} status ${status || ''}`);
+    } catch (e) {
+      request.log.error(`Settlement webhook handling error: ${e}`);
     }
   }
 
