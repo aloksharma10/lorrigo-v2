@@ -78,7 +78,7 @@ function getTemplatePath(type: 'label' | 'manifest', format: 'A4' | 'THERMAL'): 
   if (type === 'label') {
     return format === 'THERMAL'
       ? path.join(projectRoot, 'src/template/thermal-invoice-template.html')
-      : path.join(projectRoot, 'src/template/invoice-template.html');
+      : path.join(projectRoot, 'src/template/a4-labels-template.html');
   } else {
     return path.join(projectRoot, 'src/template/manifest-template.html');
   }
@@ -93,24 +93,46 @@ export async function generateBulkLabels(params: { shipments: ShipmentLabelData[
   const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   const mergedPdf = await PDFDocument.create();
   try {
-    for (const shipment of shipments) {
-      // Generate barcode (async)
-      const barcodeUrl = await generateBarcodeDataUrl(shipment.awb);
-      // Prepare data for template
-      const data = { ...shipment, barcodeUrl };
-      const html = template(data);
-      const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'networkidle0' });
-      // PDF options
-      const pdfOptions =
-        format === 'THERMAL'
-          ? { width: '101.6mm', height: '152.4mm', printBackground: true, margin: { top: '0mm', right: '0mm', bottom: '0mm', left: '0mm' } }
-          : { format: 'A4' as const, printBackground: true, margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' } };
-      const pdf = await page.pdf(pdfOptions);
-      const singlePdf = await PDFDocument.load(pdf);
-      const copiedPages = await mergedPdf.copyPages(singlePdf, singlePdf.getPageIndices());
-      copiedPages.forEach((page) => mergedPdf.addPage(page));
-      await page.close();
+    if (format === 'THERMAL') {
+      // Thermal: one label per page
+      for (const shipment of shipments) {
+        const barcodeUrl = await generateBarcodeDataUrl(shipment.awb);
+        const data = { ...shipment, barcodeUrl };
+        const html = template(data);
+        const page = await browser.newPage();
+        await page.setContent(html, { waitUntil: 'networkidle0' });
+        const pdf = await page.pdf({
+          width: '101.6mm',
+          height: '152.4mm',
+          printBackground: true,
+          margin: { top: '0mm', right: '0mm', bottom: '0mm', left: '0mm' },
+        });
+        const singlePdf = await PDFDocument.load(pdf);
+        const copiedPages = await mergedPdf.copyPages(singlePdf, singlePdf.getPageIndices());
+        copiedPages.forEach((p) => mergedPdf.addPage(p));
+        await page.close();
+      }
+    } else {
+      // A4: 2 columns x 3 rows = 6 labels per page
+      const chunkSize = 6;
+      for (let i = 0; i < shipments.length; i += chunkSize) {
+        const chunk = shipments.slice(i, i + chunkSize);
+        const enriched = await Promise.all(
+          chunk.map(async (s) => ({ ...s, barcodeUrl: await generateBarcodeDataUrl(s.awb) }))
+        );
+        const html = template({ shipments: enriched });
+        const page = await browser.newPage();
+        await page.setContent(html, { waitUntil: 'networkidle0' });
+        const pdf = await page.pdf({
+          format: 'A4',
+          printBackground: true,
+          margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
+        });
+        const singlePdf = await PDFDocument.load(pdf);
+        const copiedPages = await mergedPdf.copyPages(singlePdf, singlePdf.getPageIndices());
+        copiedPages.forEach((p) => mergedPdf.addPage(p));
+        await page.close();
+      }
     }
     const pdfBytes = await mergedPdf.save();
     return Buffer.from(pdfBytes);

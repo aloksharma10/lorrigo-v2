@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Shipping Labels - A4 Grid</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+        font-size: 13px;
+        color: #000;
+      }
+
+      /* Page setup for A4 with small margins handled by puppeteer */
+      @media print {
+        @page { size: A4; margin: 0; }
+      }
+
+      .page {
+        width: 100%;
+        padding: 0;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .label-card {
+        border: 1px solid #a0a0a0;
+        border-radius: 4px;
+        padding: 12px;
+        page-break-inside: avoid;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+
+      .title { font-size: 16px; font-weight: 700; margin: 0; }
+
+      .logo-container { height: 28px; display: flex; align-items: center; }
+      .logo-container img { height: 28px; }
+
+      .separator { height: 1px; background: #a0a0a0; margin: 8px 0; }
+
+      .row { display: flex; gap: 10px; }
+      .col { flex: 1; min-width: 0; }
+
+      .text-sm { font-size: 12px; margin: 2px 0; }
+      .font-bold { font-weight: 700; }
+      .font-semibold { font-weight: 600; }
+      .wrap { word-break: break-word; white-space: normal; }
+
+      .barcode { display: flex; justify-content: center; align-items: center; height: 70px; }
+      .barcode img { max-height: 60px; max-width: 100%; object-fit: contain; }
+
+      .company-logo { display: flex; justify-content: center; align-items: center; height: 70px; }
+      .company-logo img { max-height: 50px; max-width: 90px; }
+
+      .block { margin-bottom: 6px; }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="grid">
+        {{#each shipments}}
+        <div class="label-card">
+          <div class="header">
+            <div class="title">Ship To</div>
+            <div class="logo-container">
+              <img src="{{lorrigoLogoUrl}}" alt="Lorrigo" />
+            </div>
+          </div>
+
+          <div class="block">
+            <div class="text-sm">{{customerName}}</div>
+            <div class="text-sm wrap">{{customerAddress}}</div>
+            <div class="text-sm">{{customerPincode}}</div>
+            <div class="text-sm">{{customerPhone}}</div>
+          </div>
+
+          <div class="separator"></div>
+
+          <div class="row">
+            <div class="col">
+              <div class="text-sm">Dimensions: {{orderBoxLength}} x {{orderBoxWidth}} x {{orderBoxHeight}}</div>
+              <div class="text-sm">Weight: {{orderWeight}} {{orderWeightUnit}}</div>
+              <div class="text-sm">Payment: {{paymentMode}}</div>
+              {{#if isCOD}}<div class="text-sm font-bold">(Collect Rs {{amountToCollect}})</div>{{/if}}
+              <div class="text-sm wrap">{{carrierName}}</div>
+              {{#if awb}}<div class="text-sm">AWB: {{awb}}</div>{{/if}}
+              {{#if routingCode}}<div class="text-sm">Routing Code: {{routingCode}}</div>{{/if}}
+              <div class="text-sm">SID: {{orderReferenceId}}</div>
+            </div>
+            <div class="col barcode">
+              <img src="{{barcodeUrl}}" alt="Barcode" />
+            </div>
+          </div>
+
+          <div class="separator"></div>
+
+          <div class="row">
+            <div class="col">
+              <div class="font-semibold">Shipped by:</div>
+              <div class="text-sm wrap">{{sellerName}}</div>
+              <div class="text-sm wrap">{{sellerAddress}}</div>
+              <div class="text-sm">India</div>
+              <div class="font-semibold">If not delivered, return to:</div>
+              <div class="text-sm wrap">{{rtoAddress}}</div>
+              <div class="text-sm">{{rtoCity}}, {{rtoState}}</div>
+            </div>
+            <div class="col company-logo">
+              <img src="{{companyLogoUrl}}" alt="Company" />
+            </div>
+          </div>
+
+          <div class="separator"></div>
+
+          <div class="block">
+            <div class="text-sm"><span class="font-semibold">Product Description:</span> {{productName}}</div>
+            <div class="text-sm"><span class="font-semibold">Invoice:</span> {{invoiceNumber}}</div>
+            {{#if sellerGSTIN}}
+            <div class="text-sm"><span class="font-semibold">GST:</span> {{sellerGSTIN}}</div>
+            {{/if}}
+          </div>
+        </div>
+        {{/each}}
+      </div>
+    </div>
+  </body>
+  
+</html>
+
+

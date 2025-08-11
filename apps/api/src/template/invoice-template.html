@@ -84,14 +84,14 @@
       height: 60px;
       overflow: hidden;
     }
-    .shipping-info {
-      height: 80px;
-      overflow: hidden;
-    }
+    .shipping-info,
     .return-info {
-      height: 60px;
-      overflow: hidden;
+      height: auto;       /* Let height adjust based on content */
+      overflow: visible;  /* Allow full text to display */
+      word-wrap: break-word; /* Wrap long lines */
+      white-space: normal;   /* Allow normal wrapping */
     }
+
     /* Add media query for print */
     @media print {
       @page {
@@ -158,7 +158,7 @@
           <div class="text-sm">{{sellerAddress}}</div>
           <div class="text-sm">India</div>
         </div>
-        <div class="font-semibold">If not delivered, return to:</div>
+        <div class="font-semibold">RTO:</div>
         <div class="return-info">
           <div class="text-sm">{{rtoAddress}}</div>
           <div class="text-sm">{{rtoCity}}, {{rtoState}}</div>
