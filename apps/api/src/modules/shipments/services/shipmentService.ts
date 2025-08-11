@@ -653,10 +653,10 @@ export class ShipmentService {
             order.customer.name || 'Customer',
             order.code,
             order.items?.map((item: any) => item.name).join(', ') || 'your items',
-            courier.name,
-            selectedCourierRate.etd ? formatDateAddDays(selectedCourierRate.etd) : '',
+            courier.name?.split(' ')[0] || '',
+            // selectedCourierRate.etd ? formatDateAddDays(selectedCourierRate.etd) : '',
           ],
-          { buttonVariables: [vendorResult.awb], priority: 1 }
+          { buttonVariables: [`/${vendorResult.awb}`], priority: 1 }
         );
       } catch (whatsappError) {
         this.fastify.log.error('Failed to queue WhatsApp notification:', whatsappError);
