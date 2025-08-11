@@ -98,6 +98,17 @@ const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (fastify, _optio
   // Add authentication decorator
   fastify.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      const publicRoutes = [
+        '/public/tracking/',
+        '/track/'
+      ];
+      
+      const isPublicRoute = publicRoutes.some(route => request.url.includes(route));
+
+      if (isPublicRoute) {
+        return;
+      }
+
       const payload: any = await request.jwtVerify();
 
       if (!payload?.id) {
