@@ -1,10 +1,10 @@
-'use client';
-import { useState, useEffect, useRef } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { useRouter } from 'next/navigation';
+"use client"
 
+import { useState, useEffect, useRef } from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
+import { useRouter } from "next/navigation"
 import {
   toast,
   Button,
@@ -21,206 +21,260 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@lorrigo/ui/components';
-import { X, Loader2, IndianRupee } from 'lucide-react';
-import { useWalletOperations } from '@/lib/apis/wallet';
-import { load as loadCashfree } from '@cashfreepayments/cashfree-js';
+} from "@lorrigo/ui/components"
+import { X, Loader2, IndianRupee } from "lucide-react"
+import { useWalletOperations } from "@/lib/apis/wallet"
+import { load as loadCashfree } from "@cashfreepayments/cashfree-js"
 
 interface RechargeWalletModalProps {
-  onClose: () => void;
-  onSuccess?: (amount: number) => void;
+  onClose: () => void
+  onSuccess?: (amount: number) => void
+  onPaymentModalStateChange?: (isOpen: boolean) => void // Add this prop
 }
 
 const formSchema = z.object({
   amount: z
     .number()
-    .min(500, 'Minimum recharge amount is ₹500')
-    .max(100000, 'Maximum recharge amount is ₹100,000')
-    .refine((val) => val % 100 === 0, 'Amount must be a multiple of 100'),
-});
+    .min(500, "Minimum recharge amount is ₹500")
+    .max(100000, "Maximum recharge amount is ₹100,000")
+    .refine((val) => val % 100 === 0, "Amount must be a multiple of 100"),
+})
 
-type FormData = z.infer<typeof formSchema>;
+type FormData = z.infer<typeof formSchema>
 
-export function RechargeWalletModal({ onClose, onSuccess }: RechargeWalletModalProps) {
-  const router = useRouter();
-  const { rechargeWallet, verifyWalletRecharge } = useWalletOperations();
-  const [paymentWindow, setPaymentWindow] = useState<Window | null>(null);
-  const [processingPayment, setProcessingPayment] = useState(false);
-  const [pendingTransactionId, setPendingTransactionId] = useState<string | null>(null);
-  const [verifyingPayment, setVerifyingPayment] = useState(false);
+export function RechargeWalletModal({ onClose, onSuccess, onPaymentModalStateChange }: RechargeWalletModalProps) {
+  const router = useRouter()
+  const { rechargeWallet, verifyWalletRecharge } = useWalletOperations()
+  const [paymentWindow, setPaymentWindow] = useState<Window | null>(null)
+  const [processingPayment, setProcessingPayment] = useState(false)
+  const [pendingTransactionId, setPendingTransactionId] = useState<string | null>(null)
+  const [verifyingPayment, setVerifyingPayment] = useState(false)
+  const [cashfreeModalOpen, setCashfreeModalOpen] = useState(false) // Add this state
 
   // Use refs to avoid stale closure issues
-  const paymentWindowRef = useRef<Window | null>(null);
-  const processingRef = useRef(false);
-  const verifyingRef = useRef(false);
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const paymentWindowRef = useRef<Window | null>(null)
+  const processingRef = useRef(false)
+  const verifyingRef = useRef(false)
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       amount: 500,
     },
-  });
+  })
+
+  // Notify parent about payment modal state changes
+  useEffect(() => {
+    onPaymentModalStateChange?.(cashfreeModalOpen)
+  }, [cashfreeModalOpen, onPaymentModalStateChange])
+
+  // Add CSS overrides when Cashfree modal is open
+  useEffect(() => {
+    if (cashfreeModalOpen) {
+      // Add styles to ensure Cashfree modal is on top
+      const style = document.createElement("style")
+      style.id = "cashfree-modal-override"
+      style.textContent = `
+        /* Hide the main modal backdrop */
+        [data-radix-dialog-overlay] {
+          display: none !important;
+        }
+        
+        /* Ensure Cashfree modal elements are on top */
+        [id*="cashfree"], [class*="cashfree"], [class*="cf-"], iframe[src*="cashfree"] {
+          z-index: 999999 !important;
+          position: fixed !important;
+        }
+        
+        /* Hide main modal content */
+        [data-radix-dialog-content] {
+          opacity: 0 !important;
+          pointer-events: none !important;
+        }
+        
+        /* Ensure body can scroll and interact */
+        body {
+          overflow: auto !important;
+          pointer-events: auto !important;
+        }
+      `
+      document.head.appendChild(style)
+
+      return () => {
+        const existingStyle = document.getElementById("cashfree-modal-override")
+        if (existingStyle) {
+          existingStyle.remove()
+        }
+      }
+    }
+  }, [cashfreeModalOpen])
 
   // Cleanup function
   const cleanup = () => {
     if (paymentWindowRef.current && !paymentWindowRef.current.closed) {
-      paymentWindowRef.current.close();
+      paymentWindowRef.current.close()
     }
     if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current);
-      pollIntervalRef.current = null;
+      clearInterval(pollIntervalRef.current)
+      pollIntervalRef.current = null
     }
-    setPaymentWindow(null);
-    paymentWindowRef.current = null;
-    setProcessingPayment(false);
-    processingRef.current = false;
-    setVerifyingPayment(false);
-    verifyingRef.current = false;
-    setPendingTransactionId(null);
-  };
+    setPaymentWindow(null)
+    paymentWindowRef.current = null
+    setProcessingPayment(false)
+    processingRef.current = false
+    setVerifyingPayment(false)
+    verifyingRef.current = false
+    setPendingTransactionId(null)
+    setCashfreeModalOpen(false)
+
+    // Remove any lingering styles
+    const existingStyle = document.getElementById("cashfree-modal-override")
+    if (existingStyle) {
+      existingStyle.remove()
+    }
+  }
 
   // Handle messages from the payment popup window
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
       // Validate message origin
       if (event.origin !== window.location.origin) {
-        return;
+        return
       }
 
-      const { type, merchantTransactionId, error, status } = event.data;
+      const { type, merchantTransactionId, error, status } = event.data
 
       // Validate transaction ID
       if (!merchantTransactionId || merchantTransactionId !== pendingTransactionId) {
-        return;
+        return
       }
 
       // Prevent duplicate processing
       if (verifyingRef.current) {
-        return;
+        return
       }
 
-      verifyingRef.current = true;
-      setVerifyingPayment(true);
+      verifyingRef.current = true
+      setVerifyingPayment(true)
 
       // Clear polling interval since we received a message
       if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-        pollIntervalRef.current = null;
+        clearInterval(pollIntervalRef.current)
+        pollIntervalRef.current = null
       }
 
       try {
         switch (type) {
-          case 'PAYMENT_SUCCESS':
-          case 'PAYMENT_REDIRECT':
+          case "PAYMENT_SUCCESS":
+          case "PAYMENT_REDIRECT":
             // Close the popup immediately
             if (paymentWindowRef.current && !paymentWindowRef.current.closed) {
-              paymentWindowRef.current.close();
+              paymentWindowRef.current.close()
             }
 
             // Verify payment with backend
             const result = await verifyWalletRecharge.mutateAsync({
               merchantTransactionId,
-            });
+            })
 
             if (result.valid) {
-              toast.success('Wallet recharged successfully');
-              if (onSuccess && form.getValues('amount')) {
-                onSuccess(form.getValues('amount'));
+              toast.success("Wallet recharged successfully")
+              if (onSuccess && form.getValues("amount")) {
+                onSuccess(form.getValues("amount"))
               }
-              cleanup();
-              onClose();
+              cleanup()
+              onClose()
             } else {
-              toast.error(result.message || 'Payment verification failed');
-              cleanup();
-              onClose();
+              toast.error(result.message || "Payment verification failed")
+              cleanup()
+              onClose()
             }
-            break;
+            break
 
-          case 'PAYMENT_ERROR':
-            toast.error(error || 'Payment failed');
-            cleanup();
-            onClose();
-            break;
+          case "PAYMENT_ERROR":
+            toast.error(error || "Payment failed")
+            cleanup()
+            onClose()
+            break
 
-          case 'PAYMENT_CANCELLED':
-            toast.info('Payment cancelled');
-            cleanup();
-            onClose();
-            break;
+          case "PAYMENT_CANCELLED":
+            toast.info("Payment cancelled")
+            cleanup()
+            onClose()
+            break
 
           default:
-            verifyingRef.current = false;
-            setVerifyingPayment(false);
-            return;
+            verifyingRef.current = false
+            setVerifyingPayment(false)
+            return
         }
       } catch (error: any) {
-        toast.error(error?.response?.data?.message || 'Payment verification failed');
-        cleanup();
-        onClose();
+        toast.error(error?.response?.data?.message || "Payment verification failed")
+        cleanup()
+        onClose()
       }
-    };
+    }
 
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [pendingTransactionId, onSuccess, onClose, form, verifyWalletRecharge, router]);
-
+    window.addEventListener("message", handleMessage)
+    return () => window.removeEventListener("message", handleMessage)
+  }, [pendingTransactionId, onSuccess, onClose, form, verifyWalletRecharge, router])
 
   // Enhanced popup monitoring with better polling
   useEffect(() => {
-    if (!paymentWindow || !processingPayment || !pendingTransactionId) return;
+    if (!paymentWindow || !processingPayment || !pendingTransactionId) return
 
-    let pollCount = 0;
-    const maxPolls = 600; // 10 minutes max (polling every second)
+    let pollCount = 0
+    const maxPolls = 600 // 10 minutes max (polling every second)
 
     pollIntervalRef.current = setInterval(async () => {
-      pollCount++;
+      pollCount++
 
       // Check if window is closed
       if (paymentWindow.closed) {
-        clearInterval(pollIntervalRef.current!);
-        pollIntervalRef.current = null;
+        clearInterval(pollIntervalRef.current!)
+        pollIntervalRef.current = null
 
         // Only proceed if not already verifying
         if (verifyingRef.current) {
-          return;
+          return
         }
 
         // Check payment status as fallback
-        verifyingRef.current = true;
-        setVerifyingPayment(true);
+        verifyingRef.current = true
+        setVerifyingPayment(true)
 
         try {
           const result = await verifyWalletRecharge.mutateAsync({
             merchantTransactionId: pendingTransactionId,
-          });
+          })
 
           if (result.valid) {
-            toast.success('Wallet recharged successfully');
-            if (onSuccess && form.getValues('amount')) {
-              onSuccess(form.getValues('amount'));
+            toast.success("Wallet recharged successfully")
+            if (onSuccess && form.getValues("amount")) {
+              onSuccess(form.getValues("amount"))
             }
           } else {
-            toast.error(result.message || 'Payment was not completed');
+            toast.error(result.message || "Payment was not completed")
           }
         } catch (error: any) {
-          console.error('Fallback verification error:', error);
-          toast.error('Unable to verify payment status');
+          console.error("Fallback verification error:", error)
+          toast.error("Unable to verify payment status")
         } finally {
-          cleanup();
-          onClose();
+          cleanup()
+          onClose()
         }
-        return;
+        return
       }
 
       // Timeout handling
       if (pollCount >= maxPolls) {
-        clearInterval(pollIntervalRef.current!);
-        pollIntervalRef.current = null;
-        toast.error('Payment timeout. Please try again.');
-        cleanup();
-        onClose();
-        return;
+        clearInterval(pollIntervalRef.current!)
+        pollIntervalRef.current = null
+        toast.error("Payment timeout. Please try again.")
+        cleanup()
+        onClose()
+        return
       }
 
       // Periodic status check (every 30 seconds)
@@ -228,125 +282,158 @@ export function RechargeWalletModal({ onClose, onSuccess }: RechargeWalletModalP
         try {
           const result = await verifyWalletRecharge.mutateAsync({
             merchantTransactionId: pendingTransactionId,
-          });
+          })
 
           if (result.valid) {
-            clearInterval(pollIntervalRef.current!);
-            pollIntervalRef.current = null;
+            clearInterval(pollIntervalRef.current!)
+            pollIntervalRef.current = null
 
             // Close popup
             if (paymentWindowRef.current && !paymentWindowRef.current.closed) {
-              paymentWindowRef.current.close();
+              paymentWindowRef.current.close()
             }
 
-            toast.success('Wallet recharged successfully');
-            if (onSuccess && form.getValues('amount')) {
-              onSuccess(form.getValues('amount'));
+            toast.success("Wallet recharged successfully")
+            if (onSuccess && form.getValues("amount")) {
+              onSuccess(form.getValues("amount"))
             }
-            cleanup();
-            onClose();
+            cleanup()
+            onClose()
           }
-        } catch (error) {}
+        } catch (error) {
+          // Silent fail for periodic checks
+        }
       }
-    }, 1000);
+    }, 1000)
 
     return () => {
       if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-        pollIntervalRef.current = null;
+        clearInterval(pollIntervalRef.current)
+        pollIntervalRef.current = null
       }
-    };
-  }, [paymentWindow, processingPayment, pendingTransactionId, verifyWalletRecharge, onSuccess, form, onClose, router]);
+    }
+  }, [paymentWindow, processingPayment, pendingTransactionId, verifyWalletRecharge, onSuccess, form, onClose, router])
 
   const handleSubmit = async (data: FormData) => {
     if (processingRef.current) {
-      return;
+      return
     }
 
     try {
-      processingRef.current = true;
-      setProcessingPayment(true);
+      processingRef.current = true
+      setProcessingPayment(true)
 
       const result = await rechargeWallet.mutateAsync({
         amount: data.amount,
         redirectUrl: `${window.location.origin}/seller/wallet/callback`,
-      });
+      })
 
       // Prefer SDK if available
       if (result.paymentSessionId && result.merchantTransactionId) {
-        setPendingTransactionId(result.merchantTransactionId);
+        setPendingTransactionId(result.merchantTransactionId)
+
         try {
-          const cashfree = await loadCashfree({ mode: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox' });
+          // Set cashfree modal as open to disable parent modal overlay
+          setCashfreeModalOpen(true)
+
+          // Add a small delay to ensure styles are applied
+          await new Promise((resolve) => setTimeout(resolve, 100))
+
+          const cashfree = await loadCashfree({
+            mode: process.env.NODE_ENV === "production" ? "production" : "sandbox",
+          })
+
           // Open modal checkout
           const checkoutResult = await cashfree?.checkout({
             paymentSessionId: result.paymentSessionId,
-            redirectTarget: '_modal',
-          });
+            redirectTarget: "_modal",
+          })
+
+          // Reset cashfree modal state after checkout completes/closes
+          setCashfreeModalOpen(false)
 
           // After modal completion, verify regardless of result
-          const verify = await verifyWalletRecharge.mutateAsync({ merchantTransactionId: result.merchantTransactionId });
+          const verify = await verifyWalletRecharge.mutateAsync({
+            merchantTransactionId: result.merchantTransactionId,
+          })
+
           if (verify.valid) {
-            toast.success('Wallet recharged successfully');
-            if (onSuccess && form.getValues('amount')) onSuccess(form.getValues('amount'));
-            cleanup();
-            onClose();
-            return;
+            toast.success("Wallet recharged successfully")
+            if (onSuccess && form.getValues("amount")) onSuccess(form.getValues("amount"))
+            cleanup()
+            onClose()
+            return
           }
 
           // If still pending, inform user
-          toast.error(verify.message || 'Payment not completed');
-          cleanup();
-          onClose();
-          return;
+          toast.error(verify.message || "Payment not completed")
+          cleanup()
+          onClose()
+          return
         } catch (e: any) {
+          // Reset cashfree modal state on error
+          setCashfreeModalOpen(false)
           // Fallback to link popup if SDK fails
         }
       }
 
       if (result.url && result.merchantTransactionId) {
-        setPendingTransactionId(result.merchantTransactionId);
+        setPendingTransactionId(result.merchantTransactionId)
 
         const paymentPopup = window.open(
           result.url,
-          'paymentWindow',
-          'width=800,height=600,resizable=yes,scrollbars=yes,toolbar=no,menubar=no,location=no,status=no'
-        );
+          "paymentWindow",
+          "width=800,height=600,resizable=yes,scrollbars=yes,toolbar=no,menubar=no,location=no,status=no",
+        )
 
-        if (!paymentPopup || paymentPopup.closed || typeof paymentPopup.closed === 'undefined') {
-          toast.error('Payment window was blocked. Please allow popups for this site.');
-          processingRef.current = false;
-          setProcessingPayment(false);
-          setPendingTransactionId(null);
-          return;
+        if (!paymentPopup || paymentPopup.closed || typeof paymentPopup.closed === "undefined") {
+          toast.error("Payment window was blocked. Please allow popups for this site.")
+          processingRef.current = false
+          setProcessingPayment(false)
+          setPendingTransactionId(null)
+          return
         }
 
-        setPaymentWindow(paymentPopup);
-        paymentWindowRef.current = paymentPopup;
+        setPaymentWindow(paymentPopup)
+        paymentWindowRef.current = paymentPopup
 
         // Focus the popup window
-        paymentPopup.focus();
+        paymentPopup.focus()
       } else {
-        throw new Error('Invalid payment initiation response');
+        throw new Error("Invalid payment initiation response")
       }
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to initiate wallet recharge');
-      processingRef.current = false;
-      setProcessingPayment(false);
-      setPendingTransactionId(null);
+      toast.error(error?.response?.data?.message || "Failed to initiate wallet recharge")
+      processingRef.current = false
+      setProcessingPayment(false)
+      setPendingTransactionId(null)
+      setCashfreeModalOpen(false) // Reset on error
     }
-  };
+  }
 
   const handleClose = () => {
     if (processingPayment && !verifyingPayment) {
       // If payment is in progress but not verifying, ask for confirmation
-      if (!confirm('Payment is in progress. Are you sure you want to close?')) {
-        return;
+      if (!confirm("Payment is in progress. Are you sure you want to close?")) {
+        return
       }
     }
+    cleanup()
+    onClose()
+  }
 
-    cleanup();
-    onClose();
-  };
+  // Don't render the modal content when Cashfree is open
+  if (cashfreeModalOpen) {
+    return (
+      <div className="fixed inset-0 z-[999998] flex items-center justify-center bg-black/50">
+        <div className="rounded-lg bg-white p-6 text-center">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-blue-600" />
+          <p className="mt-2 text-sm text-gray-600">Processing payment...</p>
+          <p className="mt-1 text-xs text-gray-500">Please complete the payment in the Cashfree window</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <Card className="flex w-full flex-col">
@@ -356,13 +443,19 @@ export function RechargeWalletModal({ onClose, onSuccess }: RechargeWalletModalP
             <CardTitle>Recharge Wallet</CardTitle>
             <CardDescription>
               {verifyingPayment
-                ? 'Verifying your payment...'
+                ? "Verifying your payment..."
                 : processingPayment
-                  ? 'Complete payment in the popup window'
-                  : 'Enter amount to add to your wallet'}
+                  ? "Complete payment in the popup window"
+                  : "Enter amount to add to your wallet"}
             </CardDescription>
           </div>
-          <Button variant="ghost" size="icon" onClick={handleClose} className="h-8 w-8 rounded-full" disabled={verifyingPayment}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleClose}
+            className="h-8 w-8 rounded-full"
+            disabled={verifyingPayment}
+          >
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -387,8 +480,8 @@ export function RechargeWalletModal({ onClose, onSuccess }: RechargeWalletModalP
                         disabled={processingPayment}
                         {...field}
                         onChange={(e) => {
-                          const value = e.target.value === '' ? undefined : Number(e.target.value);
-                          field.onChange(value);
+                          const value = e.target.value === "" ? undefined : Number(e.target.value)
+                          field.onChange(value)
                         }}
                       />
                     </div>
@@ -406,10 +499,10 @@ export function RechargeWalletModal({ onClose, onSuccess }: RechargeWalletModalP
                   variant="outline"
                   size="sm"
                   disabled={processingPayment}
-                  onClick={() => form.setValue('amount', amount)}
-                  className={`flex-grow ${form.getValues('amount') === amount ? 'border-primary bg-primary/10' : ''}`}
+                  onClick={() => form.setValue("amount", amount)}
+                  className={`flex-grow ${form.getValues("amount") === amount ? "border-primary bg-primary/10" : ""}`}
                 >
-                  ₹{amount.toLocaleString('en-IN')}
+                  ₹{amount.toLocaleString("en-IN")}
                 </Button>
               ))}
             </div>
@@ -420,7 +513,7 @@ export function RechargeWalletModal({ onClose, onSuccess }: RechargeWalletModalP
           <div className="mt-4 rounded-lg bg-blue-50 p-3 text-sm text-blue-800">
             <div className="flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin" />
-              {verifyingPayment ? 'Verifying payment...' : 'Complete your payment in the popup window'}
+              {verifyingPayment ? "Verifying payment..." : "Complete your payment in the popup window"}
             </div>
             <p className="mt-1 text-xs">The popup will close automatically after successful payment</p>
           </div>
@@ -430,9 +523,12 @@ export function RechargeWalletModal({ onClose, onSuccess }: RechargeWalletModalP
       <CardFooter className="bg-muted/20 flex-shrink-0 border-t">
         <div className="flex w-full justify-end space-x-2">
           <Button type="button" variant="outline" onClick={handleClose} disabled={verifyingPayment}>
-            {processingPayment && !verifyingPayment ? 'Cancel Payment' : 'Cancel'}
+            {processingPayment && !verifyingPayment ? "Cancel Payment" : "Cancel"}
           </Button>
-          <Button onClick={form.handleSubmit(handleSubmit)} disabled={processingPayment || !form.formState.isValid || rechargeWallet.isPending}>
+          <Button
+            onClick={form.handleSubmit(handleSubmit)}
+            disabled={processingPayment || !form.formState.isValid || rechargeWallet.isPending}
+          >
             {verifyingPayment ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -444,11 +540,11 @@ export function RechargeWalletModal({ onClose, onSuccess }: RechargeWalletModalP
                 Processing...
               </>
             ) : (
-              'Proceed to Payment'
+              "Proceed to Payment"
             )}
           </Button>
         </div>
       </CardFooter>
     </Card>
-  );
+  )
 }
