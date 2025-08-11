@@ -337,6 +337,47 @@ export class BulkOperationsController {
   }
 
   /**
+   * Bulk edit order details (pickup address, weight, dimensions) via selection or filters
+   */
+  async editOrderDetails(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const userId = request.userPayload!.id;
+      const body = request.body as {
+        order_ids?: string[];
+        updates: { hub_id?: string; weight?: number; length?: number; breadth?: number; height?: number };
+        filters?: {
+          status?: string;
+          dateRange?: [string | undefined, string | undefined];
+          channel?: string; // enum Channel as string
+        };
+      };
+
+      const result = await this.bulkOperationsService.editOrderDetails(
+        {
+          order_ids: body.order_ids || [],
+          updates: body.updates || {},
+          filters: body.filters
+            ? {
+                status: body.filters.status,
+                dateRange:
+                  body.filters.dateRange && body.filters.dateRange[0] && body.filters.dateRange[1]
+                    ? [new Date(body.filters.dateRange[0]!), new Date(body.filters.dateRange[1]!)]
+                    : [undefined, undefined],
+                channel: body.filters.channel,
+              }
+            : undefined,
+        },
+        userId
+      );
+
+      return reply.code(202).send({ success: true, message: 'Bulk order update started', operation: result.operation });
+    } catch (error: any) {
+      request.log.error(`Error editing order details: ${error.message}`);
+      return reply.code(400).send({ success: false, message: 'Failed to edit order details', error: error.message });
+    }
+  }
+
+  /**
    * Bulk upload orders
    */
   async bulkUploadOrders(request: FastifyRequest, reply: FastifyReply) {

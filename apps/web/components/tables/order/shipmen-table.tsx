@@ -359,6 +359,13 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
   // Define bulk actions
   const bulkActions = [
     {
+      label: 'Edit Order Details',
+      action: (selectedRows: Shipment[]) => {
+        openBulkOperation('edit-order', selectedRows);
+      },
+      isLoading: false,
+    },
+    {
       label: 'Create Shipments',
       action: (selectedRows: Shipment[]) => {
         openBulkOperation('create-shipment', selectedRows);

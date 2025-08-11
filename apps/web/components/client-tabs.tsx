@@ -29,6 +29,7 @@ import {
   RotateCcw,
   List,
 } from 'lucide-react';
+import { cn } from '@lorrigo/ui/lib/utils';
 
 // Icon mapping to convert string names to components
 const iconMap = {
@@ -60,6 +61,7 @@ const iconMap = {
 } as const;
 
 interface ClientTabsProps {
+  className?: string;
   menuItems: {
     name: string;
     path?: string;
@@ -67,9 +69,10 @@ interface ClientTabsProps {
     icon?: ForwardRefExoticComponent<Omit<LucideProps, 'ref'> & RefAttributes<SVGSVGElement>>;
   }[];
   onValueChange?: (value: string) => void;
+  activeTab?: string;
 }
 
-export default function ClientTabs({ menuItems, onValueChange }: ClientTabsProps) {
+export default function ClientTabs({ menuItems, onValueChange, activeTab, className }: ClientTabsProps) {
   const router = useRouter();
   const pathname = usePathname();
   const tabsListRef = useRef<HTMLDivElement>(null);
@@ -167,8 +170,8 @@ export default function ClientTabs({ menuItems, onValueChange }: ClientTabsProps
           )}
 
           {/* Scrollable tab list */}
-          <div ref={tabsListRef} className="scrollbar-hide w-full overflow-x-auto md:w-auto" onScroll={checkScroll}>
-            <Tabs value={currentPath} onValueChange={handleValueChange} className="w-full">
+          <div ref={tabsListRef} className={cn("scrollbar-hide w-full overflow-x-auto md:w-auto", className)} onScroll={checkScroll}>
+            <Tabs value={activeTab || currentPath} onValueChange={handleValueChange} className="w-full">
               <TabsList className="scrollbar-hide inline-flex w-max gap-4 overflow-x-auto whitespace-nowrap px-1">
                 {processedMenuItems.map((item, index) => (
                   <TabsTrigger

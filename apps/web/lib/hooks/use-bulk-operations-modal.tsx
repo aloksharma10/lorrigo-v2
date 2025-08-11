@@ -2,8 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { BulkOperationResponse } from '../apis/shipment';
-
-type BulkOperationType = 'create-shipment' | 'schedule-pickup' | 'cancel-shipment';
+import { BulkOperationType } from '@/components/providers/bulk-operations-provider';
 
 interface UseBulkOperationsModalReturn {
   isOpen: boolean;

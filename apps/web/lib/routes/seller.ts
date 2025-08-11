@@ -14,6 +14,8 @@ import {
   Weight,
   Truck,
   MapPin,
+  Calendar,
+  Edit,
 } from 'lucide-react';
 import { Home, LayoutDashboard, ClipboardList, FilePlus, RotateCcw, AlertCircle } from 'lucide-react';
 
@@ -185,3 +187,29 @@ export function generateSellerSettingsRoutes() {
     iconName: tab.iconName,
   }));
 }
+// create-shipment
+// schedule-pickup
+// cancel-shipment
+// edit-order
+export const BULK_OPERATION_TABS = [
+  {
+    name: 'Create Shipment',
+    icon: FilePlus,
+    path: 'create-shipment',
+  },
+  {
+    name: 'Schedule Pickup',
+    icon: Calendar,
+    path: 'schedule-pickup',
+  },
+  {
+    name: 'Cancel Shipment',
+    icon: RotateCcw,
+    path: 'cancel-shipment',
+  },
+  {
+    name: 'Edit Hub & Dimension',
+    icon: Edit,
+    path: 'edit-order',
+  },
+];

@@ -81,6 +81,7 @@ export interface BulkOperation {
 export interface BulkOperationFilters {
   status?: string;
   dateRange?: [string | undefined, string | undefined];
+  channel?: string;
 }
 
 export interface BulkOperationResponse {
@@ -329,6 +330,25 @@ export const useShippingOperations = () => {
     },
   });
 
+  // Bulk edit order details (pickup address, weight, dimensions)
+  const editBulkOrderDetails = useMutation({
+    mutationFn: async (data: {
+      order_ids?: string[];
+      updates: { hub_id?: string; weight?: number; length?: number; breadth?: number; height?: number };
+      filters?: BulkOperationFilters;
+    }) => {
+      const response = await api.post<any>('/bulk-operations/order-details', data);
+      return response.data as BulkOperationResponse;
+    },
+    onSuccess: () => {
+      toast.success('Bulk order update started');
+      queryClient.invalidateQueries({ queryKey: ['bulk-operations'] });
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to start bulk order update: ${error.message || 'Unknown error'}`);
+    },
+  });
+
   // Get serviceable couriers (rate calculator)
   const getServiceableCouriers = useMutation({
     mutationFn: async (params: RateCalculationParams) => {
@@ -369,6 +389,7 @@ export const useShippingOperations = () => {
     cancelBulkShipments,
     downloadBulkLabels,
     editBulkPickupAddresses,
+    editBulkOrderDetails,
     getServiceableCouriers,
     downloadLabels,
     downloadManifests,

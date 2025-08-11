@@ -26,6 +26,7 @@ export enum JobType {
   BULK_CANCEL_SHIPMENT = 'bulk-cancel-shipment',
   BULK_DOWNLOAD_LABEL = 'bulk-download-label',
   BULK_EDIT_PICKUP_ADDRESS = 'bulk-edit-pickup-address',
+  BULK_EDIT_ORDER_DETAILS = 'bulk-edit-order-details',
   TRACK_SHIPMENTS = 'track-shipments',
   RETRY_TRACK_SHIPMENT = 'retry-track-shipment',
   PROCESS_RTO_CHARGES = 'process-rto-charges',
@@ -49,6 +50,7 @@ interface BulkOperationJobData {
   userId: string;
   operationId: string;
   pickup_date: string;
+  hub_id: string;
 }
 
 /**
@@ -135,6 +137,8 @@ export function initShipmentQueue(fastify: FastifyInstance, shipmentService: Shi
             return await processBulkDownloadLabel(job, fastify, shipmentService);
           case JobType.BULK_EDIT_PICKUP_ADDRESS:
             return await processBulkEditPickupAddress(job, fastify, shipmentService);
+          case JobType.BULK_EDIT_ORDER_DETAILS:
+            return await processBulkEditOrderDetails(job, fastify);
           case JobType.PROCESS_DISPUTE_ACTIONS_CSV:
             return await processDisputeActionsCsv(job, fastify);
           default:
@@ -1020,6 +1024,24 @@ async function processBulkEditPickupAddress(job: Job<BulkOperationJobData>, fast
   // Create a limit function for controlling concurrency
   const limit = pLimit(5);
 
+  // Optional global hub verification if provided at job level (fallback for legacy callers)
+  let globalHub: { id: string; name: string } | null = null;
+  if (job.data.hub_id) {
+    const hub = await fastify.prisma.hub.findFirst({
+      where: { id: job.data.hub_id, user_id: userId, is_active: true },
+      select: { id: true, name: true },
+    });
+    if (!hub) {
+      return {
+        success: false,
+        message: 'Pickup hub not found',
+        error: 'Pickup hub not found',
+        timestamp: new Date(),
+      };
+    }
+    globalHub = hub;
+  }
+
   // Create an array of promises for parallel processing
   const promises = data.map((item, index) => {
     return limit(async () => {
@@ -1048,24 +1070,29 @@ async function processBulkEditPickupAddress(job: Job<BulkOperationJobData>, fast
           };
         }
 
-        // Verify hub exists and belongs to user
-        const hub = await fastify.prisma.hub.findFirst({
-          where: {
-            id: hub_id,
-            user_id: userId,
-            is_active: true,
-          },
-          include: {
-            address: true,
-          },
-        });
-
-        if (!hub) {
+        // Resolve hub to update
+        const effectiveHubId = hub_id || globalHub?.id;
+        if (!effectiveHubId) {
           return {
             id: shipment_id,
             success: false,
-            message: 'Pickup hub not found',
-            error: 'Pickup hub not found',
+            message: 'Missing hub_id for pickup address update',
+            error: 'Missing hub_id',
+            timestamp: new Date(),
+          };
+        }
+
+        // Validate the effective hub belongs to user
+        const targetHub = await fastify.prisma.hub.findFirst({
+          where: { id: effectiveHubId, user_id: userId, is_active: true },
+          select: { id: true, name: true },
+        });
+        if (!targetHub) {
+          return {
+            id: shipment_id,
+            success: false,
+            message: 'Target pickup hub not found or inactive',
+            error: 'Invalid hub',
             timestamp: new Date(),
           };
         }
@@ -1074,7 +1101,7 @@ async function processBulkEditPickupAddress(job: Job<BulkOperationJobData>, fast
         await fastify.prisma.order.update({
           where: { id: shipment.order_id },
           data: {
-            hub_id: hub_id,
+            hub_id: targetHub.id,
           },
         });
 
@@ -1082,7 +1109,7 @@ async function processBulkEditPickupAddress(job: Job<BulkOperationJobData>, fast
           id: shipment_id,
           success: true,
           message: 'Pickup address updated successfully',
-          data: { hub_id, hub_name: hub.name },
+          data: { hub_id: targetHub.id, hub_name: targetHub.name },
           timestamp: new Date(),
         };
       } catch (error) {
@@ -1128,6 +1155,163 @@ async function processBulkEditPickupAddress(job: Job<BulkOperationJobData>, fast
   // Update job progress to 100%
   await job.updateProgress(100);
 
+  return { success: true, results };
+}
+
+/**
+ * Process bulk edit of order details (pickup hub, weight, dimensions)
+ */
+async function processBulkEditOrderDetails(job: Job<BulkOperationJobData>, fastify: FastifyInstance) {
+  const { data, userId, operationId, hub_id } = job.data as unknown as {
+    data: Array<{
+      order_id: string;
+      hub_id?: string;
+      weight?: number;
+      length?: number;
+      breadth?: number;
+      height?: number;
+    }>;
+    userId: string;
+    operationId: string;
+    hub_id?: string;
+  };
+
+  const results: BulkOperationResult[] = [];
+  let successCount = 0;
+  let failedCount = 0;
+
+  await fastify.prisma.bulkOperation.update({ where: { id: operationId }, data: { status: 'PROCESSING' } });
+
+  // Validate hub if provided
+  let targetHubId: string | undefined = undefined;
+  if (hub_id) {
+    const hub = await fastify.prisma.hub.findFirst({
+      where: { id: hub_id, user_id: userId, is_active: true },
+      select: { id: true },
+    });
+    if (!hub) {
+      return {
+        id: hub_id,
+        success: false,
+        message: 'Invalid pickup hub',
+        error: 'Invalid hub',
+        timestamp: new Date(),
+      };
+    }
+    targetHubId = hub.id;
+  }
+  
+  const limit = pLimit(5);
+
+  const promises = data.map((item, index) =>
+    limit(async () => {
+      try {
+        const { order_id, hub_id, weight, length, breadth, height } = item;
+        console.log(order_id, hub_id, weight, length, breadth, height, 'order_id, hub_id, weight, length, breadth, height')
+
+        // Fetch order with package and optional shipment
+        const order = await fastify.prisma.order.findFirst({
+          where: { id: order_id, user_id: userId },
+          include: { package: true, shipment: true },
+        });
+        if (!order) {
+          return {
+            id: order_id,
+            success: false,
+            message: 'Order not found',
+            error: 'Order not found',
+            timestamp: new Date(),
+          };
+        }
+
+        // If shipment exists and not NEW, prevent modification
+        if (order.shipment && order.shipment.status !== 'NEW') {
+          return {
+            id: order_id,
+            success: false,
+            message: 'Order cannot be edited after shipment is processed',
+            error: 'Shipment already processed',
+            timestamp: new Date(),
+          };
+        }
+
+        // Prepare package updates
+        const pkgUpdate: any = {};
+        if (typeof weight === 'number' && !Number.isNaN(weight) && weight > 0) {
+          pkgUpdate.dead_weight = weight;
+        }
+        if (typeof length === 'number' && length > 0) pkgUpdate.length = length;
+        if (typeof breadth === 'number' && breadth > 0) pkgUpdate.breadth = breadth;
+        if (typeof height === 'number' && height > 0) pkgUpdate.height = height;
+
+        // Compute volumetric weight if dimensions are provided
+        if (pkgUpdate.length || pkgUpdate.breadth || pkgUpdate.height) {
+          const L = pkgUpdate.length ?? order.package.length;
+          const B = pkgUpdate.breadth ?? order.package.breadth;
+          const H = pkgUpdate.height ?? order.package.height;
+          // 5000 divisor for cm based calculation → already used in utils
+          const { calculateVolumetricWeight } = await import('@/utils/calculate-order-price');
+          const vol = calculateVolumetricWeight(L || 0, B || 0, H || 0, 'cm');
+          pkgUpdate.volumetric_weight = vol;
+        }
+
+        // Apply DB updates in a transaction
+        await fastify.prisma.$transaction(async (tx) => {
+          // Update hub if needed
+          if (targetHubId) {
+            await tx.order.update({ where: { id: order_id }, data: { hub_id: targetHubId } });
+          }
+
+          // Update package if any field provided
+          if (Object.keys(pkgUpdate).length > 0) {
+            const updatedPkg = await tx.package.update({ where: { id: order.package_id }, data: pkgUpdate });
+            // Update applicable_weight on order
+            const dw = pkgUpdate.dead_weight ?? order.package.dead_weight;
+            const vw = pkgUpdate.volumetric_weight ?? order.package.volumetric_weight;
+            const applicable = Math.max(dw || 0, vw || 0);
+            await tx.order.update({ where: { id: order_id }, data: { package: {update: { volumetric_weight: vw, dead_weight: dw }}, applicable_weight: applicable } });
+          }
+        });
+
+        return {
+          id: order_id,
+          success: true,
+          message: 'Order details updated successfully',
+          data: { hub_id: targetHubId, package_updated: Object.keys(pkgUpdate).length > 0 },
+          timestamp: new Date(),
+        };
+      } catch (error) {
+        return {
+          id: item.order_id || `unknown-${index}`,
+          success: false,
+          message: error instanceof Error ? error.message : 'Unknown error',
+          error: error instanceof Error ? error.message : 'Unknown error',
+          timestamp: new Date(),
+        };
+      }
+    })
+  );
+
+  const processedResults = await Promise.all(promises);
+  for (const result of processedResults) {
+    if (result.success) successCount++;
+    else failedCount++;
+    results.push(result);
+  }
+
+  await fastify.prisma.bulkOperation.update({
+    where: { id: operationId },
+    data: {
+      status: 'COMPLETED',
+      processed_count: data.length,
+      success_count: successCount,
+      failed_count: failedCount,
+      results: JSON.stringify(results),
+    },
+  });
+
+  await generateCsvReport(operationId, results, fastify);
+  await job.updateProgress(100);
   return { success: true, results };
 }
 

@@ -5,7 +5,7 @@ import { useBulkOperationsModal } from '@/lib/hooks/use-bulk-operations-modal';
 import { BulkOperationResponse } from '@/lib/apis/shipment';
 import { useModalStore } from '@/modal/modal-store';
 
-type BulkOperationType = 'create-shipment' | 'schedule-pickup' | 'cancel-shipment';
+export type BulkOperationType = 'create-shipment' | 'schedule-pickup' | 'cancel-shipment' | 'edit-order';
 
 interface BulkOperationsContextType {
   openBulkOperation: (type: BulkOperationType, rows?: any[]) => void;
@@ -38,6 +38,7 @@ export function BulkOperationsProvider({ children, onOperationComplete }: BulkOp
       operationType: type,
       selectedRows: rows,
       onOperationComplete: handleOperationComplete,
+      className: 'max-w-2xl',
     });
   };
 

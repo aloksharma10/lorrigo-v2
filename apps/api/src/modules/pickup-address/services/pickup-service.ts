@@ -251,12 +251,12 @@ export class PickupService {
 
       // Add status filter
       if (is_active && is_active.length > 0) {
-        where.is_active = { in: is_active.map((v) => v === 'true') };
+        where.is_active = true;
       }
 
       // Add primary filter
       if (is_primary && is_primary.length > 0) {
-        where.is_primary = { in: is_primary.map((v) => v === 'true') };
+        where.is_primary = true;
       }
 
       // Build order by clause

@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Checkbox, Button } from '@lorrigo/ui/components';
+import { Checkbox, Button, Input } from '@lorrigo/ui/components';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@lorrigo/ui/components';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@lorrigo/ui/components';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@lorrigo/ui/components';
@@ -19,9 +19,12 @@ import { useCourierOperations } from '@/lib/apis/couriers';
 import { Badge } from '@lorrigo/ui/components';
 import { useModalStore } from '@/modal/modal-store';
 import { useCSVUpload } from '../providers/csv-upload-provider';
+import { useHubOperations } from '@/lib/apis/hub';
+import ClientTabs from '../client-tabs';
+import { BULK_OPERATION_TABS } from '@/lib/routes/seller';
 
 // Define the operation types
-type BulkOperationType = 'create-shipment' | 'schedule-pickup' | 'cancel-shipment';
+type BulkOperationType = 'create-shipment' | 'schedule-pickup' | 'cancel-shipment' | 'edit-order';
 
 // Props interface
 interface BulkOrdersOperationsModalProps {
@@ -55,6 +58,7 @@ const cancelShipmentSchema = z.object({
 const filterSchema = z.object({
   status: z.string().optional(),
   dateRange: z.tuple([z.date().optional(), z.date().optional()]).optional(),
+  channel: z.string().optional(),
 });
 
 export function BulkOrdersOperationsModal({
@@ -78,7 +82,9 @@ export function BulkOrdersOperationsModal({
   const [selectedCouriers, setSelectedCouriers] = useState<CourierItem[]>([]);
   const [courierToAdd, setCourierToAdd] = useState<string>('');
 
-  const { createBulkShipments, scheduleBulkPickups, cancelBulkShipments, downloadBulkOperationFile } = useShippingOperations();
+  const { createBulkShipments, scheduleBulkPickups, cancelBulkShipments, downloadBulkOperationFile, editBulkOrderDetails } = useShippingOperations();
+  const { getHubsQuery } = useHubOperations();
+  const hubsQuery = getHubsQuery({ limit: 100, is_active: 'true' });
   const { getCouriersQuery } = useCourierOperations();
   const couriersQuery = getCouriersQuery();
   const availableCouriers = couriersQuery.data?.couriers || [];
@@ -112,6 +118,7 @@ export function BulkOrdersOperationsModal({
     defaultValues: {
       status: undefined,
       dateRange: [undefined, undefined],
+      channel: undefined,
     },
   });
 
@@ -142,6 +149,7 @@ export function BulkOrdersOperationsModal({
     filterForm.reset({
       status: undefined,
       dateRange: [undefined, undefined],
+      channel: undefined,
     });
 
     setActiveTab(operationType);
@@ -244,6 +252,22 @@ export function BulkOrdersOperationsModal({
           reason,
           filters,
         });
+      } else if (activeTab === 'edit-order') {
+        // Build updates from local state
+        const { hubToSet, weightToSet, lengthToSet, breadthToSet, heightToSet } = editOrderState;
+        // Prepare order_ids if using selection
+        const order_ids = !useFilters && selectedRows.length > 0 ? selectedRows.map((row) => row.id) : undefined;
+        result = await editBulkOrderDetails.mutateAsync({
+          order_ids,
+          updates: {
+            hub_id: hubToSet || undefined,
+            weight: weightToSet ? Number(weightToSet) : undefined,
+            length: lengthToSet ? Number(lengthToSet) : undefined,
+            breadth: breadthToSet ? Number(breadthToSet) : undefined,
+            height: heightToSet ? Number(heightToSet) : undefined,
+          },
+          filters: filters,
+        });
       }
 
       // Handle successful operation
@@ -308,6 +332,8 @@ export function BulkOrdersOperationsModal({
         return 'Bulk Pickup Scheduling';
       case 'cancel-shipment':
         return 'Bulk Shipment Cancellation';
+      case 'edit-order':
+        return 'Bulk Edit Hub & Dimension';
       default:
         return 'Bulk Operation';
     }
@@ -322,16 +348,29 @@ export function BulkOrdersOperationsModal({
         return 'Schedule pickup for multiple shipments';
       case 'cancel-shipment':
         return 'Cancel multiple shipments';
+      case 'edit-order':
+        return 'Edit pickup address, weight and dimensions for many orders';
       default:
         return '';
     }
   };
 
+  // Local state for edit order tab
+  const [editOrderState, setEditOrderState] = useState({
+    hubToSet: '' as string,
+    weightToSet: '' as string,
+    lengthToSet: '' as string,
+    breadthToSet: '' as string,
+    heightToSet: '' as string,
+  });
+
   return (
     <div className="flex flex-col px-6">
       <div className="flex items-center justify-between border-b py-4">
         <div>
-          <h2 className="text-xl font-semibold">{getOperationTitle(activeTab)}</h2>
+          <h2 className="text-xl font-semibold">
+            {getOperationTitle(activeTab)}
+          </h2>
           <p className="text-muted-foreground text-sm">{getOperationDescription(activeTab)}</p>
         </div>
         <button onClick={handleClose} className="rounded-full p-1 hover:bg-neutral-100">
@@ -339,12 +378,8 @@ export function BulkOrdersOperationsModal({
         </button>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as BulkOperationType)}>
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="create-shipment">Create Shipments</TabsTrigger>
-          <TabsTrigger value="schedule-pickup">Schedule Pickup</TabsTrigger>
-          <TabsTrigger value="cancel-shipment">Cancel Shipments</TabsTrigger>
-        </TabsList>
+      <Tabs value={activeTab}>
+        <ClientTabs menuItems={BULK_OPERATION_TABS} onValueChange={(value) => setActiveTab(value as BulkOperationType)} activeTab={activeTab} />
 
         <div className="mt-4">
           {selectedRows.length > 0 && (
@@ -364,23 +399,27 @@ export function BulkOrdersOperationsModal({
               <h3 className="mb-3 text-sm font-medium">Filter Items</h3>
               <Form {...filterForm}>
                 <form className="space-y-4">
+                  {/* Channel Filter */}
                   <FormField
                     control={filterForm.control}
-                    name="status"
+                    name="channel"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Status</FormLabel>
+                        <FormLabel>Channel</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select status" />
+                              <SelectValue placeholder="All channels" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="NEW">New</SelectItem>
-                            <SelectItem value="COURIER_ASSIGNED">Courier Assigned</SelectItem>
-                            <SelectItem value="PICKUP_SCHEDULED">Pickup Scheduled</SelectItem>
-                            <SelectItem value="IN_TRANSIT">In Transit</SelectItem>
+                            <SelectItem value="CUSTOM">Custom</SelectItem>
+                            <SelectItem value="SHOPIFY">Shopify</SelectItem>
+                            <SelectItem value="WEBSITE">Website</SelectItem>
+                            <SelectItem value="WHATSAPP">WhatsApp</SelectItem>
+                            <SelectItem value="INSTAGRAM">Instagram</SelectItem>
+                            <SelectItem value="FACEBOOK">Facebook</SelectItem>
+                            <SelectItem value="EMAIL">Email</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -629,6 +668,67 @@ export function BulkOrdersOperationsModal({
             </Form>
           </TabsContent>
         </div>
+        {/* Edit Order Tab content */}
+        <TabsContent value="edit-order">
+          <div className="space-y-4">
+            <div className="rounded-md border p-4">
+              <h3 className="mb-2 text-sm font-medium">Pickup Address</h3>
+              <Select value={editOrderState.hubToSet} onValueChange={(v) => setEditOrderState((s) => ({ ...s, hubToSet: v }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Set pickup hub (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {hubsQuery.isLoading ? (
+                    <SelectItem value="loading" disabled>
+                      Loading hubs...
+                    </SelectItem>
+                  ) : (
+                    (hubsQuery.data?.hubs || []).map((hub: any) => (
+                      <SelectItem key={hub.id} value={hub.id}>
+                        {hub.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="rounded-md border p-4">
+              <h3 className="mb-2 text-sm font-medium">Package Details</h3>
+              <div className="grid grid-cols-4 gap-3">
+                <Input
+                  className="rounded border px-3 py-2"
+                  placeholder="Weight (kg)"
+                  value={editOrderState.weightToSet}
+                  onChange={(e) => setEditOrderState((s) => ({ ...s, weightToSet: e.target.value }))}
+                  inputMode="decimal"
+                />
+                <Input
+                  className="rounded border px-3 py-2"
+                  placeholder="Length (cm)"
+                  value={editOrderState.lengthToSet}
+                  onChange={(e) => setEditOrderState((s) => ({ ...s, lengthToSet: e.target.value }))}
+                  inputMode="decimal"
+                />
+                <Input
+                  className="rounded border px-3 py-2"
+                  placeholder="Breadth (cm)"
+                  value={editOrderState.breadthToSet}
+                  onChange={(e) => setEditOrderState((s) => ({ ...s, breadthToSet: e.target.value }))}
+                  inputMode="decimal"
+                />
+                <Input
+                  className="rounded border px-3 py-2"
+                  placeholder="Height (cm)"
+                  value={editOrderState.heightToSet}
+                  onChange={(e) => setEditOrderState((s) => ({ ...s, heightToSet: e.target.value }))}
+                  inputMode="decimal"
+                />
+              </div>
+              <p className="text-muted-foreground mt-2 text-xs">Leave fields empty to skip updating that attribute.</p>
+            </div>
+          </div>
+        </TabsContent>
       </Tabs>
 
       <div className="flex items-center justify-end gap-2 border-t py-4">

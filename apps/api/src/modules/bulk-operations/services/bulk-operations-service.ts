@@ -1,27 +1,23 @@
 import { FastifyInstance } from 'fastify';
 import fs from 'fs';
 import { ShipmentService } from '@/modules/shipments/services/shipmentService';
-import { VendorService } from '@/modules/vendors/vendor.service';
 import { addJob, QueueNames } from '@/lib/queue';
 import { JobType } from '@/modules/shipments/queues/shipmentQueue';
 import { OrderService } from '@/modules/orders/services/order-service';
 import { randomUUID } from 'crypto';
 import { BillingJobType } from '@/modules/billing/queues/billingQueue';
 import csv from 'csvtojson';
+import { ShipmentBucket } from '@lorrigo/utils';
 
 /**
  * Service for handling bulk operations
  */
 export class BulkOperationsService {
   private shipmentService: ShipmentService;
-  private vendorService: VendorService;
-  private orderService: OrderService;
 
   constructor(private fastify: FastifyInstance) {
     const orderService = new OrderService(fastify);
     this.shipmentService = new ShipmentService(fastify, orderService);
-    this.vendorService = new VendorService(fastify);
-    this.orderService = orderService;
   }
 
   /**
@@ -390,6 +386,80 @@ export class BulkOperationsService {
       this.fastify.log.error(`Error editing bulk pickup addresses: ${error}`);
       throw error;
     }
+  }
+
+  /**
+   * Bulk edit order details (pickup hub, weight, and dimensions)
+   * Supports selection by specific order_ids or by filters (status/dateRange/channel)
+   */
+  async editOrderDetails(
+    data: {
+      order_ids?: string[];
+      updates: { hub_id?: string; weight?: number; length?: number; breadth?: number; height?: number };
+      filters?: {
+        status?: string;
+        dateRange?: [Date | undefined, Date | undefined];
+        channel?: string; // prisma enum Channel as string
+      };
+    },
+    userId: string
+  ) {
+    const { order_ids = [], updates, filters } = data;
+
+    // Build list of orders
+    let ordersToProcess: string[] = [];
+    if (order_ids.length > 0) {
+      const orders = await this.fastify.prisma.order.findMany({
+        where: { id: { in: order_ids }, shipment: { status: 'NEW', bucket: ShipmentBucket.NEW }, user_id: userId },
+        select: { id: true },
+      });
+      ordersToProcess = orders.map((o) => o.id);
+    } else if (filters) {
+      const where: any = { user_id: userId };
+      if (filters.status) where.status = filters.status;
+      if (filters.dateRange && filters.dateRange[0] && filters.dateRange[1]) {
+        where.created_at = { gte: filters.dateRange[0], lte: filters.dateRange[1] };
+      }
+      if (filters.channel) {
+        where.order_channel_config = { channel: filters.channel };
+      }
+      const orders = await this.fastify.prisma.order.findMany({ where, select: { id: true }, take: 2000 });
+      ordersToProcess = orders.map((o) => o.id);
+    }
+
+    if (ordersToProcess.length === 0) {
+      throw new Error('No orders found to update');
+    }
+
+    const operationCode = this.generateOperationCode();
+    const operation = await this.fastify.prisma.bulkOperation.create({
+      data: {
+        type: 'EDIT_ORDER_DETAILS',
+        status: 'PENDING',
+        code: operationCode,
+        user_id: userId,
+        total_count: ordersToProcess.length,
+        processed_count: 0,
+        success_count: 0,
+        failed_count: 0,
+      },
+    });
+
+    // Prepare queue payload items
+    const items = ordersToProcess.map((id) => ({ order_id: id, ...updates, hub_id: updates.hub_id }));
+
+    await addJob(
+      QueueNames.BULK_OPERATION,
+      JobType.BULK_EDIT_ORDER_DETAILS,
+      {
+        data: items,
+        userId,
+        operationId: operation.id,
+      },
+      { attempts: 3 }
+    );
+
+    return { success: true, operation };
   }
 
   /**
