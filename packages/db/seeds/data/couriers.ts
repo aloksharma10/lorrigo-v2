@@ -355,6 +355,22 @@ export const shiprocketStatusMappings = [
   // Bucket 1: READY_TO_SHIP
   {
     courier_name: 'SHIPROCKET',
+    status_code: '1',
+    status_label: 'Ready To Ship',
+    status_description: 'Ready To Ship',
+    bucket: ShipmentBucket.READY_TO_SHIP,
+    is_active: true,
+  },
+  {
+    courier_name: 'SHIPROCKET',
+    status_code: '1',
+    status_label: 'Pickup Awaited',
+    status_description: 'Pickup Awaited',
+    bucket: ShipmentBucket.READY_TO_SHIP,
+    is_active: true,
+  },
+  {
+    courier_name: 'SHIPROCKET',
     status_code: 'NA',
     status_label: 'Pickup Scheduled',
     status_description: 'Pickup Scheduled',

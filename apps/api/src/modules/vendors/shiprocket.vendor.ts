@@ -673,6 +673,15 @@ export class ShiprocketVendor extends BaseVendor {
         const statusCode = activity['sr-status'] || '';
         const statusLabel = activity['sr-status-label'] || activity.activity;
 
+        // Normalize values
+        const normalizedStatusCode = (statusCode || '')?.trim()?.toUpperCase() || '';
+        const normalizedStatusLabel = (statusLabel || '')?.trim()?.toUpperCase() || '';
+
+        // Skip bucket detection and further processing if NA
+        if (normalizedStatusCode === 'NA' || normalizedStatusLabel === 'NA') {
+          continue; // Skip this activity entirely
+        }
+
         // Use optimized bucket detection with vendor-specific mappings
         const bucket = this.bucketMappingService
           ? await this.bucketMappingService.detectBucket(statusLabel, statusCode, 'SHIPROCKET')

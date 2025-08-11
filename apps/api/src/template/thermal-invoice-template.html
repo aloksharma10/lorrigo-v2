@@ -145,7 +145,7 @@
         <div class="text-sm">Weight: {{orderWeight}} {{orderWeightUnit}}</div>
         <div class="text-sm">Payment: {{paymentMode}}</div>
         {{#if isCOD}}
-        <div class="text-sm font-bold">(Collect: ₹{{amountToCollect}})</div>
+        <div class="text-sm font-bold">(Amount to Collect: ₹{{amountToCollect}})</div>
         {{/if}}
         <div class="text-sm text-wrap">{{carrierName}}</div>
         {{#if awb}}<div class="text-sm">AWB: {{awb}}</div>{{/if}}
@@ -166,12 +166,12 @@
     <div class="text-sm text-wrap">{{sellerAddress}}</div>
     <div class="text-sm">India</div>
 
-    <div class="section-title">Return Address:</div>
+    <div class="section-title">RTO:</div>
     <div class="text-sm text-wrap">{{rtoAddress}}</div>
     <div class="text-sm">{{rtoCity}}, {{rtoState}}</div>
 
     <div class="logo-container">
-      <img src="{{companyLogoUrl}}" alt="Company Logo" class="logo">
+      <img src="{{companyLogoUrl}}" class="logo">
     </div>
 
     <div class="separator"></div>

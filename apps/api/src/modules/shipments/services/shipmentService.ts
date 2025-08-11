@@ -2391,12 +2391,12 @@ export class ShipmentService {
       routingCode: s.routing_code || '',
       sellerName: s.order?.seller_details?.seller_name || '',
       sellerAddress: s.order?.seller_details?.address?.address || '',
-      rtoAddress: s.order?.hub?.rto_address?.address || '',
+      rtoAddress: s.order?.hub?.rto_address?.address || 'Same as Shipped by',
       rtoCity: s.order?.hub?.rto_address?.city || '',
       rtoState: s.order?.hub?.rto_address?.state || '',
       companyLogoUrl,
       lorrigoLogoUrl: 'https://lorrigo.in/_next/static/media/lorrigologo.e54a51f3.svg',
-      productName: s.order?.items?.[0]?.name || '',
+      productName: s.order?.items?.map((item) => item.name).join(', ') || '',
       invoiceNumber: s.order?.order_invoice_number || '',
       sellerGSTIN: s.order?.seller_details?.gst_no || '',
     }));
@@ -2444,7 +2444,7 @@ export class ShipmentService {
     const mapped = shipments.map((s) => ({
       awb: s.awb!,
       order_reference_id: s.order?.order_reference_id || s.order?.order_number || s.order?.code || '',
-      productName: s.order?.items?.[0]?.name || '',
+      productName: s.order?.items?.map((item) => item.name).join(', ') || '',
       barcodeUrl: '', // Will be generated in utility
       companyLogoUrl,
     }));
