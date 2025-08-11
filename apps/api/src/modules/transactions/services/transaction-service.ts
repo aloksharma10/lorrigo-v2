@@ -3,10 +3,13 @@ import { PrismaClient, TransactionStatus, ChargeType, Prisma } from '@lorrigo/db
 import { generateId, getFinancialYear } from '@lorrigo/utils';
 import { Queue } from 'bullmq';
 import { QueueNames } from '@/lib/queue';
+import { PaymentGatewayFactory } from './payment-gateway.factory';
+import { PaymentGatewayType } from '../interfaces/payment-gateway.interface';
 
 /**
  * Type definitions for transaction service
  */
+
 export enum TransactionType {
   CREDIT = 'CREDIT',
   DEBIT = 'DEBIT',
@@ -639,7 +642,7 @@ export class TransactionService {
   }
 
   /**
-   * Recharge a user's wallet using PhonePe payment gateway
+   * Recharge a user's wallet using Cashfree payment gateway
    * @param userId User ID
    * @param amount Amount to recharge
    * @param redirectUrl URL to redirect after payment
@@ -663,7 +666,7 @@ export class TransactionService {
         return { success: false, error: walletResult.error };
       }
 
-      // Generate merchant transaction ID
+      // Generate merchant transaction ID (Cashfree order_id)
       const merchantTransactionId = `WT-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 
       // Create a pending transaction
@@ -683,12 +686,16 @@ export class TransactionService {
         },
       });
 
-      // Import PhonePe service dynamically to avoid circular dependencies
-      const { PhonePeService } = await import('./phonepe-service');
-      const phonePeService = new PhonePeService(this.fastify);
+      // Use the payment gateway factory to get Cashfree service
+      const paymentGateway = PaymentGatewayFactory.getPaymentGateway(PaymentGatewayType.CASHFREE, this.fastify);
 
-      // Generate payment link using PhonePe
-      const paymentResult = await phonePeService.generatePaymentLink(amount, merchantTransactionId, userId, `${redirectUrl}/${merchantTransactionId}`);
+      // Generate payment link using Cashfree
+      const paymentResult = await paymentGateway.generatePaymentSession(
+        amount, 
+        merchantTransactionId, 
+        userId, 
+        `${redirectUrl}/${merchantTransactionId}`
+      );
 
       if (!paymentResult.success) {
         // If payment link generation fails, mark transaction as failed
@@ -706,8 +713,9 @@ export class TransactionService {
       return {
         success: true,
         transaction,
-        paymentLink: paymentResult.paymentLink,
+        // paymentLink: paymentResult.paymentLink,
         merchantTransactionId,
+        paymentSessionId: paymentResult.paymentSessionId,
       };
     } catch (error) {
       this.fastify.log.error(`Error initiating wallet recharge: ${error}`);
@@ -718,11 +726,11 @@ export class TransactionService {
   /**
    * Verify and process a wallet recharge callback from payment gateway
    * @param merchantTransactionId Merchant transaction ID
-   * @param paymentStatus Payment status from gateway
-   * @param gatewayReference Gateway reference ID
+   * @param paymentStatus Payment status from gateway (optional, will be verified)
+   * @param gatewayReference Gateway reference ID (optional)
    * @returns Updated transaction details
    */
-  async verifyWalletRecharge(merchantTransactionId: string, paymentStatus: 'SUCCESS' | 'FAILURE', gatewayReference: string) {
+  async verifyWalletRecharge(merchantTransactionId: string, paymentStatus?: 'SUCCESS' | 'PENDING' | 'FAILURE', gatewayReference?: string) {
     try {
       // Find the pending transaction
       const transaction = await this.prisma.walletRechargeTransaction.findUnique({
@@ -735,18 +743,25 @@ export class TransactionService {
       }
 
       if (transaction.status !== TransactionStatus.PENDING) {
-        return { success: false, error: 'Transaction is not in pending state' };
+        // Return success if already completed
+        if (transaction.status === TransactionStatus.COMPLETED) {
+          return {
+            success: true,
+            transaction,
+            message: 'Transaction already completed',
+          };
+        }
+        return { success: false, error: `Transaction is in ${transaction.status} state` };
       }
 
-      // Import PhonePe service dynamically to avoid circular dependencies
-      const { PhonePeService } = await import('./phonepe-service');
-      const phonePeService = new PhonePeService(this.fastify);
+      // Use the payment gateway factory to get Cashfree service
+      const paymentGateway = PaymentGatewayFactory.getPaymentGateway(PaymentGatewayType.CASHFREE, this.fastify);
 
-      // Verify payment status with PhonePe
-      const verificationResult = await phonePeService.checkPaymentStatus(merchantTransactionId);
+      // Verify payment status with Cashfree
+      const verificationResult = await paymentGateway.checkPaymentStatus(merchantTransactionId);
 
-      // If verification fails, use the provided status
-      const finalPaymentStatus = verificationResult.success ? verificationResult.paymentStatus : paymentStatus;
+      // Use verified status or fallback to provided status
+      const finalPaymentStatus = verificationResult.success ? verificationResult.paymentStatus : paymentStatus || 'FAILURE';
 
       // Process the transaction based on payment status
       if (finalPaymentStatus === 'SUCCESS') {
@@ -777,6 +792,20 @@ export class TransactionService {
           transaction: updatedTransaction,
           message: 'Wallet recharged successfully',
         };
+      } else if (finalPaymentStatus === 'PENDING') {
+        const updatedTransaction = await this.prisma.walletRechargeTransaction.update({
+          where: { id: transaction.id },
+          data: {
+            status: TransactionStatus.PENDING,
+            merchant_transaction_id: merchantTransactionId,
+          },
+        });
+
+        return {
+          success: false,
+          transaction: updatedTransaction,
+          error: 'Transaction is pending',
+        };
       } else {
         // Mark transaction as failed
         const updatedTransaction = await this.prisma.walletRechargeTransaction.update({
@@ -790,7 +819,7 @@ export class TransactionService {
         return {
           success: false,
           transaction: updatedTransaction,
-          error: 'Payment failed',
+          error: `PAYMENT_${finalPaymentStatus}`,
         };
       }
     } catch (error) {
@@ -1380,12 +1409,11 @@ export class TransactionService {
       for (const transaction of failedTransactions) {
         if (!transaction.merchant_transaction_id) continue;
 
-        // Import PhonePe service dynamically to avoid circular dependencies
-        const { PhonePeService } = await import('./phonepe-service');
-        const phonePeService = new PhonePeService(this.fastify);
+        // Use the payment gateway factory to get Cashfree service
+        const paymentGateway = PaymentGatewayFactory.getPaymentGateway(PaymentGatewayType.CASHFREE, this.fastify);
 
-        // Check payment status with PhonePe
-        const statusResult = await phonePeService.checkPaymentStatus(transaction.merchant_transaction_id);
+        // Check payment status with Cashfree
+        const statusResult = await paymentGateway.checkPaymentStatus(transaction.merchant_transaction_id);
 
         if (!statusResult.success) continue;
 
@@ -1489,13 +1517,18 @@ export class TransactionService {
         },
       });
 
-      // Import PhonePe service dynamically to avoid circular dependencies
-      const { PhonePeService } = await import('./phonepe-service');
-      const phonePeService = new PhonePeService(this.fastify);
+      // Use the payment gateway factory to get Cashfree service
+      const paymentGateway = PaymentGatewayFactory.getPaymentGateway(PaymentGatewayType.CASHFREE, this.fastify);
 
-      // Generate payment link using PhonePe
+      // Generate payment link using Cashfree
       const redirectUrl = `${origin}/seller/invoice/callback/${invoiceId}`;
-      const paymentResult = await phonePeService.generatePaymentLink(amount, merchantTransactionId, userId, redirectUrl);
+      const paymentResult = await (paymentGateway as any).generateInvoicePaymentLink?.(
+        amount, 
+        merchantTransactionId, 
+        userId, 
+        invoiceId,
+        redirectUrl
+      ) || await paymentGateway.generatePaymentLink(amount, merchantTransactionId, userId, redirectUrl);
 
       if (!paymentResult.success) {
         // If payment link generation fails, mark transaction as failed
@@ -1558,12 +1591,11 @@ export class TransactionService {
         return { success: false, error: 'Unauthorized access to invoice' };
       }
 
-      // Import PhonePe service dynamically to avoid circular dependencies
-      const { PhonePeService } = await import('./phonepe-service');
-      const phonePeService = new PhonePeService(this.fastify);
+      // Use the payment gateway factory to get Cashfree service
+      const paymentGateway = PaymentGatewayFactory.getPaymentGateway(PaymentGatewayType.CASHFREE, this.fastify);
 
-      // Verify payment status with PhonePe
-      const verificationResult = await phonePeService.checkPaymentStatus(merchantTransactionId);
+      // Verify payment status with Cashfree
+      const verificationResult = await paymentGateway.checkPaymentStatus(merchantTransactionId);
 
       if (!verificationResult.success) {
         return { success: false, error: 'Failed to verify payment status' };

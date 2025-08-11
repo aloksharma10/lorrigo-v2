@@ -193,9 +193,9 @@ export class TransactionController {
       return reply.code(200).send({
         valid: true,
         message: 'Wallet recharge initiated successfully',
-        url: result.paymentLink,
         merchantTransactionId: result.merchantTransactionId,
         transaction: result.transaction,
+        paymentSessionId: result.paymentSessionId,
       });
     } catch (error) {
       request.log.error(`Error recharging wallet: ${error}`);
@@ -224,10 +224,12 @@ export class TransactionController {
         undefined as any // Let the service determine the gateway reference
       );
 
+      console.log(result, 'result')
+
       if (!result.success) {
         return reply.code(400).send({
           valid: false,
-          message: result.error,
+          message: result.error || result.message,
         });
       }
 

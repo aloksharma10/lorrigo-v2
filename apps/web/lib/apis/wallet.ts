@@ -36,7 +36,8 @@ export const useWalletOperations = () => {
         valid: boolean;
         message: string;
         merchantTransactionId: string;
-        url: string;
+        url?: string;
+        paymentSessionId?: string;
       }>('/transactions/wallet/recharge', {
         amount: data.amount,
         origin: window.location.origin, // Using origin similar to old code

@@ -24,6 +24,7 @@ import {
 } from '@lorrigo/ui/components';
 import { X, Loader2, IndianRupee } from 'lucide-react';
 import { useWalletOperations } from '@/lib/apis/wallet';
+import { load as loadCashfree } from '@cashfreepayments/cashfree-js';
 
 interface RechargeWalletModalProps {
   onClose: () => void;
@@ -87,7 +88,7 @@ export function RechargeWalletModal({ onClose, onSuccess }: RechargeWalletModalP
         return;
       }
 
-      const { type, merchantTransactionId, error } = event.data;
+      const { type, merchantTransactionId, error, status } = event.data;
 
       // Validate transaction ID
       if (!merchantTransactionId || merchantTransactionId !== pendingTransactionId) {
@@ -163,6 +164,7 @@ export function RechargeWalletModal({ onClose, onSuccess }: RechargeWalletModalP
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [pendingTransactionId, onSuccess, onClose, form, verifyWalletRecharge, router]);
+
 
   // Enhanced popup monitoring with better polling
   useEffect(() => {
@@ -269,6 +271,37 @@ export function RechargeWalletModal({ onClose, onSuccess }: RechargeWalletModalP
         amount: data.amount,
         redirectUrl: `${window.location.origin}/seller/wallet/callback`,
       });
+
+      // Prefer SDK if available
+      if (result.paymentSessionId && result.merchantTransactionId) {
+        setPendingTransactionId(result.merchantTransactionId);
+        try {
+          const cashfree = await loadCashfree({ mode: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox' });
+          // Open modal checkout
+          const checkoutResult = await cashfree?.checkout({
+            paymentSessionId: result.paymentSessionId,
+            redirectTarget: '_modal',
+          });
+
+          // After modal completion, verify regardless of result
+          const verify = await verifyWalletRecharge.mutateAsync({ merchantTransactionId: result.merchantTransactionId });
+          if (verify.valid) {
+            toast.success('Wallet recharged successfully');
+            if (onSuccess && form.getValues('amount')) onSuccess(form.getValues('amount'));
+            cleanup();
+            onClose();
+            return;
+          }
+
+          // If still pending, inform user
+          toast.error(verify.message || 'Payment not completed');
+          cleanup();
+          onClose();
+          return;
+        } catch (e: any) {
+          // Fallback to link popup if SDK fails
+        }
+      }
 
       if (result.url && result.merchantTransactionId) {
         setPendingTransactionId(result.merchantTransactionId);

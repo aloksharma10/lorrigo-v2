@@ -16,6 +16,7 @@
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",
     "@bprogress/next": "^3.2.12",
+    "@cashfreepayments/cashfree-js": "^1.0.5",
     "@hookform/resolvers": "^5.0.1",
     "@lorrigo/db": "workspace:*",
     "@lorrigo/ui": "workspace:*",

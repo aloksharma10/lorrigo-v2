@@ -50,12 +50,12 @@ export const APP_CONFIG = {
     CREDENTIALS: process.env.CORS_CREDENTIALS === 'true',
   },
 
-  // PhonePe settings
-  PHONEPE: {
-    MERCHANT_ID: process.env.PHONEPE_MERCHANT_ID || 'LORRIGO',
-    SALT_KEY: process.env.PHONEPE_SALT_KEY || 'test-salt-key',
-    SALT_INDEX: process.env.PHONEPE_SALT_INDEX || '1',
-    API_BASEURL: process.env.PHONEPE_API_BASEURL || 'https://api.phonepe.com/apis/hermes',
+  // Cashfree payment gateway settings
+  CASHFREE: {
+    CLIENT_ID: process.env.CASHFREE_CLIENT_ID || '',
+    CLIENT_SECRET: process.env.CASHFREE_CLIENT_SECRET || '',
+    ENVIRONMENT: process.env.CASHFREE_ENVIRONMENT || 'SANDBOX', // SANDBOX or PRODUCTION
+    API_VERSION: process.env.CASHFREE_API_VERSION || '2023-08-01',
   },
 
   // Notification settings

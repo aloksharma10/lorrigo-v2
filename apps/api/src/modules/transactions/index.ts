@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { TransactionController } from './controllers/transaction-controller';
+import { WebhookController } from './controllers/webhook-controller';
 import { TransactionService, TransactionType, TransactionEntityType } from './services/transaction-service';
 import { Role } from '@lorrigo/db';
 import { initTransactionWorker } from './queues/transaction-worker';
@@ -9,9 +10,10 @@ import { initTransactionWorker } from './queues/transaction-worker';
  * @param fastify Fastify instance
  */
 export default async function transactionRoutes(fastify: FastifyInstance): Promise<void> {
-  // Create controller instance
+  // Create controller instances
   initTransactionWorker(fastify);
   const transactionController = new TransactionController(fastify);
+  const webhookController = new WebhookController(fastify);
 
   // Create shipment transaction
   fastify.post('/shipment', {
@@ -108,6 +110,7 @@ export default async function transactionRoutes(fastify: FastifyInstance): Promi
             url: { type: 'string' },
             merchantTransactionId: { type: 'string' },
             transaction: { type: 'object' },
+            paymentSessionId: { type: 'string' },
           },
         },
         400: {
@@ -300,6 +303,47 @@ export default async function transactionRoutes(fastify: FastifyInstance): Promi
     },
     preHandler: [fastify.authenticate, fastify.authorize([Role.SELLER, Role.ADMIN])],
     handler: (request, reply) => transactionController.verifyInvoicePayment(request, reply),
+  });
+
+  // Webhook routes (no authentication required for webhooks)
+  fastify.post('/webhook/cashfree', {
+    schema: {
+      tags: ['Webhooks'],
+      summary: 'Handle Cashfree payment webhooks',
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+          },
+        },
+        400: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            error: { type: 'string' },
+          },
+        },
+      },
+    },
+    handler: (request, reply) => webhookController.handleCashfreeWebhook(request, reply),
+  });
+
+  // Payment return handler for redirects from payment gateway
+  fastify.get('/payment/return', {
+    schema: {
+      tags: ['Payments'],
+      summary: 'Handle payment return from gateway',
+      querystring: {
+        type: 'object',
+        properties: {
+          order_id: { type: 'string' },
+          order_token: { type: 'string' },
+        },
+        required: ['order_id'],
+      },
+    },
+    handler: (request, reply) => webhookController.handlePaymentReturn(request, reply),
   });
 
   // Log that the module has been registered
