@@ -365,10 +365,10 @@ export class TransactionController {
    */
   async payInvoice(request: FastifyRequest, reply: FastifyReply) {
     try {
-      const userId = request.userPayload!.id;
+      const user = request.userPayload!;
       const { amount, invoiceId, origin } = request.body as z.infer<typeof PayInvoiceSchema>;
 
-      const result = await this.transactionService.payInvoice(userId, amount, invoiceId, origin);
+      const result = await this.transactionService.payInvoice(user, amount, invoiceId, origin);
 
       if (!result.success) {
         return reply.code(400).send({

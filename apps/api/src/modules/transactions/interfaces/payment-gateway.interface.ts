@@ -16,7 +16,9 @@ export interface PaymentGatewayInterface {
     amount: number,
     merchantTransactionId: string,
     userId: string,
-    redirectUrl: string
+    redirectUrl: string,
+    phone: string,
+    email: string
   ): Promise<PaymentSessionResponse>;
 
   /**
@@ -31,7 +33,9 @@ export interface PaymentGatewayInterface {
     amount: number,
     merchantTransactionId: string,
     userId: string,
-    redirectUrl: string
+    redirectUrl: string,
+    phone: string,
+    email: string
   ): Promise<PaymentLinkResponse>;
 
   /**

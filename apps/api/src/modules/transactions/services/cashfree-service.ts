@@ -78,7 +78,9 @@ export class CashfreeService implements PaymentGatewayInterface {
     amount: number,
     merchantTransactionId: string,
     userId: string,
-    redirectUrl: string
+    redirectUrl: string,
+    phone: string,
+    email: string
   ): Promise<PaymentSessionResponse> {
     try {
       if (amount <= 0) {
@@ -91,8 +93,8 @@ export class CashfreeService implements PaymentGatewayInterface {
         order_currency: 'INR',
         customer_details: {
           customer_id: userId,
-          customer_phone: '9999999999',
-          customer_email: `user-${userId}@lorrigo.com`,
+          customer_phone: phone,
+          customer_email: email,
         },
         order_meta: {
           return_url: redirectUrl,
@@ -137,7 +139,9 @@ export class CashfreeService implements PaymentGatewayInterface {
     amount: number,
     merchantTransactionId: string,
     userId: string,
-    redirectUrl: string
+    redirectUrl: string,
+    phone: string,
+    email: string
   ): Promise<PaymentLinkResponse> {
     try {
       if (amount <= 0) {
@@ -151,8 +155,8 @@ export class CashfreeService implements PaymentGatewayInterface {
         link_purpose: 'Wallet Topup',
         customer_details: {
           customer_name: userId,
-          customer_phone: '+917011609262',
-          customer_email: `user-${userId}@lorrigo.com`,
+          customer_phone: phone,
+          customer_email: email,
         },
         // link_minimum_partial_amount: 20,
         // link_partial_payments: false,
@@ -348,7 +352,9 @@ export class CashfreeService implements PaymentGatewayInterface {
     merchantTransactionId: string,
     userId: string,
     invoiceId: string,
-    redirectUrl: string
+    redirectUrl: string,
+    phone: string,
+    email: string
   ): Promise<PaymentLinkResponse> {
     try {
       const orderRequest = {
@@ -356,10 +362,9 @@ export class CashfreeService implements PaymentGatewayInterface {
         order_amount: amount,
         order_currency: 'INR',
         customer_details: {
-
           customer_id: userId,
-          customer_phone: '9999999999', // Default phone
-          customer_email: `user-${userId}@lorrigo.com`, // Default email
+          customer_phone: phone,
+          customer_email: email,
         },
         order_meta: {
           return_url: redirectUrl,

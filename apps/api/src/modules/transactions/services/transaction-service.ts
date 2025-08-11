@@ -6,6 +6,7 @@ import { QueueNames } from '@/lib/queue';
 import { PaymentGatewayFactory } from './payment-gateway.factory';
 import { PaymentGatewayType } from '../interfaces/payment-gateway.interface';
 import { TransactionJobType } from '../queues/transaction-worker';
+import { UserPayload } from '@/plugins/auth';
 
 /**
  * Type definitions for transaction service
@@ -695,7 +696,9 @@ export class TransactionService {
         amount, 
         merchantTransactionId, 
         userId, 
-        `${redirectUrl}/${merchantTransactionId}`
+        `${redirectUrl}/${merchantTransactionId}`,
+        user.phone,
+        user.email
       );
 
       if (!paymentResult.success) {
@@ -1585,17 +1588,10 @@ export class TransactionService {
    * @param origin Origin URL for redirect
    * @returns Payment link and transaction details
    */
-  async payInvoice(userId: string, amount: number, invoiceId: string, origin: string) {
+  async payInvoice(user: UserPayload, amount: number, invoiceId: string, origin: string) {
     try {
       // Validate user exists
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { id: true },
-      });
-
-      if (!user) {
-        return { success: false, error: 'User not found' };
-      }
+      const userId = user.id;
 
       // Get user wallet
       const walletResult = await this.getUserWallet(userId);
@@ -1645,13 +1641,15 @@ export class TransactionService {
 
       // Generate payment link using Cashfree
       const redirectUrl = `${origin}/seller/invoice/callback/${invoiceId}`;
-      const paymentResult = await (paymentGateway as any).generateInvoicePaymentLink?.(
+      const paymentResult = await (paymentGateway as any).generateInvoicePaymentLink(
         amount, 
         merchantTransactionId, 
         userId, 
         invoiceId,
-        redirectUrl
-      ) || await paymentGateway.generatePaymentLink(amount, merchantTransactionId, userId, redirectUrl);
+        redirectUrl,
+        user.phone,
+        user.email
+      ) || await paymentGateway.generatePaymentLink(amount, merchantTransactionId, userId, redirectUrl, user.phone, user.email);
 
       if (!paymentResult.success) {
         // If payment link generation fails, mark transaction as failed

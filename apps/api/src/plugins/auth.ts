@@ -6,7 +6,7 @@ import redis from '@/lib/redis';
 import { queues } from '@/lib/queue';
 
 // Define our custom user type
-interface UserPayload {
+export interface UserPayload {
   id: string;
   name: string;
   email: string;
