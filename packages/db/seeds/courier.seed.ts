@@ -29,12 +29,11 @@ async function main() {
   }
 
   // Simulate plan ID (you should fetch your actual plan ID)
-  const planId = 'cmcvsabp40000ogub62ixbqzu'; // Replace with your actual Plan ID
+  const planId = 'cme1n4z480000js2jkfijh287'; // Replace with your actual Plan ID
 
   for (const courier of courierData) {
     const channelId = channelMap.get(getChannelNameById(courier.vendor_channel_id.$oid.trim()));
     if (!channelId) continue;
-    console.log(courier.name, channelId, courier.isReversedCourier, courier.carrierID);
 
     const dbCourier = await prisma.courier.upsert({
       where: {
@@ -61,8 +60,6 @@ async function main() {
         channel_config_id: channelId,
       },
     });
-
-    console.log('dbCourier', dbCourier.name, dbCourier.id, dbCourier.channel_config_id);
 
     // Create PlanCourierPricing
     const planCourierPricing = await prisma.planCourierPricing.upsert({
@@ -132,8 +129,8 @@ async function main() {
 // Maps channel OIDs to names in env file
 function getChannelNameById(oid: string): string | undefined {
   const mapping: Record<string, string> = {
-    // '6627acadabe95523ee592372': 'SHIPROCKET',
-    // '6628abf579087bcaf24ef3da': 'SMARTSHIP',
+    '6627acadabe95523ee592372': 'SHIPROCKET',
+    '6628abf579087bcaf24ef3da': 'SMARTSHIP',
     '66595e59ea09cc12380f0b85': 'DELHIVERY',
     '66695e2bc475271f3f11df4b': 'DELHIVERY_0.5',
     '66695e40c475271f3f11df4c': 'DELHIVERY_10',

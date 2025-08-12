@@ -34,6 +34,7 @@ export class VendorService {
     // Initialize Delhivery with different weight categories
     const delhiveryVendors = DelhiveryVendorFactory.getAllVendors(this.bucketMappingService);
     delhiveryVendors.forEach((vendor) => {
+      // If found DELHIVERY 5KG is not showing make sure the vendor name "DELHIVERY_5KG" is set in the db
       this.vendors.set(`DELHIVERY_${vendor.getName().split('-')[1]}`, vendor);
     });
 
