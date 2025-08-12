@@ -36,13 +36,11 @@ export async function generateMetadata({ params }: { params: Promise<{ awb: stri
   const awb = decodeURIComponent((await params).awb || '');
   try {
     const data = (await fetch(`${process.env.FASTIFY_BACKEND_URL}/shipments/public/tracking/${awb}`).then((res) => res.json())) as PublicTrackingResponse;
-    console.log(data, 'data')
     return {
       title: `Tracking - ${data.awb || awb}`,
       description: `Track shipment ${data.awb || awb} via ${data.courier_name || 'Courier'}`,
     };
   } catch(e) {
-    console.log(e, 'error')
     return {
       title: 'Tracking Not Found',
       description: 'No tracking information available.',

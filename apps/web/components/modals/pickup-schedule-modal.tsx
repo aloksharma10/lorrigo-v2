@@ -134,7 +134,7 @@ export const PickupScheduleModal = () => {
                       mode="single"
                       selected={field.value}
                       onSelect={field.onChange}
-                      disabled={(date) => date < tomorrow || date > maxDate || date.getDay() === 0}
+                      disabled={(date) => date < today || date > maxDate || date.getDay() === 0}
                       initialFocus
                     />
                   </PopoverContent>
