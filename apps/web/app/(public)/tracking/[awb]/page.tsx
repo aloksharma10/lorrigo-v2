@@ -1,8 +1,6 @@
-// app/tracking/[awb]/page.tsx
-import { fetchPublicTrackingByAwb, PublicTrackingEvent, PublicTrackingResponse } from '@/lib/apis/shipment';
+import { PublicTrackingEvent, PublicTrackingResponse } from '@/lib/apis/shipment';
 import { Card, CardContent, CardHeader, CardTitle, Badge, Separator, ScrollArea, Avatar, AvatarFallback, AvatarImage } from '@lorrigo/ui/components';
 import { LorrigoLogo } from '@/components/logos/lorrigo-logo';
-import { notFound } from 'next/navigation';
 import { AwbNotFound } from '@/components/awb-not-found';
 
 // Static Generation with revalidation (SGR)
@@ -38,11 +36,13 @@ export async function generateMetadata({ params }: { params: Promise<{ awb: stri
   const awb = decodeURIComponent((await params).awb || '');
   try {
     const data = (await fetch(`http://localhost:8000/api/v2/shipments/public/tracking/${awb}`).then((res) => res.json())) as PublicTrackingResponse;
+    console.log(data, 'data')
     return {
       title: `Tracking - ${data.awb || awb}`,
       description: `Track shipment ${data.awb || awb} via ${data.courier_name || 'Courier'}`,
     };
-  } catch {
+  } catch(e) {
+    console.log(e, 'error')
     return {
       title: 'Tracking Not Found',
       description: 'No tracking information available.',
@@ -60,9 +60,9 @@ export default async function PublicTrackingPage({ params }: { params: Promise<{
     return <AwbNotFound/>;
   }
 
-  if (!data || !data.events) {
-    return <AwbNotFound />;
-  }
+  // if (!data || !data.events) {
+  //   return <AwbNotFound />;
+  // }
 
   const sortedEvents: PublicTrackingEvent[] = [...data.events].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 

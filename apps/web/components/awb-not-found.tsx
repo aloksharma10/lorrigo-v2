@@ -67,7 +67,7 @@ export function AwbNotFound() {
                 <div>
                   <h3 className="text-foreground mb-2 font-sans font-semibold">Email Support</h3>
                   <p className="text-muted-foreground mb-3 text-sm">Get help via email within 24 hours</p>
-                  <p className="text-foreground font-medium">support@logitrack.com</p>
+                  <p className="text-foreground font-medium">logistics@lorrigo.com</p>
                 </div>
               </div>
             </CardContent>
@@ -82,7 +82,7 @@ export function AwbNotFound() {
                 <div>
                   <h3 className="text-foreground mb-2 font-sans font-semibold">Phone Support</h3>
                   <p className="text-muted-foreground mb-3 text-sm">Speak with our team directly</p>
-                  <p className="text-foreground font-medium">+1 (555) 123-4567</p>
+                  <p className="text-foreground font-medium">+91 93105 45160</p>
                 </div>
               </div>
             </CardContent>
