@@ -35,7 +35,7 @@ function StatusBadge({ status }: { status: string }) {
 export async function generateMetadata({ params }: { params: Promise<{ awb: string }> }) {
   const awb = decodeURIComponent((await params).awb || '');
   try {
-    const data = (await fetch(`http://localhost:8000/api/v2/shipments/public/tracking/${awb}`).then((res) => res.json())) as PublicTrackingResponse;
+    const data = (await fetch(`${process.env.FASTIFY_BACKEND_URL}/shipments/public/tracking/${awb}`).then((res) => res.json())) as PublicTrackingResponse;
     console.log(data, 'data')
     return {
       title: `Tracking - ${data.awb || awb}`,
@@ -55,14 +55,14 @@ export default async function PublicTrackingPage({ params }: { params: Promise<{
 
   let data: PublicTrackingResponse;
   try {
-    data = (await fetch(`http://localhost:8000/api/v2/shipments/public/tracking/${awb}`).then((res) => res.json())) as PublicTrackingResponse;
+    data = (await fetch(`${process.env.FASTIFY_BACKEND_URL}/shipments/public/tracking/${awb}`).then((res) => res.json())) as PublicTrackingResponse;
   } catch (error) {
     return <AwbNotFound/>;
   }
 
-  // if (!data || !data.events) {
-  //   return <AwbNotFound />;
-  // }
+  if (!data || !data.events) {
+    return <AwbNotFound />;
+  }
 
   const sortedEvents: PublicTrackingEvent[] = [...data.events].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 

@@ -43,16 +43,16 @@ export function AwbNotFound() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-col justify-center gap-4 sm:flex-row">
-              <Button variant="outline">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Return to Tracking
-              </Button>
-              <Button variant="secondary">
+            {/* <div className="flex flex-col justify-center gap-4 sm:flex-row">
+              <Button variant="outline" onClick={() => window.location.href = '/tracking'}>
                 <Phone className="mr-2 h-4 w-4" />
-                Contact Support
+                Call Support
               </Button>
-            </div>
+              <Button variant="secondary" onClick={() => window.open('mailto:logistics@lorrigo.com', '_blank')}>
+                <Mail className="mr-2 h-4 w-4" />
+                Mail Support
+              </Button>
+            </div> */}
           </CardContent>
         </Card>
 
