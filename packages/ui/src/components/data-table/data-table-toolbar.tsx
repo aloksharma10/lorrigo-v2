@@ -86,8 +86,8 @@ export function DataTableToolbar<TData>({
               placeholder={searchPlaceholder}
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
-              isLoading={isLoading}
-              disabled={isLoading}
+              // isLoading={isLoading}
+              // disabled={isLoading}
               type="search"
             />
           </div>

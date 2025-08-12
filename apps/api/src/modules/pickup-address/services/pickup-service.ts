@@ -222,8 +222,8 @@ export class PickupService {
       page?: number;
       limit?: number;
       search?: string;
-      is_active?: string[];
-      is_primary?: string[];
+      is_active?: boolean;
+      is_primary?: boolean;
       sortBy?: string;
       sortOrder?: 'asc' | 'desc';
     } = {}
@@ -246,17 +246,17 @@ export class PickupService {
           { phone: { contains: search, mode: 'insensitive' } },
           { address: { address: { contains: search, mode: 'insensitive' } } },
           { address: { city: { contains: search, mode: 'insensitive' } } },
+          { address: { state: { contains: search, mode: 'insensitive' } } },
+          { address: { pincode: { contains: search, mode: 'insensitive' } } },
         ];
       }
 
-      // Add status filter
-      if (is_active && is_active.length > 0) {
-        where.is_active = true;
+      if (is_active !== undefined) {
+        where.is_active = Boolean(is_active);
       }
 
-      // Add primary filter
-      if (is_primary && is_primary.length > 0) {
-        where.is_primary = true;
+      if(is_primary !== undefined){
+        where.is_primary = Boolean(is_primary);
       }
 
       // Build order by clause

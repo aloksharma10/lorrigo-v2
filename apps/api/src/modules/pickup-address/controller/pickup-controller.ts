@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { PickupService } from '../services/pickup-service';
-import { pickupAddressRegistrationSchema } from '@lorrigo/utils';
+import { parseBoolean, pickupAddressRegistrationSchema } from '@lorrigo/utils';
 
 /**
  * Controller for pickup address operations
@@ -73,8 +73,8 @@ export class PickupController {
       };
 
       // Extract filter values
-      const isActiveValues = parseCommaSeparatedValues(queryParams.is_active);
-      const isPrimaryValues = parseCommaSeparatedValues(queryParams.is_primary);
+      // const isActiveValues = parseCommaSeparatedValues(queryParams.is_active);
+      // const isPrimaryValues = parseCommaSeparatedValues(queryParams.is_primary);
 
       // Determine sortBy and sortOrder from sorting array
       let sortBy = 'name';
@@ -96,8 +96,8 @@ export class PickupController {
         page: queryParams.page ? parseInt(queryParams.page) : 1,
         limit: queryParams.limit ? parseInt(queryParams.limit) : 15,
         search: queryParams.globalFilter || queryParams.search,
-        is_active: isActiveValues.length > 0 ? isActiveValues : undefined,
-        is_primary: isPrimaryValues.length > 0 ? isPrimaryValues : undefined,
+        is_active: parseBoolean(queryParams.is_active),
+        is_primary: parseBoolean(queryParams.is_primary),
         sortBy,
         sortOrder,
       };

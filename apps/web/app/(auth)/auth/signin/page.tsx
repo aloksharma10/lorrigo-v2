@@ -83,7 +83,7 @@ function SignInForm({ onForgotPasswordClick }: { onForgotPasswordClick: () => vo
           const redirectUrl = getRedirectUrl(callbackUrl, userData.role as Role);
           router.push(redirectUrl);
         } else {
-          setError('Passkey authentication failed');
+          setError('Authentication failed: Passkey not registered');
         }
       } else {
         // Handle credentials authentication

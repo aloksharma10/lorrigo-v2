@@ -79,7 +79,9 @@ export const usePasskey = () => {
       }
     } catch (error) {
       console.error('Passkey authentication error:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to authenticate with passkey');
+      toast.error('Authentication failed', {
+        description: 'Passkey not registered',
+      });
       return null;
     } finally {
       setIsLoading(false);

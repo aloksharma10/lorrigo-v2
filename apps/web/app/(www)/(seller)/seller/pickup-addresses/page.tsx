@@ -111,28 +111,6 @@ export default function PickupAddressesPage() {
   // Define the columns for the data table
   const columns: ColumnDef<Hub>[] = [
     {
-      id: 'select',
-      header: ({ table }) => (
-        <Checkbox
-          checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-          disabled={isLoading}
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
-          onClick={(e) => e.stopPropagation()}
-          disabled={isLoading}
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
-    {
       id: 'name',
       accessorKey: 'name',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Pickup Address Details" />,
@@ -204,10 +182,21 @@ export default function PickupAddressesPage() {
         const hub = row.original;
         return (
           <div className="flex flex-col space-y-1">
-            <div className="flex items-center space-x-2">
-              <MapPin className="text-muted-foreground h-4 w-4" />
-              <span className="text-sm">{hub.address.address}</span>
-            </div>
+            <HoverCardToolTip
+              side="top"
+              label="Address"
+              triggerComponent={
+                <div className="flex items-center space-x-2">
+                  <MapPin className="text-muted-foreground h-4 w-4" />
+                  <span className="text-sm">{hub.address.address.slice(0, 20)}...</span>
+                </div>
+              }
+            >
+              <div className="flex items-center space-x-2">
+                <MapPin className="text-muted-foreground h-4 w-4" />
+                <span className="text-sm">{hub.address.address}</span>
+              </div>
+            </HoverCardToolTip>
             <div className="text-muted-foreground text-sm">
               {hub.address.city}, {hub.address.state} - {hub.address.pincode}
             </div>
@@ -259,8 +248,8 @@ export default function PickupAddressesPage() {
               label="Set as primary"
               triggerComponent={
                 <div className="flex items-center space-x-2">
-                  {!hub.is_active && <AlertCircle className="h-4 w-4 text-red-500" />}
                   <Switch checked={hub.is_primary} onCheckedChange={() => handleSetPrimary(hub)} disabled={!hub.is_active || setPrimaryHub.isPending} />
+                  {!hub.is_active && <AlertCircle className="h-4 w-4 text-red-500" />}
                 </div>
               }
             >
@@ -356,6 +345,7 @@ export default function PickupAddressesPage() {
       </div>
 
       <DataTable
+        dateRangeFilter={false}
         columns={columns}
         data={data?.hubs || []}
         count={data?.total || 0}

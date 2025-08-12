@@ -12,3 +12,4 @@ export * from './parse-csv-update';
 
 export * from './parse-sort-field';
 export * from './flatten-obj';
+export * from './parse-boolean';
