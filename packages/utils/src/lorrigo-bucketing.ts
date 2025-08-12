@@ -63,6 +63,7 @@ export const statusToBucketMap: Record<string, number> = Object.entries(bucketTo
 
 // Add special mappings for getStatusBuckets function
 const statusToMultipleBucketsMap: Record<string, number[]> = {
+  'NEW': [ShipmentBucket.NEW],
   'READY-TO-SHIP': [ShipmentBucket.READY_TO_SHIP, ShipmentBucket.COURIER_ASSIGNED, ShipmentBucket.PICKUP_SCHEDULED, ShipmentBucket.PICKED_UP],
   READY_TO_SHIP: [ShipmentBucket.READY_TO_SHIP, ShipmentBucket.COURIER_ASSIGNED, ShipmentBucket.PICKUP_SCHEDULED, ShipmentBucket.PICKED_UP],
   TRANSIT: [ShipmentBucket.IN_TRANSIT, ShipmentBucket.OUT_FOR_DELIVERY],

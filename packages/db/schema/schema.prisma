@@ -147,7 +147,6 @@ enum LabelFormat {
   THERMAL
 }
 
-
 enum WalletType {
   WALLET
   REMITTANCE_WALLET
@@ -166,10 +165,10 @@ model User {
   is_verified Boolean @default(false)
 
   // OAuth and Passkey fields
-  image        String? // Profile image from OAuth
+  image         String? // Profile image from OAuth
   emailVerified DateTime?
-  googleId     String? @unique
-  hasPasskeys  Boolean @default(false)
+  googleId      String?   @unique
+  hasPasskeys   Boolean   @default(false)
 
   plan_id String?
   plan    Plan?   @relation(fields: [plan_id], references: [id])
@@ -199,11 +198,8 @@ model User {
   remittances                  Remittance[]
   user_bank_accounts           UserBankAccount[]
 
-  @@index([email])
-  @@index([code])
   @@index([phone, role, is_active])
   @@index([plan_id])
-  @@index([googleId])
 }
 
 model UserProfile {
@@ -222,9 +218,9 @@ model UserProfile {
   kyc_verified  Boolean @default(false)
 
   // Seller Config
-  is_d2c          Boolean @default(true)
-  is_b2b          Boolean @default(true)
-  
+  is_d2c Boolean @default(true)
+  is_b2b Boolean @default(true)
+
   is_fw           Boolean @default(true)
   is_rto          Boolean @default(true)
   is_cod          Boolean @default(true)
@@ -232,7 +228,6 @@ model UserProfile {
 
   // Notification Settings
   notification_settings Json // { whatsapp: true, email: true, system: true }
-  
 
   // Company Details
   company      String? @db.VarChar(255)
@@ -240,28 +235,27 @@ model UserProfile {
   logo_url     String? @db.VarChar(500)
 
   // Billing and Remittance Configuration
-  remittance_cycle               CycleType     @default(WEEKLY)
-  remittance_min_amount          Float         @default(0)
-  remittance_days_of_week        Int[]         @default([5])
-  remittance_days_after_delivery Int           @default(7)
-  early_remittance_charge        Float         @default(0)
+  remittance_cycle               CycleType @default(WEEKLY)
+  remittance_min_amount          Float     @default(0)
+  remittance_days_of_week        Int[]     @default([5])
+  remittance_days_after_delivery Int       @default(7)
+  early_remittance_charge        Float     @default(0)
   ndr_boost                      Json?
 
   // Billing Cycle Configuration
-  billing_cycle_type       CycleType @default(MONTHLY)
-  billing_days_of_week     Int[]     @default([1]) // Day of week (0=Sunday, 1=Monday, etc.) for weekly
-  billing_day_of_month     Int?      // Day of month (1-31) for monthly billing
-  billing_week_of_month    Int?      // Week of month (1-4) for fortnightly
-  billing_days             Int[]     @default([1, 15]) // Days for any cycle type (week days 0-6, month days 1-31)
+  billing_cycle_type    CycleType @default(MONTHLY)
+  billing_days_of_week  Int[]     @default([1]) // Day of week (0=Sunday, 1=Monday, etc.) for weekly
+  billing_day_of_month  Int? // Day of month (1-31) for monthly billing
+  billing_week_of_month Int? // Week of month (1-4) for fortnightly
+  billing_days          Int[]     @default([1, 15]) // Days for any cycle type (week days 0-6, month days 1-31)
 
   // Add label/manifest format config
-  label_format    LabelFormat    @default(THERMAL)
-  manifest_format LabelFormat    @default(THERMAL)
+  label_format    LabelFormat @default(THERMAL)
+  manifest_format LabelFormat @default(THERMAL)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  @@index([user_id])
   @@index([billing_cycle_type])
 }
 
@@ -310,7 +304,6 @@ model Address {
 
   @@index([pincode, city])
   @@index([type])
-  @@index([customer_id])
 }
 
 model Hub {
@@ -344,7 +337,6 @@ model Hub {
   updated_at DateTime @updatedAt
 
   @@index([user_id, is_active])
-  @@index([code])
 }
 
 model OrderChannelConfig {
@@ -429,7 +421,6 @@ model Order {
   @@unique([order_number, user_id])
   @@index([user_id, customer_id])
   @@index([created_at(sort: Desc)])
-  @@index([code])
   @@index([order_number, order_reference_id, ewaybill], map: "order_global_search_idx")
   @@index([remittanceId])
 }
@@ -451,17 +442,17 @@ model OrderSellerDetails {
 }
 
 model OrderItem {
-  id            String  @id @default(cuid())
-  code          String  @unique // Format: OI-YYMM-XXXXX
+  id            String   @id @default(cuid())
+  code          String   @unique // Format: OI-YYMM-XXXXX
   order_id      String
-  order         Order   @relation(fields: [order_id], references: [id], onDelete: Cascade)
-  name          String? @db.VarChar(255)
-  sku           String? @db.VarChar(50)
-  units         Int?    @default(1)
+  order         Order    @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  name          String?  @db.VarChar(255)
+  sku           String?  @db.VarChar(50)
+  units         Int?     @default(1)
   selling_price Float?
-  discount      Float?  @default(0)
-  tax           Float?  @default(0)
-  hsn           String? @db.VarChar(8)
+  discount      Float?   @default(0)
+  tax           Float?   @default(0)
+  hsn           String?  @db.VarChar(8)
   image_url     String[]
 
   // B2C Specific
@@ -477,7 +468,6 @@ model OrderItem {
   ndr_order    NDROrder? @relation("NDROrderItems", fields: [ndr_order_id], references: [id])
 
   @@index([order_id])
-  @@index([code])
   @@index([sku])
 }
 
@@ -521,8 +511,6 @@ model Shipment {
   shipment_transactions ShipmentTransaction[]
 
   @@index([order_id, user_id, courier_id, status])
-  @@index([awb])
-  @@index([code])
   @@index([sr_shipment_id])
 }
 
@@ -594,30 +582,27 @@ model Courier {
 }
 
 model UserWallet {
-  id                    String                      @id @default(cuid())
-  code                  String                      @unique // Format: WL-YYMM-XXXXX
-  balance               Float                       @default(0) // Total balance : usable_amount + hold_amount
-  hold_amount           Float                       @default(0) // Amount on hold : Disputed amount
-  available_amount      Float                       @default(0) // Total available amount : remittance amount
-  usable_amount         Float                       @default(0) // Amount available for use : balance + max_negative_amount - hold_amount 
-  max_negative_amount   Float                       @default(0) // Maximum negative balance allowed
-  user_id               String                      @unique
-  user                  User                        @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  shipment_transactions ShipmentTransaction[]
-  invoice_transactions  InvoiceTransaction[]
-  wallet_transactions   WalletRechargeTransaction[]
+  id                      String                      @id @default(cuid())
+  code                    String                      @unique // Format: WL-YYMM-XXXXX
+  balance                 Float                       @default(0) // Total balance : usable_amount + hold_amount
+  hold_amount             Float                       @default(0) // Amount on hold : Disputed amount
+  available_amount        Float                       @default(0) // Total available amount : remittance amount
+  usable_amount           Float                       @default(0) // Amount available for use : balance + max_negative_amount - hold_amount 
+  max_negative_amount     Float                       @default(0) // Maximum negative balance allowed
+  user_id                 String                      @unique
+  user                    User                        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  shipment_transactions   ShipmentTransaction[]
+  invoice_transactions    InvoiceTransaction[]
+  wallet_transactions     WalletRechargeTransaction[]
   remittance_transactions RemittanceTransaction[]
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
-
-  @@index([user_id])
-  @@index([code])
 }
 
 model ShipmentTransaction {
   id                      String            @id @default(cuid())
-  code                    String             // Format: ST-YYMM-XXXXX
+  code                    String // Format: ST-YYMM-XXXXX
   before_balance          Float             @default(0)
   after_balance           Float             @default(0)
   amount                  Float             @default(0)
@@ -685,9 +670,7 @@ model InvoiceTransaction {
   transaction    Transaction? @relation(fields: [transaction_id], references: [id])
 
   @@index([wallet_id, user_id, status, created_at])
-  @@index([merchant_transaction_id])
   @@index([invoice_number])
-  @@index([code])
 }
 
 model WalletRechargeTransaction {
@@ -716,8 +699,6 @@ model WalletRechargeTransaction {
   transaction    Transaction? @relation(fields: [transaction_id], references: [id])
 
   @@index([wallet_id, user_id, status, created_at])
-  @@index([merchant_transaction_id])
-  @@index([code])
 }
 
 model RemittanceTransaction {
@@ -749,8 +730,6 @@ model RemittanceTransaction {
   transaction    Transaction? @relation(fields: [transaction_id], references: [id])
 
   @@index([wallet_id, user_id, status, created_at])
-  @@index([merchant_transaction_id])
-  @@index([code])
   @@index([remittance_id])
 }
 
@@ -764,13 +743,12 @@ model Transaction {
   created_at        DateTime          @default(now())
   updated_at        DateTime          @updatedAt
 
-  shipment_transactions ShipmentTransaction[]
-  invoice_transactions  InvoiceTransaction[]
-  wallet_transactions   WalletRechargeTransaction[]
+  shipment_transactions   ShipmentTransaction[]
+  invoice_transactions    InvoiceTransaction[]
+  wallet_transactions     WalletRechargeTransaction[]
   remittance_transactions RemittanceTransaction[]
 
   @@index([status])
-  @@index([code])
   @@index([gateway_reference])
 }
 
@@ -794,7 +772,6 @@ model Invoice {
 
   @@unique([order_id, invoice_number])
   @@index([user_id, invoice_number])
-  @@index([code])
 }
 
 model Billing {
@@ -863,7 +840,6 @@ model Billing {
   @@index([billing_cycle_id])
   @@index([has_weight_dispute])
   @@index([awb])
-  @@index([code])
 }
 
 model Remittance {
@@ -909,14 +885,12 @@ model Remittance {
   bank_account_id String?
   bank_account    UserBankAccount? @relation(fields: [bank_account_id], references: [id], onDelete: Restrict)
 
-  orders Order[]
+  orders                  Order[]
   remittance_transactions RemittanceTransaction[]
 
   // Removed order_id and order relation for multi-order support
 
   @@index([user_id, status, remittance_date])
-  @@index([transaction_id])
-  @@index([code])
   @@index([bank_account_id])
   @@index([bank_transaction_id])
 }
@@ -933,7 +907,6 @@ model Notification {
   updated_at   DateTime         @updatedAt
 
   @@index([recipient_id, is_read, created_at])
-  @@index([code])
 }
 
 model ApiRequest {
@@ -1025,14 +998,6 @@ model Session {
   @@index([lastActivity])
 }
 
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
-}
-
 model Pincode {
   id       String @id @default(cuid())
   pincode  String @unique
@@ -1043,8 +1008,6 @@ model Pincode {
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
-
-  @@index([pincode])
 }
 
 model Plan {
@@ -1064,7 +1027,6 @@ model Plan {
   users                 User[]
 
   @@index([isDefault])
-  @@index([code])
 }
 
 model PlanCourierPricing {
@@ -1242,9 +1204,6 @@ model NDROrder {
 
   ndr_history NDRHistory[]
 
-  @@index([order_id])
-  @@index([shipment_id])
-  @@index([awb])
   @@index([ndr_raised_at])
   @@index([action_taken])
 }
@@ -1314,9 +1273,7 @@ model WeightDispute {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  @@index([order_id])
   @@index([user_id])
-  @@index([dispute_id])
   @@index([status])
 }
 
@@ -1356,18 +1313,18 @@ model UserBilling {
 }
 
 model Passkey {
-  id                String   @id @default(cuid())
-  userId            String
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  credentialID      String   @unique
-  publicKey         String   @db.Text
-  counter           Int      @default(0)
-  transports        String[] // ["usb", "nfc", "ble", "internal"]
-  backupEligible    Boolean  @default(false)
-  backupState       Boolean  @default(false)
-  deviceType        String?  @db.VarChar(50)
-  createdAt         DateTime @default(now())
-  lastUsedAt        DateTime @default(now())
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentialID   String   @unique
+  publicKey      String   @db.Text
+  counter        Int      @default(0)
+  transports     String[] // ["usb", "nfc", "ble", "internal"]
+  backupEligible Boolean  @default(false)
+  backupState    Boolean  @default(false)
+  deviceType     String?  @db.VarChar(50)
+  createdAt      DateTime @default(now())
+  lastUsedAt     DateTime @default(now())
 
   @@index([userId])
   @@index([credentialID])
