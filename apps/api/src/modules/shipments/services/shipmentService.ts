@@ -2102,13 +2102,15 @@ export class ShipmentService {
         orderBy: { timestamp: 'asc' },
       });
 
-      const brandName =
-        shipment.order?.seller_details?.seller_name ||
-        shipment.order?.user?.name ||
-        shipment.order?.hub?.name ||
-        'Your Company';
+      const brandName = shipment.order?.seller_details?.seller_name || shipment.order?.user?.name || shipment.order?.hub?.name || 'Your Company';
 
-      const eventsToUse = events as Array<{ status: string | null; description: string | null; location: string | null; timestamp: Date | string; bucket?: number | null }>;
+      const eventsToUse = events as Array<{
+        status: string | null;
+        description: string | null;
+        location: string | null;
+        timestamp: Date | string;
+        bucket?: number | null;
+      }>;
 
       const data = {
         awb: shipment.awb || awb,
@@ -2500,7 +2502,7 @@ export class ShipmentService {
       rtoAddress: s.order?.hub?.rto_address?.address || 'Same as Shipped by',
       rtoCity: s.order?.hub?.rto_address?.city || '',
       rtoState: s.order?.hub?.rto_address?.state || '',
-      companyLogoUrl,
+      companyLogoUrl: companyLogoUrl || 'https://lorrigo.in/_next/static/media/lorrigologo.e54a51f3.svg',
       lorrigoLogoUrl: 'https://lorrigo.in/_next/static/media/lorrigologo.e54a51f3.svg',
       productName: s.order?.items?.map((item) => item.name).join(', ') || '',
       invoiceNumber: s.order?.order_invoice_number || '',
@@ -2523,7 +2525,7 @@ export class ShipmentService {
     });
     if (!userProfile) throw new Error('User profile not found');
     const format = params.format || userProfile.manifest_format || 'THERMAL';
-    const companyLogoUrl = userProfile.logo_url || '';
+    const companyLogoUrl = userProfile.logo_url || 'https://lorrigo.in/_next/static/media/lorrigologo.e54a51f3.svg';
 
     // Fetch shipments with all required relations
     const shipments = await this.fastify.prisma.shipment.findMany({
