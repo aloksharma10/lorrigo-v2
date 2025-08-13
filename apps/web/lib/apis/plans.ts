@@ -101,6 +101,16 @@ export const usePlanOperations = () => {
     },
   });
 
+  // Clone Plan
+
+  const clonePlan = useMutation({
+    mutationFn: (planId: string) => api.post(`/plans/${planId}/clone`),
+    onSuccess: () => {
+      toast.success('Plan cloned successfully');
+      queryClient.invalidateQueries({ queryKey: ['plans'] });
+    },
+  });
+
   // Assign Plan to User
   const assignPlanToUser = useMutation({
     mutationFn: ({ planId, userId }: { planId: string; userId: string }) => api.post(`/plans/assign/${planId}/user/${userId}`, { userId }),
@@ -129,6 +139,7 @@ export const usePlanOperations = () => {
     createPlan,
     updatePlan,
     deletePlan,
+    clonePlan,
     assignPlanToUser,
     getDefaultPlanCourierPricing,
     getUsersQuery,

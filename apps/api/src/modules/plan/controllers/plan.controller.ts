@@ -84,6 +84,22 @@ export class PlanController {
     }
   }
 
+  async clonePlan(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const { id } = request.params as { id: string };
+      const plan = await this.planService.clonePlan(id);
+
+      if (!plan) {
+        return reply.code(404).send({ error: 'Plan not found' });
+      }
+
+      return reply.code(201).send({ plan });
+    } catch (error) {
+      request.log.error(error);
+      return reply.code(500).send({ error: 'Failed to clone plan' });
+    }
+  }
+
   async assignPlanToUser(request: FastifyRequest, reply: FastifyReply) {
     try {
       const { planId } = request.params as { planId: string };

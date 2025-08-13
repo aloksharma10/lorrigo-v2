@@ -1,5 +1,5 @@
 'use client';
-import { MoreHorizontal, Edit, Trash2, Users } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2, Users, Copy } from 'lucide-react';
 import {
   ColumnDef,
   toast,
@@ -33,7 +33,7 @@ interface PlansTableProps {
 }
 
 export default function PlansTable({ onAssignPlan }: PlansTableProps) {
-  const { getPlansQuery, deletePlan } = usePlanOperations();
+  const { getPlansQuery, deletePlan, clonePlan } = usePlanOperations();
 
   // Fetch plans
   const { data: apiPlans = [], isLoading, isError, error } = getPlansQuery();
@@ -161,6 +161,10 @@ export default function PlansTable({ onAssignPlan }: PlansTableProps) {
           await deletePlan.mutateAsync(plan.id);
         };
 
+        const handleClone = async () => {
+          await clonePlan.mutateAsync(plan.id);
+        };
+
         return (
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => onAssignPlan(plan.id)}>
@@ -180,6 +184,10 @@ export default function PlansTable({ onAssignPlan }: PlansTableProps) {
                     Edit Plan
                   </DropdownMenuItem>
                 </Link>
+                <DropdownMenuItem onClick={handleClone}>
+                  <Copy  className="mr-2 h-4 w-4" />
+                  Clone Plan
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleDelete} className="text-red-600">
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete Plan

@@ -423,6 +423,93 @@ export class PlanService {
     });
   }
 
+  async clonePlan(sourcePlanId: string) {
+    // Fetch source plan with all nested pricing
+    const sourcePlan = await this.fastify.prisma.plan.findUnique({
+      where: { id: sourcePlanId },
+      include: {
+        plan_courier_pricings: {
+          include: {
+            zone_pricing: true,
+          },
+        },
+      },
+    });
+
+    if (!sourcePlan) {
+      return null;
+    }
+
+    // Generate a unique cloned plan name
+    const baseName = `${sourcePlan.name} (Copy)`;
+    let candidateName = baseName;
+    let suffix = 2;
+    // Ensure name uniqueness if name is constrained or already used
+    // Use findFirst to avoid relying on unique constraint
+    // Attempt a few times to avoid race conditions
+    // This loop will terminate quickly in normal circumstances
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const existing = await this.fastify.prisma.plan.findFirst({ where: { name: candidateName } });
+      if (!existing) break;
+      candidateName = `${baseName} ${suffix}`;
+      suffix += 1;
+    }
+
+    // Create cloned plan with nested pricing
+    const clonedPlan = await this.fastify.prisma.plan.create({
+      data: {
+        name: candidateName,
+        code: generatePlanId('PL'),
+        description: sourcePlan.description,
+        isDefault: false,
+        features: sourcePlan.features,
+        plan_courier_pricings: {
+          create: sourcePlan.plan_courier_pricings.map((pricing) => ({
+            courier: { connect: { id: pricing.courier_id } },
+            is_fw_applicable: pricing.is_fw_applicable,
+            is_rto_applicable: pricing.is_rto_applicable,
+            is_cod_applicable: pricing.is_cod_applicable,
+            is_cod_reversal_applicable: pricing.is_cod_reversal_applicable,
+            cod_charge_hard: pricing.cod_charge_hard,
+            cod_charge_percent: pricing.cod_charge_percent,
+            weight_slab: pricing.weight_slab,
+            increment_weight: pricing.increment_weight,
+            increment_price: pricing.increment_price,
+            zone_pricing: {
+              create: pricing.zone_pricing.map((z) => ({
+                zone: z.zone,
+                base_price: z.base_price,
+                increment_price: z.increment_price,
+                is_rto_same_as_fw: z.is_rto_same_as_fw,
+                rto_base_price: z.rto_base_price,
+                rto_increment_price: z.rto_increment_price,
+                flat_rto_charge: z.flat_rto_charge,
+              })),
+            },
+          })),
+        },
+      },
+      include: {
+        plan_courier_pricings: {
+          include: {
+            courier: true,
+            zone_pricing: true,
+          },
+        },
+        users: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    return clonedPlan;
+  }
+
   async assignPlanToUser(planId: string, userId: string) {
     // Check if plan exists
     const plan = await this.fastify.prisma.plan.findUnique({ where: { id: planId } });

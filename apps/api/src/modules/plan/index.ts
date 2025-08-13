@@ -34,6 +34,12 @@ export default async function planRoutes(fastify: FastifyInstance) {
     handler: planController.updatePlan.bind(planController),
   });
 
+  // Clone plan (accessible only by ADMIN)
+  fastify.post<{ Params: { id: string } }>('/:id/clone', {
+    preHandler: [authorizeRoles([Role.ADMIN])],
+    handler: planController.clonePlan.bind(planController),
+  });
+
   // Delete plan (accessible only by ADMIN)
   fastify.delete<{ Params: { id: string } }>('/:id', {
     preHandler: [authorizeRoles([Role.ADMIN])],
