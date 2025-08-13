@@ -122,7 +122,6 @@ export class CourierService {
     const isPaginated = Number.isInteger(page) && Number.isInteger(limit) && page! > 0 && limit! > 0;
     const skip = isPaginated ? (page! - 1) * limit! : undefined;
 
-console.log(isPaginated, 'isPaginated')
   
     // Build base where clause
     let where: any = {};
@@ -210,6 +209,7 @@ console.log(isPaginated, 'isPaginated')
     const formattedCouriers = couriers.map((courier) => ({
       id: courier.id,
       name: courier.name,
+      code: courier.courier_code,
       type: courier.type,
       is_active: courier.is_active,
       is_reversed_courier: courier.is_reversed_courier,
