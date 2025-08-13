@@ -18,7 +18,7 @@ const SIDEBAR_COOKIE_NAME = 'sidebar_state';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 const SIDEBAR_WIDTH = '16rem';
 const SIDEBAR_WIDTH_MOBILE = '18rem';
-const SIDEBAR_WIDTH_ICON = '3rem';
+const SIDEBAR_WIDTH_ICON = '3.3rem';
 const SIDEBAR_KEYBOARD_SHORTCUT = 'b';
 
 type SidebarContextProps = {
@@ -29,11 +29,13 @@ type SidebarContextProps = {
   setOpenMobile: (open: boolean) => void;
   isMobile: boolean;
   toggleSidebar: () => void;
+  isHoverOpen: boolean;
+  setIsHoverOpen: (isHoverOpen: boolean) => void;
 };
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null);
 
-function useSidebar() {
+export function useSidebar() {
   const context = React.useContext(SidebarContext);
   if (!context) {
     throw new Error('useSidebar must be used within a SidebarProvider.');
@@ -42,8 +44,8 @@ function useSidebar() {
   return context;
 }
 
-function SidebarProvider({
-  defaultOpen = true,
+export function SidebarProvider({
+  defaultOpen = false,
   open: openProp,
   onOpenChange: setOpenProp,
   className,
@@ -57,9 +59,8 @@ function SidebarProvider({
 }) {
   const isMobile = useIsMobile();
   const [openMobile, setOpenMobile] = React.useState(false);
+  const [isHoverOpen, setIsHoverOpen] = React.useState(false);
 
-  // This is the internal state of the sidebar.
-  // We use openProp and setOpenProp for control from outside the component.
   const [_open, _setOpen] = React.useState(defaultOpen);
   const open = openProp ?? _open;
   const setOpen = React.useCallback(
@@ -71,18 +72,15 @@ function SidebarProvider({
         _setOpen(openState);
       }
 
-      // This sets the cookie to keep the sidebar state.
       document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
     },
     [setOpenProp, open]
   );
 
-  // Helper to toggle the sidebar.
   const toggleSidebar = React.useCallback(() => {
     return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open);
   }, [isMobile, setOpen, setOpenMobile]);
 
-  // Adds a keyboard shortcut to toggle the sidebar.
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === SIDEBAR_KEYBOARD_SHORTCUT && (event.metaKey || event.ctrlKey)) {
@@ -95,8 +93,6 @@ function SidebarProvider({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [toggleSidebar]);
 
-  // We add a state so that we can do data-state="expanded" or "collapsed".
-  // This makes it easier to style the sidebar with Tailwind classes.
   const state = open ? 'expanded' : 'collapsed';
 
   const contextValue = React.useMemo<SidebarContextProps>(
@@ -108,8 +104,10 @@ function SidebarProvider({
       openMobile,
       setOpenMobile,
       toggleSidebar,
+      isHoverOpen,
+      setIsHoverOpen,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, isHoverOpen, setIsHoverOpen]
   );
 
   return (
@@ -146,7 +144,7 @@ function Sidebar({
   variant?: 'sidebar' | 'floating' | 'inset';
   collapsible?: 'offcanvas' | 'icon' | 'none';
 }) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+  const { isMobile, state, openMobile, setOpenMobile, isHoverOpen, setIsHoverOpen } = useSidebar();
 
   if (collapsible === 'none') {
     return (
@@ -181,16 +179,17 @@ function Sidebar({
     );
   }
 
+  const isCollapsed = state === 'collapsed';
+
   return (
     <div
-      className="text-sidebar-foreground group peer hidden md:block"
+      className="text-sidebar-foreground group peer fixed left-0 top-0 z-50 hidden md:block"
       data-state={state}
-      data-collapsible={state === 'collapsed' ? collapsible : ''}
+      // data-collapsible={isCollapsed ? collapsible : ''}
       data-variant={variant}
       data-side={side}
-      data-slot="sidebar"
+        data-slot="sidebar"
     >
-      {/* This is what handles the sidebar gap on desktop */}
       <div
         data-slot="sidebar-gap"
         className={cn(
@@ -207,11 +206,10 @@ function Sidebar({
         className={cn(
           'w-(--sidebar-width) fixed inset-y-0 z-10 hidden h-svh transition-[left,right,width] duration-200 ease-linear md:flex',
           side === 'left'
-            ? 'left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]'
-            : 'right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]',
-          // Adjust the padding for floating and inset variants.
+          ? 'left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]'
+          : 'right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]',
           variant === 'floating' || variant === 'inset'
-            ? 'p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]'
+            ? 'group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]'
             : 'group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-r group-data-[side=right]:border-l',
           className
         )}
@@ -220,7 +218,21 @@ function Sidebar({
         <div
           data-sidebar="sidebar"
           data-slot="sidebar-inner"
-          className="bg-sidebar group-data-[variant=floating]:border-sidebar-border flex h-full w-full flex-col group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow-sm"
+          className={cn(
+            'p-2 bg-sidebar group-data-[variant=floating]:border-sidebar-border flex h-full w-full flex-col group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow-sm relative z-50 transition-all duration-200 ease-out',
+            isCollapsed && !isHoverOpen && collapsible === 'icon' && 'w-(--sidebar-width-icon)',
+          )}
+          onMouseEnter={() => {
+            if (collapsible === 'icon' && isCollapsed) {
+              setIsHoverOpen(true);
+            }
+          }}
+          onMouseLeave={() => {
+            if (collapsible === 'icon' && isCollapsed) {
+              setIsHoverOpen(false);
+            }
+          }}
+          {...props}
         >
           {children}
         </div>
@@ -251,6 +263,27 @@ function SidebarTrigger({ className, onClick, ...props }: React.ComponentProps<t
   );
 }
 
+function SidebarInset({ className, ...props }: React.ComponentProps<'main'>) {
+  return (
+    <main
+      data-slot="sidebar-inset"
+      className={cn(
+        'bg-background relative flex min-h-screen w-full flex-1 flex-col',
+        'md:ml-(--sidebar-width-icon) md:peer-data-[state=expanded]:ml-(--sidebar-width)',
+        'md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-[calc(var(--sidebar-width-icon)_+_theme(spacing.2))] md:peer-data-[variant=inset]:peer-data-[state=expanded]:ml-[calc(var(--sidebar-width)_+_theme(spacing.2))] md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm',
+        className
+      )}
+      style={
+        {
+          '--sidebar-width': SIDEBAR_WIDTH,
+          '--sidebar-width-icon': SIDEBAR_WIDTH_ICON,
+        } as React.CSSProperties
+      }
+      {...props}
+    />
+  );
+}
+
 function SidebarRail({ className, ...props }: React.ComponentProps<'button'>) {
   const { toggleSidebar } = useSidebar();
 
@@ -269,20 +302,6 @@ function SidebarRail({ className, ...props }: React.ComponentProps<'button'>) {
         'hover:group-data-[collapsible=offcanvas]:bg-sidebar group-data-[collapsible=offcanvas]:translate-x-0 group-data-[collapsible=offcanvas]:after:left-full',
         '[[data-side=left][data-collapsible=offcanvas]_&]:-right-2',
         '[[data-side=right][data-collapsible=offcanvas]_&]:-left-2',
-        className
-      )}
-      {...props}
-    />
-  );
-}
-
-function SidebarInset({ className, ...props }: React.ComponentProps<'main'>) {
-  return (
-    <main
-      data-slot="sidebar-inset"
-      className={cn(
-        'bg-background relative flex w-full flex-1 flex-col',
-        'md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm',
         className
       )}
       {...props}
@@ -586,9 +605,7 @@ export {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-  SidebarProvider,
   SidebarRail,
   SidebarSeparator,
   SidebarTrigger,
-  useSidebar,
 };

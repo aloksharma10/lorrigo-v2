@@ -79,8 +79,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session } = useSession();
   const user = session?.user;
   const isAdmin = user?.role === 'ADMIN';
-  const { state, setOpen, openMobile, isMobile } = useSidebar();
-  const isCollapsed = state === 'collapsed';
+  const { state, setOpen, isHoverOpen } = useSidebar();
+  const isCollapsed = state === 'collapsed' && !isHoverOpen;
   const pathname = usePathname();
 
   const firstName = useMemo(() => user?.name?.split(' ')[0] ?? 'there', [user?.name]);

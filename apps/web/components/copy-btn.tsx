@@ -122,7 +122,7 @@ function CopyBtn({
             size={size}
             className={cn('relative h-6 w-6 disabled:opacity-100', className)}
             onClick={handleCopy}
-            aria-label={`${copied ? successTooltipText : tooltipText} for ${componentId}`}
+            aria-label={`${copied ? successTooltipText : "Click to copy"} for ${componentId}`}
             disabled={copied}
           >
             <div className="flex h-full w-full items-center justify-center">

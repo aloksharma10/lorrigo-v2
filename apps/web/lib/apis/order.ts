@@ -222,6 +222,18 @@ export async function fetchOrders(params: any, is_reverse_order: boolean = false
       queryParams.append('status', params.filters.find((f: any) => f.id === 'status')?.value.join(','));
     }
 
+    // hub filter (backend expects single ID)
+    const hubFilter = params.filters.find((f: any) => f.id === 'hub_id');
+    if (hubFilter && Array.isArray(hubFilter.value) && hubFilter.value.length > 0) {
+      queryParams.append('hub_id', hubFilter.value[0]);
+    }
+
+    // channel name filter (backend expects single channel value)
+    const channelFilter = params.filters.find((f: any) => f.id === 'channel_name');
+    if (channelFilter && Array.isArray(channelFilter.value) && channelFilter.value.length > 0) {
+      queryParams.append('channel_name', String(channelFilter.value[0]).toUpperCase());
+    }
+
     const responseData = await api.get<OrdersApiResponse>(`/orders${is_reverse_order ? '/reverse-orders' : ''}?${queryParams.toString()}`);
     // Response structure: { data: OrdersApiResponse }
 
@@ -263,6 +275,7 @@ export async function fetchOrders(params: any, is_reverse_order: boolean = false
         },
         hub: {
           id: order.hub?.id || '',
+          phone: order.hub?.phone || '',
           lorrigoPickupId: order.hub?.lorrigoPickupId || '',
           name: order.hub?.name || '',
           address: order.hub?.address || '',

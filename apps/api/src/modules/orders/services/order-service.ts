@@ -16,7 +16,7 @@ export class OrderService {
    * Get all orders with pagination and filters
    */
   async getAllOrders(userId: string, queryParams: any, is_reverse_order: boolean = false) {
-    const { page = 1, limit = 10, status, search = '', from_date, to_date, sort = 'created_at', sort_order = 'desc', payment_method } = queryParams;
+    const { page = 1, limit = 10, status, search = '', from_date, to_date, sort = 'created_at', sort_order = 'desc', payment_method, hub_id, channel_name  } = queryParams;
 
     const skip = (page - 1) * limit;
 
@@ -76,6 +76,28 @@ export class OrderService {
     if (payment_method) {
       where.payment_method = { in: payment_method.toUpperCase().split(',') };
     }
+
+    if (hub_id) {
+      where.hub_id = hub_id;
+    }
+
+    if (channel_name) {
+      const upperCaseChannelName = channel_name.toUpperCase();
+      if (!Object.values(Channel).includes(upperCaseChannelName as Channel)) {
+        return {
+          orders: [],
+          total: 0,
+          page,
+          limit,
+          totalPages: 0,
+          message: 'Invalid channel name',
+        };
+      }
+      where.order_channel_config = {
+        channel: upperCaseChannelName,
+      };
+    }
+
 
     // Search filter
     if (search) {
@@ -241,6 +263,7 @@ export class OrderService {
       hub: {
         id: order.hub?.id || '',
         name: order.hub?.name || '',
+        phone: order.hub?.phone || '',
         lorrigoPickupId: order.hub?.code || '',
         address: order.hub?.address?.address || '',
         city: order.hub?.address?.city || '',

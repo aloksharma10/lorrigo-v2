@@ -3,7 +3,7 @@
 import type React from 'react';
 
 import { ChevronRight, LucideProps } from 'lucide-react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@lorrigo/ui/components';
 import {
   SidebarGroup,
@@ -43,11 +43,10 @@ export function NavMain({
   }[];
   group: string;
 }) {
-  const { isMobile, state } = useSidebar();
+  const { isMobile, state, isHoverOpen } = useSidebar();
   const pathname = usePathname();
-  const router = useRouter();
 
-  const isCollapsed = !isMobile && state === 'collapsed';
+  const isCollapsed = !isMobile && state === 'collapsed' && !isHoverOpen;
 
   // Helper function to check if a route is active
   const isRouteActive = useCallback(
@@ -75,11 +74,11 @@ export function NavMain({
       console.error('Error rendering sidebar item:', error);
       return fallback || null;
     }
-  }, []);
+  }, [isCollapsed]);
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel className="capitalize">{group}</SidebarGroupLabel>
+      {/* <SidebarGroupLabel className="capitalize">{group}</SidebarGroupLabel> */}
       <SidebarMenu>
         {items.map((item) => {
           const hasDropdown = item.items && item.items.length > 0;
@@ -94,7 +93,7 @@ export function NavMain({
                   {hasDropdown ? (
                     <>
                       <CollapsibleTrigger asChild disabled={isDisabled}>
-                        <SidebarMenuButton tooltip={item.title} className={isDisabled ? 'cursor-not-allowed opacity-50' : ''}>
+                        <SidebarMenuButton className={isDisabled ? 'cursor-not-allowed opacity-50' : ''}>
                           <item.icon className="size-4" />
                           <span>{item.title}</span>
                           {isDisabled && (
@@ -111,7 +110,7 @@ export function NavMain({
                   ) : (
                     <>
                       {isDisabled ? (
-                        <SidebarMenuButton tooltip={item.title} className="cursor-not-allowed opacity-50" data-active={isActive}>
+                        <SidebarMenuButton className="cursor-not-allowed opacity-50" data-active={isActive}>
                           <item.icon className="size-4" />
                           <span>{item.title}</span>
                           <Badge variant="secondary" className="ml-auto text-xs">
@@ -119,7 +118,7 @@ export function NavMain({
                           </Badge>
                         </SidebarMenuButton>
                       ) : (
-                        <SidebarMenuButton asChild tooltip={item.title} data-active={isActive}>
+                        <SidebarMenuButton asChild data-active={isActive}>
                           <Link href={item.url || '#'} prefetch={false}>
                             <item.icon className="size-4" />
                             <span>{item.title}</span>
@@ -175,18 +174,18 @@ export function NavMain({
               {hasDropdown ? (
                 <Popover>
                   <PopoverTrigger asChild>
-                    <SidebarMenuButton tooltip={item.title} className={isDisabled ? 'cursor-not-allowed opacity-50' : ''} disabled={isDisabled}>
+                    <SidebarMenuButton className={isDisabled ? 'cursor-not-allowed opacity-50' : ''} disabled={isDisabled}>
                       <item.icon className="size-4" />
                       <span className="sr-only">{item.title}</span>
                     </SidebarMenuButton>
                   </PopoverTrigger>
-                  {isDisabled && (
+                  {/* {isDisabled && (
                     <SidebarMenuBadge>
                       <Badge variant="secondary" className="text-xs">
                         CS
                       </Badge>
                     </SidebarMenuBadge>
-                  )}
+                  )} */}
                   <PopoverContent side="right" align="start" className="w-48 p-0" sideOffset={5}>
                     <div className="p-4 text-sm font-medium">{item.title}</div>
                     <div className="py-1">
@@ -224,25 +223,25 @@ export function NavMain({
               ) : (
                 <>
                   {isDisabled ? (
-                    <SidebarMenuButton tooltip={item.title} className="cursor-not-allowed opacity-50" data-active={isActive}>
+                    <SidebarMenuButton className="cursor-not-allowed opacity-50" data-active={isActive}>
                       <item.icon className="size-4" />
                       <span className="sr-only">{item.title}</span>
                     </SidebarMenuButton>
                   ) : (
-                    <SidebarMenuButton asChild tooltip={item.title} data-active={isActive}>
+                    <SidebarMenuButton asChild data-active={isActive}>
                       <Link href={item.url || '#'}>
                         <item.icon className="size-4" />
                         <span className="sr-only">{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   )}
-                  {isDisabled && (
+                  {/* {isDisabled && (
                     <SidebarMenuBadge>
                       <Badge variant="secondary" className="text-xs">
                         CS
                       </Badge>
                     </SidebarMenuBadge>
-                  )}
+                  )} */}
                 </>
               )}
             </SidebarMenuItem>

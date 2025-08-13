@@ -22,6 +22,7 @@ import { useBulkOperations } from '@/components/providers/bulk-operations-provid
 import ShipmentActionButton from './shipment-action-button';
 import { useShippingOperations } from '@/lib/apis/shipment';
 import { useCSVUpload } from '@/components/providers/csv-upload-provider';
+import { useHubOperations } from '@/lib/apis/hub';
 
 interface ShipmentsTableProps {
   initialParams: ShipmentParams;
@@ -48,6 +49,12 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
   const { downloadLabels, downloadManifests } = useShippingOperations();
   const csvUploadContext = useCSVUpload();
   const [isBulkDownloading, setIsBulkDownloading] = React.useState(false);
+  const { getHubsQuery } = useHubOperations();
+  const { data: hubsResponse } = getHubsQuery({ page: 1, limit: 200 });
+  const hubOptions = React.useMemo(
+    () => (hubsResponse?.hubs || []).map((h: any) => ({ label: h.name, value: h.id })),
+    [hubsResponse]
+  );
 
   if (!csvUploadContext) {
     throw new Error('ShipmentsTable must be used within a CSVUploadProvider');
@@ -103,7 +110,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
       enableHiding: false,
     },
     {
-      id: 'order_number',
+      id: 'channel_name',
       accessorKey: 'orderNumber',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Order Details" />,
       cell: ({ row }) => {
@@ -251,7 +258,7 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
       enableHiding: true,
     },
     {
-      id: 'hub.name',
+      id: 'hub_id',
       accessorKey: 'pickupAddress',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Warehouse Address" />,
       cell: ({ row }) => {
@@ -264,9 +271,11 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
                   <TruckIcon className="mr-1 h-3 w-3" />
                   <span>{shipment?.hub?.name}</span>
                 </div>
-                <div className="flex items-center gap-1 truncate">
-                  <span className="text-muted-foreground text-xs">Hub ID:</span>
-                  {shipment?.hub?.lorrigoPickupId}
+                <div className="flex items-center">
+                  <span className="text-muted-foreground text-xs">
+                    <Phone className="h-3 w-3" />
+                  </span>
+                  {shipment?.hub?.phone}
                 </div>
               </div>
               <div className="text-muted-foreground mt-1 text-xs">
@@ -516,6 +525,19 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
       options: [
         { label: 'Prepaid', value: 'Prepaid' },
         { label: 'COD', value: 'COD' },
+      ],
+    },
+    {
+      id: 'hub_id',
+      title: 'Hub',
+      options: hubOptions,
+    },
+    {
+      id: 'channel_name',
+      title: 'Channel',
+      options: [
+        { label: 'Shopify', value: 'shopify' },
+        { label: 'Custom', value: 'custom' },
       ],
     },
   ];

@@ -64,6 +64,7 @@ export interface BackendOrder {
   hub?: {
     id: string;
     name: string;
+    phone: string;
     lorrigoPickupId: string;
     address: string;
     city: string;
