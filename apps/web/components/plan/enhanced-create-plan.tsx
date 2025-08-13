@@ -583,7 +583,8 @@ export function EnhancedCreatePlanForm({ planData, isEditing = false }: Enhanced
                                 </div>
                                 <div className="text-left">
                                   <div className="flex items-center space-x-2 text-lg font-semibold">
-                                    <span>{courier?.name}</span>
+                                    {/* @ts-ignore */}
+                                    <span>{courier?.name} ({courier?.channel_config?.nickname})</span>
                                     {selectedCourierIndices.has(index) && (
                                       <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400">Selected</Badge>
                                     )}

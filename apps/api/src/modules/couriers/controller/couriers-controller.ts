@@ -112,8 +112,8 @@ export class CourierController {
       }
 
       const parsedParams = {
-        page: queryParams.page ? parseInt(queryParams.page) : 1,
-        limit: queryParams.limit ? parseInt(queryParams.limit) : 15,
+        page: queryParams.page ? parseInt(queryParams.page) : undefined,
+        limit: queryParams.limit ? parseInt(queryParams.limit) : undefined,
         search: queryParams.globalFilter || queryParams.search,
         is_active: isActiveValues.length > 0 ? isActiveValues : undefined,
         courier_type: courierTypeValues.length > 0 ? (courierTypeValues as ('EXPRESS' | 'SURFACE' | 'AIR')[]) : undefined,

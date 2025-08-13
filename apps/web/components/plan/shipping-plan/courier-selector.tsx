@@ -79,7 +79,8 @@ export function CourierSelector({ availableCouriers, onSelectCourier, onSelectMu
                 <div className="flex w-full items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <Truck className="h-4 w-4" />
-                    <span>{courier.name}</span>
+                    {/* @ts-ignore */}
+                    <span>{courier.name} ({courier.channel_config?.nickname})</span>
                   </div>
                   <Badge variant="secondary" className="ml-auto">
                     {courier.code}

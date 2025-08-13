@@ -106,13 +106,27 @@ export class CourierService {
       sortOrder?: 'asc' | 'desc';
     } = {}
   ) {
-    const { page = 1, limit = 15, search, is_active, courier_type, weight_slab, is_reversed_courier, sortBy = 'name', sortOrder = 'asc' } = queryParams;
+    const {
+      page,
+      limit,
+      search,
+      is_active,
+      courier_type,
+      weight_slab,
+      is_reversed_courier,
+      sortBy = 'name',
+      sortOrder = 'asc',
+    } = queryParams;
+  
+    // ✅ Determine if pagination should be applied
+    const isPaginated = Number.isInteger(page) && Number.isInteger(limit) && page! > 0 && limit! > 0;
+    const skip = isPaginated ? (page! - 1) * limit! : undefined;
 
-    const skip = (page - 1) * limit;
-
+console.log(isPaginated, 'isPaginated')
+  
     // Build base where clause
     let where: any = {};
-
+  
     // Add global search filter
     if (search) {
       where.OR = [
@@ -121,93 +135,78 @@ export class CourierService {
         { channel_config: { nickname: { contains: search, mode: 'insensitive' } } },
       ];
     }
-
+  
     // Add status filter
-    if (is_active && is_active.length > 0) {
-      where.is_active = is_active;
+    if (is_active?.length) {
+      where.is_active = { in: is_active.map((v) => v === 'true') };
     }
-
+  
     // Add courier type filter
-    if (courier_type && courier_type.length > 0) {
+    if (courier_type?.length) {
       where.type = { in: courier_type };
     }
-
+  
     // Add weight slab filter
-    if (weight_slab && weight_slab.length > 0) {
+    if (weight_slab?.length) {
       where.weight_slab = { in: weight_slab };
     }
-
+  
     // Add forward/reverse courier filter
-    if (is_reversed_courier && is_reversed_courier.length > 0) {
-      where.is_reversed_courier = is_reversed_courier;
+    if (is_reversed_courier?.length) {
+      where.is_reversed_courier = { in: is_reversed_courier.map((v) => v === 'true') };
     }
-
-    // If not an admin, only show couriers available to the specific seller
+  
+    // If not an admin, restrict to couriers available to the seller
     if (!ADMIN_ROLES.includes(userRole as any)) {
-      // Get all courier pricings for this user
       const courierPricings = await this.fastify.prisma.planCourierPricing.findMany({
         where: {
           plan: {
-            users: {
-              some: {
-                id: userId,
-              },
-            },
+            users: { some: { id: userId } },
           },
         },
-        select: {
-          courier_id: true,
-        },
+        select: { courier_id: true },
       });
-
-      const courierIds = courierPricings.map((pricing) => pricing.courier_id);
-
+  
+      const courierIds = courierPricings.map((p) => p.courier_id);
+  
       where = {
         ...where,
         id: { in: courierIds },
         is_active: true,
       };
-    } else if (!is_active || is_active.length === 0) {
-      // For admins, default to showing all active couriers unless explicitly filtering
+    } else if (!is_active?.length) {
+      // For admins, default to active couriers unless explicitly filtered
       where.is_active = true;
     }
-
+  
     // Build order by clause
     let orderBy: any = {};
-    if (sortBy === 'name') {
-      orderBy.name = sortOrder;
-    } else if (sortBy === 'type') {
-      orderBy.type = sortOrder;
-    } else if (sortBy === 'weight_slab') {
-      orderBy.weight_slab = sortOrder;
-    } else if (sortBy === 'is_active') {
-      orderBy.is_active = sortOrder;
-    } else if (sortBy === 'is_reversed_courier') {
-      orderBy.is_reversed_courier = sortOrder;
-    } else if (sortBy === 'created_at') {
-      orderBy.created_at = sortOrder;
-    } else {
-      orderBy.name = 'asc'; // default sorting
+    switch (sortBy) {
+      case 'type':
+      case 'weight_slab':
+      case 'is_active':
+      case 'is_reversed_courier':
+      case 'created_at':
+        orderBy[sortBy] = sortOrder;
+        break;
+      default:
+        orderBy.name = 'asc';
     }
-
-    // Get total count for pagination
-    const total = await this.fastify.prisma.courier.count({ where });
-
-    // Get couriers with pagination
+  
+    // Get total count (only if pagination is applied)
+    const total = isPaginated
+      ? await this.fastify.prisma.courier.count({ where })
+      : undefined;
+  
+    // Get couriers (with or without pagination)
     const couriers = await this.fastify.prisma.courier.findMany({
       where,
       orderBy,
-      include: {
-        channel_config: {
-          select: {
-            nickname: true,
-          },
-        },
-      },
+      include: { channel_config: { select: { nickname: true } } },
       skip,
-      take: limit,
+      take: isPaginated ? limit : undefined,
     });
-
+  
     const formattedCouriers = couriers.map((courier) => ({
       id: courier.id,
       name: courier.name,
@@ -219,17 +218,20 @@ export class CourierService {
       weight_unit: courier.weight_unit,
       channel_config: courier.channel_config,
     }));
-
-    return {
-      couriers: formattedCouriers,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-      hasNextPage: page < Math.ceil(total / limit),
-      hasPreviousPage: page > 1,
-    };
+  
+    return isPaginated
+      ? {
+          couriers: formattedCouriers,
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total! / limit!),
+          hasNextPage: page! < Math.ceil(total! / limit!),
+          hasPreviousPage: page! > 1,
+        }
+      : { couriers: formattedCouriers, total: couriers.length };
   }
+  
 
   async getCourierById(id: string, userId: string, userRole: Role): Promise<any | ErrorResponse> {
     const courier = await this.fastify.prisma.courier.findUnique({
