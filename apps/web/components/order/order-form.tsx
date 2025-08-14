@@ -17,6 +17,7 @@ import {
   FormControl,
   toast,
   Switch,
+  StickyBar,
 } from '@lorrigo/ui/components';
 
 import { PickupAddressSelector } from './pickup-address-selector';
@@ -394,11 +395,11 @@ export const OrderForm = forwardRef<OrderFormRef, OrderFormProps>(
             </CardContent>
           </Card>
 
-          <div className="backdrop-blur-xs sticky bottom-0 flex justify-end border-t border-neutral-200 lg:py-3 dark:border-neutral-800">
+          <StickyBar position="bottom" className="justify-end lg:py-3 backdrop-blur-xs  border-neutral-200 dark:border-neutral-800">
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? 'Processing...' : submitButtonText}
             </Button>
-          </div>
+          </StickyBar>
         </form>
       </Form>
     );

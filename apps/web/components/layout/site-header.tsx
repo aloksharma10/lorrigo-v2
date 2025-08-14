@@ -23,6 +23,7 @@ import { LorrigoLogo } from '@/components/logos/lorrigo-logo';
 import Link from 'next/link';
 import { useUserOperations } from '@/lib/apis/users';
 import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
 export function SiteHeader() {
   const { getWalletBalance } = useWalletOperations();
@@ -38,6 +39,17 @@ export function SiteHeader() {
   const { isMobile } = useSidebar();
   const { getMyProfile } = useUserOperations();
   const { data: myProfile } = getMyProfile;
+
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 0);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Open recharge wallet modal
   const handleRechargeWallet = () => {
@@ -65,7 +77,13 @@ export function SiteHeader() {
   };
 
   return (
-    <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40 flex h-[var(--header-height)] shrink-0 items-center gap-2 rounded-t-xl border-b backdrop-blur transition-[width,height] ease-linear">
+    <header
+      className={`sticky top-0 z-40 flex h-[var(--header-height)] shrink-0 items-center gap-2 rounded-t-xl border-b transition-all duration-600 ease-in-out ${
+        isScrolled
+          ? 'bg-background'
+          : 'bg-background/95 supports-[backdrop-filter]:bg-background/60 backdrop-blur'
+      }`}
+    >
       <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
         {isMobile && <SidebarTrigger className="-ml-1" />}
 

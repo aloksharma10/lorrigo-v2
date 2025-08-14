@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
-import { Button, toast } from '@lorrigo/ui/components';
+import { useRef } from 'react';
+import { StickyBar, toast } from '@lorrigo/ui/components';
 
 import { type OrderFormValues, orderFormSchema } from '@lorrigo/utils/validations';
 import { BackButton } from '@/components/back-btn';
@@ -10,7 +10,6 @@ import { useRouter } from 'next/navigation';
 import { OrderForm, OrderFormRef } from '@/components/order/order-form';
 
 export default function OrderFormPage() {
-  const [redirectPath, setRedirectPath] = useState<string | null>(null);
   const formRef = useRef<OrderFormRef>(null);
 
   const router = useRouter();
@@ -33,47 +32,22 @@ export default function OrderFormPage() {
       toast.error(error.response?.data?.message || 'Failed to create order, Please Report to Support at support@lorrigo.in');
     }
   }
-
-  const OrderSubmitBtn = () => {
-    const handleCreateOrder = () => {
-      // setRedirectPath('/seller/orders/forward-shipments/new');
-      formRef.current?.submitForm();
-    };
-
-    // const handleShipNow = () => {
-    //   setRedirectPath(`/seller/orders/ship/${(order as any)?.id}`);
-    //   formRef.current?.submitForm();
-    // };
-
-    return (
-      <div className="flex gap-4">
-        <Button isLoading={isCreatingOrder} onClick={handleCreateOrder}>
-          Create Order
-        </Button>
-        {/* <Button isLoading={isCreatingOrder} onClick={handleShipNow}>
-          Ship Now
-        </Button> */}
-      </div>
-    );
-  };
-
-  useEffect(() => {
-    if (isOrderCreated && (order as any)?.id && redirectPath) {
-      router.push(redirectPath);
-    }
-  }, [isOrderCreated, order, redirectPath, router]);
-
   return (
     <div className="w-full">
-      <div className="sticky top-0 z-10 rounded-t-md border-b bg-white shadow-sm dark:bg-stone-900">
-        <div className="flex max-w-full items-center justify-between py-3">
+      <StickyBar
+        position="top"
+        initialBgClass="bg-white/95 dark:bg-stone-900/95"
+        scrolledBgClass="bg-white dark:bg-stone-900"
+        className="top-14 rounded-t-md shadow-sm"
+        zIndex={10}
+      >
+        <div className="flex max-w-full items-center justify-between p-2">
           <div className="flex items-center gap-2">
             <BackButton showLabel={false} />
             <h1 className="text-sm font-semibold lg:text-xl">Add Order</h1>
           </div>
-          <OrderSubmitBtn />
         </div>
-      </div>
+      </StickyBar>
 
       <div className="max-w-full pt-4">
         <OrderForm ref={formRef} onSubmit={onSubmit} />
