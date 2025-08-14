@@ -9,7 +9,7 @@ export * from './sanitize';
 export * from './generate-id';
 export * from './get-financial-year';
 export * from './parse-csv-update';
-
+export * from './mask-sensitive';
 export * from './parse-sort-field';
 export * from './flatten-obj';
 export * from './parse-boolean';

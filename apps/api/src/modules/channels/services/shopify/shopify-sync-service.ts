@@ -463,9 +463,9 @@ export class ShopifySyncService {
       const totalQuantity = shopifyOrder.line_items?.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0) || 1;
 
       // Standard dimensions if not available - based on old code
-      const orderBoxHeight = 0
-      const orderBoxWidth = 0
-      const orderBoxLength = 0
+      const orderBoxHeight = 0.5
+      const orderBoxWidth = 0.5
+      const orderBoxLength = 0.5
 
       // Calculate volumetric weight
       const volumetricWeight = 0; // cm³ to kg

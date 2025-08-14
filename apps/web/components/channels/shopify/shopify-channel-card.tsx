@@ -2,10 +2,12 @@ import { Store, LinkIcon, AlertCircle, CheckCircle2, ShoppingCart, ExternalLink,
 import { Button, Alert, AlertTitle, AlertDescription, Skeleton, toast } from '@lorrigo/ui/components';
 import { ChannelCard } from '../channel-card-factory';
 import { useShopify } from '@/lib/apis/channels/shopify';
+import { useRouter } from 'next/navigation';
 
 export function ShopifyChannelCard() {
   // Use our shopify hook
   const shopify = useShopify();
+  const router = useRouter();
   const { data: connection, isLoading: isLoadingConnection, isError, error, refetch } = shopify.connection;
   const { mutate: initiateConnect, isPending: isConnecting } = shopify.initiateConnect;
   const { mutate: disconnect, isPending: isDisconnecting } = shopify.disconnect;
@@ -82,11 +84,9 @@ export function ShopifyChannelCard() {
             >
               Open Shopify Admin
             </Button>
-            <Button variant="outline" size="sm" className="flex-1" asChild>
-              <a href="/seller/orders">
-                <ShoppingCart className="mr-2 h-4 w-4" />
-                View Orders
-              </a>
+            <Button variant="outline" size="sm" className="flex-1" onClick={() => router.push(`/seller/orders/forward-shipments/all?filters=[{"id":"channel_name","value":["shopify"]}]`)}>
+              <ShoppingCart className="mr-2 h-4 w-4" />
+              View Orders
             </Button>
           </div>
         </div>

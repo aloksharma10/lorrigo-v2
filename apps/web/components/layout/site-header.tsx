@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, useSidebar, SidebarTrigger } from '@lorrigo/ui/components';
+import { Button, useSidebar, SidebarTrigger, Badge } from '@lorrigo/ui/components';
 import { Input } from '@lorrigo/ui/components';
 import { Separator } from '@lorrigo/ui/components';
 import { Avatar, AvatarFallback, AvatarImage } from '@lorrigo/ui/components';
@@ -20,14 +20,15 @@ import { useModalStore } from '@/modal/modal-store';
 import { currencyFormatter } from '@lorrigo/utils';
 import { useSession, signOut } from 'next-auth/react';
 import { LorrigoLogo } from '@/components/logos/lorrigo-logo';
-import { BackButton } from '../back-btn';
 import Link from 'next/link';
+import { useUserOperations } from '@/lib/apis/users';
+import { useRouter } from 'next/navigation';
 
 export function SiteHeader() {
   const { getWalletBalance } = useWalletOperations();
   const { openModal } = useModalStore();
   const { data: session } = useSession();
-
+  const router = useRouter();
   // Get wallet balance from API
   const { data: walletData, isLoading } = getWalletBalance;
   const walletBalance = walletData?.balance || 0;
@@ -35,6 +36,8 @@ export function SiteHeader() {
   const usableAmount = walletData?.usable_amount || 0;
 
   const { isMobile } = useSidebar();
+  const { getMyProfile } = useUserOperations();
+  const { data: myProfile } = getMyProfile;
 
   // Open recharge wallet modal
   const handleRechargeWallet = () => {
@@ -65,7 +68,6 @@ export function SiteHeader() {
     <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40 flex h-[var(--header-height)] shrink-0 items-center gap-2 rounded-t-xl border-b backdrop-blur transition-[width,height] ease-linear">
       <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
         {isMobile && <SidebarTrigger className="-ml-1" />}
-        {!isMobile && <BackButton showLabel={false} className="w-min" />}
 
         <LorrigoLogo />
         <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
@@ -130,17 +132,19 @@ export function SiteHeader() {
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{session.user.name}</p>
+                    <p className="text-sm font-medium leading-none flex items-center justify-between gap-2">
+                      {session.user.name} <Badge variant="status_success" className='ml-auto'>{myProfile?.user.plan?.name}</Badge>
+                    </p>
                     <p className="text-muted-foreground text-xs leading-none">{session.user.email}</p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  <DropdownMenuItem>
+                  {/* <DropdownMenuItem>
                     <User className="mr-2 h-4 w-4" />
                     <span>Profile</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  </DropdownMenuItem> */}
+                  <DropdownMenuItem onClick={() => router.push('/seller/settings/general')}>
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </DropdownMenuItem>

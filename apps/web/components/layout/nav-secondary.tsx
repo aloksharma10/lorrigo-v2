@@ -36,7 +36,7 @@ export function NavSecondary({
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title} className="flex flex-col items-center justify-center">
-              <SidebarMenuButton asChild>
+              <SidebarMenuButton asChild className='cursor-pointer'>
                 <div
                   onClick={() => {
                     if (item.title === 'Settings') {
@@ -53,7 +53,7 @@ export function NavSecondary({
             </SidebarMenuItem>
           ))}
           <SidebarMenuItem className="group-data-[collapsible=icon]:hidden">
-            <SidebarMenuButton asChild>
+            <SidebarMenuButton asChild className='cursor-pointer'>
               <label>
                 <IconBrightness />
                 <span>Dark Mode</span>

@@ -23,6 +23,7 @@ import { ADMIN_ROUTES } from '@/lib/routes/admin';
 import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@lorrigo/ui/lib/utils';
+import { BackButton } from '../back-btn';
 
 // ------------------------------
 // Time-based greeting function
@@ -30,12 +31,12 @@ function getTimeGreeting(name: string = 'there') {
   const hour = new Date().getHours();
   let greeting = '';
 
-  if (hour >= 5 && hour < 12) greeting = `Good Morning, ${name} ☀️`;
-  else if (hour >= 12 && hour < 14) greeting = `Good Noon, ${name} 🌞`;
-  else if (hour >= 14 && hour < 17) greeting = `Good Afternoon, ${name} 🍵`;
+  if (hour >= 5 && hour < 12) greeting = `Good Morning, ${name}`;
+  else if (hour >= 12 && hour < 14) greeting = `Good Noon, ${name}`;
+  else if (hour >= 14 && hour < 17) greeting = `Good Afternoon, ${name}`;
   else if (hour >= 17 && hour < 21) greeting = `Good Evening, ${name}`;
-  else if (hour >= 21 && hour < 24) greeting = `Good Night, ${name} 🌙`;
-  else if (hour >= 0 && hour < 3) greeting = `Late Night Owl, ${name} 🦉`;
+  else if (hour >= 21 && hour < 24) greeting = `Good Night, ${name}`;
+  else if (hour >= 0 && hour < 3) greeting = `Late Night Owl, ${name}`;
   else greeting = `Hi, ${name} 👋`;
 
   return greeting;
@@ -79,7 +80,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session } = useSession();
   const user = session?.user;
   const isAdmin = user?.role === 'ADMIN';
-  const { state, setOpen, isHoverOpen } = useSidebar();
+  const { state, setOpenMobile, isHoverOpen, isMobile } = useSidebar();
   const isCollapsed = state === 'collapsed' && !isHoverOpen;
   const pathname = usePathname();
 
@@ -87,7 +88,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const greeting = useMemo(() => getTimeGreeting(firstName), [firstName]);
 
   useEffect(() => {
-    setOpen(false);
+    setOpenMobile(false);
   }, [pathname]);
 
   return (
@@ -97,9 +98,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
-              <div className="flex items-center justify-between gap-2">
-                {!isCollapsed && <span className="text-base font-semibold">{greeting}</span>}
-                <SidebarTrigger className="-ml-1 bg-transparent" />
+              <div className={cn('flex items-center', isCollapsed && 'justify-center gap-2')}>
+                {!isMobile && <BackButton showLabel={false} className="max-w-min bg-transparent border-none" />}
+                {!isCollapsed && <span className="text-base font-semibold flex-1">{greeting}</span>}
+                {!isCollapsed && <SidebarTrigger className="-ml-1 bg-transparent" />}
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>

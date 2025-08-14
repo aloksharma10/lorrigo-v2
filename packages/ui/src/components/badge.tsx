@@ -9,7 +9,8 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: 'border-transparent bg-primary text-primary-foreground [a&]:hover:bg-primary/90',
+        // default: 'border-transparent bg-primary text-primary-foreground [a&]:hover:bg-primary/90',
+        default: 'text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground text-xs bg-green-50 text-green-600 border-green-200 dark:bg-green-900 dark:text-green-50 dark:border-green-700',
         secondary: 'border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90',
         destructive:
           'border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60',
@@ -19,6 +20,8 @@ const badgeVariants = cva(
           'text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground text-xs bg-green-50 text-green-600 border-green-200 dark:bg-green-900 dark:text-green-50 dark:border-green-700',
         status_warning:
           'text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground text-xs bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-900 dark:text-orange-50 dark:border-orange-700',
+        status_destructive:
+          'text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground text-xs bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-900 dark:text-rose-50 dark:border-rose-700',
       },
     },
     defaultVariants: {

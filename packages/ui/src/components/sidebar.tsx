@@ -18,7 +18,7 @@ const SIDEBAR_COOKIE_NAME = 'sidebar_state';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 const SIDEBAR_WIDTH = '16rem';
 const SIDEBAR_WIDTH_MOBILE = '18rem';
-const SIDEBAR_WIDTH_ICON = '3.3rem';
+const SIDEBAR_WIDTH_ICON = '3.8rem';
 const SIDEBAR_KEYBOARD_SHORTCUT = 'b';
 
 type SidebarContextProps = {
@@ -183,12 +183,12 @@ function Sidebar({
 
   return (
     <div
-      className="text-sidebar-foreground group peer fixed left-0 top-0 z-50 hidden md:block"
+      className={cn('text-sidebar-foreground group peer fixed left-0 top-0 hidden md:block', isHoverOpen && collapsible === 'icon' && 'z-50')}
       data-state={state}
       // data-collapsible={isCollapsed ? collapsible : ''}
       data-variant={variant}
       data-side={side}
-        data-slot="sidebar"
+      data-slot="sidebar"
     >
       <div
         data-slot="sidebar-gap"
@@ -204,10 +204,10 @@ function Sidebar({
       <div
         data-slot="sidebar-container"
         className={cn(
-          'w-(--sidebar-width) fixed inset-y-0 z-10 hidden h-svh transition-[left,right,width] duration-200 ease-linear md:flex',
+          'w-(--sidebar-width) fixed inset-y-0 hidden h-svh transition-[left,right,width] duration-200 ease-linear md:flex',
           side === 'left'
-          ? 'left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]'
-          : 'right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]',
+            ? 'left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]'
+            : 'right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]',
           variant === 'floating' || variant === 'inset'
             ? 'group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]'
             : 'group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-r group-data-[side=right]:border-l',
@@ -219,8 +219,9 @@ function Sidebar({
           data-sidebar="sidebar"
           data-slot="sidebar-inner"
           className={cn(
-            'p-2 bg-sidebar group-data-[variant=floating]:border-sidebar-border flex h-full w-full flex-col group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow-sm relative z-50 transition-all duration-200 ease-out',
+            'bg-sidebar group-data-[variant=floating]:border-sidebar-border relative flex h-full w-full flex-col p-2 pl-2.5 transition-all duration-200 ease-out group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow-sm',
             isCollapsed && !isHoverOpen && collapsible === 'icon' && 'w-(--sidebar-width-icon)',
+            isHoverOpen && collapsible === 'icon' && 'z-50'
           )}
           onMouseEnter={() => {
             if (collapsible === 'icon' && isCollapsed) {

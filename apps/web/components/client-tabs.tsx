@@ -172,13 +172,13 @@ export default function ClientTabs({ menuItems, onValueChange, activeTab, classN
           {/* Scrollable tab list */}
           <div ref={tabsListRef} className={cn("scrollbar-hide w-full overflow-x-auto md:w-auto", className)} onScroll={checkScroll}>
             <Tabs value={activeTab || currentPath} onValueChange={handleValueChange} className="w-full">
-              <TabsList className="scrollbar-hide inline-flex w-max gap-4 overflow-x-auto whitespace-nowrap px-1">
+              <TabsList className="cursor-pointer scrollbar-hide inline-flex w-max gap-4 overflow-x-auto whitespace-nowrap px-1">
                 {processedMenuItems.map((item, index) => (
                   <TabsTrigger
                     key={index}
                     value={item.path || ''}
                     onClick={() => handleValueChange(item.path?.toLowerCase() || '')}
-                    className="whitespace-nowrap"
+                    className="whitespace-nowrap cursor-pointer"
                   >
                     {item.icon && <item.icon className="mr-1 h-4 w-4" />}
                     {item.name}

@@ -79,7 +79,7 @@ export function NavMain({
   return (
     <SidebarGroup>
       {/* <SidebarGroupLabel className="capitalize">{group}</SidebarGroupLabel> */}
-      <SidebarMenu>
+      <SidebarMenu className='cursor-pointer'>
         {items.map((item) => {
           const hasDropdown = item.items && item.items.length > 0;
           const isActive = isRouteActive(item.url, item.items);
@@ -93,7 +93,7 @@ export function NavMain({
                   {hasDropdown ? (
                     <>
                       <CollapsibleTrigger asChild disabled={isDisabled}>
-                        <SidebarMenuButton className={isDisabled ? 'cursor-not-allowed opacity-50' : ''}>
+                        <SidebarMenuButton className={isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}>
                           <item.icon className="size-4" />
                           <span>{item.title}</span>
                           {isDisabled && (

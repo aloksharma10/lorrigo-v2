@@ -23,6 +23,7 @@ import ShipmentActionButton from './shipment-action-button';
 import { useShippingOperations } from '@/lib/apis/shipment';
 import { useCSVUpload } from '@/components/providers/csv-upload-provider';
 import { useHubOperations } from '@/lib/apis/hub';
+import { ShipmentStatus } from '@lorrigo/db';
 
 interface ShipmentsTableProps {
   initialParams: ShipmentParams;
@@ -323,22 +324,31 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
         const shipment = row.original;
 
         // Status badge color mapping
-        const statusColorMap: Record<string, string> = {
-          New: 'bg-blue-100 text-blue-800 hover:bg-blue-100',
-          Pending: 'bg-blue-100 text-blue-800 hover:bg-blue-100',
-          'Courier Assigned': 'bg-blue-100 text-blue-800 hover:bg-blue-100',
-          'Pickup Scheduled': 'bg-green-100 text-green-800 hover:bg-green-100',
-          'In Transit': 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100',
-          Delivered: 'bg-green-100 text-green-800 hover:bg-green-100',
-          RTO: 'bg-red-100 text-red-800 hover:bg-red-100',
+        const statusColorMap: Record<ShipmentStatus, string> = {
+          NEW: 'status_success',
+          COURIER_ASSIGNED: 'status_success',
+          PICKUP_SCHEDULED: 'status_success',
+          OUT_FOR_PICKUP: 'status_warning',
+          PICKED_UP: 'status_success',
+          IN_TRANSIT: 'status_success',
+          OUT_FOR_DELIVERY: 'status_success',
+          DELIVERED: 'status_success',
+          NDR: 'status_warning',
+          RTO_INITIATED: 'status_warning',
+          RTO_IN_TRANSIT: 'status_warning',
+          RTO_DELIVERED: 'status_success',
+          EXCEPTION: 'status_destructive',
+          CANCELLED_SHIPMENT: 'status_destructive',
+          CANCELLED_ORDER: 'status_destructive',
+          AWAITING: 'status_destructive',
         };
 
         return (
           <div className="flex flex-col">
-            <Badge className={`${statusColorMap[shipment.status]} w-fit`}>{shipment?.trackingEvents[0]?.status?.toUpperCase() || 'AWAITING'}</Badge>
-
+            <Badge variant={statusColorMap[shipment.status as ShipmentStatus] as any} className={`w-fit`}>
+              {shipment?.trackingEvents[0]?.status?.toUpperCase() || 'AWAITING'}
+            </Badge>
             <div className="mt-1 text-xs">{formatDateTimeSmart(shipment.trackingEvents[0]?.timestamp || shipment.updatedAt)}</div>
-
             {shipment.pickupDate && <div className="mt-1 text-xs">For: {shipment.pickupDate.split('T')[0]}</div>}
             {shipment.edd && <div className="mt-1 text-xs">EDD: {shipment.edd.split('T')[0]}</div>}
             {shipment.pickupId && <div className="mt-1 text-xs">Pickup ID: {shipment.pickupId}</div>}

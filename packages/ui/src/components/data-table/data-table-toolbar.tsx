@@ -102,8 +102,15 @@ export function DataTableToolbar<TData>({
             )}
 
             {advancedFilter && (
-              <Button variant="outline" size="sm" className="h-9 items-center gap-1 lg:flex" onClick={() => setShowFilters(!showFilters)} disabled={isLoading}>
-                <Filter className="h-4 w-4" />
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 items-center gap-1 lg:flex"
+                onClick={() => setShowFilters(!showFilters)}
+                disabled={isLoading}
+                icon={Filter}
+                {...(isFiltered && { iconProps: { className: 'text-primary', fill: 'currentColor' } })}
+              >
                 <span className="hidden sm:inline">More Filters</span>
               </Button>
             )}
@@ -133,6 +140,22 @@ export function DataTableToolbar<TData>({
                 disabled={isLoading || isUploading}
               />
             </div>
+          )}
+
+          {isFiltered && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                table.resetColumnFilters();
+                setGlobalFilter('');
+              }}
+              // className="h-8 px-2 lg:px-3"
+              disabled={isLoading}
+              icon={X}
+              iconProps={{ className: 'text-primary', fill: 'currentColor' }}
+            >
+              Reset
+            </Button>
           )}
         </div>
 

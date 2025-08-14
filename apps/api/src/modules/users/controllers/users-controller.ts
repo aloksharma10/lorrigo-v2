@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { prisma } from '@lorrigo/db';
+import { maskLastSix } from '@lorrigo/utils';
 
 export class UsersController {
   constructor(private fastify: FastifyInstance) {}
@@ -108,14 +109,57 @@ export class UsersController {
 
       const user = await prisma.user.findUnique({
         where: { id },
-        include: {
+        select: {
+          id: true,
+          code: true,
+          email: true,
+          name: true,
+          phone: true,
+          role: true,
+          is_active: true,
+          is_verified: true,
+          image: true,
+          hasPasskeys: true,
+          created_at: true,
+          updated_at: true,
           plan: {
+            select: { id: true, name: true },
+          },
+          profile: {
             select: {
-              id: true,
-              name: true,
+              wallet_type: true,
+              business_type: true,
+              pan: true,
+              adhaar: true,
+              gst_no: true,
+              kyc_submitted: true,
+              kyc_verified: true,
+              is_d2c: true,
+              is_b2b: true,
+              is_fw: true,
+              is_rto: true,
+              is_cod: true,
+              is_cod_reversal: true,
+              notification_settings: true,
+              company: true,
+              company_name: true,
+              logo_url: true,
+              remittance_cycle: true,
+              remittance_min_amount: true,
+              remittance_days_of_week: true,
+              remittance_days_after_delivery: true,
+              early_remittance_charge: true,
+              billing_cycle_type: true,
+              billing_days_of_week: true,
+              billing_day_of_month: true,
+              billing_week_of_month: true,
+              billing_days: true,
+              label_format: true,
+              manifest_format: true,
+              created_at: true,
+              updated_at: true,
             },
           },
-          profile: true,
           _count: {
             select: {
               orders: true,
@@ -131,6 +175,13 @@ export class UsersController {
 
       if (!user) {
         return reply.code(404).send({ success: false, error: 'User not found' });
+      }
+
+      // Mask sensitive IDs
+      if (user.profile) {
+        user.profile.pan = user.profile.pan ? maskLastSix(user.profile.pan) : null;
+        user.profile.adhaar = user.profile.adhaar ? maskLastSix(user.profile.adhaar) : null;
+        user.profile.gst_no = user.profile.gst_no ? maskLastSix(user.profile.gst_no) : null;
       }
 
       const wallet = await prisma.userWallet.findUnique({
@@ -608,7 +659,6 @@ export class UsersController {
     });
     return { valid: true, bankAccount };
   }
-
 
   /**
    * Verify bank account (ADMIN/SUBADMIN)
