@@ -84,7 +84,8 @@ export function ShopifyChannelCard() {
             >
               Open Shopify Admin
             </Button>
-            <Button variant="outline" size="sm" className="flex-1" onClick={() => router.push(`/seller/orders/forward-shipments/all?filters=[{"id":"channel_name","value":["shopify"]}]`)}>
+            {/* ?filters=[{"id":"channel_name","value":["shopify"]}] */}
+            <Button variant="outline" size="sm" className="flex-1" onClick={() => router.push(`/seller/orders/forward-shipments/all`)}>
               <ShoppingCart className="mr-2 h-4 w-4" />
               View Orders
             </Button>

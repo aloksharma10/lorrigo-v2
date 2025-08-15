@@ -61,7 +61,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
                         <DrawerRegistry />
                         <LoadingBar />
                         {children}
-                        <Toaster position="top-right" toastOptions={{ duration: 4000 }} richColors />
+                        <Toaster closeButton swipeDirections={[ 'top', 'bottom', 'left', 'right']} position="top-right" toastOptions={{ duration: 4000 }} richColors />
                       </PasskeySetupProvider>
                     </BulkOperationsProvider>
                   </DrawerProvider>

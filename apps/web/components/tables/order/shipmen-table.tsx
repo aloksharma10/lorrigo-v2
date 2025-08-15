@@ -305,6 +305,8 @@ export default function ShipmentsTable({ initialParams }: ShipmentsTableProps) {
                 label={shipment.awb}
                 tooltipText="Copy AWB"
                 text={shipment.awb}
+                enableExternalLinks={true}
+                url={`https://app.lorrigo.com/tracking/${shipment.awb}`}
               />
               <div className="text-muted-foreground text-xs">
                 {shipment.courier} {shipment.courierNickname}

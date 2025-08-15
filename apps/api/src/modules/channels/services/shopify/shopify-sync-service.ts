@@ -5,6 +5,7 @@ import { captureException } from '@/lib/sentry';
 import { formatPhoneNumber, ShipmentBucketManager } from '@lorrigo/utils';
 import { AddressType, Channel, OrderType, ShipmentStatus } from '@lorrigo/db';
 import { queueSyncOrders } from '../../queues/shopifySyncQueue';
+import { calculateVolumetricWeight } from '@/utils/calculate-order-price';
 
 export interface ShopifySyncResult {
   success: boolean;
@@ -459,16 +460,16 @@ export class ShopifySyncService {
       };
 
       // Calculate package dimensions and weight from line items - based on old code
-      const totalWeight = shopifyOrder.total_weight ? shopifyOrder.total_weight / 1000 : 0; // Convert to kg
+      const totalWeight = shopifyOrder.total_weight ? shopifyOrder.total_weight / 1000 : 0.5; // Convert to kg
       const totalQuantity = shopifyOrder.line_items?.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0) || 1;
 
       // Standard dimensions if not available - based on old code
-      const orderBoxHeight = 0.5
-      const orderBoxWidth = 0.5
-      const orderBoxLength = 0.5
+      const orderBoxHeight = 10
+      const orderBoxWidth = 10
+      const orderBoxLength = 10
 
       // Calculate volumetric weight
-      const volumetricWeight = 0; // cm³ to kg
+      const volumetricWeight = calculateVolumetricWeight(orderBoxHeight, orderBoxWidth, orderBoxLength); // cm³ to kg
 
       // Use the higher of actual weight and volumetric weight
       const applicableWeight = Math.max(totalWeight, volumetricWeight);
